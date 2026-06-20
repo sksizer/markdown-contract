@@ -28,8 +28,10 @@ Decisions, and Milestone ladder (Phases 1–3) and building the library (Phase 5
 entities (id-collision with the live corpus), so nothing real is authored here — only consolidated
 enough to move.
 
-**Progress: Phase 0 (consolidate & bootstrap) is the active gate; Phases 1–5 follow in the new
-repo.** The API design itself is settled (Appendix A) — it is an _input_ to Phase 0, not a phase.
+**Progress: Phase 0 mostly done — repo bootstrapped + provenance migrated (2026-06-20).** Remaining:
+the SDLC gate (`/sdlc:setup` + `entities validate`) and the corpus snapshot, run in this repo's own
+Claude session; then Phases 1–5. The API design itself is settled (Appendix A) — an _input_ to
+Phase 0, not a phase.
 
 ## Package & CLI shape
 
@@ -56,25 +58,25 @@ Stand up the new self-hosting repo and bring **all** existing evidence + plannin
 consolidated enough that in-library development can proceed. Exit criteria: the new repo is green on
 `entities validate` and holds the full provenance, ready for Phases 1–5.
 
-- [ ] **Name it.** Confirm repo + product name (`markdown-contract`?) and the npm/package identity.
-- [ ] **Create the repo.** New git repo; `bun init` as one package (library `exports` + CLI `bin`
-      skeleton; see Package & CLI shape); license; README stub pointing at the spec.
-- [ ] **Install SDLC.** Add the `sdlc` plugin + project settings; scaffold the `docs/planning/` tree
-      (`products/ drivers/ decisions/ milestones/ tasks/ standards/ references/ …`); wire
-      `entities validate` + lint in CI.
-- [ ] **Bring the provenance over.** Move _all_ existing material from this folder into the new repo
-      as staging/provenance — Appendix A + the 38 `questions/`, `proposed-shape.md`, `research/`,
-      and the 65 example cases (validation + consumption). Land them in a `provenance/` (or
-      `_incoming/`) area that `entities validate` does not treat as live entities; Phases 1–2
-      re-home them.
+- [x] **Name it.** `markdown-contract` — repo, product (`PR-0001`), and package identity.
+- [x] **Create the repo.** Git repo on `main`; single-package skeleton (`src/core|runner|cli`,
+      `exports` + `bin`, per Package & CLI shape); MIT, tsconfig, README, `.gitignore`. Private
+      GitHub repo `sksizer/markdown-contract`, pushed.
+- [ ] **Install SDLC.** `docs/planning/` tree scaffolded as plain dirs; **still pending** —
+      `/sdlc:setup` (creates `sdlc.yaml` + the `.gitignore` Claude block + schema-checked dirs) and
+      CI wiring, run in this repo's own Claude session where the plugin runtime resolves `@lib`.
+- [x] **Bring the provenance over.** 112 files copied to `provenance/d0014/` — the full D-0014 folder
+      (Appendix A's `questions/`, `proposed-shape.md`, `research/`, and the 65 example cases).
+      Phases 1–2 re-home them.
 - [ ] **Corpus snapshot.** Copy a frozen SDLC corpus slice in as fixtures for
       `DR · validate-sdlc-corpus` (decide snapshot vs. submodule vs. sync script).
-- [ ] **Bootstrap identity.** `PR-0001-markdown-contract` (what it is, boundary, drivers & goals) +
-      `vision.md` (one-screen north star: validate-and-consume markdown-as-data, reusable anywhere).
-- [ ] **Green the gate.** `entities validate` passes in the new repo with the provenance in place.
-- [ ] **Cut the cord.** In the dev repo, mark D-0014 spun-out: update its status + add a note
-      pointing to the new repo; reconcile [[D-0008]] (formatting) and [[D-0007]] (op boundary)
-      references.
+- [x] **Bootstrap identity (first cut).** `PR-0001-markdown-contract` + `docs/planning/vision.md`
+      authored; hand-written, so pending `entities validate` confirmation in the gate step.
+- [ ] **Green the gate.** Run `/sdlc:setup` then `sdlc entities validate` in the new repo; fix any
+      schema drift in `PR-0001` / `vision`. This is the Phase 0 exit criterion.
+- [ ] **Cut the cord.** Deferred until the gate is green and you confirm: in the dev repo, mark
+      D-0014 spun-out (status + a note pointing to `sksizer/markdown-contract`); reconcile
+      [[D-0008]] (formatting) and [[D-0007]] (op boundary) references.
 
 ## Phase 1 — Drivers (examples → use-case Drivers)
 
