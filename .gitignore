@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.sdlc/
+*.log
+.DS_Store
+.rumdl_cache/

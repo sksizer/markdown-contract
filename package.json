@@ -1,0 +1,32 @@
+{
+  "name": "markdown-contract",
+  "version": "0.0.0",
+  "description": "Validate and consume markdown-as-data: per-type contracts over one parse — a structure plane (tree-grammar over sections + block kinds), a content plane (Zod over each block's data), and a typed model you can read.",
+  "type": "module",
+  "license": "MIT",
+  "author": "sksizer",
+  "engines": {
+    "bun": ">=1.2.0",
+    "node": ">=20"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "markdown-contract": "./src/cli/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "cli": "bun run src/cli/index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.14",
+    "typescript": "^5.7.2"
+  }
+}
