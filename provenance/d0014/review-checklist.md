@@ -28,10 +28,10 @@ Decisions, and Milestone ladder (Phases 1–3) and building the library (Phase 5
 entities (id-collision with the live corpus), so nothing real is authored here — only consolidated
 enough to move.
 
-**Progress: Phase 0 mostly done — repo bootstrapped + provenance migrated (2026-06-20).** Remaining:
-the SDLC gate (`/sdlc:setup` + `entities validate`) and the corpus snapshot, run in this repo's own
-Claude session; then Phases 1–5. The API design itself is settled (Appendix A) — an _input_ to
-Phase 0, not a phase.
+**Progress: Phase 0 nearly done (2026-06-20) — repo bootstrapped, provenance migrated, Node + npm
+toolchain set, `/sdlc:setup` run.** Remaining: green `sdlc entities validate` (+ fix any
+`PR-0001`/`vision` drift), the corpus snapshot, a CI workflow, and cut-the-cord; then Phases 1–5. The
+API design itself is settled (Appendix A) — an _input_ to Phase 0, not a phase.
 
 ## Package & CLI shape
 
@@ -64,9 +64,10 @@ consolidated enough that in-library development can proceed. Exit criteria: the 
 - [x] **Create the repo.** Git repo on `main`; single-package skeleton (`src/core|runner|cli`,
       `exports` + `bin`, per Package & CLI shape); MIT, tsconfig, README, `.gitignore`. Private
       GitHub repo `sksizer/markdown-contract`, pushed.
-- [ ] **Install SDLC.** `docs/planning/` tree scaffolded as plain dirs; **still pending** —
-      `/sdlc:setup` (creates `sdlc.yaml` + the `.gitignore` Claude block + schema-checked dirs) and
-      CI wiring, run in this repo's own Claude session where the plugin runtime resolves `@lib`.
+- [x] **Install SDLC.** `/sdlc:setup` run — `sdlc.yaml` (quality_checks `npm run test` / `npm run
+      typecheck`; worktree_init `npm install`), `.gitignore` Claude + SDLC blocks,
+      `.claude/settings.json`, and the `docs/planning/` entity dirs. **CI workflow still to add**
+      (run the quality_checks on PR).
 - [x] **Bring the provenance over.** 112 files copied to `provenance/d0014/` — the full D-0014 folder
       (Appendix A's `questions/`, `proposed-shape.md`, `research/`, and the 65 example cases).
       Phases 1–2 re-home them.
