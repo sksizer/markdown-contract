@@ -25,14 +25,22 @@ read. The contract that *checks* a document also *types* it.
 **Imports flow one way: `cli → runner → core`, never back.** The engine knows nothing
 of argv, files, or `process`; the CLI is just another consumer of the library.
 
+## Packaging
+
+A standard Node ESM package (Node ≥ 20). `tsc` builds `src/` → `dist/` (JS + `.d.ts`);
+`exports`, `types`, and `bin` point at `dist/`, and only `dist/` is published. No
+Bun-only APIs in shipped code, so it installs and runs under any package manager
+(`npm`, `pnpm`, `yarn`, `bun`) and any Node runtime.
+
 ## Develop
 
 ```sh
-bun install
-bun test
-bun run cli -- --help
+npm install
+npm run build      # tsc → dist/ (JS + declarations)
+npm test           # vitest
+npm run cli -- --help
 ```
 
-This project self-hosts the [SDLC](https://github.com) planning system. In a Claude
-Code session opened in this repo, run `/sdlc:setup` then `sdlc entities validate` to
-wire and green the planning gate.
+This project self-hosts the SDLC planning system. In a Claude Code session opened in
+this repo, run `/sdlc:setup` then `sdlc entities validate` to wire and green the
+planning gate.

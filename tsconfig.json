@@ -1,16 +1,14 @@
 {
   "compilerOptions": {
-    "lib": ["ESNext"],
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "moduleDetection": "force",
-    "types": ["bun"],
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
+    "lib": ["ES2023"],
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "noEmit": true
   },

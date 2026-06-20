@@ -1,0 +1,12 @@
+# Per-project SDLC configuration. See plugin/conventions/sdlc-yaml.md for
+# the full shape.
+
+quality_checks:
+  - npm run test
+  - npm run typecheck
+worktree_init:
+  - npm install
+
+# worktree_init:
+#   - mise trust
+#   - just setup-worktree

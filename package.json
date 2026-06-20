@@ -6,27 +6,35 @@
   "license": "MIT",
   "author": "sksizer",
   "engines": {
-    "bun": ">=1.2.0",
     "node": ">=20"
   },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
   },
   "bin": {
-    "markdown-contract": "./src/cli/index.ts"
+    "markdown-contract": "./dist/cli/index.js"
   },
+  "sideEffects": false,
   "files": [
-    "src",
-    "README.md",
-    "LICENSE"
+    "dist"
   ],
   "scripts": {
-    "test": "bun test",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "cli": "bun run src/cli/index.ts"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "cli": "node dist/cli/index.js",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "@types/bun": "^1.1.14",
-    "typescript": "^5.7.2"
+    "@types/node": "^20.14.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.0"
   }
 }

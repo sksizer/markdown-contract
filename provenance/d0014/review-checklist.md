@@ -46,11 +46,13 @@ One repo, **one package**, two entry points: a pure **library** (`exports`) and 
 
 Rules: **imports flow one way — `cli → runner → core`, never back** (enforce with an import-boundary
 lint); the only `process.exit` is the CLI's outermost file; the corpus runner is **library API**,
-not CLI-only, so other consumers reuse it without shelling out. On Bun the CLI needs ~zero extra
-deps (`util.parseArgs`, `Bun.Glob`, `JSON.stringify` for SARIF/JSON), so the single package stays
-lean for library consumers. **Split to Bun workspaces (`packages/core` + `packages/cli`) only if**
-the CLI later grows heavy deps, needs an independent release cadence, or the core must stay
-runtime-agnostic — the one-way source boundary makes that split a file move, not a rewrite.
+not CLI-only, so other consumers reuse it without shelling out. **Toolchain: standard Node ESM + npm**
+— `tsc` builds `src/` → `dist/` (JS + `.d.ts`); `exports`/`types`/`bin` point at `dist/`, only `dist/`
+is published; shipped code uses Node stdlib only (`node:util` `parseArgs`, `node:fs`, `JSON.stringify`
+for SARIF/JSON), no Bun APIs — so it installs from the npm registry under any package manager and runs
+on any Node ≥ 20. **Split to npm workspaces (`packages/core` + `packages/cli`) only if** the CLI later
+grows heavy deps, needs an independent release cadence, or the core must stay runtime-agnostic — the
+one-way source boundary makes that split a file move, not a rewrite.
 
 ## Phase 0 — Consolidate & bootstrap (the migration gate)
 
