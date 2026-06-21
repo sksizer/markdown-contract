@@ -22,16 +22,12 @@ need_human_review: true
 
 ## Summary
 
-- Validate a whole document tree from the command line against a declarative directory → contract
-  config, emitting human / JSON / SARIF output with a CI-meaningful exit code. ^summary
+- Validate a whole document tree from the command line against a declarative directory → contract config, emitting human / JSON / SARIF output with a CI-meaningful exit code. ^summary
 - The CLI product's headline feature: enforceable markdown quality without a bespoke linter.
 
 ## Statement
 
-A config maps directories / globs to the contracts that govern them. The CLI runs the library's
-corpus runner across the tree, aggregates findings, and reports them for humans or CI. The CLI is a
-thin shell over the runner; the runner is library API, so other consumers reuse it in-process rather
-than shelling out.
+A config maps directories / globs to the contracts that govern them. The CLI runs the library's corpus runner across the tree, aggregates findings, and reports them for humans or CI. The CLI is a thin shell over the runner; the runner is library API, so other consumers reuse it in-process rather than shelling out.
 
 ## What it provides
 
@@ -51,8 +47,7 @@ markdown-contract validate docs/
 markdown-contract validate docs/ --format sarif --config ./mc.config.ts > results.sarif
 ```
 
-The config maps globs to contracts (themselves authored with the engine combinators,
-[[C-0005-two-plane-contract-engine]]):
+The config maps globs to contracts (themselves authored with the engine combinators, [[C-0005-two-plane-contract-engine]]):
 
 ```ts
 // markdown-contract.config.ts   (exact shape fixed by D·packaging)
@@ -73,8 +68,7 @@ interface CorpusConfig {
 
 ## Outputs
 
-- Aggregated findings across the tree, rendered for humans or machines, plus a CI-meaningful exit
-  code.
+- Aggregated findings across the tree, rendered for humans or machines, plus a CI-meaningful exit code.
 
 ```sh
 # exit 0  — no error-level findings (warnings allowed)
@@ -82,14 +76,11 @@ interface CorpusConfig {
 # exit 2  — usage / config error
 ```
 
-- `--format human` for a terminal report, `json` for tooling, and `sarif` — the OASIS-standard JSON
-  for static-analysis results that GitHub code scanning and many editors ingest natively, so findings
-  surface as inline PR annotations and Security-tab alerts with no bespoke glue.
+- `--format human` for a terminal report, `json` for tooling, and `sarif` — the OASIS-standard JSON for static-analysis results that GitHub code scanning and many editors ingest natively, so findings surface as inline PR annotations and Security-tab alerts with no bespoke glue.
 
 ## Hook points
 
-- The CLI is a thin shell over an exported runner — other consumers reuse it in-process rather than
-  shelling out:
+- The CLI is a thin shell over an exported runner — other consumers reuse it in-process rather than shelling out:
 
 ```ts
 function runCorpus(config: CorpusConfig, opts?: { format?: "human" | "json" | "sarif" }):
@@ -100,13 +91,9 @@ function runCorpus(config: CorpusConfig, opts?: { format?: "human" | "json" | "s
 
 ## Underlying implementation
 
-- Planned layering: `src/cli` (arg parse, the only `process.exit`) → `src/runner` (corpus traversal +
-  aggregation, library API) → `src/core` ([[C-0001-contract-validation]]). One npm package, `bin`
-  over `exports`.
+- Planned layering: `src/cli` (arg parse, the only `process.exit`) → `src/runner` (corpus traversal + aggregation, library API) → `src/core` ([[C-0001-contract-validation]]). One npm package, `bin` over `exports`.
 - Fixed by the `D·packaging` ADR. Not yet built.
 
 ## Notes
 
-Serves [[DR-0003-markdown-quality-cli]]; built on [[C-0001-contract-validation]] via the runner. The
-library / CLI shape (one package, `bin` over `exports`) is the `D·packaging` ADR. Status
-`open/planned`.
+Serves [[DR-0003-markdown-quality-cli]]; built on [[C-0001-contract-validation]] via the runner. The library / CLI shape (one package, `bin` over `exports`) is the `D·packaging` ADR. Status `open/planned`.

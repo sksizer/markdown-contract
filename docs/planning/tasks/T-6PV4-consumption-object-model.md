@@ -24,10 +24,7 @@ autonomy: supervised
 
 ## Goal
 
-Implement the object model (`C-0002` / `D-0005`): a lazy facade over the projection that, for a
-valid document, exposes `Infer<Contract>` — sections by name, typed table rows, anchor lookups.
-The reward for validity: the same contract that checks a document also types it. It is additive
-and the validator never consults it, so it lands after the finding path is solid.
+Implement the object model (`C-0002` / `D-0005`): a lazy facade over the projection that, for a valid document, exposes `Infer<Contract>` — sections by name, typed table rows, anchor lookups. The reward for validity: the same contract that checks a document also types it. It is additive and the validator never consults it, so it lands after the finding path is solid.
 
 ## Today
 
@@ -42,20 +39,12 @@ The model entry is a stub; the validator gates `doc` but returns nothing typed.
 
 ## Proposed
 
-`src/core/model.ts` implements `Doc { frontmatter, body, byAnchor }` and the views
-(`SectionView`, `TableView<Row>`, `ListView`, `CodeView`, `ParagraphView`, `BlockView`) as a
-lazy facade over the layer-1 projection — no second copy, positions preserved. Section access is
-dual-key (exact bracket + lowerCamelCase + `.section()`); `body.unknown` is always present;
-absent optional sections read as `undefined`; tables yield typed rows from the column/cell
-declarations; `byAnchor` returns a kind-discriminated `BlockView`. `read()` / `validate().doc`
-return it, and `Infer<Contract>` is finalised. The consumption fixtures green.
+`src/core/model.ts` implements `Doc { frontmatter, body, byAnchor }` and the views (`SectionView`, `TableView<Row>`, `ListView`, `CodeView`, `ParagraphView`, `BlockView`) as a lazy facade over the layer-1 projection — no second copy, positions preserved. Section access is dual-key (exact bracket + lowerCamelCase + `.section()`); `body.unknown` is always present; absent optional sections read as `undefined`; tables yield typed rows from the column/cell declarations; `byAnchor` returns a kind-discriminated `BlockView`. `read()` / `validate().doc` return it, and `Infer<Contract>` is finalised. The consumption fixtures green.
 
 ## Approach
 
-1. Implement the lazy `SectionView` / `TableView` / `ListView` / `CodeView` / `ParagraphView`
-   over projection nodes (built on demand, positions preserved).
-2. Implement dual-key generation (Unicode-aware camelCase) + `.section()` + the `SectionGroup`
-   shape shared by `doc.body` and nested `SectionView.sections`.
+1. Implement the lazy `SectionView` / `TableView` / `ListView` / `CodeView` / `ParagraphView` over projection nodes (built on demand, positions preserved).
+2. Implement dual-key generation (Unicode-aware camelCase) + `.section()` + the `SectionGroup` shape shared by `doc.body` and nested `SectionView.sections`.
 3. Implement `byAnchor` + `BlockView` narrowing and the always-present `body.unknown`.
 4. Finalise `Infer<Contract>` so declared names/columns/cells become typed keys/rows/fields.
 5. Wire `read()` / `validate().doc` to build and return the model.
@@ -72,18 +61,12 @@ return it, and `Infer<Contract>` is finalised. The consumption fixtures green.
 
 ## Acceptance criteria
 
-- [x] AC-1: `read()` / `validate().doc` return a typed `Doc`; the validator never consults the
-  model (findings still come from projection + Zod + grammar alone).
-- [x] AC-2: Sections resolve via exact bracket, lowerCamelCase, and `.section()`; all three
-  reach one `SectionView`.
-- [x] AC-3: `TableView` yields typed rows (column / cell types), is iterable, and supports
-  `column` / `find` / `rowPos`.
-- [x] AC-4: `byAnchor` returns a `.kind`-discriminated `BlockView`; an undeclared anchor returns
-  a dynamic `Record<string,string>` table.
-- [x] AC-5: `body.unknown` is always present (`[]` when none); an absent optional section reads
-  as `undefined`.
-- [x] AC-6: The consumption fixtures (read door, dual-key, `SectionView` / `TableView`,
-  `byAnchor`, nested sections, unknown sections) green.
+- [x] AC-1: `read()` / `validate().doc` return a typed `Doc`; the validator never consults the model (findings still come from projection + Zod + grammar alone).
+- [x] AC-2: Sections resolve via exact bracket, lowerCamelCase, and `.section()`; all three reach one `SectionView`.
+- [x] AC-3: `TableView` yields typed rows (column / cell types), is iterable, and supports `column` / `find` / `rowPos`.
+- [x] AC-4: `byAnchor` returns a `.kind`-discriminated `BlockView`; an undeclared anchor returns a dynamic `Record<string,string>` table.
+- [x] AC-5: `body.unknown` is always present (`[]` when none); an absent optional section reads as `undefined`.
+- [x] AC-6: The consumption fixtures (read door, dual-key, `SectionView` / `TableView`, `byAnchor`, nested sections, unknown sections) green.
 
 ## Out of scope
 
@@ -92,5 +75,4 @@ return it, and `Infer<Contract>` is finalised. The consumption fixtures green.
 
 ## Dependencies
 
-- Needs the assembled validate path from `[[T-3NC8-validate-and-finding-assembly]]` (the `doc`
-  gate and `read()` / `ContractError`).
+- Needs the assembled validate path from `[[T-3NC8-validate-and-finding-assembly]]` (the `doc` gate and `read()` / `ContractError`).
