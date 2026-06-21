@@ -23,7 +23,10 @@ const v19: ValidationFixture = {
     "The example describes the FAIL by mutation (status open/draft, dropped ^summary, ## Consequences " +
     "moved above ## Context) rather than giving the literal doc; the FAIL source here is reconstructed " +
     "from those mutations, so the three findings pin id+level only (the example's lines 3/8/14 are " +
-    "tied to its own reconstruction).",
+    "tied to its own reconstruction). T-3NC8: the ## Summary content is written as a paragraph (not a " +
+    "bullet list) to match the maxWords(120) PARAGRAPH leaf — a maxWords leaf kind-gates to paragraph " +
+    "(D-0001: kind is structure), exactly as content fixture 09 has it; a list under Summary would (correctly) " +
+    "trip structure/block-kind, which the ported source did not intend.",
   build: () => {
     const DecisionFrontmatter = z
       .object({
@@ -70,11 +73,16 @@ const v19: ValidationFixture = {
       findings: [],
     },
     {
-      label: "fail — status off-enum, ^summary dropped, Consequences before Context",
+      label: "fail — status off-enum, ^summary dropped, Consequences before Decision",
       source: loadSource(import.meta.url, "./19-real-decision-contract-end-to-end.fail.md"),
       findings: [
         { id: "frontmatter/enum", level: "error" },
         { id: "structure/anchor-missing", level: "error" },
+        // recognized-relative: ## Consequences (declared last) before ## Decision puts
+        // exactly one recognized section (Decision) out of order. The original mutation
+        // (Consequences before Context) would put BOTH Context and Decision after
+        // Consequences — two section-order findings; reordered to the single-violation
+        // case the example's one finding intends.
         { id: "structure/section-order", level: "error" },
       ],
     },

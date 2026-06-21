@@ -21,6 +21,8 @@ A single envelope removes the per-pair translation shims.
 
 ## Decision
 
+### Components
+
 | # | Component | Resolution |
 | - | --------- | ---------- |
 | 1 | Envelope  | widget v2  |

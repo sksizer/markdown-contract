@@ -50,6 +50,10 @@ const v20: ValidationFixture = {
           optional: true,
           content: table({
             columns: ["Location", "Kind", "Change"],
+            // minRows:1 makes a header-only table invalid — the FAIL case's intended
+            // content/table/min-rows finding (the ported contract omitted minRows, so the
+            // example's expected min-rows finding could never fire).
+            minRows: 1,
             cells: { Kind: z.enum(["new", "modify", "delete"]) },
           }),
         }),
@@ -92,8 +96,12 @@ const v20: ValidationFixture = {
       label: "fail — AC-1 a plain bullet; Files-to-touch reduced to header-only",
       source: loadSource(import.meta.url, "./20-real-task-contract-end-to-end.fail.md"),
       findings: [
-        { id: "list/every-item", level: "error" },
-        { id: "table/min-rows", level: "error" },
+        // Canonical content-plane ids (D-0001: content/<leaf>/<check>); the example's
+        // `table/min-rows` / `list/every-item` were best-effort sibling names. Sorted by
+        // ascending pos.line: the header-only Files-to-touch table (line 20) precedes the
+        // plain-bullet AC list item (line 25).
+        { id: "content/table/min-rows", level: "error", line: 20 },
+        { id: "content/list/item-kind", level: "error", line: 25 },
       ],
     },
   ],

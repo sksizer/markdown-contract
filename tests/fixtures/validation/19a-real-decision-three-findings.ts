@@ -66,7 +66,12 @@ const v19a: ValidationFixture = {
       findings: [
         { id: "frontmatter/enum", level: "error", line: 3 },
         { id: "structure/anchor-missing", level: "error", line: 10 },
-        { id: "structure/section-order", level: "error", line: 18 },
+        // recognized-relative flags the LATER-declared section that appears out of order
+        // (## Decision, declared before Why) — the engine's established semantics (see
+        // structure fixture 04a). The example guessed the Why heading; the canonical
+        // engine line is the ## Decision heading. With ### Components added so the strict
+        // Decision child resolves, that lands on line 22.
+        { id: "structure/section-order", level: "error", line: 22 },
       ],
     },
   ],

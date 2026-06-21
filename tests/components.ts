@@ -22,7 +22,7 @@ export const IMPLEMENTED: Record<Component, boolean> = {
   projection: false,
   structure: true,
   content: true,
-  validate: false,
+  validate: true,
   consumption: false,
   cli: false,
 };

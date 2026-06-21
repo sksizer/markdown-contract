@@ -8,8 +8,8 @@ related: []
 
 ## Summary
 
-- The position-carrying section tree (projection) is the one substrate both the
-  grammar and the Zod leaves read, so findings localize to a source line.
+The position-carrying section tree (projection) is the one substrate both the
+grammar and the Zod leaves read, so findings localize to a source line.
 
 ^summary
 
