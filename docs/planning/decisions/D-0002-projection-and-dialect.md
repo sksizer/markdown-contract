@@ -2,7 +2,7 @@
 type: decision
 schema_version: '1'
 id: D-0002
-status: open/proposed
+status: open/accepted
 title: Projection and dialect — one parse into a positioned DocTree
 created: '2026-06-20'
 related:
@@ -30,10 +30,11 @@ need_human_review: true
   its table/list support, always on; the `[[wikilink]]` / `![[transclusion]]` vault-reference
   constructs ship as a **bundled dialect, enabled by default**, with `opts.extensions` reserved for
   *further* dialects.
-- **Open (narrowed):** only how that bundled dialect is *sourced* — a focused in-house
-  `micromark-extension-obsidian` versus adopting an existing wikilink/OFM remark plugin plus an
-  in-house `^block-id` extension. A build-vs-adopt question about provenance, not about whether it
-  ships by default.
+- **Resolved — build in-house.** The bundled dialect is *sourced* in-house: `^block-id` anchors and a
+  light `[[wikilink]]` / `![[transclusion]]` recognition pass are owned (`src/core/dialect/`), with no
+  `remark-wiki-link` / OFM dependency adopted. The anchor has no npm package in either arm so it is
+  owned regardless; the projection needs only *recognition* of vault refs, so an owned pass beats
+  adopting a second parser to reconcile (T-2HF6 AC-6).
 
 ^summary
 
@@ -164,8 +165,14 @@ owned code; but two parsers' node shapes to reconcile into one projection, the a
 and round-trip fidelity now depends on a dependency the gate does not fully control. The `^block-id`
 extension is owned regardless, since nothing supplies it.
 
-The choice is **not yet made** — it is the open spike below. The projection contract, invariants, and
-`remark-gfm` dependency above hold under either arm; only the dialect parser's provenance is open.
+**Resolved: Option A (build in-house), in its lighter form.** Rather than author a full
+`micromark-extension-obsidian` pair, the dialect is owned as focused passes over the projected tree —
+`extractTrailingAnchor` / `isStandaloneAnchor` for `^block-id`, and `extractVaultRefs` for
+`[[wikilink]]` / `![[transclusion]]` (`src/core/dialect/`) — since remark already parses vault refs as
+ordinary text and the projection needs only to *recognize* them. No `remark-wiki-link` / OFM
+dependency was adopted (Option B rejected): one owned unit, one dependency surface, and the
+`^block-id` anchor first-class from day one. The projection contract, invariants, and `remark-gfm`
+dependency above hold as written.
 
 ## Consequences
 
@@ -181,22 +188,21 @@ The choice is **not yet made** — it is the open spike below. The projection co
 
 ## Open questions
 
-- **Bundled-dialect sourcing spike (build vs adopt; narrowed — not about defaults).** Build the in-house
-  `micromark-extension-obsidian` (Option A) versus adopt a wikilink/OFM plugin plus the in-house
-  `^block-id` extension (Option B). Prove `parse → render → git diff --exit-code` clean over the corpus
-  under the chosen arm, settle the mixed `_`/`*` emphasis round-trip question, and re-measure the owned
-  LoC. The `^block-id` anchor is owned in either arm; the spike decides only whether the wikilink /
-  transclusion constructs are adopted or built.
-- Whether `mdast-util-to-markdown` / `-from-markdown` import cleanly under the target runtime (a known
-  transitive-resolution hazard) — gates whether the round-trip fidelity gate is even runnable on this
-  substrate.
+- ~~**Bundled-dialect sourcing spike (build vs adopt).**~~ **Resolved** in T-2HF6: built in-house as
+  recognition passes (`src/core/dialect/`); no wikilink/OFM plugin adopted. See *Options considered*.
+- ~~Whether `mdast-util-to-markdown` / `-from-markdown` import cleanly under the runtime.~~ **Moot:** a
+  byte-exact `parse → render → git diff` round-trip is not pursued — `remark-stringify` normalizes
+  whitespace / list markers / emphasis regardless of dialect. The suite proves instead that the dialect
+  *constructs* (`^anchor`, `[[wikilink]]`, `![[transclusion]]`) survive a parse → stringify → re-parse
+  cycle (`src/core/projection.test.ts`). No open questions remain.
 
 ## References
 
 - [[C-0004-dialect-aware-projection]] — the capability this ADR governs.
 - [[D-0001-finding-model]] — the `SourcePos` / `Finding` shapes the projection feeds.
 - [[D-0003-structure-plane]] — the grammar that reads `SectionNode` / `BlockNode`.
-- [[D-0006-fidelity-and-packaging]] — where `tree.mdast` retention and the dialect package's home are decided.
+- [[D-0006-packaging]] — where the dialect's packaging (ships in-repo) is settled.
+- [[D-0007-engine-scope-and-fidelity]] — where `tree.mdast` retention (fidelity) is decided.
 - `provenance/d0014/questions/D1-remark-gfm.md` — the committed `remark-gfm` dependency.
 - `provenance/d0014/questions/D2-fence-awareness.md` — fenced-code opacity.
 - `provenance/d0014/questions/D3-heading-depth-jump.md` — depth-jump handling.

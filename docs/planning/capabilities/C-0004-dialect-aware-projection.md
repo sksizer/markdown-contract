@@ -4,7 +4,7 @@ schema_version: '1'
 id: C-0004
 kind: technical
 title: Dialect-aware projection
-status: open/planned
+status: open/verified
 created: '2026-06-20'
 parent_key: null
 contains: []
@@ -105,7 +105,7 @@ type BlockNode =
 
 - Planned: `src/core/projection.ts` (mdast → positioned section tree) on unified / remark at current
   majors + `remark-gfm` ^4 + `remark-frontmatter`. The Obsidian dialect ships as
-  `micromark-extension-obsidian` (independent package vs in-repo module — `D·fidelity-and-packaging`).
+  `micromark-extension-obsidian` (independent package vs in-repo module — `D·packaging`).
 - Build-vs-adopt for the dialect parser, and the invariants above, are the `D·projection` ADR. Not
   yet built — lands in an implementation milestone.
 

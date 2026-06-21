@@ -2,11 +2,13 @@
 type: task
 schema_version: '5'
 id: T-J9TZ
-status: open/ready
+status: closed/done
 created: '2026-06-20'
+last_reviewed: '2026-06-21'
+completion_note: 'Shipped the config-driven corpus runner and the `markdown-contract` CLI with human / json / sarif output. Landed on `main` via #17 + #18; full suite green (275 tests, 0 skipped).'
 related:
 - '[[C-0003-corpus-cli]]'
-- '[[D-0006-fidelity-and-packaging]]'
+- '[[D-0006-packaging]]'
 - '[[DR-0003-markdown-quality-cli]]'
 depends_on:
 - '[[T-3NC8-validate-and-finding-assembly]]'
@@ -72,17 +74,17 @@ corpus, including an SDLC-style tree, proving the dogfood.
 
 ## Acceptance criteria
 
-- [ ] AC-1: `runCorpus(config)` traverses `include` / `exclude` globs, validates each file
+- [x] AC-1: `runCorpus(config)` traverses `include` / `exclude` globs, validates each file
   against its mapped contract, and returns aggregated findings + an `exitCode`.
-- [ ] AC-2: Exit code is 0 with no error-level findings, 1 when any error-level finding is
+- [x] AC-2: Exit code is 0 with no error-level findings, 1 when any error-level finding is
   present, and 2 on usage / config error.
-- [ ] AC-3: `--format human|json|sarif` each produce well-formed output; `json` and `sarif` are
+- [x] AC-3: `--format human|json|sarif` each produce well-formed output; `json` and `sarif` are
   machine-parseable.
-- [ ] AC-4: `process.exit` is called only in `src/cli`; `runCorpus` is pure library API
+- [x] AC-4: `process.exit` is called only in `src/cli`; `runCorpus` is pure library API
   reusable in-process.
-- [ ] AC-5: An e2e test runs the built bin over a fixture tree and asserts output + exit code
+- [x] AC-5: An e2e test runs the built bin over a fixture tree and asserts output + exit code
   for a clean corpus and a failing one.
-- [ ] AC-6: `markdown-contract validate <path>` works end-to-end against an SDLC-style fixture
+- [x] AC-6: `markdown-contract validate <path>` works end-to-end against an SDLC-style fixture
   corpus.
 
 ## Out of scope

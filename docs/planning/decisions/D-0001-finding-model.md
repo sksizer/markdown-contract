@@ -2,7 +2,7 @@
 type: decision
 schema_version: '1'
 id: D-0001
-status: open/proposed
+status: open/accepted
 title: Finding model — one positioned shape across five planes
 created: '2026-06-20'
 related:

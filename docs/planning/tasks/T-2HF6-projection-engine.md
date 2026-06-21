@@ -2,8 +2,10 @@
 type: task
 schema_version: '5'
 id: T-2HF6
-status: open/ready
+status: closed/done
 created: '2026-06-20'
+last_reviewed: '2026-06-21'
+completion_note: 'Shipped `parse()` -> a positioned DocTree on remark-parse + remark-gfm + remark-frontmatter, with the Obsidian dialect (anchors + wikilinks) sourced in-house — resolving D-0002. Invariants D2-D4 hold and structure/heading-depth-jump is emitted. Landed on `main` via #17 + #18; full suite green (275 tests, 0 skipped).'
 related:
 - '[[C-0004-dialect-aware-projection]]'
 - '[[D-0002-projection-and-dialect]]'
@@ -80,20 +82,20 @@ are un-skipped and green.
 
 ## Acceptance criteria
 
-- [ ] AC-1: `parse()` returns a `DocTree` of nested `SectionNode`s, `BlockNode`s, and
+- [x] AC-1: `parse()` returns a `DocTree` of nested `SectionNode`s, `BlockNode`s, and
   `ListItem`s, each carrying a `SourcePos`.
-- [ ] AC-2: `remark-gfm` tables/lists project to `table` / `list` `BlockNode`s **out of the box**
+- [x] AC-2: `remark-gfm` tables/lists project to `table` / `list` `BlockNode`s **out of the box**
   (base, no config); `tree.mdast` is retained and exposed.
-- [ ] AC-3: The three invariants hold, each covered by a fixture — fence opacity; a depth jump
+- [x] AC-3: The three invariants hold, each covered by a fixture — fence opacity; a depth jump
   attaches to the nearest ancestor and emits `structure/heading-depth-jump`; no hoisting of
   blockquote / list-item blocks.
-- [ ] AC-4: `frontmatter.lineForPath(path)` maps a key path to its source line.
-- [ ] AC-5: `^block-id` anchors are base (always on); `[[wikilinks]]` and `![[transclusions]]`
+- [x] AC-4: `frontmatter.lineForPath(path)` maps a key path to its source line.
+- [x] AC-5: `^block-id` anchors are base (always on); `[[wikilinks]]` and `![[transclusions]]`
   parse via the **default-on** bundled dialect (sourced per the resolved `D-0002` arm);
   `opts.extensions` adds further dialects without re-enabling the defaults.
-- [ ] AC-6: The `D-0002` dialect-*sourcing* decision (build vs adopt) is resolved and recorded on
+- [x] AC-6: The `D-0002` dialect-*sourcing* decision (build vs adopt) is resolved and recorded on
   the ADR (status moved off `open/proposed` with the chosen arm and a round-trip proof).
-- [ ] AC-7: The projection fixtures are un-skipped and green.
+- [x] AC-7: The projection fixtures are un-skipped and green.
 
 ## Out of scope
 

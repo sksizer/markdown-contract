@@ -2,7 +2,7 @@
 type: decision
 schema_version: '1'
 id: D-0004
-status: open/proposed
+status: open/accepted
 title: Content plane — Zod leaves over projected blocks
 created: '2026-06-20'
 related:

@@ -2,8 +2,10 @@
 type: task
 schema_version: '5'
 id: T-6PV4
-status: open/ready
+status: closed/done
 created: '2026-06-20'
+last_reviewed: '2026-06-21'
+completion_note: 'Shipped the typed consumption object model — dual-key views, byAnchor, and Infer. Landed on `main` via #17 + #18; full suite green (275 tests, 0 skipped).'
 related:
 - '[[C-0002-typed-consumption]]'
 - '[[D-0005-consumption-oom]]'
@@ -70,17 +72,17 @@ return it, and `Infer<Contract>` is finalised. The consumption fixtures green.
 
 ## Acceptance criteria
 
-- [ ] AC-1: `read()` / `validate().doc` return a typed `Doc`; the validator never consults the
+- [x] AC-1: `read()` / `validate().doc` return a typed `Doc`; the validator never consults the
   model (findings still come from projection + Zod + grammar alone).
-- [ ] AC-2: Sections resolve via exact bracket, lowerCamelCase, and `.section()`; all three
+- [x] AC-2: Sections resolve via exact bracket, lowerCamelCase, and `.section()`; all three
   reach one `SectionView`.
-- [ ] AC-3: `TableView` yields typed rows (column / cell types), is iterable, and supports
+- [x] AC-3: `TableView` yields typed rows (column / cell types), is iterable, and supports
   `column` / `find` / `rowPos`.
-- [ ] AC-4: `byAnchor` returns a `.kind`-discriminated `BlockView`; an undeclared anchor returns
+- [x] AC-4: `byAnchor` returns a `.kind`-discriminated `BlockView`; an undeclared anchor returns
   a dynamic `Record<string,string>` table.
-- [ ] AC-5: `body.unknown` is always present (`[]` when none); an absent optional section reads
+- [x] AC-5: `body.unknown` is always present (`[]` when none); an absent optional section reads
   as `undefined`.
-- [ ] AC-6: The consumption fixtures (read door, dual-key, `SectionView` / `TableView`,
+- [x] AC-6: The consumption fixtures (read door, dual-key, `SectionView` / `TableView`,
   `byAnchor`, nested sections, unknown sections) green.
 
 ## Out of scope

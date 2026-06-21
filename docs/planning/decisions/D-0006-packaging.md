@@ -2,8 +2,8 @@
 type: decision
 schema_version: '1'
 id: D-0006
-status: open/proposed
-title: Fidelity and packaging — a generic core, one package, three layers
+status: open/accepted
+title: Packaging — a generic core, one package, three layers
 created: '2026-06-20'
 related:
   - '[[C-0003-corpus-cli]]'
@@ -13,10 +13,9 @@ tags:
   - packaging
   - architecture
   - cli
-  - fidelity
 need_human_review: true
 ---
-# Fidelity and packaging — a generic core, one package, three layers
+# Packaging — a generic core, one package, three layers
 
 ## Summary
 
@@ -24,11 +23,11 @@ need_human_review: true
   contracts are just data fed to it.
 - This repo ships **one npm package** — `exports` → the library, `bin` → the CLI — over three layers
   (engine / runner / cli) with strictly one-way imports (cli → runner → core).
-- Standard Node ESM + npm: build to `dist/` via `tsc`, registry-installable; the raw mdast is
-  retained and exposed (`tree.mdast`) for fidelity / round-trip (F1).
-- The engine is LLM-free and read-only; repair / normalization is a separate pass.
-- The Obsidian dialect parser (`micromark-extension-obsidian`) is packaged as an independent published
-  package vs an in-repo module — an Options-considered choice.
+- Standard Node ESM + npm: build to `dist/` via `tsc`, registry-installable, no bespoke build substrate.
+- The engine's read-only / mdast-retained / repair-free / LLM-free *posture* is its own decision —
+  [[D-0007-engine-scope-and-fidelity]] — not folded into this packaging ADR.
+- The Obsidian dialect ships as an **in-repo module** (`src/core/dialect/`), following the in-house
+  resolution of [[D-0002-projection-and-dialect]] — no separately published package.
 
 ^summary
 
@@ -66,13 +65,6 @@ Standard Node ESM and npm: TypeScript built to `dist/` via `tsc`, registry-insta
 substrate. The runner is library API, so other consumers reuse it in-process rather than shelling out to
 the bin.
 
-### Fidelity (F1)
-
-The raw mdast is retained and exposed as `tree.mdast` so the parse is round-trippable and unmodelled
-constructs are analysable. The engine is **read-only**: it never mutates or normalizes a document. Repair
-and normalization are a distinct downstream pass, out of this engine's scope. The engine is also
-**LLM-free** — deterministic candidate emission only.
-
 ### Migration touchpoints (§8)
 
 Extracting this engine retires the prior in-repo machinery: `validateBody` + `extractH2Headings` (→ the
@@ -90,9 +82,9 @@ single `parse`). Each per-type `contract.ts` becomes just data fed to the generi
   runner is the core's public API — splitting them into separate packages would version-couple two halves
   of one build for no isolation gain. `exports` + `bin` from one package is the standard Node shape for
   "library that also has a CLI".
-- **Read-only and LLM-free by construction.** The validator's job is to *describe*, not to mutate or to
-  judge; binding repair to a separate pass and keeping the LLM out of the engine keeps the determinism the
-  CLI and CI depend on.
+- **Scope and fidelity are a separate decision.** This ADR covers only how the engine is *layered and
+  packaged*; what the engine does to a document (read-only, mdast-retained, repair-free, LLM-free) is
+  recorded in [[D-0007-engine-scope-and-fidelity]].
 
 ## Options considered
 
@@ -116,13 +108,13 @@ cost when the runner is already the clean library API the CLI shells over.
 
 ### The Obsidian dialect parser — independent package vs in-repo module
 
-The dialect parser (`micromark-extension-obsidian`, the build-vs-adopt subject of
-[[D-0002-projection-and-dialect]]) can be an **independently published package** — reusable by any
-unified/remark consumer, versioned on its own, the natural home for an ecosystem-general extension — or an
-**in-repo module** under the core, simpler to evolve in lockstep while the dialect's shape is still
-settling. The lean is toward an independent package (the extension is genuinely general-purpose), but it is
-not load-bearing for the engine's packaging and can start in-repo and graduate; the dialect's
-build-vs-adopt question is settled first in [[D-0002-projection-and-dialect]].
+The dialect (the build-vs-adopt subject of [[D-0002-projection-and-dialect]]) could be an
+**independently published package** — reusable by any unified/remark consumer, versioned on its own — or
+an **in-repo module** under the core, simpler to evolve in lockstep while the dialect's shape settles.
+**Resolved: in-repo.** D-0002 settled the dialect in-house as light recognition passes
+(`src/core/dialect/`), not a `micromark-extension-obsidian` package, so there is nothing separately
+publishable to home elsewhere; it lives under the core and can still graduate later if it grows into a
+general-purpose extension.
 
 ## Consequences
 
@@ -130,23 +122,22 @@ build-vs-adopt question is settled first in [[D-0002-projection-and-dialect]].
   assumptions, so it is a true general-purpose markdown-contract library.
 - The runner being library API means in-process consumers (report ops, other tools) reuse it without a
   subprocess; the CLI is genuinely thin.
-- Read-only + LLM-free binds the repair / normalization track to a separate pass and keeps a future LLM tier
-  outside the engine — the determinism the CLI exit code and CI gate rely on.
 - Retiring the prior scanners / alias tables / slicers consolidates onto the single `parse`, but binds the
   extraction to porting each per-type contract into `contract.ts` data.
 
 ## Open questions
 
-- Whether `micromark-extension-obsidian` ships as an independent published package from day one or starts
-  in-repo and graduates — gated on the [[D-0002-projection-and-dialect]] build-vs-adopt outcome.
+- ~~Whether the dialect ships as an independent published package or starts in-repo.~~ **Resolved:**
+  D-0002 settled the dialect in-house as recognition passes (`src/core/dialect/`) — in-repo, nothing
+  separately published. No open questions remain.
 
 ## References
 
 - [[C-0003-corpus-cli]] — the CLI capability this ADR governs.
 - [[PR-0001-markdown-contract]] — the library product.
 - [[PR-0002-markdown-contract-cli]] — the CLI product.
-- [[D-0002-projection-and-dialect]] — the dialect parser's build-vs-adopt and `tree.mdast` retention.
+- [[D-0002-projection-and-dialect]] — the dialect parser's build-vs-adopt resolution (ships in-repo).
 - [[D-0001-finding-model]] — the finding stream the runner aggregates and the CLI formats.
+- [[D-0007-engine-scope-and-fidelity]] — the read-only / fidelity / LLM-free posture separated from this ADR.
 - `provenance/d0014/research/decision-package.md` — packaging / landscape grounding for the engine extraction.
-- `provenance/d0014/questions/F1-read-and-value.md` — `tree.mdast` retention / read doors.
 - `provenance/d0014/proposed-shape.md` §1, §8 — layering and migration touchpoints.

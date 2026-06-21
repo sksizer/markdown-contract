@@ -2,7 +2,7 @@
 type: decision
 schema_version: '1'
 id: D-0005
-status: open/proposed
+status: open/accepted
 title: Consumption — the typed object model over a validated document
 created: '2026-06-20'
 related:
