@@ -19,29 +19,17 @@ need_human_review: true
 
 ## Summary
 
-- Every mechanism in the engine emits one `Finding` shape: a namespaced `id`, a contract-fixed
-  `level`, a document-scoped `path`, an optional `pos`, a `message`, and an optional describe-only
-  `fix?`.
-- Findings are partitioned into **five planes** by id prefix — `frontmatter/*`, `structure/*`,
-  `content/<leaf>/<check>`, `rule/*`, and `contract/*` — with the load-bearing line that **kind and
-  presence are structure; data shape is content**.
-- `pos` is omitted for whole-document absence findings; Zod issue paths are remapped to a source
-  line; findings are sorted deterministically so goldens pin.
-- Rule authors mint findings through a `Ctx` factory that fills `path`/`level`/`pos` from the
-  registered id; engine-internal findings bypass it.
-- `doc` is present **iff** there is no `error`-level finding; `read()` throws a `ContractError`
-  carrying the error-level findings otherwise.
+- Every mechanism in the engine emits one `Finding` shape: a namespaced `id`, a contract-fixed `level`, a document-scoped `path`, an optional `pos`, a `message`, and an optional describe-only `fix?`.
+- Findings are partitioned into **five planes** by id prefix — `frontmatter/*`, `structure/*`, `content/<leaf>/<check>`, `rule/*`, and `contract/*` — with the load-bearing line that **kind and presence are structure; data shape is content**.
+- `pos` is omitted for whole-document absence findings; Zod issue paths are remapped to a source line; findings are sorted deterministically so goldens pin.
+- Rule authors mint findings through a `Ctx` factory that fills `path`/`level`/`pos` from the registered id; engine-internal findings bypass it.
+- `doc` is present **iff** there is no `error`-level finding; `read()` throws a `ContractError` carrying the error-level findings otherwise.
 
 ^summary
 
 ## Context
 
-The library replaces ~35 structural checks scattered across four mechanisms (frontmatter slicers,
-fence walkers, alias tables, a frontmatter engine) that each spoke a different diagnostic vocabulary.
-Consolidating onto one parse demands one diagnostic shape — otherwise the finding stream that the CLI,
-CI, and the typed-model door all consume is as forked as the scanners it retires. The shape must carry
-a source position (the thing an index-based schema path cannot), a stable id for filtering and
-golden-pinning, and a severity that is a property of the contract, not of the call site.
+The library replaces ~35 structural checks scattered across four mechanisms (frontmatter slicers, fence walkers, alias tables, a frontmatter engine) that each spoke a different diagnostic vocabulary. Consolidating onto one parse demands one diagnostic shape — otherwise the finding stream that the CLI, CI, and the typed-model door all consume is as forked as the scanners it retires. The shape must carry a source position (the thing an index-based schema path cannot), a stable id for filtering and golden-pinning, and a severity that is a property of the contract, not of the call site.
 
 ## Decision
 
@@ -58,9 +46,7 @@ interface Finding {
 }
 ```
 
-`level` is **contract data** (the commitlint model): the same rule cannot be hard at author-time and
-soft at audit by accident. `fix?` only *describes* a machine-applicable repair; applying it is a
-distinct downstream repair pass and explicitly out of this engine's scope.
+`level` is **contract data** (the commitlint model): the same rule cannot be hard at author-time and soft at audit by accident. `fix?` only *describes* a machine-applicable repair; applying it is a distinct downstream repair pass and explicitly out of this engine's scope.
 
 ### The five planes (A1)
 
@@ -74,27 +60,15 @@ Findings are partitioned by id prefix into five areas:
 | `rule/*` | `rule/<name>` (or a contract-chosen namespace) | named `rule` / `docRule` functions |
 | `contract/*` | `contract/<check>` | build-time contract-authoring errors — **thrown, not collected** |
 
-The partition line is exact: **kind and presence are structure; data shape is content** (F3). So the
-block/anchor family is wholly structural — `structure/anchor-missing` (a declared `^anchor` resolves to
-no block), `structure/block-missing` (a declared content slot has no block of the expected kind, C5),
-and `structure/block-kind` (an addressed block is present but the wrong kind) — and these *gate* the
-content leaf: a non-table never reaches table-column validation. Cross-plane key-collision checks split
-by phase — `structure/key-collision` for two document sections that collapse to one camelCase key, and
-build-time `contract/key-collision` for two declared names that collide.
+The partition line is exact: **kind and presence are structure; data shape is content** (F3). So the block/anchor family is wholly structural — `structure/anchor-missing` (a declared `^anchor` resolves to no block), `structure/block-missing` (a declared content slot has no block of the expected kind, C5), and `structure/block-kind` (an addressed block is present but the wrong kind) — and these *gate* the content leaf: a non-table never reaches table-column validation. Cross-plane key-collision checks split by phase — `structure/key-collision` for two document sections that collapse to one camelCase key, and build-time `contract/key-collision` for two declared names that collide.
 
 ### Positioning (A2, A3)
 
-`pos` is a single `SourcePos { line: number; col?: number }`. It is **omitted** for whole-document
-absence findings — a missing required section or unresolved declared anchor has no line to point at, so
-the finding localizes to the document, not a fabricated line (A2). Frontmatter (Zod) findings remap the
-Zod `issues[].path` to the offending key's **source line** via the projection's position-aware
-frontmatter (`lineForPath`); line granularity is committed, column is a deferred refinement (A3).
+`pos` is a single `SourcePos { line: number; col?: number }`. It is **omitted** for whole-document absence findings — a missing required section or unresolved declared anchor has no line to point at, so the finding localizes to the document, not a fabricated line (A2). Frontmatter (Zod) findings remap the Zod `issues[].path` to the offending key's **source line** via the projection's position-aware frontmatter (`lineForPath`); line granularity is committed, column is a deferred refinement (A3).
 
 ### The rule-author factory (A4)
 
-Rule bodies do not hand-assemble findings. The engine passes a `Ctx` whose `finding(...)` factory fills
-`path`, the id's registered default `level`, and `pos` from the node — so a rule body names the problem
-and nothing more:
+Rule bodies do not hand-assemble findings. The engine passes a `Ctx` whose `finding(...)` factory fills `path`, the id's registered default `level`, and `pos` from the node — so a rule body names the problem and nothing more:
 
 ```ts
 interface Ctx {
@@ -107,13 +81,9 @@ Engine-internal findings (structure, frontmatter, content) bypass `Ctx` and are 
 
 ### Ordering (E3) and the validity rule (F1)
 
-`findings` is sorted deterministically so golden tests pin: ascending `pos.line`; no-`pos`
-(document-level) findings sort first (as line 0); ties on a line break by `pos.col`, then by plane order
-(`frontmatter` → `structure` → `content` → `rule`), then by stable emission order.
+`findings` is sorted deterministically so golden tests pin: ascending `pos.line`; no-`pos` (document-level) findings sort first (as line 0); ties on a line break by `pos.col`, then by plane order (`frontmatter` → `structure` → `content` → `rule`), then by stable emission order.
 
-`doc` (the typed model — see [[D-0005-consumption-oom]]) is present **iff** there is no `error`-level
-finding (warnings and reports do not block it). `read()` returns `doc` or throws a `ContractError`
-carrying the error-level findings:
+`doc` (the typed model — see [[D-0005-consumption-oom]]) is present **iff** there is no `error`-level finding (warnings and reports do not block it). `read()` returns `doc` or throws a `ContractError` carrying the error-level findings:
 
 ```ts
 class ContractError extends Error { findings: Finding[]; }
@@ -121,26 +91,16 @@ class ContractError extends Error { findings: Finding[]; }
 
 ## Why
 
-- **One shape because one parse.** The engine merges frontmatter Zod, the body grammar, and cross-plane
-  rules into a single `Finding[]` from a single parse with a single document `path`. A divergent
-  per-mechanism shape would re-fork exactly what the consolidation retires.
-- **Severity-as-data, not call-site.** Lifting `level` into the contract makes a rule's hardness a
-  property of the rule everywhere it runs — the drift the prior author/audit split could not prevent.
-- **The plane partition is load-bearing, not cosmetic.** Because schema languages and tree grammars are
-  formally incomparable (Murata), block *kind* must be a structural (tree-grammar) decision and block
-  *data* a content (Zod) one. Encoding that split in the id namespace makes a leaf a kind-gate **plus** a
-  Zod schema — not "pure Zod" — and lets structure gate content cleanly.
+- **One shape because one parse.** The engine merges frontmatter Zod, the body grammar, and cross-plane rules into a single `Finding[]` from a single parse with a single document `path`. A divergent per-mechanism shape would re-fork exactly what the consolidation retires.
+- **Severity-as-data, not call-site.** Lifting `level` into the contract makes a rule's hardness a property of the rule everywhere it runs — the drift the prior author/audit split could not prevent.
+- **The plane partition is load-bearing, not cosmetic.** Because schema languages and tree grammars are formally incomparable (Murata), block *kind* must be a structural (tree-grammar) decision and block *data* a content (Zod) one. Encoding that split in the id namespace makes a leaf a kind-gate **plus** a Zod schema — not "pure Zod" — and lets structure gate content cleanly.
 
 ## Consequences
 
-- The CLI, CI (SARIF), commit hooks, and the `read()`/`validate()` doors all consume one stable,
-  sorted, filterable stream — golden fixtures pin on `id` + `pos`.
-- `error`-level findings are the single gate on the typed model and on `read()`, so the validity
-  boundary is one well-defined predicate rather than per-consumer heuristics.
-- `fix?` being describe-only binds the repair/normalization track to a separate read-write pass; this
-  engine stays read-only.
-- Every new check must declare a plane prefix and a default level, which keeps the namespace disciplined
-  and forces the kind-vs-data question to be answered at authoring time.
+- The CLI, CI (SARIF), commit hooks, and the `read()`/`validate()` doors all consume one stable, sorted, filterable stream — golden fixtures pin on `id` + `pos`.
+- `error`-level findings are the single gate on the typed model and on `read()`, so the validity boundary is one well-defined predicate rather than per-consumer heuristics.
+- `fix?` being describe-only binds the repair/normalization track to a separate read-write pass; this engine stays read-only.
+- Every new check must declare a plane prefix and a default level, which keeps the namespace disciplined and forces the kind-vs-data question to be answered at authoring time.
 
 ## References
 

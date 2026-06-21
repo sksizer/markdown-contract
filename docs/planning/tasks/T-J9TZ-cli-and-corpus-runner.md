@@ -25,11 +25,7 @@ autonomy: supervised
 
 ## Goal
 
-Implement the second product (`C-0003` / `D-0006`): the exported `runCorpus` over a
-directory → contract config, and the thin `markdown-contract` CLI that wraps it. Together they
-turn the library into enforceable markdown quality — a single command that validates a whole
-tree and fails CI on error-level findings, with no bespoke linter. The CLI stays a thin shell;
-the runner is library API so other consumers reuse it in-process.
+Implement the second product (`C-0003` / `D-0006`): the exported `runCorpus` over a directory → contract config, and the thin `markdown-contract` CLI that wraps it. Together they turn the library into enforceable markdown quality — a single command that validates a whole tree and fails CI on error-level findings, with no bespoke linter. The CLI stays a thin shell; the runner is library API so other consumers reuse it in-process.
 
 ## Today
 
@@ -44,23 +40,15 @@ the runner is library API so other consumers reuse it in-process.
 
 ## Proposed
 
-`src/runner/corpus.ts` implements `runCorpus(config, opts)` → `{ findings, exitCode }`:
-traverse the tree per an `include` / `exclude` → contract config, validate each file, aggregate
-findings, and compute a CI-meaningful exit code. `src/cli` implements arg parsing, config
-loading, the `human` / `json` / `sarif` formatters, and `process.exit(code)` — the only place
-that exits. `markdown-contract validate <path> [--format ...]` works end-to-end over a fixture
-corpus, including an SDLC-style tree, proving the dogfood.
+`src/runner/corpus.ts` implements `runCorpus(config, opts)` → `{ findings, exitCode }`: traverse the tree per an `include` / `exclude` → contract config, validate each file, aggregate findings, and compute a CI-meaningful exit code. `src/cli` implements arg parsing, config loading, the `human` / `json` / `sarif` formatters, and `process.exit(code)` — the only place that exits. `markdown-contract validate <path> [--format ...]` works end-to-end over a fixture corpus, including an SDLC-style tree, proving the dogfood.
 
 ## Approach
 
-1. Define and load the `CorpusConfig` (directory / glob → contract); document the format
-   (its exact shape is the `D-0006` packaging decision).
-2. Implement `runCorpus`: traverse, validate each file against its mapped contract, aggregate
-   findings, apply the exit-code policy (0 clean / 1 error-level / 2 usage).
+1. Define and load the `CorpusConfig` (directory / glob → contract); document the format (its exact shape is the `D-0006` packaging decision).
+2. Implement `runCorpus`: traverse, validate each file against its mapped contract, aggregate findings, apply the exit-code policy (0 clean / 1 error-level / 2 usage).
 3. Implement the `human` / `json` / `sarif` formatters.
 4. Wire the CLI: parse args, load config, run, format, `process.exit` — only here.
-5. Add e2e CLI tests: run the built bin over a fixture tree; assert output + exit code for a
-   clean and a failing corpus.
+5. Add e2e CLI tests: run the built bin over a fixture tree; assert output + exit code for a clean and a failing corpus.
 
 ## Files to touch
 
@@ -74,18 +62,12 @@ corpus, including an SDLC-style tree, proving the dogfood.
 
 ## Acceptance criteria
 
-- [x] AC-1: `runCorpus(config)` traverses `include` / `exclude` globs, validates each file
-  against its mapped contract, and returns aggregated findings + an `exitCode`.
-- [x] AC-2: Exit code is 0 with no error-level findings, 1 when any error-level finding is
-  present, and 2 on usage / config error.
-- [x] AC-3: `--format human|json|sarif` each produce well-formed output; `json` and `sarif` are
-  machine-parseable.
-- [x] AC-4: `process.exit` is called only in `src/cli`; `runCorpus` is pure library API
-  reusable in-process.
-- [x] AC-5: An e2e test runs the built bin over a fixture tree and asserts output + exit code
-  for a clean corpus and a failing one.
-- [x] AC-6: `markdown-contract validate <path>` works end-to-end against an SDLC-style fixture
-  corpus.
+- [x] AC-1: `runCorpus(config)` traverses `include` / `exclude` globs, validates each file against its mapped contract, and returns aggregated findings + an `exitCode`.
+- [x] AC-2: Exit code is 0 with no error-level findings, 1 when any error-level finding is present, and 2 on usage / config error.
+- [x] AC-3: `--format human|json|sarif` each produce well-formed output; `json` and `sarif` are machine-parseable.
+- [x] AC-4: `process.exit` is called only in `src/cli`; `runCorpus` is pure library API reusable in-process.
+- [x] AC-5: An e2e test runs the built bin over a fixture tree and asserts output + exit code for a clean corpus and a failing one.
+- [x] AC-6: `markdown-contract validate <path>` works end-to-end against an SDLC-style fixture corpus.
 
 ## Out of scope
 

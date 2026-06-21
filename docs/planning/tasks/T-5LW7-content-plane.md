@@ -25,11 +25,7 @@ autonomy: supervised
 
 ## Goal
 
-Implement the leaf helpers (`C-0005` / `D-0004`): `table` / `list` / `code` / `maxWords`, each
-a structural kind-gate plus a content Zod schema over a projected node's data. This is the
-content half of the engine — it validates a present, correct-kind block's *data shape*, the
-job Zod does well, while leaving presence and kind to the structure plane. It runs in parallel
-with the structure plane over the same projection.
+Implement the leaf helpers (`C-0005` / `D-0004`): `table` / `list` / `code` / `maxWords`, each a structural kind-gate plus a content Zod schema over a projected node's data. This is the content half of the engine — it validates a present, correct-kind block's *data shape*, the job Zod does well, while leaving presence and kind to the structure plane. It runs in parallel with the structure plane over the same projection.
 
 ## Today
 
@@ -44,21 +40,13 @@ The leaf helpers and the content pass are stubs.
 
 ## Proposed
 
-`src/core/leaves.ts` implements the leaf builders producing `LeafSpec` (a `BlockKind` gate +
-a content Zod schema), and the content pass validates a present, correct-kind block's data:
-table columns / `minRows` / typed `cells` with `extraColumns` `ignore`|`error`; list
-`everyItem` (`checkbox` | Zod) + `minItems`; code `lang`; paragraph `maxWords`. Findings are
-namespaced `content/<leaf>/<check>` and carry source lines remapped from the Zod issue path
-(via `rowPos` / `lineForPath`). The content/leaf fixtures are un-skipped and green.
+`src/core/leaves.ts` implements the leaf builders producing `LeafSpec` (a `BlockKind` gate + a content Zod schema), and the content pass validates a present, correct-kind block's data: table columns / `minRows` / typed `cells` with `extraColumns` `ignore`|`error`; list `everyItem` (`checkbox` | Zod) + `minItems`; code `lang`; paragraph `maxWords`. Findings are namespaced `content/<leaf>/<check>` and carry source lines remapped from the Zod issue path (via `rowPos` / `lineForPath`). The content/leaf fixtures are un-skipped and green.
 
 ## Approach
 
-1. Implement the leaf builders → `LeafSpec` (kind + Zod), with raw `z.*` allowed inside a leaf
-   for richer cell schemas.
-2. Implement the content validator: after the structure kind-gate confirms the block's kind,
-   run the leaf's Zod over the projected node's data.
-3. Remap Zod `issues[].path` to source lines (table row → `rowPos`, frontmatter key →
-   `lineForPath`), emitting `content/<leaf>/<check>` findings.
+1. Implement the leaf builders → `LeafSpec` (kind + Zod), with raw `z.*` allowed inside a leaf for richer cell schemas.
+2. Implement the content validator: after the structure kind-gate confirms the block's kind, run the leaf's Zod over the projected node's data.
+3. Remap Zod `issues[].path` to source lines (table row → `rowPos`, frontmatter key → `lineForPath`), emitting `content/<leaf>/<check>` findings.
 4. Un-skip and green the content/leaf fixtures.
 
 ## Files to touch
@@ -71,16 +59,11 @@ namespaced `content/<leaf>/<check>` and carry source lines remapped from the Zod
 
 ## Acceptance criteria
 
-- [x] AC-1: `table` / `list` / `code` / `maxWords` produce a `LeafSpec` with a `BlockKind` gate
-  and a content Zod schema.
-- [x] AC-2: `table` validates columns, `minRows`, and typed `cells`; `extraColumns: "error"`
-  emits `content/table/column-extra`, `"ignore"` does not.
-- [x] AC-3: `list` validates `everyItem` (`checkbox` or Zod) and `minItems`; `code` validates
-  `lang`; `maxWords` bounds a paragraph.
-- [x] AC-4: A correct-kind block with bad data yields `content/<leaf>/<check>` findings; a
-  wrong-kind block defers to the structure plane's `block-kind` (no double-report).
-- [x] AC-5: Content findings carry source lines remapped from the Zod issue path (e.g. the
-  offending table row).
+- [x] AC-1: `table` / `list` / `code` / `maxWords` produce a `LeafSpec` with a `BlockKind` gate and a content Zod schema.
+- [x] AC-2: `table` validates columns, `minRows`, and typed `cells`; `extraColumns: "error"` emits `content/table/column-extra`, `"ignore"` does not.
+- [x] AC-3: `list` validates `everyItem` (`checkbox` or Zod) and `minItems`; `code` validates `lang`; `maxWords` bounds a paragraph.
+- [x] AC-4: A correct-kind block with bad data yields `content/<leaf>/<check>` findings; a wrong-kind block defers to the structure plane's `block-kind` (no double-report).
+- [x] AC-5: Content findings carry source lines remapped from the Zod issue path (e.g. the offending table row).
 - [x] AC-6: The content/leaf fixtures are un-skipped and green.
 
 ## Out of scope
@@ -92,5 +75,4 @@ namespaced `content/<leaf>/<check>` and carry source lines remapped from the Zod
 ## Dependencies
 
 - Needs the implemented projection from `[[T-2HF6-projection-engine]]`.
-- Pairs with `[[T-8RJ5-structure-plane]]`; the cross-plane merge + ordering is finalised in
-  `[[T-3NC8-validate-and-finding-assembly]]`.
+- Pairs with `[[T-8RJ5-structure-plane]]`; the cross-plane merge + ordering is finalised in `[[T-3NC8-validate-and-finding-assembly]]`.
