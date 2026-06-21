@@ -23,6 +23,6 @@ export const IMPLEMENTED: Record<Component, boolean> = {
   structure: true,
   content: true,
   validate: true,
-  consumption: false,
+  consumption: true,
   cli: false,
 };

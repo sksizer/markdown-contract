@@ -29,42 +29,49 @@ const c03: ConsumptionFixture = {
         }),
       ]),
     }),
+  // Reconciliation note (T-6PV4): `Files to touch` declares a SOLE `content: table(...)`, so its
+  // dual-key keys PROMOTE to the `TableView` (proposed-shape §6 "Naming a table as a field", first
+  // row — "heading IS the table" → `doc.body.<section>` is the TableView, not a SectionView). The
+  // provenance's original reads (`.name`, `.table`, and `dotted === section(...)`) assumed the key
+  // was a SectionView, contradicting that normative promotion; reconciled here to test what §6
+  // actually delivers: bracket and dotted are the SAME promoted TableView (the dual-key invariant),
+  // while `.section(name)` hands back the underlying SectionView (name/pos), per §6's accessor.
   reads: [
     {
-      label: "exact === dotted — same SectionView, not a copy",
+      label: "exact === dotted — same promoted TableView behind both keys, not a copy",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any)["Files to touch"] === (doc.body as any).filesToTouch,
       equals: true,
     },
     {
-      label: "dotted === accessed — section() accessor resolves to the same view",
+      label: "section() resolves the underlying SectionView, stable across calls",
       get: (doc) =>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (doc.body as any).filesToTouch === (doc.body as any).section("Files to touch"),
+        (doc.body as any).section("Files to touch") === (doc.body as any).section("Files to touch"),
       equals: true,
     },
     {
-      label: "exact.name — the exact heading, not the camelCase key",
+      label: "section('Files to touch').name — the underlying SectionView's exact heading",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any)["Files to touch"].name,
+      get: (doc) => (doc.body as any).section("Files to touch").name,
       equals: "Files to touch",
     },
     {
-      label: "dotted.name — same exact heading through the dotted key",
+      label: "exact.kind === 'table' — the promoted key is the TableView (BlockView discriminant)",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any).filesToTouch.name,
-      equals: "Files to touch",
+      get: (doc) => (doc.body as any)["Files to touch"].kind,
+      equals: "table",
     },
     {
-      label: "accessed.pos — one SourcePos, one underlying node",
+      label: "section('Files to touch').pos — one SourcePos, one underlying node (heading line 6)",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).section("Files to touch").pos,
-      equals: { line: 6 },
+      equals: { line: 6, col: 1 },
     },
     {
-      label: "dotted.table?.rowCount — same TableView behind every key",
+      label: "dotted.rowCount === 3 — the promoted TableView reads directly behind every key",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any).filesToTouch.table?.rowCount,
+      get: (doc) => (doc.body as any).filesToTouch.rowCount,
       equals: 3,
     },
   ],
