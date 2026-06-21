@@ -4,11 +4,13 @@
  * `grammar.ts`'s `contract()` wires its `validate` / `read` methods straight to these,
  * passing the retained `ContractDef`.
  *
- * As of T-8RJ5 `validate()` runs the STRUCTURE plane only: it parses (or accepts a
- * pre-parsed `DocTree`), runs `matchStructure`, sorts the findings deterministically, and
- * returns `{ findings, tree, doc: undefined }`. The content plane (T-5LW7), the cross-plane
- * docRule merge, and `read()` (T-3NC8) land later; `doc` stays `undefined` here.
+ * As of T-5LW7 `validate()` runs the STRUCTURE and CONTENT planes: it parses (or accepts a
+ * pre-parsed `DocTree`), runs `matchStructure` then `matchContent` (frontmatter Zod + the
+ * section content leaves), merges and sorts the findings deterministically, and returns
+ * `{ findings, tree, doc: undefined }`. The cross-plane docRule merge and `read()` (T-3NC8)
+ * land later; `doc` stays `undefined` here.
  */
+import { matchContent } from "./content.js";
 import { notImplemented } from "./finding.js";
 import { parse } from "./projection.js";
 import { makeCtx, defaultRegistry } from "./registry.js";
@@ -63,9 +65,14 @@ export function validate<F, B>(
   const fctx = makeCtx(ctx.path, defaultRegistry());
 
   const findings: Finding[] = [];
+  // Structure plane first — its kind-gate gates the content leaf (a non-table never reaches
+  // table-column validation), so it must run before content (D-0001).
   if (def.body) {
     findings.push(...matchStructure(tree, def.body, fctx));
   }
+  // Content plane: frontmatter Zod + each section's content leaf over a present, correct-kind
+  // block. Guarded inside `matchContent` so it never re-reports the structure kind-gate (AC-4).
+  findings.push(...matchContent(tree, def, fctx));
 
   return { findings: sortFindings(findings), tree, doc: undefined };
 }

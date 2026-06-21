@@ -2,9 +2,8 @@
  * The finding-id → default `FindingLevel` registry plus the `Ctx` factory (`makeCtx`).
  *
  * `level` is **contract data**, not a call-site choice (D-0001): a finding id has one
- * default severity wherever it fires. This registry holds the structure-plane defaults;
- * the content (`content/*`) and rule (`rule/*` / `docRule`) defaults are added when those
- * planes land (T-5LW7 / T-3NC8).
+ * default severity wherever it fires. This registry holds the structure- and content-plane
+ * defaults; the rule (`rule/*` / `docRule`) defaults are added when that plane lands (T-3NC8).
  *
  * `makeCtx(path, registry)` returns the `Ctx` a rule body uses: its `finding(...)` stamps
  * the document `path` and fills `level` from the registry when the caller does not supply
@@ -26,12 +25,37 @@ export const STRUCTURE_LEVELS: Record<string, FindingLevel> = {
   "structure/heading-depth-jump": "warn",
 };
 
-/** The id → default-level registry. T-5LW7 / T-3NC8 extend it with content + rule ids. */
+/**
+ * The default severity for every content- and frontmatter-plane finding id (D-0004 / D-0001).
+ * Content checks default to `error` (a data-shape violation blocks the typed model); the
+ * frontmatter Zod findings are likewise `error`.
+ */
+export const CONTENT_LEVELS: Record<string, FindingLevel> = {
+  // table
+  "content/table/column-missing": "error",
+  "content/table/column-extra": "error",
+  "content/table/min-rows": "error",
+  "content/table/cell": "error",
+  // list
+  "content/list/item-kind": "error",
+  "content/list/min-items": "error",
+  // code
+  "content/code/lang": "error",
+  // paragraph
+  "content/max-words": "error",
+  // frontmatter (Zod over the YAML)
+  "frontmatter/enum": "error",
+  "frontmatter/unknown-key": "error",
+  "frontmatter/type": "error",
+  "frontmatter/required": "error",
+};
+
+/** The id → default-level registry. T-3NC8 extends it with rule ids. */
 export type LevelRegistry = Record<string, FindingLevel>;
 
-/** A fresh registry seeded with the structure-plane defaults. */
+/** A fresh registry seeded with the structure- and content-plane defaults. */
 export function defaultRegistry(): LevelRegistry {
-  return { ...STRUCTURE_LEVELS };
+  return { ...STRUCTURE_LEVELS, ...CONTENT_LEVELS };
 }
 
 /**
