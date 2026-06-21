@@ -18,7 +18,7 @@ import {
   sections,
   table,
   VERSION,
-} from "../src/index.js";
+} from "./index.js";
 
 test("library exposes a version string", () => {
   expect(typeof VERSION).toBe("string");
