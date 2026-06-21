@@ -11,4 +11,5 @@
  *   oom/         typed model: read/validate, views, byAnchor, dual-key access
  */
 
-export {};
+// The public type surface (T-7K2D). Runtime functions land in T-4QM9 and re-export alongside.
+export type * from "./types.js";
