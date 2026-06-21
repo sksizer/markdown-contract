@@ -29,8 +29,10 @@ export interface ZodType<Output = unknown> {
   readonly _output?: Output;
 }
 
-/** The raw layer-0 unified/remark tree. Becomes `import type { Root } from "mdast"` in T-2HF6. */
-export type Mdast = unknown;
+import type { Root } from "mdast";
+
+/** The raw layer-0 unified/remark tree (T-2HF6: `import type { Root } from "mdast"`). */
+export type Mdast = Root;
 
 /** A micromark syntax extension. Becomes the real micromark extension type in T-2HF6. */
 export type MicromarkExtension = unknown;
