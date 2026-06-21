@@ -547,3 +547,34 @@ export function matchStructure(
   matchLevel(tree.root.sections, body, ctx, out);
   return out;
 }
+
+/**
+ * Emit `structure/heading-depth-jump` (warn) for a sub-heading nested more than one level
+ * below its parent section — an H2 immediately followed by an H4 (D-0002 D3 / D-0003). The
+ * projection attaches the deeper heading to its nearest ancestor with its TRUE depth preserved
+ * (no synthesized intermediate), so the jump is re-derivable here as `child.depth > parent.depth + 1`.
+ *
+ * Contract-independent: it scans the whole projected tree, not the grammar, so a malformed
+ * outline is flagged whether or not a contract declares those sections. The synthetic root's
+ * direct children (the top-level H2s) are not checked against it — "H1-title → H2" is the normal
+ * step, and the root's depth is a projection artifact, not an authored heading.
+ */
+export function scanHeadingDepthJumps(root: SectionNode, ctx: Ctx): Finding[] {
+  const out: Finding[] = [];
+  const walk = (parent: SectionNode, isRoot: boolean): void => {
+    for (const child of parent.sections) {
+      if (!isRoot && child.depth > parent.depth + 1) {
+        out.push(
+          ctx.finding({
+            id: "structure/heading-depth-jump",
+            message: `heading ‘${child.name}’ (H${child.depth}) skips a level under ‘${parent.name}’ (H${parent.depth})`,
+            pos: child.pos,
+          }),
+        );
+      }
+      walk(child, false);
+    }
+  };
+  walk(root, true);
+  return out;
+}
