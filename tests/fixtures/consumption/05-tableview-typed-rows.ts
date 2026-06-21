@@ -40,10 +40,13 @@ const c05: ConsumptionFixture = {
       equals: 3,
     },
     {
-      label: "files.pos === { line: 1 } — the table block's SourcePos",
+      // Reconciled: `files` promotes to the TableView (sole `content: table(...)`, §6), so `.pos`
+      // is the TABLE block's SourcePos — the table starts on line 3 (heading line 1, blank line 2),
+      // with col, as the projection positions it. The provenance's `{ line: 1 }` named the heading.
+      label: "files.pos === { line: 3, col: 1 } — the table block's SourcePos",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).files.pos,
-      equals: { line: 1 },
+      equals: { line: 3, col: 1 },
     },
     {
       label: "files.column('Kind') — the enum union column",
@@ -70,10 +73,13 @@ const c05: ConsumptionFixture = {
       equals: "grammar.ts",
     },
     {
-      label: "files.rowPos(2) === { line: 6 } — the legacy.ts row's source line",
+      // Reconciled: the `legacy.ts` body row is on line 7 (heading 1, blank 2, header 3,
+      // separator 4, grammar.ts 5, leaves.ts 6, legacy.ts 7), positioned with col by the
+      // projection; the provenance's `{ line: 6 }` miscounted (it skipped the separator row).
+      label: "files.rowPos(2) === { line: 7, col: 1 } — the legacy.ts row's source line",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).files.rowPos(2),
-      equals: { line: 6 },
+      equals: { line: 7, col: 1 },
     },
   ],
 };

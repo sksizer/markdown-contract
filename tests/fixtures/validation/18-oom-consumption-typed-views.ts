@@ -40,7 +40,12 @@ const v18: ValidationFixture = {
     {
       label: "fail — row 1 Kind 'rename' outside the enum; read() error door",
       source: loadSource(import.meta.url, "./18-oom-consumption-typed-views.fail.md"),
-      findings: [{ id: "table/cell", level: "error", line: 5 }],
+      // Reconciled (matches v11/v11a/v20b): the content plane's D-0004 id scheme is
+      // `content/<leaf>/<check>`, so a cell-enum violation is `content/table/cell`, not the
+      // provenance's best-effort `table/cell`. Row-precise pos: the offending `rename` row is on
+      // line 10 (frontmatter 1-4, blank 5, heading 6, blank 7, header 8, separator 9, data 10);
+      // the provenance's `line: 5` miscounted.
+      findings: [{ id: "content/table/cell", level: "error", line: 10 }],
     },
   ],
 };
