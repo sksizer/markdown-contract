@@ -20,7 +20,7 @@ export type Component =
 
 export const IMPLEMENTED: Record<Component, boolean> = {
   projection: false,
-  structure: false,
+  structure: true,
   content: false,
   validate: false,
   consumption: false,

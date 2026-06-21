@@ -60,9 +60,12 @@ test("calling a still-unimplemented op throws a clear 'not implemented' error", 
   const tree = parse("## A\n\nx\n");
   expect(tree.root.sections[0]?.name).toBe("A");
 
-  // The engine doors are still stubbed: `contract()` constructs (real-but-hollow),
-  // but its `validate` / `read` throw until the validate plane lands (T-3NC8).
+  // `validate` runs as of the structure plane (T-8RJ5): it returns a ValidationResult
+  // (findings + the projection), never throwing. `read` is still stubbed until the typed
+  // model + error-gate land (T-3NC8 / T-6PV4).
   const c = contract({});
-  expect(() => c.validate("x", { path: "f.md" })).toThrowError(/not implemented/);
+  const result = c.validate("x", { path: "f.md" });
+  expect(Array.isArray(result.findings)).toBe(true);
+  expect(result.tree.root).toBeDefined();
   expect(() => c.read("x", { path: "f.md" })).toThrowError(/not implemented/);
 });
