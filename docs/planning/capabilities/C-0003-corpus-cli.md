@@ -44,11 +44,28 @@ than shelling out.
 - A path to scan plus a config mapping directories / globs to the contracts that govern them.
 
 ```sh
-markdown-contract validate <path> [--format human|json|sarif] [--config <file>]
+# validate a tree with the default config (./markdown-contract.config.ts)
+markdown-contract validate docs/
+
+# choose a format and an explicit config; the exit code gates CI
+markdown-contract validate docs/ --format sarif --config ./mc.config.ts > results.sarif
 ```
 
+The config maps globs to contracts (themselves authored with the engine combinators,
+[[C-0005-two-plane-contract-engine]]):
+
 ```ts
-// markdown-contract.config — directory/glob → contract (exact shape fixed by D·fidelity-and-packaging)
+// markdown-contract.config.ts   (exact shape fixed by D·fidelity-and-packaging)
+import { defineConfig } from "markdown-contract";
+import { DecisionContract, TaskContract } from "./contracts";
+
+export default defineConfig({
+  rules: [
+    { include: ["docs/planning/decisions/**/*.md"], contract: DecisionContract },
+    { include: ["docs/planning/tasks/**/*.md"], exclude: ["**/_*.md"], contract: TaskContract },
+  ],
+});
+
 interface CorpusConfig {
   rules: Array<{ include: string[]; exclude?: string[]; contract: Contract }>;
 }
@@ -65,7 +82,9 @@ interface CorpusConfig {
 # exit 2  — usage / config error
 ```
 
-- `--format human` for a terminal report, `json` for tooling, `sarif` for code-scanning surfaces.
+- `--format human` for a terminal report, `json` for tooling, and `sarif` — the OASIS-standard JSON
+  for static-analysis results that GitHub code scanning and many editors ingest natively, so findings
+  surface as inline PR annotations and Security-tab alerts with no bespoke glue.
 
 ## Hook points
 

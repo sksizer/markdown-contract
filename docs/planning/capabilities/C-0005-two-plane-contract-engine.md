@@ -55,6 +55,11 @@ function contract<F, B>(def: {
   rules?: DocRule[];            // cross-plane rules: see both frontmatter and body
 }): Contract<F, B>;
 
+// A `Spec` is one element of a level's ordered content model — the opaque output of
+// section() / optional() / oneOf() / gap(). Authors never construct it directly; they pass an
+// ordered `Spec[]` to sections(). (Internally a tagged union of the four element kinds.)
+type Spec = SectionSpec | OptionalSpec | OneOfSpec | GapSpec;
+
 function sections<B>(opts: LevelOpts, specs: Spec[]): SectionSeq<B>;
 function section(name: string | string[], opts?: SectionOpts): Spec;   // string[] = alias set
 function optional(spec: Spec): Spec;

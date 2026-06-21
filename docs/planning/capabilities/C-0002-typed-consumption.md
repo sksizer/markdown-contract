@@ -29,9 +29,11 @@ need_human_review: true
 
 ## Statement
 
-Once a document passes its contract, a consumer reads it as data: `read()` returns a typed model whose
-shape is inferred from the contract. Sections are reachable by name, tables yield typed rows, anchors
-resolve to blocks. Report ops and summaries consume structure, not an AST.
+Once a document passes its contract, a consumer reads it as data — the **same** typed model from
+either door: `validate()` hands it back as `doc?` (present only when the document is valid) and
+`read()` returns it directly (or throws). Its shape is inferred from the contract: sections reachable
+by name, tables yielding typed rows, anchors resolving to blocks. Report ops and summaries consume
+structure, not an AST.
 
 ## What it provides
 
@@ -53,13 +55,16 @@ type Decision = Infer<typeof DecisionContract>;        // { frontmatter; body; b
 
 ## Outputs
 
-- A typed, navigable model — sections by name, typed table rows, anchor lookups — a lazy facade over
-  the projection (no second copy; positions preserved).
+- A typed, navigable model — a lazy facade over the projection (no second copy; positions preserved).
+  How the pieces relate: a `ValidationResult.doc` (or `read()`) **is** a `Doc`; `Doc.body` is the
+  section tree, each entry a `SectionView`; a `SectionView` *contains* content blocks — its `tables`,
+  `lists`, and `byAnchor` results — and nested `sections`; an addressed content block is a `BlockView`.
+  A `SectionView` is a section, **not** a `BlockView`: sections hold blocks, they are not themselves one.
 
 ```ts
 type Doc<F, B> = { frontmatter: F; body: B; byAnchor(id: string): BlockView | undefined };
 
-interface SectionView {
+interface SectionView {                            // a heading-delimited section — holds blocks; not itself a BlockView
   name: string; pos: SourcePos; anchors: string[];
   text(scope?: "prose" | "all"): string;          // default "prose" (own paragraphs); "all" = subtree
   table?: TableView<Record<string, string>>;       // the sole table, if exactly one (untyped)

@@ -22,10 +22,11 @@ need_human_review: true
 
 ## Summary
 
-- Parse a document once into a typed tree (`DocTree`), recognising the Obsidian dialect — `^block-id`
-  anchors, `[[wikilinks]]`, `![[transclusions]]` — and GFM tables / lists as addressable structural
-  nodes. ^summary
-- The single parse every other capability reads from; the home of the Obsidian-dialect support.
+- Parse a document once into a typed tree (`DocTree`). The base projection is useful out of the box —
+  GFM tables / lists and `^block-id` anchors are built in — and the bundled Obsidian dialect
+  (`[[wikilinks]]`, `![[transclusions]]`) is enabled by default; further dialects attach as
+  extensions. ^summary
+- The single parse every other capability reads from.
 
 ## Statement
 
@@ -44,12 +45,14 @@ the projection invariants (fence opacity, heading depth-jump handling, no block 
 
 ## Inputs
 
-- Raw markdown + frontmatter, with optional micromark extensions for dialect constructs. `remark-gfm`
-  ^4 is a committed dependency (it yields the `table` / task-list `list` nodes a pipe table would
-  otherwise collapse into paragraph text).
+- Raw markdown + frontmatter. The base parse bundles `remark-gfm` ^4 (so pipe tables and task lists
+  project to real `table` / `list` nodes rather than paragraph text) and `^block-id` anchors, plus the
+  Obsidian wikilink / transclusion dialect on by default — nothing to configure for a useful tree.
+  `opts.extensions` is **additive**: it layers *further* dialects on top; it does not switch the
+  bundled ones on.
 
 ```ts
-parse(markdown: string, opts?: { extensions?: MicromarkExtension[] }): DocTree
+parse(markdown: string, opts?: { extensions?: MicromarkExtension[] }): DocTree  // GFM + anchors + Obsidian on by default
 ```
 
 ## Outputs
@@ -93,9 +96,10 @@ type BlockNode =
 
 ## Hook points
 
-- `opts.extensions: MicromarkExtension[]` — the dialect-plugin seam. The Obsidian dialect (`^block-id`
-  anchors, `[[wikilinks]]`, `![[transclusions]]`) is delivered through it; other dialects attach the
-  same way.
+- `opts.extensions: MicromarkExtension[]` — the seam for *additional* dialects beyond the bundled
+  base. The base set (GFM, `^block-id` anchors, Obsidian wikilinks / transclusions) is always on;
+  extensions add foreign syntaxes (a different callout grammar, a custom embed) without re-enabling
+  the defaults.
 
 ## Underlying implementation
 
@@ -107,7 +111,11 @@ type BlockNode =
 
 ## Notes
 
-Underpins [[C-0001-contract-validation]] and [[C-0002-typed-consumption]]. **Build-vs-adopt** the
-dialect parser — adopt a wikilink / OFM remark plugin and add only the missing `^block-id` extension,
-versus a focused in-house micromark extension — is the open `D·projection` ADR. This capability
-absorbs the former Obsidian "driver" (reclassified per review). Status `open/planned`.
+Underpins [[C-0001-contract-validation]] and [[C-0002-typed-consumption]]. Framing per review:
+`^block-id` anchors and GFM are the **base** projection — the contract model's addressing primitive and
+its table / list support, always on, not opt-in — while the `[[wikilink]]` / `![[transclusion]]`
+vault-reference constructs are a **bundled dialect, enabled by default** but conceptually swappable.
+Whether that dialect is built in-house or adopted (`micromark-extension-obsidian` vs a wikilink / OFM
+plugin + an in-house `^block-id` extension) is the open `D·projection` ADR — a packaging / sourcing
+question, not a question of whether it ships by default. Absorbs the former Obsidian "driver"
+(reclassified per review). Status `open/planned`.

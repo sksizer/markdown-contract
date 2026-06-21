@@ -45,16 +45,24 @@ depends on the typed model; findings are the primary product.
 
 ## Inputs
 
-- The document `source: string` (raw markdown + frontmatter) plus a `ctx: { path: string }` for
-  diagnostics — or a pre-parsed `DocTree` (from [[C-0004-dialect-aware-projection]]) to skip the
-  internal parse.
+- The document `source: string` (raw markdown + frontmatter) plus a `ctx: { path: string }` — the
+  source document's **file path**, used only to stamp findings as `<path>:<line>`. It is the file
+  path, not an in-document / structural path; the in-document location is each finding's `pos`.
 - A `Contract<F, B>` declared via the engine combinators ([[C-0005-two-plane-contract-engine]]).
+- The `source` door parses with the bundled, dialect-aware projection — GFM + Obsidian, no config
+  ([[C-0004-dialect-aware-projection]]). The `DocTree` overload lets a caller parse once and validate
+  several contracts against one tree (or feed a custom / extended projection).
 
 ```ts
-Contract.validate(source: string, ctx: { path: string }): ValidationResult<F, B>;
-Contract.validate(tree: DocTree, ctx: { path: string }): ValidationResult<F, B>;  // bring your own parse
-Contract.read(source: string, ctx: { path: string }): Doc<F, B>;                  // throws ContractError
+// Two doors onto one engine, mirroring Zod's safeParse / parse:
+Contract.validate(source: string, ctx: { path: string }): ValidationResult<F, B>;  // never throws — findings as data
+Contract.read(source: string, ctx: { path: string }): Doc<F, B>;                   // throws ContractError, returns the model
+Contract.validate(tree: DocTree, ctx: { path: string }): ValidationResult<F, B>;   // reuse a pre-parsed tree
 ```
+
+`validate` is the "show me everything" door — it never throws, so a CLI or report reads every finding
+as data. `read` is the "give me the data or fail" door — it returns the typed model, or throws
+`ContractError` carrying the error-level findings, for consumers that treat invalidity as exceptional.
 
 ## Outputs
 
@@ -71,7 +79,7 @@ interface ValidationResult<F, B> {
 interface Finding {
   id: string;            // namespaced `area/…/name`, e.g. "structure/section-missing"
   level: "error" | "warn" | "report";   // contract data, not a call-site choice
-  path: string;          // document-scoped (one parse, one path)
+  path: string;          // the source document's file path (ctx.path), for <path>:<line> — not a structural path
   pos?: SourcePos;       // omitted for whole-document absence findings
   message: string;
   fix?: { description: string; edit?: TextEdit };   // describes only; applying is a separate repair pass
@@ -89,9 +97,12 @@ class ContractError extends Error { findings: Finding[]; }   // carries the erro
 
 - New `structure` / `rule` checks attach through the engine's named-rule registry
   ([[C-0005-two-plane-contract-engine]]); this capability only surfaces what they emit.
-- The pre-parsed `DocTree` overload is the seam for a custom projection or dialect.
-- `Finding.fix` is the declared attachment point for a future repair pass (applying edits is out of
-  scope here).
+- The default `source` door is dialect-aware out of the box; the pre-parsed `DocTree` overload is the
+  seam for parse-once reuse or a custom / extended projection.
+- `Finding.fix` is optional, descriptive metadata — a human-readable `description` plus an optional
+  `TextEdit` that *names* a remedy. The library only reports findings; it never edits documents.
+  Applying a fix is a separate repair pass (a later concern), so `fix` is the forward-looking hook a
+  repair tool would consume.
 
 ## Underlying implementation
 
