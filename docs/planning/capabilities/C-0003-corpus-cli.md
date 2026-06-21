@@ -39,6 +39,53 @@ than shelling out.
 - A directory → contract config format mapping a tree to its contracts.
 - Aggregated findings plus a process exit code suitable for CI gating and commit hooks.
 
+## Inputs
+
+- A path to scan plus a config mapping directories / globs to the contracts that govern them.
+
+```sh
+markdown-contract validate <path> [--format human|json|sarif] [--config <file>]
+```
+
+```ts
+// markdown-contract.config — directory/glob → contract (exact shape fixed by D·fidelity-and-packaging)
+interface CorpusConfig {
+  rules: Array<{ include: string[]; exclude?: string[]; contract: Contract }>;
+}
+```
+
+## Outputs
+
+- Aggregated findings across the tree, rendered for humans or machines, plus a CI-meaningful exit
+  code.
+
+```sh
+# exit 0  — no error-level findings (warnings allowed)
+# exit 1  — one or more error-level findings
+# exit 2  — usage / config error
+```
+
+- `--format human` for a terminal report, `json` for tooling, `sarif` for code-scanning surfaces.
+
+## Hook points
+
+- The CLI is a thin shell over an exported runner — other consumers reuse it in-process rather than
+  shelling out:
+
+```ts
+function runCorpus(config: CorpusConfig, opts?: { format?: "human" | "json" | "sarif" }):
+  { findings: Finding[]; exitCode: number };
+```
+
+- The output formatters (human / json / sarif) are the extension surface for new report sinks.
+
+## Underlying implementation
+
+- Planned layering: `src/cli` (arg parse, the only `process.exit`) → `src/runner` (corpus traversal +
+  aggregation, library API) → `src/core` ([[C-0001-contract-validation]]). One npm package, `bin`
+  over `exports`.
+- Fixed by the `D·fidelity-and-packaging` ADR. Not yet built.
+
 ## Notes
 
 Serves [[DR-0003-markdown-quality-cli]]; built on [[C-0001-contract-validation]] via the runner. The

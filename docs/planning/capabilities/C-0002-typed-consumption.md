@@ -40,6 +40,72 @@ resolve to blocks. Report ops and summaries consume structure, not an AST.
   `find`, `rowPos`), and `byAnchor`.
 - Dual-key section access — typed key, bracket, lowerCamelCase, and `.section()`.
 
+## Inputs
+
+- A valid document plus the `Contract` whose declared section names, table columns, and cell schemas
+  drive the inferred type — read through one of two doors (mirroring Zod's `parse` / `safeParse`):
+
+```ts
+const doc = Contract.read(source, { path });          // model only; throws ContractError on error-level
+const { doc } = Contract.validate(source, { path });  // model present iff valid
+type Decision = Infer<typeof DecisionContract>;        // { frontmatter; body; byAnchor }
+```
+
+## Outputs
+
+- A typed, navigable model — sections by name, typed table rows, anchor lookups — a lazy facade over
+  the projection (no second copy; positions preserved).
+
+```ts
+type Doc<F, B> = { frontmatter: F; body: B; byAnchor(id: string): BlockView | undefined };
+
+interface SectionView {
+  name: string; pos: SourcePos; anchors: string[];
+  text(scope?: "prose" | "all"): string;          // default "prose" (own paragraphs); "all" = subtree
+  table?: TableView<Record<string, string>>;       // the sole table, if exactly one (untyped)
+  tables: TableView<Record<string, string>>[];
+  lists: ListView[];
+  byAnchor(id: string): BlockView | undefined;
+  sections: SectionGroup;                           // same dual-key shape as doc.body
+}
+
+interface TableView<Row = Record<string, string>> extends Iterable<Row> {
+  kind: "table"; columns: string[]; rows: Row[]; rowCount: number; pos: SourcePos;
+  column<K extends keyof Row>(name: K): Row[K][];
+  find(p: (row: Row, i: number) => boolean): Row | undefined;
+  rowPos(i: number): SourcePos;
+}
+interface ListView extends Iterable<ListItem> { kind: "list"; ordered: boolean; items: ListItem[]; length: number; pos: SourcePos }
+interface CodeView      { kind: "code"; lang: string | null; value: string; pos: SourcePos }
+interface ParagraphView { kind: "paragraph"; text: string; pos: SourcePos }
+type BlockView = TableView | ListView | CodeView | ParagraphView;   // discriminated on .kind
+```
+
+- Dual-key section access, generated from each declared heading; all three resolve to one
+  `SectionView`:
+
+```ts
+doc.body["Files to touch"]          // exact heading text — always available
+doc.body.filesToTouch               // lowerCamelCase — generated alongside (Unicode-aware)
+doc.body.section("Files to touch")  // explicit accessor for dynamic / edge names
+```
+
+- `body.unknown: SectionView[]` is always present (`[]` when none) for gap-admitted sections; an
+  absent optional section reads as `undefined`; required sections get a non-optional key.
+
+## Hook points
+
+- `byAnchor(id)` — doc-wide and per-section — reaches any `^anchored` block the contract doesn't
+  declare, returning a dynamic `BlockView` (`Record<string,string>` rows) you narrow on `.kind`.
+- `.section(name)` is the dynamic escape hatch for headings not known at author time.
+
+## Underlying implementation
+
+- Planned: `src/core/model.ts` — a lazy facade over the layer-1 projection, a submodule of the
+  engine. **The validator never consults it**; it is built only on demand (`read`, or
+  `validate().doc`), additive and deferrable behind the finding path.
+- Fixed by the `D·consumption-oom` ADR. Not yet built.
+
 ## Notes
 
 Serves [[DR-0002-typed-consumption]]; additive over [[C-0001-contract-validation]] (the validator
