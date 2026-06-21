@@ -19,8 +19,6 @@
 
 export const VERSION = "0.0.0";
 
-// TODO(milestones L0 → L5): re-export the public surface as it lands:
-//   export { contract } from "./core/index.js";        // contract({ frontmatter, body, rules })
-//   export { read, validate } from "./core/index.js";   // read(): throws ContractError; validate(): { findings, doc?, tree }
-//   export type { Contract, Infer, Finding, DocTree } from "./core/index.js";
-//   export { runCorpus } from "./runner/index.js";      // config (globs→contracts) → aggregated findings
+// The public type surface (T-7K2D). Runtime functions (`contract`, `validate`, `read`,
+// `runCorpus`, the combinators) land as value re-exports in T-4QM9.
+export type * from "./core/index.js";
