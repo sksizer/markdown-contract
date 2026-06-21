@@ -22,6 +22,14 @@ code and tests must follow.
   `<module>.test.ts` — e.g. `src/core/projection.ts` ↔ `src/core/projection.test.ts`,
   `src/cli/index.ts` ↔ `src/cli/index.test.ts`. (This is deliberately different from
   the conventional separate `tests/` tree — it is what this repo wants.)
+- **Tests express the contract, not just edge cases.** A module's peer test should read
+  first as documentation: lead with a few small, plain input→output cases that make the
+  module's purpose obvious at a glance — *given this input, you get exactly this*. Cover
+  edge cases too, but a small investment in clear, illustrative cases (even one extra test
+  that just demonstrates the happy path) is worth more than exhaustive corner-case coverage
+  that obscures what the module is for. Every module with a meaningful contract gets a peer
+  test, even a thin one. `src/core/dialect/anchors.test.ts` and `wikilinks.test.ts` are the
+  model: each case is an input and its exact output.
 - The **fixture-driven integration corpus** stays under `tests/`: the harness
   (`tests/harness.ts`), the validation/consumption fixtures, and the end-to-end
   `corpus/` tree. These exercise the assembled pipeline, not a single module.

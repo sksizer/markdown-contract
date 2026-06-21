@@ -55,10 +55,13 @@ test("every documented runtime export is defined", () => {
   expect(Array.isArray(err.findings)).toBe(true);
 });
 
-test("calling an unimplemented op throws a clear 'not implemented' error", () => {
-  expect(() => parse("x")).toThrowError(/not implemented/);
+test("calling a still-unimplemented op throws a clear 'not implemented' error", () => {
+  // `parse` is implemented as of T-2HF6 — it returns a DocTree, it does not throw.
+  const tree = parse("## A\n\nx\n");
+  expect(tree.root.sections[0]?.name).toBe("A");
 
-  // `contract()` itself constructs (real-but-hollow), but its doors throw.
+  // The engine doors are still stubbed: `contract()` constructs (real-but-hollow),
+  // but its `validate` / `read` throw until the validate plane lands (T-3NC8).
   const c = contract({});
   expect(() => c.validate("x", { path: "f.md" })).toThrowError(/not implemented/);
   expect(() => c.read("x", { path: "f.md" })).toThrowError(/not implemented/);
