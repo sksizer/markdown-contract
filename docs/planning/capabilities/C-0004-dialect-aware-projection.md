@@ -105,7 +105,7 @@ type BlockNode =
 
 - Planned: `src/core/projection.ts` (mdast → positioned section tree) on unified / remark at current
   majors + `remark-gfm` ^4 + `remark-frontmatter`. The Obsidian dialect ships as
-  `micromark-extension-obsidian` (independent package vs in-repo module — `D·fidelity-and-packaging`).
+  `micromark-extension-obsidian` (independent package vs in-repo module — `D·packaging`).
 - Build-vs-adopt for the dialect parser, and the invariants above, are the `D·projection` ADR. Not
   yet built — lands in an implementation milestone.
 

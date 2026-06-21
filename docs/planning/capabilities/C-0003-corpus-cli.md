@@ -55,7 +55,7 @@ The config maps globs to contracts (themselves authored with the engine combinat
 [[C-0005-two-plane-contract-engine]]):
 
 ```ts
-// markdown-contract.config.ts   (exact shape fixed by D·fidelity-and-packaging)
+// markdown-contract.config.ts   (exact shape fixed by D·packaging)
 import { defineConfig } from "markdown-contract";
 import { DecisionContract, TaskContract } from "./contracts";
 
@@ -103,10 +103,10 @@ function runCorpus(config: CorpusConfig, opts?: { format?: "human" | "json" | "s
 - Planned layering: `src/cli` (arg parse, the only `process.exit`) → `src/runner` (corpus traversal +
   aggregation, library API) → `src/core` ([[C-0001-contract-validation]]). One npm package, `bin`
   over `exports`.
-- Fixed by the `D·fidelity-and-packaging` ADR. Not yet built.
+- Fixed by the `D·packaging` ADR. Not yet built.
 
 ## Notes
 
 Serves [[DR-0003-markdown-quality-cli]]; built on [[C-0001-contract-validation]] via the runner. The
-library / CLI shape (one package, `bin` over `exports`) is the `D·fidelity-and-packaging` ADR. Status
+library / CLI shape (one package, `bin` over `exports`) is the `D·packaging` ADR. Status
 `open/planned`.

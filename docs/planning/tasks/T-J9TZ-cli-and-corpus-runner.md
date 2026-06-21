@@ -8,7 +8,7 @@ last_reviewed: '2026-06-21'
 completion_note: 'Shipped the config-driven corpus runner and the `markdown-contract` CLI with human / json / sarif output. Landed on `main` via #17 + #18; full suite green (275 tests, 0 skipped).'
 related:
 - '[[C-0003-corpus-cli]]'
-- '[[D-0006-fidelity-and-packaging]]'
+- '[[D-0006-packaging]]'
 - '[[DR-0003-markdown-quality-cli]]'
 depends_on:
 - '[[T-3NC8-validate-and-finding-assembly]]'

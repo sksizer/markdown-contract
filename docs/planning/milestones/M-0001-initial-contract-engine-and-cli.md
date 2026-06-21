@@ -79,8 +79,8 @@ builds on; it proves the core bet (one parse, three cooperating mechanisms) end 
 
 - [x] [[D-0001-finding-model]], [[D-0002-projection-and-dialect]] (dialect sourcing resolved
   in-house), [[D-0003-structure-plane]], [[D-0004-content-plane]],
-  [[D-0005-consumption-oom]], [[D-0006-fidelity-and-packaging]].
-- [x] [[D-0007-engine-scope]] — read-only / repair-free / LLM-free posture, lifted out of
+  [[D-0005-consumption-oom]], [[D-0006-packaging]].
+- [x] [[D-0007-engine-scope-and-fidelity]] — read-only / repair-free / LLM-free posture, lifted out of
   D-0006.
 
 ### Capabilities (verified)
@@ -98,7 +98,7 @@ builds on; it proves the core bet (one parse, three cooperating mechanisms) end 
 - **Dogfooding the engine on this project's own SDLC planning corpus** (the flagship
   [[DR-0005-validate-sdlc-corpus]] use case) — authoring the per-entity contracts and the
   dir→contract config for this repo is a later milestone.
-- Repair / normalization and any LLM-assisted tier (out of the engine by [[D-0007-engine-scope]]).
+- Repair / normalization and any LLM-assisted tier (out of the engine by [[D-0007-engine-scope-and-fidelity]]).
 - Publishing to the npm registry (the package is built and registry-installable but unpublished).
 
 ## Risks / open questions

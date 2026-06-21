@@ -201,7 +201,8 @@ dependency above hold as written.
 - [[C-0004-dialect-aware-projection]] — the capability this ADR governs.
 - [[D-0001-finding-model]] — the `SourcePos` / `Finding` shapes the projection feeds.
 - [[D-0003-structure-plane]] — the grammar that reads `SectionNode` / `BlockNode`.
-- [[D-0006-fidelity-and-packaging]] — where `tree.mdast` retention and the dialect package's home are decided.
+- [[D-0006-packaging]] — where the dialect's packaging (ships in-repo) is settled.
+- [[D-0007-engine-scope-and-fidelity]] — where `tree.mdast` retention (fidelity) is decided.
 - `provenance/d0014/questions/D1-remark-gfm.md` — the committed `remark-gfm` dependency.
 - `provenance/d0014/questions/D2-fence-awareness.md` — fenced-code opacity.
 - `provenance/d0014/questions/D3-heading-depth-jump.md` — depth-jump handling.

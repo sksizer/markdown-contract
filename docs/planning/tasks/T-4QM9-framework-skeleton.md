@@ -10,7 +10,7 @@ related:
 - '[[C-0001-contract-validation]]'
 - '[[C-0003-corpus-cli]]'
 - '[[C-0005-two-plane-contract-engine]]'
-- '[[D-0006-fidelity-and-packaging]]'
+- '[[D-0006-packaging]]'
 depends_on:
 - '[[T-7K2D-common-types]]'
 tags:
