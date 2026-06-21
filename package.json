@@ -1,6 +1,6 @@
 {
   "name": "markdown-contract",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Validate and consume markdown-as-data: per-type contracts over one parse — a structure plane (tree-grammar over sections + block kinds), a content plane (Zod over each block's data), and a typed model you can read.",
   "type": "module",
   "license": "MIT",

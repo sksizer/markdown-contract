@@ -2,8 +2,10 @@
 type: task
 schema_version: '5'
 id: T-5LW7
-status: open/ready
+status: closed/done
 created: '2026-06-20'
+last_reviewed: '2026-06-21'
+completion_note: 'Shipped the content plane — Zod leaves over each block''s data plus position-aware frontmatter validation. Landed on `main` via #17 + #18; full suite green (275 tests, 0 skipped).'
 related:
 - '[[C-0005-two-plane-contract-engine]]'
 - '[[D-0004-content-plane]]'
@@ -69,17 +71,17 @@ namespaced `content/<leaf>/<check>` and carry source lines remapped from the Zod
 
 ## Acceptance criteria
 
-- [ ] AC-1: `table` / `list` / `code` / `maxWords` produce a `LeafSpec` with a `BlockKind` gate
+- [x] AC-1: `table` / `list` / `code` / `maxWords` produce a `LeafSpec` with a `BlockKind` gate
   and a content Zod schema.
-- [ ] AC-2: `table` validates columns, `minRows`, and typed `cells`; `extraColumns: "error"`
+- [x] AC-2: `table` validates columns, `minRows`, and typed `cells`; `extraColumns: "error"`
   emits `content/table/column-extra`, `"ignore"` does not.
-- [ ] AC-3: `list` validates `everyItem` (`checkbox` or Zod) and `minItems`; `code` validates
+- [x] AC-3: `list` validates `everyItem` (`checkbox` or Zod) and `minItems`; `code` validates
   `lang`; `maxWords` bounds a paragraph.
-- [ ] AC-4: A correct-kind block with bad data yields `content/<leaf>/<check>` findings; a
+- [x] AC-4: A correct-kind block with bad data yields `content/<leaf>/<check>` findings; a
   wrong-kind block defers to the structure plane's `block-kind` (no double-report).
-- [ ] AC-5: Content findings carry source lines remapped from the Zod issue path (e.g. the
+- [x] AC-5: Content findings carry source lines remapped from the Zod issue path (e.g. the
   offending table row).
-- [ ] AC-6: The content/leaf fixtures are un-skipped and green.
+- [x] AC-6: The content/leaf fixtures are un-skipped and green.
 
 ## Out of scope
 

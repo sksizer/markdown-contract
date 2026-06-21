@@ -2,8 +2,10 @@
 type: task
 schema_version: '5'
 id: T-3NC8
-status: open/ready
+status: closed/done
 created: '2026-06-20'
+last_reviewed: '2026-06-21'
+completion_note: 'Shipped the one-pass validator — merge, deterministic sort, gate — and the read()/ContractError assembly path. Landed on `main` via #17 + #18; full suite green (275 tests, 0 skipped).'
 related:
 - '[[C-0001-contract-validation]]'
 - '[[C-0005-two-plane-contract-engine]]'
@@ -72,17 +74,17 @@ and the `ContractError`. `rule()` (per-node) and `docRule()` (cross-plane) execu
 
 ## Acceptance criteria
 
-- [ ] AC-1: `validate()` runs all planes in one pass and returns `{ findings, doc?, tree }`,
+- [x] AC-1: `validate()` runs all planes in one pass and returns `{ findings, doc?, tree }`,
   also accepting a pre-parsed `DocTree`.
-- [ ] AC-2: `findings` merge `frontmatter` / `structure` / `content` / `rule` and sort
+- [x] AC-2: `findings` merge `frontmatter` / `structure` / `content` / `rule` and sort
   deterministically (`pos.line`; document-level first; plane order; stable emission) — goldens
   pin.
-- [ ] AC-3: `doc` is present iff no error-level finding; `read()` returns `doc` or throws
+- [x] AC-3: `doc` is present iff no error-level finding; `read()` returns `doc` or throws
   `ContractError` carrying the error-level findings.
-- [ ] AC-4: `rule()` (per-node) and `docRule()` (cross-plane) execute and emit `rule/*`
+- [x] AC-4: `rule()` (per-node) and `docRule()` (cross-plane) execute and emit `rule/*`
   findings via `Ctx`; the engine fills `path` / `level` / `pos`.
-- [ ] AC-5: The "both planes fail, merged" and "cross-plane `docRule`" fixtures green.
-- [ ] AC-6: The end-to-end real-corpus contract fixtures (decision + task) green.
+- [x] AC-5: The "both planes fail, merged" and "cross-plane `docRule`" fixtures green.
+- [x] AC-6: The end-to-end real-corpus contract fixtures (decision + task) green.
 
 ## Out of scope
 

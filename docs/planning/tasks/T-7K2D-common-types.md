@@ -2,8 +2,10 @@
 type: task
 schema_version: '5'
 id: T-7K2D
-status: open/ready
+status: closed/done
 created: '2026-06-20'
+last_reviewed: '2026-06-21'
+completion_note: 'Shipped `src/core/types.ts` as the single public type surface — SourcePos/DocTree/SectionNode/BlockNode/ListItem, Finding, the grammar/leaf/Ctx types, and the consumption views — re-exported through the barrel; typecheck green. Landed on `main` via #17 + #18; full suite green (275 tests, 0 skipped).'
 related:
 - '[[C-0001-contract-validation]]'
 - '[[C-0002-typed-consumption]]'
@@ -78,17 +80,17 @@ The surface, grouped by owning capability:
 
 ## Acceptance criteria
 
-- [ ] AC-1: `src/core/types.ts` declares every public type named in the `C-0001`..`C-0005`
+- [x] AC-1: `src/core/types.ts` declares every public type named in the `C-0001`..`C-0005`
   API sections, with no runtime code (interfaces / type aliases only).
-- [ ] AC-2: `SourcePos`, `DocTree`, `SectionNode`, `BlockNode`, `ListItem` match
+- [x] AC-2: `SourcePos`, `DocTree`, `SectionNode`, `BlockNode`, `ListItem` match
   `proposed-shape.md` §2 field-for-field.
-- [ ] AC-3: `Finding` (`id`/`level`/`path`/`pos?`/`message`/`fix?`) and the `level` union
+- [x] AC-3: `Finding` (`id`/`level`/`path`/`pos?`/`message`/`fix?`) and the `level` union
   match `D-0001`.
-- [ ] AC-4: The grammar/leaf/`Ctx` types (`Contract`, `Spec`, `LeafSpec`, `LevelOpts`,
+- [x] AC-4: The grammar/leaf/`Ctx` types (`Contract`, `Spec`, `LeafSpec`, `LevelOpts`,
   `SectionOpts`, `BlockKind`, `Ctx`, `Rule`, `DocRule`) are declared.
-- [ ] AC-5: The consumption views (`Doc`, `SectionView`, `TableView<Row>`, `ListView`,
+- [x] AC-5: The consumption views (`Doc`, `SectionView`, `TableView<Row>`, `ListView`,
   `CodeView`, `ParagraphView`, `BlockView`, `SectionGroup`) are declared.
-- [ ] AC-6: Public types are re-exported from `src/index.ts`; `npm run typecheck` passes.
+- [x] AC-6: Public types are re-exported from `src/index.ts`; `npm run typecheck` passes.
 
 ## Out of scope
 

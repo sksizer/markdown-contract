@@ -4,7 +4,7 @@ schema_version: '1'
 id: C-0004
 kind: technical
 title: Dialect-aware projection
-status: open/planned
+status: open/verified
 created: '2026-06-20'
 parent_key: null
 contains: []

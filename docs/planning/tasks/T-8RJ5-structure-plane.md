@@ -2,8 +2,10 @@
 type: task
 schema_version: '5'
 id: T-8RJ5
-status: open/ready
+status: closed/done
 created: '2026-06-20'
+last_reviewed: '2026-06-21'
+completion_note: 'Shipped the structure plane — a tree grammar over sections and block kinds emitting the structure/* findings against the DocTree. Landed on `main` via #17 + #18; full suite green (275 tests, 0 skipped).'
 related:
 - '[[C-0005-two-plane-contract-engine]]'
 - '[[D-0003-structure-plane]]'
@@ -71,16 +73,16 @@ structure-family fixtures are un-skipped and green.
 
 ## Acceptance criteria
 
-- [ ] AC-1: The combinators (`sections`/`section`/`optional`/`oneOf`/`gap`) build a grammar an
+- [x] AC-1: The combinators (`sections`/`section`/`optional`/`oneOf`/`gap`) build a grammar an
   author can declare and the matcher consumes.
-- [ ] AC-2: `order` ∈ {`none`, `recognized-relative`, `strict`} and `allowUnknown` behave per
+- [x] AC-2: `order` ∈ {`none`, `recognized-relative`, `strict`} and `allowUnknown` behave per
   the `D-0003` table; a strict prefix coexists with an open tail via `gap()`.
-- [ ] AC-3: `gap({ min, max })` bounds the unknown-section window.
-- [ ] AC-4: The kind-gate emits `structure/block-missing` and `structure/block-kind`; declared
+- [x] AC-3: `gap({ min, max })` bounds the unknown-section window.
+- [x] AC-4: The kind-gate emits `structure/block-missing` and `structure/block-kind`; declared
   anchors emit `structure/anchor-missing` when unresolved.
-- [ ] AC-5: Duplicate headings → `structure/duplicate-section`; camelCase collisions →
+- [x] AC-5: Duplicate headings → `structure/duplicate-section`; camelCase collisions →
   `structure/key-collision` (document) and `contract/key-collision` (build-time throw).
-- [ ] AC-6: The structure-family fixtures (section sequence, aliases, gaps, nesting, anchors,
+- [x] AC-6: The structure-family fixtures (section sequence, aliases, gaps, nesting, anchors,
   collisions) are un-skipped and green.
 
 ## Out of scope

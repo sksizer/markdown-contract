@@ -2,8 +2,10 @@
 type: task
 schema_version: '5'
 id: T-9XB3
-status: open/ready
+status: closed/done
 created: '2026-06-20'
+last_reviewed: '2026-06-21'
+completion_note: 'Shipped the fixture-driven suite from the provenance corpus with peer-`.md` fixtures and the incremental-greening harness; landed the peer-test and module-decomposition conventions in CLAUDE.md. Landed on `main` via #17 + #18; full suite green (275 tests, 0 skipped).'
 related:
 - '[[C-0001-contract-validation]]'
 - '[[C-0002-typed-consumption]]'
@@ -77,15 +79,15 @@ vs skipped counts.
 
 ## Acceptance criteria
 
-- [ ] AC-1: A fixture harness discovers fixture cases and runs them under `npm run test`.
-- [ ] AC-2: The provenance validation + consumption examples are represented as fixtures
+- [x] AC-1: A fixture harness discovers fixture cases and runs them under `npm run test`.
+- [x] AC-2: The provenance validation + consumption examples are represented as fixtures
   (1:1 with the example set, or a logged list of any deliberately deferred).
-- [ ] AC-3: Each fixture declares its expected findings (`id` / `level` / line) and/or its
+- [x] AC-3: Each fixture declares its expected findings (`id` / `level` / line) and/or its
   typed-model assertions.
-- [ ] AC-4: Fixtures for unimplemented components are skipped (not failing) and tagged by
+- [x] AC-4: Fixtures for unimplemented components are skipped (not failing) and tagged by
   component so an implementation task can un-skip its slice.
-- [ ] AC-5: `npm run test` is green and reports a count of active vs skipped fixtures.
-- [ ] AC-6: `tests/FIXTURES.md` documents the format and the incremental-greening convention.
+- [x] AC-5: `npm run test` is green and reports a count of active vs skipped fixtures.
+- [x] AC-6: `tests/FIXTURES.md` documents the format and the incremental-greening convention.
 
 ## Out of scope
 

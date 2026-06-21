@@ -4,7 +4,7 @@ schema_version: '1'
 id: C-0003
 kind: feature
 title: Corpus CLI
-status: open/planned
+status: open/verified
 created: '2026-06-20'
 parent_key: null
 contains: []

@@ -2,8 +2,10 @@
 type: task
 schema_version: '5'
 id: T-4QM9
-status: open/ready
+status: closed/done
 created: '2026-06-20'
+last_reviewed: '2026-06-21'
+completion_note: 'Shipped the single-package lib+CLI skeleton with stubbed entry points and the failing-test harness; every downstream component task built against it. Landed on `main` via #17 + #18; full suite green (275 tests, 0 skipped).'
 related:
 - '[[C-0001-contract-validation]]'
 - '[[C-0003-corpus-cli]]'
@@ -84,13 +86,13 @@ yields every documented export.
 
 ## Acceptance criteria
 
-- [ ] AC-1: Every public function from the `C-0001`..`C-0005` API sections exists as an
+- [x] AC-1: Every public function from the `C-0001`..`C-0005` API sections exists as an
   exported stub with the correct signature.
-- [ ] AC-2: `ContractError extends Error` and carries `findings: Finding[]`.
-- [ ] AC-3: Imports flow one-way `cli → runner → core`; only `src/cli` calls `process.exit`.
-- [ ] AC-4: `npm run build` emits `dist/` and `npm run typecheck` passes with zero errors.
-- [ ] AC-5: A smoke test imports the package and asserts every documented export is defined.
-- [ ] AC-6: Calling any unimplemented op throws a clear `not implemented` error — no silent
+- [x] AC-2: `ContractError extends Error` and carries `findings: Finding[]`.
+- [x] AC-3: Imports flow one-way `cli → runner → core`; only `src/cli` calls `process.exit`.
+- [x] AC-4: `npm run build` emits `dist/` and `npm run typecheck` passes with zero errors.
+- [x] AC-5: A smoke test imports the package and asserts every documented export is defined.
+- [x] AC-6: Calling any unimplemented op throws a clear `not implemented` error — no silent
   `undefined`.
 
 ## Out of scope
