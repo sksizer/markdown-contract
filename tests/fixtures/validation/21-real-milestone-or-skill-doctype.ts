@@ -56,7 +56,10 @@ const v21: ValidationFixture = {
       source: loadSource(import.meta.url, "./21-real-milestone-or-skill-doctype.fail.md"),
       findings: [
         { id: "frontmatter/enum", level: "error", line: 3 },
-        { id: "structure/section-missing", level: "error", line: 1 },
+        // section-missing localizes to the first body heading (## Goal, line 9) — the engine's
+        // established structure-plane behavior (see fixtures 01/14b/18b). The example guessed
+        // line 1; the canonical engine line is the first body heading.
+        { id: "structure/section-missing", level: "error", line: 9 },
       ],
     },
   ],

@@ -25,10 +25,12 @@ const c04: ConsumptionFixture = {
       equals: "Summary",
     },
     {
-      label: "s.pos === { line: 1 } — the heading's SourcePos",
+      // Reconciled: the projection (D-0002, tested) positions every node with line AND col; the
+      // provenance's bare `{ line: 1 }` was shorthand. The model preserves positions verbatim.
+      label: "s.pos === { line: 1, col: 1 } — the heading's SourcePos",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).summary.pos,
-      equals: { line: 1 },
+      equals: { line: 1, col: 1 },
     },
     {
       label: "s.anchors === ['summary'] — the section's ^block-ids",

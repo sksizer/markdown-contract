@@ -1,41 +1,168 @@
 /**
- * The `Contract.validate` / `read` entry points — the one-pass merge over the two
- * planes plus the named-rule registry (C-0005), producing the merged, deterministically
- * sorted `Finding[]` (C-0001). `grammar.ts`'s `contract()` wires its `validate` / `read`
- * methods straight to these functions, so the `Contract` shape is real but hollow.
+ * The `Contract.validate` / `read` entry points — the one-pass over the planes that
+ * produces the merged, deterministically sorted `Finding[]` (C-0001 / C-0005 / D-0001).
+ * `grammar.ts`'s `contract()` wires its `validate` / `read` methods straight to these,
+ * passing the retained `ContractDef`.
  *
- * The one-pass assembly lands in T-3NC8; these are the typed entry stubs.
+ * One pass (D-0001 / proposed-shape §4):
+ *   1. parse `source` (or accept a pre-parsed `DocTree`) — AC-1;
+ *   2. run the STRUCTURE plane (`matchStructure`) — its kind-gate gates the content leaf;
+ *   3. run the CONTENT plane (`matchContent`) — frontmatter Zod + each section's leaf;
+ *   4. run the cross-plane `docRule(...)` rules over the built model (`def.rules`), each
+ *      emitting `rule/*` findings via `ctx.finding(...)`;
+ *   5. merge + deterministically SORT all findings (the plane-aware comparator below) — AC-2;
+ *   6. GATE the model: `doc` present iff no `error`-level finding, built lazily — AC-3.
+ *
+ * `read()` runs `validate` and returns `doc`, or throws {@link ContractError} carrying the
+ * error-level findings.
  */
-import { notImplemented } from "./finding.js";
+import { matchContent } from "./content.js";
+import { ContractError } from "./finding.js";
+import { buildModel } from "./model.js";
+import { parse } from "./projection.js";
+import { makeCtx, defaultRegistry } from "./registry.js";
+import { matchStructure, scanHeadingDepthJumps } from "./structure.js";
 import type {
-  Contract,
+  ContractDef,
+  Ctx,
   Doc,
   DocTree,
+  Finding,
   ValidateCtx,
   ValidationResult,
 } from "./types.js";
 
+/** A `DocTree` is the pre-parsed input shape; a string is parsed with the bundled projection. */
+function asTree(input: string | DocTree): DocTree {
+  return typeof input === "string" ? parse(input) : input;
+}
+
+// ── Deterministic ordering (D-0001 E3 / proposed-shape §4) ─────────────────────────
+
+/** The four merge planes, in their tie-break order. A finding's plane is its id prefix. */
+const PLANE_ORDER = ["frontmatter", "structure", "content", "rule"] as const;
+
 /**
- * The "show me everything" door — never throws; findings as data. Stub.
- * Accepts a `source: string` (parsed with the bundled projection) or a pre-parsed
- * `DocTree` (parse once, validate several contracts).
+ * The plane a finding belongs to, derived from its id prefix. The four named planes map by
+ * their leading segment; any other prefix (a contract-chosen rule namespace like `task/...`
+ * or `summary/...`, minted by `rule` / `docRule`) is the `rule` plane — so a custom rule id
+ * sorts after `content`, as D-0001 requires.
+ */
+function planeRank(id: string): number {
+  const area = id.slice(0, id.indexOf("/"));
+  const i = (PLANE_ORDER as readonly string[]).indexOf(area);
+  return i === -1 ? PLANE_ORDER.indexOf("rule") : i;
+}
+
+/**
+ * Sort findings deterministically so goldens pin (D-0001 E3):
+ *   1. ascending `pos.line` — a no-`pos` (whole-document) finding sorts FIRST, as line 0;
+ *   2. ties on a line break by `pos.col` (a no-`col` finding sorts first, as col 0);
+ *   3. then by PLANE order (`frontmatter` → `structure` → `content` → `rule`);
+ *   4. then by stable emission order (the index the finding was collected at).
+ * The sort is total and stable; the `i` tie-break makes it deterministic across engines.
+ */
+function sortFindings(findings: Finding[]): Finding[] {
+  return findings
+    .map((f, i) => ({ f, i }))
+    .sort((a, b) => {
+      const la = a.f.pos?.line ?? 0;
+      const lb = b.f.pos?.line ?? 0;
+      if (la !== lb) return la - lb;
+      const ca = a.f.pos?.col ?? 0;
+      const cb = b.f.pos?.col ?? 0;
+      if (ca !== cb) return ca - cb;
+      const pa = planeRank(a.f.id);
+      const pb = planeRank(b.f.id);
+      if (pa !== pb) return pa - pb;
+      return a.i - b.i; // stable emission order
+    })
+    .map((x) => x.f);
+}
+
+// ── The one-pass orchestration ─────────────────────────────────────────────────────
+
+/**
+ * Run the cross-plane `docRule(...)` rules over the built model, collecting their findings.
+ * Each rule's `fn(doc, ctx)` sees the whole typed doc (both planes) and mints `rule/*`
+ * findings through `ctx.finding(...)`, which stamps `path` and the registry default level.
+ * The model is built once here only when the contract declares rules (so a rule-free
+ * validation never forces model construction).
+ */
+function runDocRules<F, B>(def: ContractDef<F, B>, tree: DocTree, ctx: Ctx, out: Finding[]): void {
+  if (!def.rules || def.rules.length === 0) return;
+  const doc = buildModel(tree, def, { path: ctx.path });
+  for (const r of def.rules) {
+    out.push(...r.run(doc as Doc, ctx));
+  }
+}
+
+/**
+ * The "show me everything" door — never throws; findings as data. Parses a `source: string`
+ * (bundled projection) or accepts a pre-parsed `DocTree` (AC-1). Runs every plane in one
+ * pass, merges + sorts the findings (AC-2), and gates the typed model on no error-level
+ * finding (AC-3): `doc` is built lazily (a getter) so a passing fixture that only reads
+ * `.findings` never forces model construction; when there is an error-level finding, `doc`
+ * is `undefined`. The projection (`tree`) is always returned, valid or not.
  */
 export function validate<F, B>(
-  _contract: Contract<F, B>,
-  _input: string | DocTree,
-  _ctx: ValidateCtx,
+  def: ContractDef<F, B>,
+  input: string | DocTree,
+  ctx: ValidateCtx,
 ): ValidationResult<F, B> {
-  throw notImplemented("validate");
+  const tree = asTree(input);
+  const fctx = makeCtx(ctx.path, defaultRegistry());
+
+  const findings: Finding[] = [];
+  // Contract-independent outline check: a sub-heading that skips a level (H2→H4) warns,
+  // whether or not the grammar declares those sections (D-0002 D3 / D-0003).
+  findings.push(...scanHeadingDepthJumps(tree.root, fctx));
+  // Structure plane — its kind-gate gates the content leaf (a non-table never reaches
+  // table-column validation), so it must run before content (D-0001).
+  if (def.body) {
+    findings.push(...matchStructure(tree, def.body, fctx));
+  }
+  // Content plane: frontmatter Zod + each section's content leaf over a present, correct-kind
+  // block. Guarded inside `matchContent` so it never re-reports the structure kind-gate.
+  findings.push(...matchContent(tree, def, fctx));
+  // Rule plane: cross-plane `docRule(...)` over the built model (only when rules exist).
+  runDocRules(def, tree, fctx, findings);
+
+  const sorted = sortFindings(findings);
+  const hasError = sorted.some((f) => f.level === "error");
+
+  const result: ValidationResult<F, B> = { findings: sorted, tree };
+  if (!hasError) {
+    // `doc` present iff valid, built LAZILY — a passing fixture that only reads `.findings`
+    // never forces model construction. A getter defers the build to first access and caches.
+    let built: Doc<F, B> | undefined;
+    Object.defineProperty(result, "doc", {
+      enumerable: true,
+      configurable: true,
+      get(): Doc<F, B> {
+        if (built === undefined) built = buildModel(tree, def, { path: ctx.path });
+        return built;
+      },
+    });
+  }
+  // When `hasError`, `doc` stays absent (the property is simply not defined ⇒ `undefined`).
+  return result;
 }
 
 /**
  * The "give me the data or fail" door — returns the typed model, or throws
- * {@link ContractError} on an error-level finding. Stub.
+ * {@link ContractError} carrying the error-level findings (D-0001 F1). Runs `validate`,
+ * then either returns `doc` (no error-level finding) or throws with the error findings.
  */
 export function read<F, B>(
-  _contract: Contract<F, B>,
-  _source: string,
-  _ctx: ValidateCtx,
+  def: ContractDef<F, B>,
+  source: string,
+  ctx: ValidateCtx,
 ): Doc<F, B> {
-  throw notImplemented("read");
+  const { findings, doc } = validate<F, B>(def, source, ctx);
+  const errors = findings.filter((f) => f.level === "error");
+  if (errors.length > 0 || doc === undefined) {
+    throw new ContractError(errors);
+  }
+  return doc;
 }

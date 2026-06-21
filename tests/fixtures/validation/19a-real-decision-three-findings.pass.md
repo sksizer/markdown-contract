@@ -19,6 +19,8 @@ Services hand-roll three incompatible message envelopes today.
 
 ## Decision
 
+### Components
+
 | # | Component | Resolution |
 | - | --------- | ---------- |
 | 1 | Envelope  | widget v2  |

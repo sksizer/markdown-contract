@@ -21,7 +21,9 @@ const v19b: ValidationFixture = {
   path: "docs/planning/decisions/D-0099-adopt-rumdl/README.md",
   note:
     "FAIL pins id+level only: the example states pos.line 9 (the Summary heading) but a literal " +
-    "transcription of its PASS sample puts ## Summary on line 8, so the line is left unpinned.",
+    "transcription of its PASS sample puts ## Summary on line 8, so the line is left unpinned. " +
+    "T-3NC8: the ## Summary content is a paragraph (not a bullet) to match the maxWords(120) PARAGRAPH " +
+    "leaf — a list under Summary would (correctly) trip structure/block-kind, unintended by the port.",
   build: () => {
     const DecisionFrontmatter = z
       .object({

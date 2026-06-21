@@ -3,9 +3,9 @@ import type { ValidationFixture } from "../../harness.js";
 import { loadSource } from "../../harness.js";
 
 // Provenance: validation/10a-table-empty-and-minrows.md
-// A header-only table with the right columns but zero data rows. The leaf id
-// (content/table-min-rows) and level are inferred, not documented, so only `id`
-// is pinned.
+// A header-only table with the right columns but zero data rows. The provenance
+// inferred `content/table-min-rows`; reconciled (T-5LW7) to the D-0004
+// `content/<leaf>/<check>` scheme → content/table/min-rows, the id the validator emits.
 const v10a: ValidationFixture = {
   id: "v10a",
   title: "Empty table / below minRows",
@@ -28,7 +28,7 @@ const v10a: ValidationFixture = {
     {
       label: "fail — data row dropped, header-only table",
       source: loadSource(import.meta.url, "./10a-table-empty-and-minrows.fail.md"),
-      findings: [{ id: "content/table-min-rows" }],
+      findings: [{ id: "content/table/min-rows" }],
     },
   ],
 };

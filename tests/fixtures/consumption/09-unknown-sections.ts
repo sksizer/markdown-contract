@@ -48,10 +48,12 @@ const c09: ConsumptionFixture = {
       equals: "Risks",
     },
     {
-      label: "doc.body.unknown[0].pos === { line: 13 } — heading SourcePos, intact",
+      // Reconciled: the `## Risks` heading is on line 13, positioned with col by the projection;
+      // the provenance's bare `{ line: 13 }` was shorthand. The model preserves positions verbatim.
+      label: "doc.body.unknown[0].pos === { line: 13, col: 1 } — heading SourcePos, intact",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).unknown[0].pos,
-      equals: { line: 13 },
+      equals: { line: 13, col: 1 },
     },
     {
       label: "doc.body.unknown[0].text() === 'Capacity headroom is thin.'",

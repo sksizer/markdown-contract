@@ -6,6 +6,11 @@ import { loadSource } from "../../harness.js";
 // Provenance: validation/20a-real-task-closed-without-completion-note.md
 // The frontmatter conditional closed/* ⇒ completion_note lives in the per-type Zod as a
 // .refine, surfacing as a frontmatter/* finding — not a cross-plane docRule.
+// T-3NC8: a Zod .refine() surfaces as a `custom` issue → the canonical id `frontmatter/refine`
+// (D-0001: frontmatter/<check>). Its declared path (["completion_note"]) addresses an ABSENT
+// key, so lineForPath finds no source line and the engine omits pos (document-level). The
+// example's `line: 5` (the status line the predicate reasons about) is not derivable from the
+// refine path, so the line is left unpinned; id + level are asserted.
 const v20a: ValidationFixture = {
   id: "v20a",
   title: "Closed task missing Completion note",
@@ -24,6 +29,17 @@ const v20a: ValidationFixture = {
         ]),
         completion_note: z.string().min(1).optional(),
         title: z.string().min(1).optional(),
+        // The remaining real Task frontmatter keys the sample carries — declared (the ported
+        // inline schema listed only four, so .strict() rejected the rest as unknown-key noise,
+        // burying the one finding this fixture is about: the closed/* ⇒ completion_note refine).
+        type: z.literal("task").optional(),
+        schema_version: z.string().optional(),
+        created: z.unknown().optional(),
+        last_reviewed: z.unknown().optional(),
+        impact: z.enum(["low", "medium", "high"]).optional(),
+        complexity: z.enum(["small", "medium", "large"]).optional(),
+        tags: z.array(z.string()).optional(),
+        prs: z.array(z.string()).optional(),
       })
       .strict()
       .refine((fm) => !fm.status.startsWith("closed/") || fm.completion_note !== undefined, {
@@ -57,7 +73,7 @@ const v20a: ValidationFixture = {
     {
       label: "fail — status closed/done with no completion_note key",
       source: loadSource(import.meta.url, "./20a-real-task-closed-without-completion-note.fail.md"),
-      findings: [{ id: "frontmatter/refine", level: "error", line: 5 }],
+      findings: [{ id: "frontmatter/refine", level: "error" }],
     },
   ],
 };

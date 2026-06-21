@@ -8,17 +8,17 @@ related: []
 
 ## Summary
 
-- The position-carrying section tree (projection) is the one substrate both the
-  grammar and the Zod leaves read, so findings localize to a source line.
-
-## Consequences
-
-Rules read the projection, not mdast; positions survive into findings.
+The position-carrying section tree (projection) is the one substrate both the
+grammar and the Zod leaves read, so findings localize to a source line.
 
 ## Context
 
 Raw mdast is flat siblings with inline-subtree cells — hostile for direct rule
 authoring. We need a stable intermediate form.
+
+## Consequences
+
+Rules read the projection, not mdast; positions survive into findings.
 
 ## Decision
 

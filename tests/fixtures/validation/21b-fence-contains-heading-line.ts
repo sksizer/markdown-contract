@@ -9,7 +9,7 @@ import { loadSource } from "../../harness.js";
 const v21b: ValidationFixture = {
   id: "v21b",
   title: "Code fence containing a ## line",
-  component: "projection",
+  component: "validate",
   path: "docs/.../21b.md",
   note:
     "PASS arm only. The example's FAIL block is a counterfactual — the spurious " +

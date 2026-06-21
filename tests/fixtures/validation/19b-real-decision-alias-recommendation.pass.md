@@ -7,7 +7,7 @@ related: []
 
 ## Summary
 
-- Adopt rumdl as the markdown formatter over the prettier plugin.
+Adopt rumdl as the markdown formatter over the prettier plugin.
 
 ^summary
 

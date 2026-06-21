@@ -3,16 +3,17 @@ import type { ValidationFixture } from "../../harness.js";
 import { loadSource } from "../../harness.js";
 
 // Provenance: validation/14a-skipped-heading-level.md
-// Edge on 14: an H4 under an H2 skips H3. The FAIL id/behaviour is invented in the
-// example (proposed-shape defers this projection edge), so only the id is pinned.
+// Edge on 14: an H4 under an H2 skips H3. Resolved: the engine emits
+// `structure/heading-depth-jump` (warn, per D-0002 D3 / D-0003) at the deep heading —
+// a contract-independent outline check re-derived from the preserved heading depth.
 const v14a: ValidationFixture = {
   id: "v14a",
   title: "Skipped heading level (H2 to H4)",
-  component: "projection",
+  component: "validate",
   path: "docs/.../README.md",
   note:
-    "The example invents `structure/heading-depth-jump` and flags the FAIL behaviour as undecided " +
-    "(proposed-shape §7 defers heading-depth-jump). id pinned; level/line left as stated but provisional.",
+    "heading-depth-jump is a warn (D-0002 D3), not an error — the engine scans the projected " +
+    "tree for child.depth > parent.depth + 1 and warns at the deep heading.",
   build: () =>
     contract({
       body: sections({ order: "recognized-relative", allowUnknown: true }, [
@@ -34,7 +35,7 @@ const v14a: ValidationFixture = {
     {
       label: "fail — Components is H4, skipping H3",
       source: loadSource(import.meta.url, "./14a-skipped-heading-level.fail.md"),
-      findings: [{ id: "structure/heading-depth-jump", level: "error", line: 5 }],
+      findings: [{ id: "structure/heading-depth-jump", level: "warn", line: 5 }],
     },
   ],
 };

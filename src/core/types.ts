@@ -29,8 +29,10 @@ export interface ZodType<Output = unknown> {
   readonly _output?: Output;
 }
 
-/** The raw layer-0 unified/remark tree. Becomes `import type { Root } from "mdast"` in T-2HF6. */
-export type Mdast = unknown;
+import type { Root } from "mdast";
+
+/** The raw layer-0 unified/remark tree (T-2HF6: `import type { Root } from "mdast"`). */
+export type Mdast = Root;
 
 /** A micromark syntax extension. Becomes the real micromark extension type in T-2HF6. */
 export type MicromarkExtension = unknown;
@@ -138,6 +140,12 @@ export type BlockKind = "table" | "list" | "code" | "paragraph";
 export interface LeafSpec {
   kind: BlockKind;
   schema: ZodType;
+  /**
+   * The raw leaf config (`table`/`list`/`code`/`maxWords` arguments), stashed inert so the
+   * content plane (T-5LW7) can build the real `schema` later. The structure plane reads only
+   * `kind`; this carries everything else through untouched.
+   */
+  config?: unknown;
 }
 
 /** `order` and `allowUnknown` are independent knobs over a level's content model. */
@@ -292,22 +300,31 @@ export type BlockView = TableView | ListView | CodeView | ParagraphView;
 
 /**
  * The dual-key section access object (`doc.body` and `SectionView.sections`): exact heading text,
- * generated lowerCamelCase alias, and a `.section()` accessor all resolve to one `SectionView`.
- * `unknown` is always present (`[]` when none) for gap-admitted sections. Finalised in `T-6PV4`.
+ * generated lowerCamelCase alias, and a `.section()` accessor resolve to one section. A declared
+ * section keys to its `SectionView`, EXCEPT the "heading is the table" case — a section whose sole
+ * `content` is a single `table(...)` leaf promotes its key to that `TableView` directly
+ * (proposed-shape §6); `.section(name)` always returns the underlying `SectionView`. `unknown` is
+ * always present (`[]` when none), holding gap-admitted / `allowUnknown` sections in document order.
+ * `unknown` and `section` are NON-ENUMERABLE, so a group with no declared section deep-equals `{}`.
  */
 export interface SectionGroup {
-  /** gap-admitted sections the contract does not declare; always present (`[]` when none) */
+  /** gap-admitted / allowUnknown sections; always present (`[]` when none), document order */
   unknown: SectionView[];
-  /** explicit accessor for dynamic / edge heading names */
+  /** explicit accessor for dynamic / edge heading names — always the underlying `SectionView` */
   section(name: string): SectionView | undefined;
   [key: string]:
     | SectionView
+    | TableView<Record<string, string>>
     | SectionView[]
     | ((name: string) => SectionView | undefined)
     | undefined;
 }
 
-/** A heading-delimited section — holds blocks and nested sections; **not** itself a `BlockView`. */
+/**
+ * A heading-delimited section — holds blocks and nested sections; **not** itself a `BlockView`.
+ * A `content` record of `^anchor`-bound tables also surfaces each as a named `TableView` field
+ * (`doc.body.decision.components`), hence the `TableView` arm of the index signature.
+ */
 export interface SectionView {
   name: string;
   pos: SourcePos;
@@ -321,6 +338,18 @@ export interface SectionView {
   byAnchor(id: string): BlockView | undefined;
   /** same dual-key shape as `doc.body` */
   sections: SectionGroup;
+  /** named-table fields from a `content` record (each `^anchor`-bound table), plus the members above */
+  [key: string]:
+    | string
+    | SourcePos
+    | string[]
+    | TableView<Record<string, string>>
+    | TableView<Record<string, string>>[]
+    | ListView[]
+    | SectionGroup
+    | ((scope?: "prose" | "all") => string)
+    | ((id: string) => BlockView | undefined)
+    | undefined;
 }
 
 /** The typed, navigable model — the same model `read()` returns and `validate().doc` hands back. */
@@ -331,9 +360,26 @@ export type Doc<F = unknown, B = unknown> = {
 };
 
 /**
- * The inference entry point — a contract's typed model. Placeholder mapping (extracts `F`/`B`
- * from the `Contract`); the deep type-level inference is finalised in `T-6PV4`.
+ * The inference entry point — a contract's typed model. For a `Contract<F, B>`, `Infer<C>`
+ * resolves to the runtime `Doc` shape: the frontmatter type `F` (from the frontmatter Zod),
+ * the body grammar's inferred type `B` intersected with the dual-key `SectionGroup` surface
+ * (so a consumer always has exact-bracket / `.section()` / `unknown` access alongside whatever
+ * typed keys `B` carries), and the doc-wide `byAnchor`.
+ *
+ * SCOPE (deliberate, pragmatic). `Infer` is sound and useful at the TOP level — it gives
+ * consumers `frontmatter`, dual-key `body` access, and `byAnchor`. It does NOT yet perform
+ * per-section / per-column LITERAL inference: mapping each declared section name to its own
+ * typed `SectionView` key, or each declared table's `cells` to a typed `Row`, would require
+ * reworking the `sections` / `section` / `table` combinators to carry literal types through
+ * their generics — a large, separate effort out of proportion to this surface, and one the
+ * consumption fixtures (which navigate via `(doc.body as any)`) do not depend on. That literal
+ * refinement is left as deliberate future work; `B & SectionGroup` keeps `Infer` correct and
+ * navigable in the meantime.
  */
 export type Infer<C> = C extends Contract<infer F, infer B>
-  ? { frontmatter: F; body: B; byAnchor(id: string): BlockView | undefined }
+  ? {
+      frontmatter: F;
+      body: B & SectionGroup;
+      byAnchor(id: string): BlockView | undefined;
+    }
   : never;

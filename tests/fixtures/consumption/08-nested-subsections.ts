@@ -61,10 +61,13 @@ const c08: ConsumptionFixture = {
       equals: "What worked",
     },
     {
-      label: "pm.sections.whatWorked.pos === { line: 9 } (as asserted in the provenance)",
+      // Reconciled: the `### What worked` heading is on line 7 (## Post-mortem 1, blank 2,
+      // ### Acceptance… 3, blank 4, prose 5, blank 6, ### What worked 7) with col, as the
+      // projection positions it; the provenance's `{ line: 9 }` miscounted and dropped col.
+      label: "pm.sections.whatWorked.pos === { line: 7, col: 1 } — the H3 heading's SourcePos",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).postMortem.sections.whatWorked.pos,
-      equals: { line: 9 },
+      equals: { line: 7, col: 1 },
     },
     {
       label: "pm.sections.whatWorked.sections === {} — empty record; no H4s",

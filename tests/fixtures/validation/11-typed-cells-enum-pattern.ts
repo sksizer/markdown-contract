@@ -5,8 +5,9 @@ import { loadSource } from "../../harness.js";
 
 // Provenance: validation/11-typed-cells-enum-pattern.md
 // table({ cells: { Col: ZodType } }) — per-cell Zod over a declared column. The
-// cell-failure id (table/cell) is a guess and its row-precise pos depends on the
-// unresolved S7 remap, so only `id` is pinned.
+// provenance guessed `table/cell`; reconciled (T-5LW7) to the D-0004
+// `content/<leaf>/<check>` scheme → content/table/cell. Its row-precise pos is now
+// pinned via rowPos(i), but the example pinned id-only, so only `id` is asserted here.
 const v11: ValidationFixture = {
   id: "v11",
   title: "Typed cells: enum / pattern",
@@ -35,7 +36,7 @@ const v11: ValidationFixture = {
     {
       label: "fail — row 2 Kind outside the enum",
       source: loadSource(import.meta.url, "./11-typed-cells-enum-pattern.fail.md"),
-      findings: [{ id: "table/cell" }],
+      findings: [{ id: "content/table/cell" }],
     },
   ],
 };
