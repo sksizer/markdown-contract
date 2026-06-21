@@ -6,6 +6,11 @@ import { loadSource } from "../../harness.js";
 // Provenance: validation/16-cross-plane-docrule.md
 // docRule(id, fn(doc)) — the only construct that sees both planes: a worked status
 // requires a ## Post-mortem section.
+// T-3NC8: the rule body emits the finding WITHOUT a pos — a missing-section finding is a
+// whole-document absence (D-0001 A2), so the engine omits pos (document-level, sorts first).
+// The example acknowledges its `line: 3` was a guess ("could equally point at end-of-document
+// or the frontmatter block"; the cross-plane default pos is an open question), so the line is
+// left unpinned here; only id + level are asserted.
 const v16: ValidationFixture = {
   id: "v16",
   title: "Cross-plane docRule",
@@ -66,7 +71,7 @@ const v16: ValidationFixture = {
     {
       label: "fail — closed/done with Post-mortem deleted; rule fires",
       source: loadSource(import.meta.url, "./16-cross-plane-docrule.fail.md"),
-      findings: [{ id: "task/post-mortem-when-worked", level: "error", line: 3 }],
+      findings: [{ id: "task/post-mortem-when-worked", level: "error" }],
     },
   ],
 };

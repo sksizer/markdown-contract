@@ -13,6 +13,9 @@ import { loadSource } from "../../harness.js";
 
 // Provenance: validation/16a-docrule-violation.md
 // Edge on 16: both planes valid in isolation, yet the cross-plane combination is illegal.
+// T-3NC8: the docRule emits its finding WITHOUT a pos (a whole-document absence, D-0001 A2),
+// so the engine localizes it to the document (no pos); the example's `line: 3` was an
+// acknowledged guess, so the line is left unpinned (id + level only).
 const v16a: ValidationFixture = {
   id: "v16a",
   title: "docRule violation fires",
@@ -71,7 +74,7 @@ const v16a: ValidationFixture = {
     {
       label: "fail — closed/done, Post-mortem absent; only the cross-plane rule fires",
       source: loadSource(import.meta.url, "./16a-docrule-violation.fail.md"),
-      findings: [{ id: "task/post-mortem-when-worked", level: "error", line: 3 }],
+      findings: [{ id: "task/post-mortem-when-worked", level: "error" }],
     },
   ],
 };

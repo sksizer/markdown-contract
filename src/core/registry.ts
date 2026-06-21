@@ -48,14 +48,32 @@ export const CONTENT_LEVELS: Record<string, FindingLevel> = {
   "frontmatter/unknown-key": "error",
   "frontmatter/type": "error",
   "frontmatter/required": "error",
+  // a `.refine()` cross-field predicate surfaces as a Zod `custom` issue (D-0001 E1)
+  "frontmatter/refine": "error",
+};
+
+/**
+ * Default severities for the rule plane (`rule/*` — and the contract-chosen namespaces a
+ * `rule` / `docRule` may mint, e.g. `task/...`, `summary/...`). `level` is contract data
+ * (D-0001 A4): a rule body names the problem and the engine fills the default level. A rule
+ * that supplies its own `level` overrides this; an unregistered rule id still defaults to
+ * `"error"` via {@link makeCtx}, so this table is the documented, not the load-bearing, source.
+ */
+export const RULE_LEVELS: Record<string, FindingLevel> = {
+  // cross-plane docRule ids the corpus contracts use
+  "task/post-mortem-when-worked": "error",
+  "task/completion-note-when-closed": "error",
+  // node-local rule ids the corpus contracts use
+  "summary/mentions-outcome": "error",
+  "summary/names-contract": "warn",
 };
 
 /** The id → default-level registry. T-3NC8 extends it with rule ids. */
 export type LevelRegistry = Record<string, FindingLevel>;
 
-/** A fresh registry seeded with the structure- and content-plane defaults. */
+/** A fresh registry seeded with the structure-, content-, and rule-plane defaults. */
 export function defaultRegistry(): LevelRegistry {
-  return { ...STRUCTURE_LEVELS, ...CONTENT_LEVELS };
+  return { ...STRUCTURE_LEVELS, ...CONTENT_LEVELS, ...RULE_LEVELS };
 }
 
 /**

@@ -384,6 +384,9 @@ function frontmatterIdFor(issue: ZodIssue): string {
       return "frontmatter/enum";
     case "unrecognized_keys":
       return "frontmatter/unknown-key";
+    case "custom":
+      // a `.refine()` / `.superRefine()` cross-field predicate (D-0001 E1, fixture 20a).
+      return "frontmatter/refine";
     case "invalid_type":
       // zod v4 reports a missing required key as invalid_type (received undefined).
       return "frontmatter/type";

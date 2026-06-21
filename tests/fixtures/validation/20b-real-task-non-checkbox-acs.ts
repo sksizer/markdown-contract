@@ -45,7 +45,10 @@ const v20b: ValidationFixture = {
       frontmatter: TaskFrontmatter,
       body: sections({ order: "recognized-relative", allowUnknown: true }, [
         oneOf(["Goal", "Goal / Problem statement"]),
-        oneOf(["Today", "Current state"]),
+        // The Today / Current state slot is optional — the sample task omits it, and the
+        // example's expected findings list no structure/section-missing for it (the ported
+        // contract left the oneOf required, which would (correctly) flag the absent slot).
+        optional(oneOf(["Today", "Current state"])),
         section("Files to touch", {
           optional: true,
           content: table({
@@ -85,9 +88,13 @@ const v20b: ValidationFixture = {
       label: "fail — Kind 'new' on row 2; both ACs plain bullets",
       source: loadSource(import.meta.url, "./20b-real-task-non-checkbox-acs.fail.md"),
       findings: [
-        { id: "content/enum", level: "error", line: 19 },
-        { id: "content/every-item", level: "error", line: 23 },
-        { id: "content/every-item", level: "error", line: 24 },
+        // Canonical content-plane ids (D-0001: content/<leaf>/<check>); the example used
+        // `content/enum` (cell) and `content/every-item` (list item) as best-effort sibling
+        // names — its own note flags these as an open question. A bad Kind cell is
+        // content/table/cell; a non-checkbox AC item is content/list/item-kind.
+        { id: "content/table/cell", level: "error", line: 19 },
+        { id: "content/list/item-kind", level: "error", line: 23 },
+        { id: "content/list/item-kind", level: "error", line: 24 },
       ],
     },
   ],
