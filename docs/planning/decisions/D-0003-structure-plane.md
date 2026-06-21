@@ -2,7 +2,7 @@
 type: decision
 schema_version: '1'
 id: D-0003
-status: open/proposed
+status: open/accepted
 title: Structure plane — a tree grammar over sections and block kinds
 created: '2026-06-20'
 related:
