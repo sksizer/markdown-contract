@@ -1,50 +1,39 @@
 #!/usr/bin/env node
 /**
- * markdown-contract CLI — the thin shell, and the ONLY owner of `process.exit` in
- * the codebase. Parses argv → calls the runner (`../runner`) → formats findings
- * (human | json | sarif) → exits. No business logic lives here.
+ * markdown-contract CLI — the thin bin entry, and the ONLY owner of `process.exit` in
+ * the codebase (AC-4). The pure, testable core lives in `./run.ts` (`runCli`, which
+ * parses argv → loads config → runs the corpus → formats → returns `{ code, stdout,
+ * stderr }`). This file wraps it: write the captured streams and exit with the code —
+ * the single exit site — and runs only when this module is the program entry (the bin),
+ * never on import.
  *
  * Node-standard only (no Bun APIs), so the published bin runs anywhere Node does.
  * Imports flow one way: cli → runner → core. This file is never re-exported by the
  * library (`../index.ts`).
  */
-import { parseArgs } from "node:util";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
-const { values, positionals } = parseArgs({
-  args: process.argv.slice(2),
-  options: {
-    format: { type: "string", default: "human" }, // human | json | sarif
-    help: { type: "boolean", short: "h" },
-  },
-  allowPositionals: true,
-});
+import { runCli } from "./run.js";
 
-if (values.help || positionals.length === 0) {
-  console.log("usage: markdown-contract validate <path> [--format human|json|sarif]");
-  process.exit(values.help ? 0 : 2);
+// Surface the testable core as the cli module's public API (consumed by ./index.test.ts).
+export { runCli, type CliResult } from "./run.js";
+
+/**
+ * The thin exit wrapper — the SINGLE `process.exit` site. Runs the pure core, writes
+ * its captured stdout/stderr to the real streams, and exits with its code. Invoked
+ * only when this module is the program entry (the bin), never on import.
+ */
+async function main(): Promise<void> {
+  const { code, stdout, stderr } = await runCli(process.argv.slice(2));
+  if (stdout) process.stdout.write(`${stdout}\n`);
+  if (stderr) process.stderr.write(`${stderr}\n`);
+  process.exit(code);
 }
 
-const [command] = positionals;
-
-switch (command) {
-  case "validate": {
-    // The validate subcommand wires to the runner once it lands (T-J9TZ): build a
-    // CorpusConfig, call runCorpus, format the findings, and exit on its exit code.
-    // For now it is a stub that throws `not implemented`.
-    try {
-      runValidate();
-    } catch (err) {
-      console.error(`markdown-contract: ${(err as Error).message}`);
-      process.exit(70); // EX_SOFTWARE until the runner lands
-    }
-    break;
-  }
-  default:
-    console.error(`markdown-contract: unknown command "${command}"`);
-    process.exit(2); // usage error
-}
-
-/** Stub `validate` dispatch — wired to `../runner` (runCorpus) in T-J9TZ. */
-function runValidate(): void {
-  throw new Error("validate: not implemented");
+// Run `main` only when executed as the bin (not when imported by a test). Comparing
+// the resolved module URL to argv[1] is the Node-standard ESM entry check.
+const entryUrl = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : "";
+if (import.meta.url === entryUrl) {
+  void main();
 }
