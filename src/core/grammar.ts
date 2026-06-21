@@ -1,15 +1,15 @@
 /**
  * The contract combinators — `contract()` plus the body-grammar vocabulary
  * (`sections` / `section` / `optional` / `oneOf` / `gap`) and the named-rule
- * factories (`rule` / `docRule`). These declare a contract's two planes (C-0005);
- * the matching engine that consumes them lands across T-8RJ5 / T-5LW7 / T-3NC8.
+ * factories (`rule` / `docRule`). These declare a contract's two planes (C-0005).
  *
- * `contract()` returns a real-but-hollow `Contract`: its shape is honest, but its
- * `validate` / `read` methods delegate to the (stubbed) entry points in
- * `validate.ts`, so constructing a contract is safe while calling any op throws
- * `not implemented` (AC-6). The other combinators throw at call.
+ * As of T-8RJ5 the combinators CONSTRUCT the grammar IR (inert tagged data from
+ * `types.ts`) instead of throwing, `contract()` retains its def and wires `validate`
+ * to the structure matcher, and a build-time camelCase key collision among declared
+ * sibling names throws a `ContractBuildError` (`contract/key-collision`). The content
+ * leaf and the cross-plane / docRule merge land in T-5LW7 / T-3NC8.
  */
-import { notImplemented } from "./finding.js";
+import { toCamelKey } from "./camel.js";
 import { read as readEntry, validate as validateEntry } from "./validate.js";
 import type {
   Contract,
@@ -19,74 +19,139 @@ import type {
   DocRule,
   DocTree,
   Finding,
+  GapSpec,
   LevelOpts,
+  OneOfSpec,
+  OptionalSpec,
   Rule,
   SectionNode,
   SectionOpts,
   SectionSeq,
+  SectionSpec,
   Spec,
   ValidateCtx,
 } from "./types.js";
 
+// Re-export the structure matcher so callers can `import { matchStructure } from "./grammar.js"`.
+export { matchStructure } from "./structure.js";
+
 /**
- * Compile a `ContractDef` (frontmatter Zod schema, body grammar, cross-plane rules)
- * into a `Contract` — two doors onto one engine. The returned object is real but
- * hollow: its methods delegate to the stubbed engine entry points, so calling any
- * door throws `not implemented` rather than the factory throwing at construction.
+ * A build-time contract-authoring error — thrown by `contract(...)` / `sections(...)`, not
+ * collected as a `Finding`. Carries the offending finding id (`contract/key-collision`) in
+ * its message so the build-time guard is identifiable. Distinct from `ContractError`
+ * (D-0001), which is the document-time strict-door failure carrying error-level findings.
+ */
+export class ContractBuildError extends Error {
+  readonly id: string;
+  constructor(id: string, message: string) {
+    super(message);
+    this.name = "ContractBuildError";
+    this.id = id;
+  }
+}
+
+/**
+ * Compile a `ContractDef` into a `Contract` — two doors onto one engine. Retains the def
+ * (read by `validate()` / `read()`), and runs the build-time guards.
  */
 export function contract<F, B>(def: ContractDef<F, B>): Contract<F, B> {
-  void def; // compiled into the engine call once T-3NC8 lands; the def is retained then.
-  const self: Contract<F, B> = {
+  const self = {
     validate(input: string | DocTree, ctx: ValidateCtx) {
-      return validateEntry<F, B>(self, input, ctx);
+      return validateEntry<F, B>(def, input, ctx);
     },
     read(source: string, ctx: ValidateCtx): Doc<F, B> {
-      return readEntry<F, B>(self, source, ctx);
+      return readEntry<F, B>(def, source, ctx);
     },
-  };
+  } as Contract<F, B> & { __def?: ContractDef<F, B> };
+  // Stash the def for entry points / introspection (typed loosely; the public shape is `Contract`).
+  self.__def = def;
   return self;
 }
 
 /**
- * Bundle an ordered `Spec[]` (with level options) into a body grammar carrying the
- * inferred body type `B`. Stub — the structure plane lands in T-8RJ5.
+ * Bundle an ordered `Spec[]` (with level options) into a body grammar. Runs the build-time
+ * `contract/key-collision` guard: two declared sibling names that collapse to the same
+ * camelCase key are rejected at construction (D-0003 / proposed-shape §6).
  */
-export function sections<B>(_opts: LevelOpts, _specs: Spec[]): SectionSeq<B> {
-  throw notImplemented("sections");
+export function sections<B>(opts: LevelOpts, specs: Spec[]): SectionSeq<B> {
+  assertNoKeyCollision(specs);
+  return { __brand: "SectionSeq", opts, specs };
 }
 
-/** Declare a required section by name, or by an alias set. Stub. */
-export function section(_name: string | string[], _opts?: SectionOpts): Spec {
-  throw notImplemented("section");
+/**
+ * The build-time key-collision guard: among declared `section`/`oneOf` names at one level,
+ * two distinct names collapsing to the same camelCase key throw `contract/key-collision`.
+ * (Runs per level; nested `children` levels run their own guard when their `sections()` is
+ * constructed.) Alias spellings within one `oneOf` / `section([...])` slot are *not* a
+ * collision — they are one logical slot — so only the first spelling of each slot is keyed.
+ */
+function assertNoKeyCollision(specs: readonly Spec[]): void {
+  const keyToName = new Map<string, string>();
+  for (const spec of specs) {
+    const inner = unwrapInner(spec);
+    let primaryName: string | undefined;
+    if (inner.kind === "section") primaryName = (inner as SectionSpec).names[0];
+    else if (inner.kind === "oneOf") primaryName = (inner as OneOfSpec).names[0];
+    if (primaryName === undefined) continue;
+    const key = toCamelKey(primaryName);
+    if (key === "") continue; // no generated alias → cannot collide on a key
+    const prior = keyToName.get(key);
+    if (prior !== undefined && prior !== primaryName) {
+      throw new ContractBuildError(
+        "contract/key-collision",
+        `section names ‘${prior}’ and ‘${primaryName}’ both generate the camelCase key ‘${key}’; generated OOM keys must be unique`,
+      );
+    }
+    keyToName.set(key, primaryName);
+  }
 }
 
-/** Mark a `Spec` optional. Stub. */
-export function optional(_spec: Spec): Spec {
-  throw notImplemented("optional");
+/** Unwrap `optional(spec)` to its inner tagged spec. */
+function unwrapInner(spec: Spec): SectionSpec | OneOfSpec | GapSpec {
+  return spec.kind === "optional" ? unwrapInner((spec as OptionalSpec).spec) : spec;
 }
 
-/** Declare a choice over alias names at one position. Stub. */
-export function oneOf(_names: string[], _opts?: SectionOpts): Spec {
-  throw notImplemented("oneOf");
+/** Declare a required section by name, or by an alias set (`string[]`). */
+export function section(name: string | string[], opts?: SectionOpts): Spec {
+  const spec: SectionSpec = {
+    kind: "section",
+    names: Array.isArray(name) ? name : [name],
+    ...(opts ? { opts } : {}),
+  };
+  return spec;
 }
 
-/** Permit a window of unknown sections at this position. Stub. */
-export function gap(_opts?: { min?: number; max?: number }): Spec {
-  throw notImplemented("gap");
+/** Mark a `Spec` optional. */
+export function optional(spec: Spec): Spec {
+  const out: OptionalSpec = { kind: "optional", spec };
+  return out;
 }
 
-/** Register a per-node named rule. Stub — the rule registry lands in T-3NC8. */
-export function rule(
-  _id: string,
-  _fn: (node: SectionNode, ctx: Ctx) => Finding[],
-): Rule {
-  throw notImplemented("rule");
+/** Declare a choice over interchangeable spellings at one position. */
+export function oneOf(names: string[], opts?: SectionOpts): Spec {
+  const spec: OneOfSpec = { kind: "oneOf", names, ...(opts ? { opts } : {}) };
+  return spec;
 }
 
-/** Register a cross-plane / cross-file named rule over the whole typed doc. Stub. */
-export function docRule<F>(
-  _id: string,
-  _fn: (doc: Doc<F>, ctx: Ctx) => Finding[],
-): DocRule {
-  throw notImplemented("docRule");
+/** Permit a window of unknown sections at this position, optionally bounded by `min`/`max`. */
+export function gap(opts?: { min?: number; max?: number }): Spec {
+  const spec: GapSpec = {
+    kind: "gap",
+    ...(opts?.min !== undefined ? { min: opts.min } : {}),
+    ...(opts?.max !== undefined ? { max: opts.max } : {}),
+  };
+  return spec;
+}
+
+/** Register a per-node named rule (the matcher runs it on its bound section, T-8RJ5). */
+export function rule(id: string, fn: (node: SectionNode, ctx: Ctx) => Finding[]): Rule {
+  return { __brand: "Rule", id, run: fn };
+}
+
+/**
+ * Register a cross-plane / cross-file named rule over the whole typed doc. Constructed
+ * inertly here; the engine wires `docRule` into the cross-plane merge in T-3NC8.
+ */
+export function docRule<F>(id: string, fn: (doc: Doc<F>, ctx: Ctx) => Finding[]): DocRule {
+  return { __brand: "DocRule", id, run: fn as DocRule["run"] };
 }

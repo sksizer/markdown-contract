@@ -140,6 +140,12 @@ export type BlockKind = "table" | "list" | "code" | "paragraph";
 export interface LeafSpec {
   kind: BlockKind;
   schema: ZodType;
+  /**
+   * The raw leaf config (`table`/`list`/`code`/`maxWords` arguments), stashed inert so the
+   * content plane (T-5LW7) can build the real `schema` later. The structure plane reads only
+   * `kind`; this carries everything else through untouched.
+   */
+  config?: unknown;
 }
 
 /** `order` and `allowUnknown` are independent knobs over a level's content model. */
