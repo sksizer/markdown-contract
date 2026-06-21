@@ -21,7 +21,7 @@ import { ContractError } from "./finding.js";
 import { buildModel } from "./model.js";
 import { parse } from "./projection.js";
 import { makeCtx, defaultRegistry } from "./registry.js";
-import { matchStructure } from "./structure.js";
+import { matchStructure, scanHeadingDepthJumps } from "./structure.js";
 import type {
   ContractDef,
   Ctx,
@@ -114,7 +114,10 @@ export function validate<F, B>(
   const fctx = makeCtx(ctx.path, defaultRegistry());
 
   const findings: Finding[] = [];
-  // Structure plane first — its kind-gate gates the content leaf (a non-table never reaches
+  // Contract-independent outline check: a sub-heading that skips a level (H2→H4) warns,
+  // whether or not the grammar declares those sections (D-0002 D3 / D-0003).
+  findings.push(...scanHeadingDepthJumps(tree.root, fctx));
+  // Structure plane — its kind-gate gates the content leaf (a non-table never reaches
   // table-column validation), so it must run before content (D-0001).
   if (def.body) {
     findings.push(...matchStructure(tree, def.body, fctx));

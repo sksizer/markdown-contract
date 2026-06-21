@@ -7,6 +7,10 @@ expected findings (validation) or its typed-model reads (consumption). The suite
 **green incrementally** — every fixture is skipped until the component it exercises lands, the
 same way the example corpus was built up.
 
+This is the **integration corpus** — it exercises the assembled pipeline and lives under
+`tests/`. Per-module **unit tests are peer files** next to their module in `src/` (e.g.
+`src/core/projection.test.ts`); see `CLAUDE.md` for that convention.
+
 ## Layout
 
 | Path | Role |
@@ -16,8 +20,8 @@ same way the example corpus was built up.
 | `tests/fixtures/validation/*.ts` | One file per validation example; `export default` a `ValidationFixture`. |
 | `tests/fixtures/consumption/*.ts` | One file per consumption example; `export default` a `ConsumptionFixture`. |
 | `tests/fixtures/{validation,consumption}/index.ts` | Barrels — import each fixture and list it. |
+| `tests/fixtures/{validation,consumption}/*.md` | Each case's input document (one `.md` per case; loaded via `loadSource`). |
 | `tests/validation.test.ts` / `tests/consumption.test.ts` | Feed the barrels to the runners. |
-| `tests/smoke.test.ts` | The minimal import/export check (kept separate). |
 
 ## Authoring a fixture
 
@@ -25,10 +29,17 @@ A fixture builds its contract **lazily** (`build: () => contract(...)`). The eng
 combinators throw "not implemented" until their plane lands, so the build runs only inside an
 *active* test — a skipped fixture still type-checks but never executes a stub.
 
+Each case's markdown lives in a **peer `.md` file** (see `CLAUDE.md` → Fixture markdown):
+one `.md` per case — `<fixture>.<case>.md` (or bare `<fixture>.md` when single-case) — loaded
+verbatim via `loadSource(import.meta.url, "./<file>.md")`. Keeping the document in a real
+`.md` file means it reads as markdown, and the bytes are used as-is so position-pinned
+findings stay exact.
+
 ### Validation
 
 ```ts
 import { contract, section, sections, table } from "../../../src/index.js";
+import { loadSource } from "../../harness.js";
 import type { ValidationFixture } from "../../harness.js";
 
 const v10b: ValidationFixture = {
@@ -43,15 +54,18 @@ const v10b: ValidationFixture = {
       ]),
     }),
   cases: [
-    { label: "pass — all declared columns present", source: "## Files\n\n| Location | Kind | Change |\n| - | - | - |\n| `a.ts` | modify | x |\n", findings: [] },
-    { label: "fail — Change column dropped", source: "## Files\n\n| Location | Kind |\n| - | - |\n| `a.ts` | modify |\n",
+    { label: "pass — all declared columns present",
+      source: loadSource(import.meta.url, "./10b-table-missing-column.pass.md"), findings: [] },
+    { label: "fail — Change column dropped",
+      source: loadSource(import.meta.url, "./10b-table-missing-column.fail.md"),
       findings: [{ id: "content/table/column-missing", level: "error", line: 3 }] },
   ],
 };
 export default v10b;
 ```
 
-Then add it to `tests/fixtures/validation/index.ts`.
+Author the two peer documents beside it — `10b-table-missing-column.pass.md` and
+`…fail.md` — then add the fixture to `tests/fixtures/validation/index.ts`.
 
 `findings` is matched on `{ id, level?, line? }` in the engine's deterministic order. `id` is
 required; `level` and `line` are asserted **only when present**, so you can fix the id now and
@@ -64,7 +78,7 @@ const c05: ConsumptionFixture = {
   id: "c05",
   title: "TableView typed rows",
   component: "consumption",
-  source: "## Files\n\n| File | Kind | Location |\n...",
+  source: loadSource(import.meta.url, "./05-tableview-typed-rows.md"), // single-case → bare stem
   build: () => contract({ /* … */ }),
   reads: [
     { label: "rowCount", get: (doc) => (doc.body as any).files.rowCount, equals: 3 },
