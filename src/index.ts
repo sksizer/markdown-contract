@@ -19,6 +19,28 @@
 
 export const VERSION = "0.0.0";
 
-// The public type surface (T-7K2D). Runtime functions (`contract`, `validate`, `read`,
-// `runCorpus`, the combinators) land as value re-exports in T-4QM9.
+// The public type surface (T-7K2D).
 export type * from "./core/index.js";
+
+// The public runtime surface (T-4QM9 stubs). The engine combinators, projection,
+// content leaves, and the `ContractError` class come from `./core`:
+export {
+  ContractError,
+  code,
+  contract,
+  docRule,
+  gap,
+  list,
+  maxWords,
+  oneOf,
+  optional,
+  parse,
+  rule,
+  section,
+  sections,
+  table,
+} from "./core/index.js";
+
+// The corpus runner is library API, surfaced at the package root:
+export { defineConfig, runCorpus } from "./runner/index.js";
+export type { CorpusConfig } from "./runner/index.js";
