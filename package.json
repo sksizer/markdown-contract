@@ -35,11 +35,13 @@
   "devDependencies": {
     "@types/mdast": "^4.0.4",
     "@types/node": "^20.14.0",
+    "@types/picomatch": "^4.0.3",
     "remark-stringify": "^11.0.0",
     "typescript": "^5.7.2",
     "vitest": "^2.1.0"
   },
   "dependencies": {
+    "picomatch": "^4.0.4",
     "remark-frontmatter": "^5.0.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
