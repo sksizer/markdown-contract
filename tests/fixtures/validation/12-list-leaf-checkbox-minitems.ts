@@ -4,6 +4,9 @@ import { loadSource } from "../../harness.js";
 
 // Provenance: validation/12-list-leaf-checkbox-minitems.md
 // The `list()` content leaf: every item a checkbox, minItems floor.
+// Note (T-5LW7): the provenance guessed `list/every-item` for a non-checkbox item;
+// reconciled to the D-0004 `content/<leaf>/<check>` scheme → content/list/item-kind
+// (the `everyItem` kind check). Level + line are unchanged.
 const v12: ValidationFixture = {
   id: "v12",
   title: "List leaf: checkbox items + minItems",
@@ -26,7 +29,7 @@ const v12: ValidationFixture = {
     {
       label: "fail — third item is a plain bullet, everyItem violated",
       source: loadSource(import.meta.url, "./12-list-leaf-checkbox-minitems.fail.md"),
-      findings: [{ id: "list/every-item", level: "error", line: 5 }],
+      findings: [{ id: "content/list/item-kind", level: "error", line: 5 }],
     },
   ],
 };
