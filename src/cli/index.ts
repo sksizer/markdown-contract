@@ -24,8 +24,27 @@ if (values.help || positionals.length === 0) {
   process.exit(values.help ? 0 : 2);
 }
 
-// TODO(M·corpus-runner): wire to `../runner/index.js` (runCorpus) and format the findings.
-console.error(
-  "markdown-contract: not implemented yet (scaffold — see provenance/d0014/review-checklist.md).",
-);
-process.exit(70); // EX_SOFTWARE placeholder until the runner lands
+const [command] = positionals;
+
+switch (command) {
+  case "validate": {
+    // The validate subcommand wires to the runner once it lands (T-J9TZ): build a
+    // CorpusConfig, call runCorpus, format the findings, and exit on its exit code.
+    // For now it is a stub that throws `not implemented`.
+    try {
+      runValidate();
+    } catch (err) {
+      console.error(`markdown-contract: ${(err as Error).message}`);
+      process.exit(70); // EX_SOFTWARE until the runner lands
+    }
+    break;
+  }
+  default:
+    console.error(`markdown-contract: unknown command "${command}"`);
+    process.exit(2); // usage error
+}
+
+/** Stub `validate` dispatch — wired to `../runner` (runCorpus) in T-J9TZ. */
+function runValidate(): void {
+  throw new Error("validate: not implemented");
+}

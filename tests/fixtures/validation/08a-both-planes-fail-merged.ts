@@ -1,0 +1,45 @@
+import { contract, sections, section } from "../../../src/index.js";
+import { z } from "zod";
+import type { ValidationFixture } from "../../harness.js";
+import { loadSource } from "../../harness.js";
+
+// Provenance: validation/08a-both-planes-fail-merged.md
+// One document fails both planes; one pass returns both findings in one list,
+// frontmatter before body. frontmatter/enum is documented (line 3);
+// structure/section-missing is inferred and the merge order is implied not
+// stated, so only its id is pinned.
+const v08a: ValidationFixture = {
+  id: "v08a",
+  title: "Both planes fail in one findings list",
+  component: "validate",
+  path: "notes/widget-protocol.md",
+  build: () =>
+    contract({
+      frontmatter: z.strictObject({
+        id: z.string().regex(/^D-[0-9A-Z]{4}$/),
+        status: z.enum(["open/proposed", "open/accepted", "closed/superseded"]),
+        title: z.string().min(1),
+      }),
+      body: sections({ order: "none", allowUnknown: true }, [
+        section("Summary"),
+        section("Context"),
+      ]),
+    }),
+  cases: [
+    {
+      label: "pass — both planes satisfied",
+      source: loadSource(import.meta.url, "./08a-both-planes-fail-merged.pass.md"),
+      findings: [],
+    },
+    {
+      label: "fail — invalid status enum and absent Context",
+      source: loadSource(import.meta.url, "./08a-both-planes-fail-merged.fail.md"),
+      findings: [
+        { id: "frontmatter/enum", level: "error", line: 3 },
+        { id: "structure/section-missing" },
+      ],
+    },
+  ],
+};
+
+export default v08a;
