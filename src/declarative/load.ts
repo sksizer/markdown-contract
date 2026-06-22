@@ -24,7 +24,7 @@ export function loadContract(yamlText: string): Contract {
   if (doc.kind !== "contract") {
     throw new DeclarativeError(`expected a contract document (kind: contract), got kind: ${doc.kind}`);
   }
-  return compileContract(doc.raw);
+  return compileContractObject(doc.raw);
 }
 
 /** Read a `*.contract.yaml` file and compile it into a runtime `Contract`. */
@@ -32,7 +32,8 @@ export function loadContractFile(path: string): Contract {
   return loadContract(readFileSync(path, "utf8"));
 }
 
-function compileContract(raw: Record<string, unknown>): Contract {
+/** Build a `Contract` from a raw `{ frontmatter?, body? }` object (no envelope needed — used by inline config contracts). */
+export function compileContractObject(raw: Record<string, unknown>): Contract {
   const def: ContractDef = {};
 
   if (raw.frontmatter !== undefined) {
