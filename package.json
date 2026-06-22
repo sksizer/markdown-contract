@@ -15,6 +15,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./declarative": {
+      "types": "./dist/declarative/index.d.ts",
+      "import": "./dist/declarative/index.js",
+      "default": "./dist/declarative/index.js"
     }
   },
   "bin": {
