@@ -29,8 +29,14 @@ frontmatter:
     schema_version:
       type: string
       optional: true
-    # GAP: z.unknown() for field 'created' — z.unknown() is not expressible in v1 schema vocabulary
-    # GAP: z.unknown() for field 'last_reviewed' — z.unknown() is not expressible in v1 schema vocabulary
+    # GAP: z.unknown() has no v1 equivalent (no "any" type); under `strict` the keys must still be
+    # declared or they read as unknown-key, so they are approximated as optional strings.
+    created:
+      type: string
+      optional: true
+    last_reviewed:
+      type: string
+      optional: true
     impact:
       enum:
         - low

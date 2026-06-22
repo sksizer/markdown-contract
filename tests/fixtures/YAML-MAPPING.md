@@ -33,7 +33,7 @@ These contracts hinge on a custom function (a cross-plane `docRule` or a node-le
 
 ### Frontmatter refinement / `z.unknown()` (1 fixture)
 
-- **v20a** (`20a-real-task-closed-without-completion-note`) — z.unknown() for frontmatter field 'created'; z.unknown() for frontmatter field 'last_reviewed'; .refine() on frontmatter object
+- **v20a** (`20a-real-task-closed-without-completion-note`) — `.refine()` on the frontmatter object (closed/* ⇒ completion_note). The two `z.unknown()` fields (`created`, `last_reviewed`) are approximated as optional strings: v1 has no "any" type, and under `strict` an undeclared key would read as `frontmatter/unknown-key`, so they are declared rather than dropped.
 
 ## Per-fixture table
 
