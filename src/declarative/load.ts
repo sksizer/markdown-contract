@@ -3,9 +3,9 @@
  * the same object `contract(...)` produces from the combinators (D-0008). A YAML-authored
  * contract is therefore indistinguishable downstream: same findings, same typed model.
  *
- * This step of the series compiles the **frontmatter plane** (the schema-DSL → Zod). The
- * **body grammar** (sections / leaves) lands in the next PR; until then a document carrying a
- * `body` is rejected with a clear `DeclarativeError` rather than silently ignored.
+ * Compiles both planes: the **frontmatter** schema (schema-DSL → Zod) and the **body grammar**
+ * (sections / leaves → the combinators). Cross-cutting `rule` / `docRule`s and the `$ref` code
+ * escape hatch are deferred and not part of v1 (D-0008 § Out of scope).
  */
 import { readFileSync } from "node:fs";
 
@@ -13,6 +13,7 @@ import type { z } from "zod";
 
 import { contract } from "../core/grammar.js";
 import type { Contract, ContractDef } from "../core/types.js";
+import { compileBody } from "./body.js";
 import { DeclarativeError } from "./errors.js";
 import { parseDeclarativeDoc } from "./parse.js";
 import { compileObjectSchema } from "./schema.js";
@@ -39,10 +40,7 @@ function compileContract(raw: Record<string, unknown>): Contract {
   }
 
   if (raw.body !== undefined) {
-    // The body-grammar + content-leaf compiler lands in the next PR of the series.
-    throw new DeclarativeError(
-      "body grammar is not yet supported in this build (frontmatter/schema step); it lands in the next PR of the series",
-    );
+    def.body = compileBody(raw.body) as unknown as ContractDef["body"];
   }
 
   return contract(def);
