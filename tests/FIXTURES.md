@@ -21,7 +21,10 @@ This is the **integration corpus** — it exercises the assembled pipeline and l
 | `tests/fixtures/consumption/*.ts` | One file per consumption example; `export default` a `ConsumptionFixture`. |
 | `tests/fixtures/{validation,consumption}/index.ts` | Barrels — import each fixture and list it. |
 | `tests/fixtures/{validation,consumption}/*.md` | Each case's input document (one `.md` per case; loaded via `loadSource`). |
+| `tests/fixtures/{validation,consumption}/*.contract.yaml` | Per-fixture **v1 YAML contract peer** — the declarative-DSL expression of the fixture's contract (exploratory mapping; loader pending — M-0002 / D-0008). |
 | `tests/validation.test.ts` / `tests/consumption.test.ts` | Feed the barrels to the runners. |
+| `tests/fixtures/YAML-MAPPING.md` | Fixture → v1-YAML coverage matrix (full / partial + gap reasons). |
+| `tests/yaml-parity.test.ts` | Asserts every fixture has a YAML peer; pending TS⇄YAML finding-parity suite (skipped until the loader lands). |
 
 ## Authoring a fixture
 

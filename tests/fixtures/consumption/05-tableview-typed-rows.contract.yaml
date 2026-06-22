@@ -1,0 +1,21 @@
+mcVersion: 1
+kind: contract
+# fixture: c05 — TableView typed rows  (provenance: 05-tableview-typed-rows.ts)
+
+body:
+  order: none
+  allowUnknown: false
+  sections:
+    - section: Files
+      content:
+        table:
+          columns:
+            - File
+            - Kind
+            - Location
+          cells:
+            Kind:
+              enum: [add, modify, delete]
+            Location:
+              type: string
+              pattern: '^[A-Za-z0-9._/-]+\/$'
