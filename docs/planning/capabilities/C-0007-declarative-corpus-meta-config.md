@@ -51,7 +51,9 @@ A consumer maps a corpus to contracts in one YAML file — a `rules` list of `in
 mcVersion: 1
 kind: config
 
-# A named registry of reusable contract files (the offramp):
+# A named registry of reusable contract files — the offramp: the contracts are NOT
+# inlined here, they live in their own files and are referenced, so they're shareable
+# and reusable across rules and across configs. (name -> contract-file path)
 contracts:
   release-note: ./contracts/release-note.contract.yaml
   guide:        ./contracts/guide.contract.yaml
@@ -124,6 +126,7 @@ markdown-contract validate ./notes/releases --contract release-note.contract.yam
 ## Underlying implementation
 
 - Part of the same front-end layer as [[C-0006-declarative-yaml-contracts]] — the `markdown-contract/declarative` subpath export over `src/core` and `src/runner`; the engine and runner are untouched and imports stay one-way per [[D-0006-packaging]]. The CLI's config loader grows `.yaml` / `.yml` recognition beside `.js` / `.mjs`.
+- **Two distinct resolution bases.** A relative **contract-file ref** (`./contracts/x.contract.yaml`, whether named in the `contracts` registry or written directly on a rule) resolves relative to **the config file's own directory** — so a config and its contracts move together. The rules' **`include` / `exclude` globs**, by contrast, are matched against each file's path relative to **the run root** (the positional `<path>`, default the cwd) — so the same config can be pointed at different subtrees. The two never share a base: contract paths follow the config file; globs follow the run target.
 - The exact meta-config shape, the three contract-ref forms, and the versioning scheme are fixed by [[D-0008-declarative-contract-dsl]] § The meta-config file.
 - Not yet built.
 

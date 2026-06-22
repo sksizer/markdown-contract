@@ -76,6 +76,7 @@ body:
 ## Outputs
 
 - The same `Contract` runtime object, and hence the same `Finding[]` and typed `Doc` — YAML authorship is invisible downstream.
+- On the CLI those findings are rendered by an explicit **output parameter**, `--format human|json|sarif` (`human` is the console default) — the corpus CLI's existing output modes ([[C-0003-corpus-cli]]), unchanged for YAML-authored contracts.
 
 ```ts
 import { loadContractFile } from "markdown-contract/declarative";
@@ -91,10 +92,11 @@ const result = ReleaseNote.validate(source, { path: "notes/r1.md" });
 Apply a single contract to a directory tree — the simplest invocation, no meta-config:
 
 ```bash
-markdown-contract validate ./notes/releases --contract release-note.contract.yaml
+# validate every *.md under ./notes/releases, print JSON
+markdown-contract validate ./notes/releases --contract release-note.contract.yaml --format json
 ```
 
-`--contract <file>` runs that one contract against every markdown file under the target `<path>`; the findings, the `--format human|json|sarif` output, and the CI-meaningful exit code are exactly the corpus CLI's ([[C-0003-corpus-cli]]). Internally the CLI assembles a one-rule `CorpusConfig` (`include: ['**/*.md']`, that contract) and runs the same `runCorpus`, so the result is identical to a meta-config carrying a single catch-all rule. Routing several contracts across a tree — by glob from a meta-config file, or as inline contract/target pairs — is the parameterization owned by [[C-0007-declarative-corpus-meta-config]].
+The positional `<path>` is a **directory** (the run root), **not** a glob: `--contract <file>` runs that one contract against **every markdown file in the subtree below `<path>`** (the synthesized rule is `include: ['**/*.md']`). Output is selected with `--format human|json|sarif` (`human` is the console default), and the findings and CI-meaningful exit code are exactly the corpus CLI's ([[C-0003-corpus-cli]]). Internally the CLI assembles a one-rule `CorpusConfig` and runs the same `runCorpus`, so the result is identical to a meta-config carrying a single catch-all rule. **Glob _scoping_** — validating only some files under the tree, or applying different contracts per subdirectory — is not expressed by the positional path; it comes from a meta-config's `include` / `exclude` rules (or the inline contract/target pairs), both owned by [[C-0007-declarative-corpus-meta-config]].
 
 ## Hook points
 
