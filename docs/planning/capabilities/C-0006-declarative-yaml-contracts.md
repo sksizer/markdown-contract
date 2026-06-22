@@ -41,6 +41,7 @@ A consumer writes a contract as YAML — a `frontmatter` schema, a `body` sectio
 
 - A versioned **YAML contract format** (`mcVersion: 1`, `kind: contract`) spanning frontmatter, structure, and content.
 - A loader / compiler — `loadContract(yaml) → Contract` (a new subpath export) — so a YAML-authored contract drops straight into the engine and the CLI.
+- A **CLI invocation that applies one contract to a target tree** — `markdown-contract validate <path> --contract <file.contract.yaml>` — the simplest way to run a contract, with no meta-config. Same binary as the meta-config mode ([[C-0003-corpus-cli]]), just a different flag; routing several contracts is [[C-0007-declarative-corpus-meta-config]].
 - An **80%-case schema vocabulary** (`type` / `enum` / `const` / `min` / `max` / `pattern` / `format` / `array` / `object`) compiled to Zod, with a **broad** `format` set matching what Zod and JSON Schema expose out of the box. (A `$ref` **code escape hatch** for the richer cases is planned for a later version — see [[D-0008-declarative-contract-dsl]].)
 - The YAML **meta-config** that maps globs → these contracts is the companion capability [[C-0007-declarative-corpus-meta-config]] (`loadConfig`, the CLI `.yaml` config, inline-or-file-ref contract resolution).
 
@@ -74,15 +75,26 @@ body:
 
 ## Outputs
 
-- The same `Contract` / `CorpusConfig` runtime objects, and hence the same `Finding[]` and typed `Doc` — YAML authorship is invisible downstream.
+- The same `Contract` runtime object, and hence the same `Finding[]` and typed `Doc` — YAML authorship is invisible downstream.
 
 ```ts
-import { loadContract } from "markdown-contract/declarative";
+import { loadContractFile } from "markdown-contract/declarative";
 
-const ReleaseNote = loadContract("./release-note.contract.yaml"); // → Contract
+const ReleaseNote = loadContractFile("./release-note.contract.yaml"); // → Contract
+//   (loadContract(text) compiles an in-memory YAML string instead of a file)
 const result = ReleaseNote.validate(source, { path: "notes/r1.md" });
 // result.findings, result.doc — identical to a TS-authored contract
 ```
+
+## CLI usage
+
+Apply a single contract to a directory tree — the simplest invocation, no meta-config:
+
+```bash
+markdown-contract validate ./notes/releases --contract release-note.contract.yaml
+```
+
+`--contract <file>` runs that one contract against every markdown file under the target `<path>`; the findings, the `--format human|json|sarif` output, and the CI-meaningful exit code are exactly the corpus CLI's ([[C-0003-corpus-cli]]). Internally the CLI assembles a one-rule `CorpusConfig` (`include: ['**/*.md']`, that contract) and runs the same `runCorpus`, so the result is identical to a meta-config carrying a single catch-all rule. Routing several contracts across a tree — by glob from a meta-config file, or as inline contract/target pairs — is the parameterization owned by [[C-0007-declarative-corpus-meta-config]].
 
 ## Hook points
 

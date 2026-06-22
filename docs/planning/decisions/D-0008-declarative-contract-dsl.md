@@ -188,6 +188,18 @@ rules:
 - **First match wins**, matching the runtime runner.
 - A self-contained config that inlines every contract is a complete, valid config; splitting a contract out to its own `.yaml` file (and referencing it by name or path) is a mechanical, non-breaking refactor — the project's "trivial to start, elegant offramps to more structure" principle applied to corpus config.
 
+### CLI parameterization — one contract, a meta-config, or inline pairs
+
+The meta-config is one way to tell `markdown-contract validate` *what contract applies where*; the CLI offers two more, and **all three compile to a single `CorpusConfig` run through the same `runCorpus`** (first match wins, same `--format human|json|sarif` output, same exit code as today's [[C-0003-corpus-cli]]):
+
+| Invocation | Compiles to | For |
+|---|---|---|
+| `validate <path> --contract <file.contract.yaml>` | a one-rule config (`include: ['**/*.md']`, that contract) | apply **one** contract to a whole tree — the simplest run, no meta-config ([[C-0006-declarative-yaml-contracts]]) |
+| `validate <path> --config <meta.yaml>` | the compiled meta-config | route **many** contracts by glob from a file ([[C-0007-declarative-corpus-meta-config]]) |
+| `validate --contract <f> --path <d> --contract <f> --path <d> …` | a config with one rule per pair | the meta-config's routing **inline**, when a file isn't wanted |
+
+`--config` and the `--contract` / `--path` flags are mutually exclusive ways to populate the same config object — the file form and the flag form are interchangeable. v1 adds, beside the existing `.js` / `.mjs` config recognition: `.yaml` / `.yml` recognition for `--config`, and the `--contract` (+ paired `--path`) flags for the config-less forms. This keeps the **one-contract case a single short command** while the meta-config remains the home for anything non-trivial — the same on-ramp / offramp shape as inline-vs-file contract refs.
+
 ### Versioning — `mcVersion` from day one
 
 Every file carries `mcVersion: <integer>` and a `kind: contract | config`.
@@ -308,7 +320,7 @@ But the choice is **not** a foreclosure. The schema vocabulary is an isolated, c
 ## Consequences
 
 - A new front-end module (subpath export) plus a YAML-parser dependency; the engine stays YAML-free per the one-way layering of [[D-0006-packaging]].
-- The CLI's config loader gains `.yaml` / `.yml` recognition beside `.js` / `.mjs`.
+- The CLI's config loader gains `.yaml` / `.yml` recognition beside `.js` / `.mjs`, plus a `--contract` (and paired `--path`) flag for the config-less single-contract and inline-pair invocations — all funnelling into one `CorpusConfig` (see § CLI parameterization).
 - The closed vocabulary is a **maintained surface**: each new leaf type or schema keyword is a deliberate, versioned addition — the same discipline [[D-0004-content-plane]] imposes on leaves.
 - The code escape hatch (`$ref`, and code-authored contract refs) reintroduces a code dependency, so it is **deferred** — v1 is pure declarative YAML. When it lands the loader `import()`s the target (JS/ESM directly; `.ts` via a loader or Node type-stripping); runtime TypeScript is feasible, so the deferral is a scoping choice. Until then, contracts past the closed vocabulary are authored in TypeScript via the combinators.
 - Cross-cutting rules cannot be expressed in v1 YAML; corpora needing them author those contracts in TS (interop), or wait for the rules format version.
@@ -335,6 +347,7 @@ Chose a **subpath export within the one package** (`markdown-contract/declarativ
 
 - **`$ref` target resolution (deferred feature)** — when the code escape hatch lands: resolve against a JS/ESM module export (`.ts` via a loader / Node type-stripping); the open bits are how the `#Name` fragment selects the export (default vs named) and whether the loader ships a built-in TS hook.
 - **Named-leaf / anchor syntax** — the `content: { '<anchor>': <leaf> }` map form vs a list; final shape.
+- **CLI pair-flag spelling** — the exact surface for inline contract/target pairs (`--contract <f> --path <d>` repeated, vs a single `--contract <f>:<d>` form, vs positional pairs) and how it composes with the positional `<path>`; the semantics (one `CorpusConfig`, first match wins) are fixed, the spelling is not.
 - **`format` keyword set** — resolved toward **broad** coverage: the formats Zod and JSON Schema both expose out of the box (see § Schema vocabulary). Still open: whether the rarer Zod id formats (`cuid2` / `ulid` / `nanoid`) and `e164` earn first-class keywords in v1 or wait for demand, and how our `format` names line up with a future JSON-Schema leaf dialect (our `date` / `datetime` vs JSON Schema's `date` / `date-time`).
 - **The meta-schema** — validating a contract YAML *before* compiling, for a friendly error surface: a schema over the parsed YAML that ideally dogfoods the engine's own finding model.
 - **Editor tooling** — whether and when to publish a JSON Schema for the YAML format itself.

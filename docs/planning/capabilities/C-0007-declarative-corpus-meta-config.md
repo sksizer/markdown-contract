@@ -40,6 +40,7 @@ A consumer maps a corpus to contracts in one YAML file — a `rules` list of `in
 - A versioned **YAML meta-config format** (`mcVersion: 1`, `kind: config`): a `rules` list (`include` / `exclude` globs + `contract`) plus an optional `contracts` name registry.
 - A loader / compiler — `loadConfig(yaml) → CorpusConfig` (part of the `markdown-contract/declarative` subpath export) — plus `markdown-contract validate` accepting a `.yaml` / `.yml` config beside the existing `.js` / `.mjs`.
 - **Three first-class contract-ref forms** — inline definition, `.yaml` path, or registry name — with paths resolved relative to the config file and **first-match-wins** traversal matching the runner.
+- **CLI parameterization of the same binary, file-based or inline.** `markdown-contract validate <path> --config <meta.yaml>` runs a meta-config file; repeated `--contract <file> --path <dir>` pairs express the same routing inline (no file); and a lone `--contract <file>` against a positional `<path>` is the one-contract case ([[C-0006-declarative-yaml-contracts]]). All assemble one `CorpusConfig` and run the same engine.
 
 ## Inputs
 
@@ -81,11 +82,38 @@ rules:
 - The same `CorpusConfig` runtime object the runner consumes — and hence the same `Finding[]` and CI-meaningful exit code — whether authored in YAML or TypeScript.
 
 ```ts
-import { loadConfig } from "markdown-contract/declarative";
+import { loadConfigFile } from "markdown-contract/declarative";
 
-const config = loadConfig("./markdown-contract.yaml"); // → CorpusConfig
+const config = loadConfigFile("./markdown-contract.yaml"); // → CorpusConfig
+//   (loadConfig(text, baseDir) compiles an in-memory YAML string instead of a file)
 // feed to runCorpus, or just: markdown-contract validate ./docs --config markdown-contract.yaml
 ```
+
+## CLI usage
+
+The same `markdown-contract validate` binary ([[C-0003-corpus-cli]]) binds contracts to files three ways — different parameterization, one engine. Each assembles a `CorpusConfig` and runs `runCorpus` with first-match-wins routing and the usual `--format human|json|sarif` output and exit code.
+
+Route many contracts across a tree from a meta-config file:
+
+```bash
+markdown-contract validate ./docs --config markdown-contract.yaml
+```
+
+Express the same routing inline as repeated contract/target pairs, when you'd rather not keep a file:
+
+```bash
+markdown-contract validate \
+  --contract release-note.contract.yaml --path notes/releases \
+  --contract guide.contract.yaml        --path docs/guides
+```
+
+Apply a single contract to one tree — the degenerate one-rule case, owned by [[C-0006-declarative-yaml-contracts]]:
+
+```bash
+markdown-contract validate ./notes/releases --contract release-note.contract.yaml
+```
+
+`--config <file>` and the `--contract` / `--path` flags are mutually exclusive ways to populate the same `CorpusConfig`; the exact spelling of the repeatable pair flags is being finalized in [[D-0008-declarative-contract-dsl]] § CLI parameterization.
 
 ## Hook points
 
