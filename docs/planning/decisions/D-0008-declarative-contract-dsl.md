@@ -7,6 +7,7 @@ title: Declarative contract DSL — a versioned YAML format compiled to the runt
 created: '2026-06-21'
 related:
   - '[[C-0006-declarative-yaml-contracts]]'
+  - '[[C-0007-declarative-corpus-meta-config]]'
   - '[[C-0003-corpus-cli]]'
   - '[[C-0005-two-plane-contract-engine]]'
   - '[[D-0004-content-plane]]'
@@ -30,8 +31,8 @@ need_human_review: true
 
 - A contract may be authored as a **versioned YAML file** (`mcVersion: 1`, `kind: contract`) — a `frontmatter` schema, a `body` section grammar, and per-section `content` leaves — that a loader compiles into the same `Contract` the engine combinators produce. Validation, findings, and the typed model are identical to a TS-authored contract; YAML is a front-end, not a second engine.
 - The schema layer (frontmatter fields, table cells, list items) is a **small closed declarative vocabulary** — `type` / `enum` / `const` / `min` / `max` / `pattern` / `array` / `object` — compiled to Zod. That vocabulary is the whole of v1's expressiveness (the 80% case). A **code escape hatch** — a `$ref` to a named Zod export in a module — is **planned but deferred to a later version**; until it lands, a contract that needs more than the vocabulary is authored in TypeScript via the combinators. The closed-vocabulary-now, escape-hatch-later shape mirrors [[D-0004-content-plane]]'s own "finite closed vocabulary, `z.*` as the escape hatch".
-- The format is **explicitly versioned from day one** (`mcVersion`), so the DSL can evolve — or a different schema dialect (e.g. JSON Schema) be adopted — without breaking existing files. The version gate is the swap seam, and it is what lets us pick the DSL for v1 *without* foreclosing JSON Schema.
-- A YAML **meta-config** (`kind: config`) maps directory globs → contract files (`.yaml` or `.ts`), the data form of the runner's directory → contract config ([[C-0003-corpus-cli]]).
+- The format is **explicitly versioned from day one** (`mcVersion`), so the vocabulary can grow additively and any breaking change is a deliberate version bump, never a silent reinterpretation of an existing file. Versioning is *not*, however, how JSON Schema would enter: JSON Schema only describes the **value layer** (frontmatter fields, cell / item schemas), so it would arrive — if ever — as an opt-in, **inlinable per-field / per-leaf `dialect: json-schema`** beside the same structure grammar, not as a rival top-level file format and not as an `mcVersion` bump. Versioning keeps the v1 vocabulary boundary reversible; the JSON-Schema-as-leaf-dialect path is an additive option layered on top of it (see the comparison below).
+- A YAML **meta-config** (`kind: config`) maps directory globs → contracts, the data form of the runner's directory → contract config ([[C-0003-corpus-cli]], realized as its own capability [[C-0007-declarative-corpus-meta-config]]). A contract is either **fully inlined** as a nested definition (the zero-pathing on-ramp) or **referenced** as a separate `.yaml` file (the shareable offramp) — both first-class.
 - v1 covers **frontmatter + structure + content** as **pure declarative YAML, with no references to code**. Both the **code escape hatch** (a `$ref` to a Zod export, and contract refs to code-authored modules) and cross-cutting `rule` / `docRule`s are **explicitly deferred** to a later format version. The compiler is a new front-end; the engine ([[D-0006-packaging]]) is unchanged.
 
 ^summary
@@ -102,7 +103,7 @@ A field / cell / item schema is a YAML map. The vocabulary is **closed** and map
 | `{ type: string }` | `z.string()` | |
 | `{ type: string, min, max }` | `.min(n)` / `.max(n)` | string length |
 | `{ type: string, pattern: '…' }` | `.regex(/…/)` | |
-| `{ type: string, format: email\|url\|uuid\|date }` | `.email()` / `.url()` / … | small closed format set |
+| `{ type: string, format: <name> }` | `z.email()` / `z.url()` / `z.iso.date()` / … | a **broad** closed format set — see below |
 | `{ type: number, int: true, min, max }` | `z.number().int().min().max()` | |
 | `{ type: boolean }` | `z.boolean()` | |
 | `{ type: array, of: <schema>, min, max }` | `z.array(<schema>).min().max()` | `of` recurses |
@@ -113,6 +114,8 @@ A field / cell / item schema is a YAML map. The vocabulary is **closed** and map
 | `optional: true` (on a field) | `.optional()` | |
 | `default: v` | `.default(v)` | |
 | `nullable: true` | `.nullable()` | |
+
+**The `format` set — broad by design.** `format` covers the string formats Zod and JSON Schema *both* expose out of the box, so the common case never has to drop to a hand-written `pattern`: the web / identity forms `email` / `url` / `uuid` / `hostname`; the ISO-8601 temporals `datetime` / `date` / `time` / `duration`; the network forms `ipv4` / `ipv6` / `cidrv4` / `cidrv6`; the id forms `nanoid` / `cuid` / `cuid2` / `ulid`; and `base64` / `emoji` / `e164` (phone). Each maps to its Zod constructor (`format: email → z.email()`, `format: date → z.iso.date()`). The set is **closed** — anything outside it falls to `pattern` (or the deferred `$ref`) — but deliberately wide, to match what Zod and JSON Schema give for free rather than force regexes for well-known shapes.
 
 **The code escape hatch (`$ref`) — deferred to a later version.** The closed vocabulary covers the common case (enums, patterns, ranges, shapes). For the richer 20% — refinements, cross-field checks, custom messages — the planned escape is a `$ref` to a named Zod export, so the DSL never has to reinvent Zod (the same discipline [[D-0004-content-plane]] applies to leaves). This is **not in v1**: v1 is pure declarative YAML with no code references, and a contract that needs more than the vocabulary is authored in TypeScript via the combinators until the escape hatch lands.
 
@@ -148,26 +151,42 @@ The leaf set is fixed by [[D-0004-content-plane]]; the YAML simply names each le
 
 ### The meta-config file
 
+A `contract` is resolved three ways — **all first-class** — so a config can start fully self-contained and graduate contracts to their own files as it grows:
+
 ```yaml
 mcVersion: 1
 kind: config
 
+# A named registry of reusable contract files (the offramp):
 contracts:
   release-note: ./contracts/release-note.contract.yaml
-  guide:        ./contracts/guide.contract.ts        # a TS contract — same registry
+  guide:        ./contracts/guide.contract.yaml
 
 rules:
+  # …reference a registered contract by name…
   - include: ['notes/releases/**/*.md']
     contract: release-note
+  # …or point a rule straight at a contract file…
   - include: ['docs/guides/**/*.md']
     exclude: ['**/_*.md']
-    contract: guide
+    contract: ./contracts/guide.contract.yaml
+  # …or fully inline the contract here — no second file, no paths (the on-ramp):
+  - include: ['notes/quick/**/*.md']
+    contract:                          # an inline contract is just { frontmatter?, body? } —
+      frontmatter:                     # no mcVersion/kind envelope inline; the config carries it
+        fields:
+          title: { type: string, min: 1 }
+      body:
+        order: none
+        sections:
+          - section: Summary
+            content: { maxWords: 80 }
 ```
 
 - `rules` mirrors the runtime `CorpusConfig.rules` exactly (`include` / `exclude` globs + `contract`), so the YAML is the data form of today's `defineConfig`.
-- A contract ref resolves **relative to the config file**. In v1 it points at a **`.yaml` contract**; pointing at a code-authored contract module (`.js` / `.mjs`, or `.ts` via a loader) is the same deferred code escape (see § Schema vocabulary) — the **interop seam** that will let a corpus mix declarative and code-authored contracts.
+- **A `contract` resolves three ways, all first-class:** a **name** into the optional `contracts` registry; a **`.yaml` file path** (relative to the config file); or a **fully inlined** definition (`{ frontmatter?, body? }` — no `mcVersion` / `kind` envelope inline, since the enclosing config already carries it). Inlining is the zero-pathing on-ramp; named / file refs are the shareable offramp. Pointing at a code-authored module (`.js` / `.mjs`, or `.ts` via a loader) is the deferred code escape (see § Schema vocabulary) — the **interop seam** that will later let a corpus mix declarative and code-authored contracts.
 - **First match wins**, matching the runtime runner.
-- An inline contract (`contract: { mcVersion: 1, kind: contract, … }`) is allowed for tiny cases, but separate contract files are the norm — shareable and reusable.
+- A self-contained config that inlines every contract is a complete, valid config; splitting a contract out to its own `.yaml` file (and referencing it by name or path) is a mechanical, non-breaking refactor — the project's "trivial to start, elegant offramps to more structure" principle applied to corpus config.
 
 ### Versioning — `mcVersion` from day one
 
@@ -176,7 +195,7 @@ Every file carries `mcVersion: <integer>` and a `kind: contract | config`.
 - The loader **dispatches on `mcVersion`** to a compiler for that version; an unknown or missing version is a clear config error (a `config/version` finding), never a silent best-effort parse.
 - **Additive, backward-compatible** changes (new optional keys, new leaf types, new schema keywords) stay within a version. A **breaking** change mints the next integer, and the loader **retains prior-version compilers**, so existing files keep validating.
 - `mcVersion` is the **format** version — independent of the npm package `VERSION`.
-- This is the deliberate hedge: it makes the v1 vocabulary boundary and the DSL-vs-JSON-Schema choice **reversible**. We can ship a narrow v1 and widen it, or introduce a different schema dialect, all behind the version gate (see the comparison below).
+- This is the deliberate hedge for **our own vocabulary**: it makes the v1 vocabulary boundary **reversible** — we can ship a narrow v1 and widen it (additively), or mint a breaking next version, without stranding existing files. (Adopting JSON Schema is a *separate* lever, and not a versioning one: because JSON Schema describes only the value layer, it would enter as an opt-in, inlinable per-leaf `dialect: json-schema`, never a new top-level format or `mcVersion` bump — see the comparison below.)
 
 > Editor tooling note: we may publish a JSON Schema describing the YAML **format itself**, for IDE autocompletion / validation of contract files. That is orthogonal to using JSON Schema as the in-format **leaf language** — a different layer (tooling-over-our-files vs. the value vocabulary).
 
@@ -276,14 +295,14 @@ body:                                     # …and `body`/`sections`/`table`/`ma
 
 **Verdict.** The DSL wins for v1. The decisive point is **coverage**: JSON Schema can only model the value layer, so adopting it would *not* spare us a bespoke structure grammar — it would leave us maintaining two schema dialects in one file plus a lossy translation to the Zod the engine actually runs. The DSL gives one coherent language that mirrors Zod, with `$ref` as the honest escape to the real thing.
 
-But the choice is **not** a foreclosure. Because the format is versioned and the schema vocabulary is an isolated, closed sub-layer, JSON Schema remains reachable later as either a `mcVersion: 2` value language or an opt-in per-field / per-leaf `dialect: json-schema`. **Versioning from the start is exactly what makes choosing the DSL now safe** — we get the simpler, better-fitting language today and keep the standard one a contained, non-breaking change away.
+But the choice is **not** a foreclosure. The schema vocabulary is an isolated, closed sub-layer that describes only **values**, so JSON Schema remains reachable later as an opt-in, **inlinable per-field / per-leaf `dialect: json-schema`** — dropped into the exact spots our `{ type, enum, … }` maps already live (a frontmatter field, a table cell), swapped for a JSON-Schema object on just the fields that want it. It is *not* a different top-level file format and *not* an `mcVersion` bump: versioning governs how our own vocabulary evolves, while JSON Schema, being value-layer-only, can never replace the structure grammar and so only ever enters as an additive leaf dialect. **Keeping the vocabulary a contained sub-layer is exactly what makes choosing the DSL now safe** — we get the simpler, better-fitting language today and keep the standard one a non-breaking, opt-in addition away.
 
 ## Why
 
 - **Data, not code, for the common case.** Editing YAML needs no toolchain; checks become reviewable, shareable, CI-pasteable artifacts — the "declarative dir → contract config" the vision promises.
 - **One coherent language that mirrors Zod.** The vocabulary maps ~1:1 to the Zod the engine already runs, so there is no impedance layer and the escape hatch is literally "drop to the real thing".
 - **80/20 with a planned escape hatch.** v1's closed vocabulary covers the common shapes; the deferred `$ref` will handle everything richer. We surface Zod's common slice now and never reinvent Zod.
-- **Versioned from the start = cheap to change our minds.** Foregrounding `mcVersion` makes the DSL-vs-JSON-Schema decision and the v1 vocabulary boundary reversible without breaking files.
+- **Versioned from the start = cheap to change our minds.** Foregrounding `mcVersion` makes the v1 vocabulary boundary reversible without breaking files; and because the schema vocabulary is a contained, value-only sub-layer, JSON Schema stays reachable as an opt-in per-leaf dialect (not a version bump) — so neither choice is foreclosed.
 - **A compiler, not a second engine.** Reusing the runtime keeps one source of truth for findings and the typed model; YAML authorship is invisible downstream.
 
 ## Consequences
@@ -298,7 +317,7 @@ But the choice is **not** a foreclosure. Because the format is versioned and the
 
 ### Schema language — JSON Schema as the primary leaf language
 
-Worked in full above. Rejected for v1: partial coverage (no structure grammar), a foreign data model, lossy Zod mapping, and two dialects per file. Kept **reachable** behind the version gate, so the rejection is reversible if real demand appears.
+Worked in full above. Rejected for v1: partial coverage (no structure grammar), a foreign data model, lossy Zod mapping, and two dialects per file. Kept **reachable** — not behind a version gate, but as an opt-in, inlinable per-field / per-leaf `dialect: json-schema` (JSON Schema is value-layer-only, so it can only ever be an additive leaf option, never a replacement format), so the rejection is reversible if real demand appears.
 
 ### Rules in v1 YAML — reference-by-id, or an inline predicate DSL
 
@@ -306,7 +325,7 @@ Two ways cross-cutting `rule` / `docRule`s could enter YAML now: **(a)** referen
 
 ### Meta-config — single self-contained YAML vs file-refs
 
-Chose **file-refs** (one contract per file, the meta-config binds globs) for shareability and reuse, with inline contracts allowed for tiny cases. A single self-contained file is simpler for a one-off but grows unwieldy and unshareable as contracts accumulate.
+**Support both, as first-class forms — don't pick.** A single self-contained config that **fully inlines** its contracts is the easiest on-ramp (one file, no paths, nothing to wire) and is a complete, valid config. **File-refs** (one contract per file, the meta-config binds globs by name or path) are the offramp: shareable, reusable across configs, owned by different teams, and the natural shape once contracts accumulate. Each alone has a real cost — inlining grows unwieldy at scale and a lone file isn't shareable; file-refs add pathing and a second file to a five-line check — so rather than choose, the format makes a `contract` ref *either* an inline definition *or* a name / path, and a contract graduates from inline to its own file by a mechanical, non-breaking move. This is the project's general principle — **make it trivial to get started, with elegant offramps to more customization and configurability** — applied to corpus config.
 
 ### Packaging — fold into core, subpath export, or a separate package
 
@@ -316,7 +335,7 @@ Chose a **subpath export within the one package** (`markdown-contract/declarativ
 
 - **`$ref` target resolution (deferred feature)** — when the code escape hatch lands: resolve against a JS/ESM module export (`.ts` via a loader / Node type-stripping); the open bits are how the `#Name` fragment selects the export (default vs named) and whether the loader ships a built-in TS hook.
 - **Named-leaf / anchor syntax** — the `content: { '<anchor>': <leaf> }` map form vs a list; final shape.
-- **`format` keyword set** — which string formats (email / url / uuid / date …) are in the closed vocabulary vs pushed to `pattern` / `$ref`.
+- **`format` keyword set** — resolved toward **broad** coverage: the formats Zod and JSON Schema both expose out of the box (see § Schema vocabulary). Still open: whether the rarer Zod id formats (`cuid2` / `ulid` / `nanoid`) and `e164` earn first-class keywords in v1 or wait for demand, and how our `format` names line up with a future JSON-Schema leaf dialect (our `date` / `datetime` vs JSON Schema's `date` / `date-time`).
 - **The meta-schema** — validating a contract YAML *before* compiling, for a friendly error surface: a schema over the parsed YAML that ideally dogfoods the engine's own finding model.
 - **Editor tooling** — whether and when to publish a JSON Schema for the YAML format itself.
 
@@ -330,7 +349,8 @@ Chose a **subpath export within the one package** (`markdown-contract/declarativ
 
 ## References
 
-- [[C-0006-declarative-yaml-contracts]] — the capability this decision realizes.
+- [[C-0006-declarative-yaml-contracts]] — the capability this decision realizes (the YAML contract format).
+- [[C-0007-declarative-corpus-meta-config]] — the meta-config capability this decision also realizes (globs → contracts).
 - [[C-0003-corpus-cli]] — the directory → contract config this puts in data form.
 - [[C-0005-two-plane-contract-engine]] — the runtime the loader compiles to.
 - [[D-0004-content-plane]] — the closed-vocabulary + `z.*` escape-hatch philosophy this mirrors, and the leaf set.
