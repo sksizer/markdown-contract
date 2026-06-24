@@ -1,0 +1,22 @@
+# Contract for SDLC decision docs (docs/planning/decisions/D-*.md).
+mcVersion: 1
+kind: contract
+
+frontmatter:
+  fields:
+    type: { const: decision }
+    id: { type: string, pattern: '^D-\d{4}$' }
+    title: { type: string, min: 1 }
+    status: { type: string, pattern: '^[a-z-]+/[a-z-]+$' }
+    created: { type: string, format: date }
+
+body:
+  order: none
+  allowUnknown: true
+  sections:
+    - section: Summary
+    - section: Context
+    - section: Decision
+    - section: Why
+    - section: Consequences
+    - section: References

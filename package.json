@@ -35,6 +35,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "cli": "node dist/cli/index.js",
+    "lint:docs": "npm run build && node dist/cli/index.js validate docs/planning",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {

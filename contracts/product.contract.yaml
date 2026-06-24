@@ -1,0 +1,22 @@
+# Contract for SDLC product docs (docs/planning/products/PR-*.md).
+mcVersion: 1
+kind: contract
+
+frontmatter:
+  fields:
+    type: { const: product }
+    id: { type: string, pattern: '^PR-\d{4}$' }
+    title: { type: string, min: 1 }
+    status: { type: string, pattern: '^[a-z-]+/[a-z-]+$' }
+    created: { type: string, format: date }
+
+body:
+  order: none
+  allowUnknown: true
+  sections:
+    - section: Summary
+    - section: What it is
+    - section: Boundary
+    - section: Drivers & goals
+    - section: Status
+    - section: References
