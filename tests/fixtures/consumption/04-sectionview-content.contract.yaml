@@ -1,0 +1,12 @@
+mcVersion: 1
+kind: contract
+# fixture: c04 — SectionView content  (provenance: 04-sectionview-content.ts)
+
+body:
+  order: none
+  allowUnknown: false
+  sections:
+    - section: Summary
+      anchor: summary
+      content:
+        maxWords: 120
