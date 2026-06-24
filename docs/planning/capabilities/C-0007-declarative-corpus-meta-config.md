@@ -54,15 +54,22 @@ kind: config
 # A named registry of reusable contract files — the offramp: the contracts are NOT
 # inlined here, they live in their own files and are referenced, so they're shareable
 # and reusable across rules and across configs. (name -> contract-file path)
+#
+# CONTRACT PATHS resolve relative to THIS CONFIG FILE'S directory — so the config and
+# the contract files it points at move together. (Same for a path written directly on
+# a rule's `contract:`, below.)
 contracts:
   release-note: ./contracts/release-note.contract.yaml
   guide:        ./contracts/guide.contract.yaml
 
+# INCLUDE / EXCLUDE GLOBS match each file's path relative to the RUN ROOT — the
+# validated `<path>` (default cwd), NOT this config file's location. So the same
+# config can be aimed at different subtrees just by changing the run target.
 rules:
   # …reference a registered contract by name…
   - include: ['notes/releases/**/*.md']
     contract: release-note
-  # …or point a rule straight at a contract file…
+  # …or point a rule straight at a contract file (also relative to this config file)…
   - include: ['docs/guides/**/*.md']
     exclude: ['**/_*.md']
     contract: ./contracts/guide.contract.yaml
