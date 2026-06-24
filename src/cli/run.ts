@@ -19,6 +19,7 @@ import { formatHuman, formatJson, formatSarif } from "./format.js";
 const USAGE = [
   "usage: markdown-contract validate <path> [--format human|json|sarif]",
   "       [--config <file>] | [--contract <file>] | [--contract <file> --path <dir> ...]",
+  "       [--glob <glob> ...] [--include <glob> ...] [--exclude <glob> ...]",
 ].join("\n");
 
 /** A single corpus rule (`include`/`exclude` globs → contract) — the unit a CorpusConfig holds. */
@@ -65,6 +66,9 @@ export async function runCli(
         config: { type: "string" },
         contract: { type: "string", multiple: true }, // a YAML contract (repeatable for pairs)
         path: { type: "string", multiple: true }, // the target dir paired with each --contract
+        glob: { type: "string", multiple: true }, // include filter (alias of --include), relative to run root
+        include: { type: "string", multiple: true }, // include filter, relative to run root
+        exclude: { type: "string", multiple: true }, // exclude filter, relative to run root
         help: { type: "boolean", short: "h" },
       },
       allowPositionals: true,
@@ -126,9 +130,18 @@ export async function runCli(
     return { code: 2, stdout: "", stderr: `markdown-contract: path not found: ${pathArg ?? runRoot}` };
   }
 
+  // Global glob pre-filter (relative to the run root), applied in EVERY mode incl.
+  // --config. `--glob` is the friendly alias of `--include`; both feed the include set.
+  const include = [...(values.glob ?? []), ...(values.include ?? [])];
+  const exclude = values.exclude ?? [];
+
   let result: { findings: ReturnType<typeof runCorpus>["findings"]; exitCode: number };
   try {
-    result = runCorpus(config, { cwd: runRoot });
+    result = runCorpus(config, {
+      cwd: runRoot,
+      include: include.length > 0 ? include : undefined,
+      exclude: exclude.length > 0 ? exclude : undefined,
+    });
   } catch (err) {
     // A runtime failure inside the runner (e.g. a contract throwing) is a config/usage
     // problem from the CLI's vantage: exit 2 with the message rather than crash.

@@ -96,6 +96,13 @@ function walkSync(root: string): string[] {
  * that path onto every finding, so findings already carry their file location and
  * are deterministically sorted within the file.
  *
+ * An optional global `include` / `exclude` pre-filter narrows the run *before* rule
+ * matching, independent of the config's own per-rule globs: a file is considered only
+ * if it matches at least one `include` glob (when any are given) and no `exclude` glob.
+ * This is an AND-narrowing (a file must satisfy both the pre-filter and a rule), so it
+ * works uniformly across an inline contract and a multi-rule `--config` — something a
+ * per-rule glob list can't express. All globs are matched relative to `cwd`.
+ *
  * Exit-code policy (AC-2): `0` when no `error`-level finding exists across the whole
  * corpus, `1` when any `error`-level finding is present. `2` is reserved for
  * usage/config errors and is raised by the CLI layer, never here — this function
@@ -103,16 +110,29 @@ function walkSync(root: string): string[] {
  */
 export function runCorpus(
   config: CorpusConfig,
-  opts?: { format?: "human" | "json" | "sarif"; cwd?: string },
+  opts?: {
+    format?: "human" | "json" | "sarif";
+    cwd?: string;
+    include?: string[];
+    exclude?: string[];
+  },
 ): { findings: Finding[]; exitCode: number } {
   const root = resolve(opts?.cwd ?? process.cwd());
   const rules = compile(config);
+
+  // Optional global pre-filter, applied before rule matching (AND-narrowing).
+  const include =
+    opts?.include && opts.include.length > 0 ? picomatch(opts.include, PICOMATCH_OPTS) : null;
+  const exclude =
+    opts?.exclude && opts.exclude.length > 0 ? picomatch(opts.exclude, PICOMATCH_OPTS) : null;
 
   const findings: Finding[] = [];
   const files = walkSync(root);
 
   for (const rel of files) {
     const posixRel = toPosix(rel);
+    if (exclude && exclude(posixRel)) continue;
+    if (include && !include(posixRel)) continue;
     const match = rules.find(
       (r) => r.include(posixRel) && !(r.exclude && r.exclude(posixRel)),
     );
