@@ -159,3 +159,69 @@ describe("CLI — config-less --contract parameterization", () => {
     expect(res.stderr).toContain(".yaml");
   });
 });
+
+describe("runCorpus — global include/exclude pre-filter", () => {
+  it("exclude skips matching files (the failing bad.md → exit 0)", () => {
+    const config = loadConfigFile(join(dir, "mc.yaml"));
+    const r = runCorpus(config, { cwd: dir, exclude: ["bad.md"] });
+    expect(r.exitCode).toBe(0);
+  });
+
+  it("include narrows to matching files, AND-ed with the rules (exit 0, nothing flagged)", () => {
+    const config = loadConfigFile(join(dir, "mc.yaml"));
+    const r = runCorpus(config, { cwd: dir, include: ["good.md"] });
+    expect(r.exitCode).toBe(0);
+    expect(r.findings).toEqual([]);
+  });
+
+  it("an include that matches nothing validates nothing (exit 0)", () => {
+    const config = loadConfigFile(join(dir, "mc.yaml"));
+    const r = runCorpus(config, { cwd: dir, include: ["does/not/exist/**"] });
+    expect(r.exitCode).toBe(0);
+    expect(r.findings).toEqual([]);
+  });
+});
+
+describe("CLI — glob scoping (--glob / --include / --exclude), all modes", () => {
+  const contract = () => join(dir, "doc.contract.yaml");
+
+  it("--glob narrows a --contract run to matching files (exit 0)", async () => {
+    const res = await runCli(
+      ["validate", dir, "--contract", contract(), "--glob", "clean/**/*.md"],
+      { cwd: dir },
+    );
+    expect(res.code).toBe(0); // bad.md is outside the include narrowing
+  });
+
+  it("--exclude drops the failing file from a --contract run (exit 0)", async () => {
+    const res = await runCli(
+      ["validate", dir, "--contract", contract(), "--exclude", "bad.md"],
+      { cwd: dir },
+    );
+    expect(res.code).toBe(0);
+  });
+
+  it("--include is the explicit form of --glob (exit 0)", async () => {
+    const res = await runCli(
+      ["validate", dir, "--contract", contract(), "--include", "good.md"],
+      { cwd: dir },
+    );
+    expect(res.code).toBe(0);
+  });
+
+  it("scoping applies to --config mode too (--exclude bad.md → exit 0)", async () => {
+    const res = await runCli(
+      ["validate", dir, "--config", join(dir, "mc.yaml"), "--exclude", "bad.md"],
+      { cwd: dir },
+    );
+    expect(res.code).toBe(0);
+  });
+
+  it("a --glob matching nothing validates nothing → exit 0", async () => {
+    const res = await runCli(
+      ["validate", dir, "--contract", contract(), "--glob", "nope/**"],
+      { cwd: dir },
+    );
+    expect(res.code).toBe(0);
+  });
+});
