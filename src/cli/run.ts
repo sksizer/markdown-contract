@@ -12,12 +12,17 @@ import { isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 
-import { loadConfigFile } from "../declarative/index.js";
+import { loadConfigFile, loadContractFile } from "../declarative/index.js";
 import { runCorpus, type CorpusConfig } from "../runner/index.js";
 import { formatHuman, formatJson, formatSarif } from "./format.js";
 
-const USAGE =
-  "usage: markdown-contract validate <path> [--format human|json|sarif] [--config <file>]";
+const USAGE = [
+  "usage: markdown-contract validate <path> [--format human|json|sarif]",
+  "       [--config <file>] | [--contract <file>] | [--contract <file> --path <dir> ...]",
+].join("\n");
+
+/** A single corpus rule (`include`/`exclude` globs → contract) — the unit a CorpusConfig holds. */
+type Rule = CorpusConfig["rules"][number];
 
 const DEFAULT_CONFIG_NAMES = [
   "markdown-contract.config.js",
@@ -58,6 +63,8 @@ export async function runCli(
       options: {
         format: { type: "string", default: "human" }, // human | json | sarif
         config: { type: "string" },
+        contract: { type: "string", multiple: true }, // a YAML contract (repeatable for pairs)
+        path: { type: "string", multiple: true }, // the target dir paired with each --contract
         help: { type: "boolean", short: "h" },
       },
       allowPositionals: true,
@@ -87,21 +94,36 @@ export async function runCli(
     };
   }
 
-  // Resolve the run root: an explicit `<path>` scopes the traversal to that subtree
-  // (it becomes the runner's cwd); otherwise the run covers the whole `cwd`.
   const pathArg = rest[0];
-  const runRoot = pathArg ? resolve(cwd, pathArg) : cwd;
-  if (!existsSync(runRoot)) {
-    return { code: 2, stdout: "", stderr: `markdown-contract: path not found: ${pathArg}` };
+  const contracts = values.contract ?? [];
+  const paths = values.path ?? [];
+
+  // The contract binding comes from EITHER an inline `--contract` (one binary, config-less
+  // parameterization — D-0008 § CLI parameterization) OR a `--config` file, never both.
+  if (contracts.length > 0 && values.config !== undefined) {
+    return { code: 2, stdout: "", stderr: `markdown-contract: use either --contract or --config, not both\n${USAGE}` };
+  }
+  if (contracts.length === 0 && paths.length > 0) {
+    return { code: 2, stdout: "", stderr: `markdown-contract: --path requires a matching --contract\n${USAGE}` };
   }
 
-  // Load the config. The config's globs are written relative to the config's own
-  // directory / the run root, so config resolution is anchored at `cwd`.
+  // Resolve the run root (the runner's cwd) and the `CorpusConfig`. Both inline and
+  // file-config forms compile to one CorpusConfig run through the same `runCorpus`.
   let config: CorpusConfig;
+  let runRoot: string;
   try {
-    config = await loadConfig(cwd, values.config);
+    if (contracts.length > 0) {
+      ({ config, runRoot } = buildInlineConfig(cwd, contracts, paths, pathArg));
+    } else {
+      runRoot = pathArg ? resolve(cwd, pathArg) : cwd;
+      config = await loadConfig(cwd, values.config);
+    }
   } catch (err) {
     return { code: 2, stdout: "", stderr: `markdown-contract: ${(err as Error).message}` };
+  }
+
+  if (!existsSync(runRoot)) {
+    return { code: 2, stdout: "", stderr: `markdown-contract: path not found: ${pathArg ?? runRoot}` };
   }
 
   let result: { findings: ReturnType<typeof runCorpus>["findings"]; exitCode: number };
@@ -121,6 +143,63 @@ export async function runCli(
         : formatHuman(result.findings);
 
   return { code: result.exitCode, stdout, stderr: "" };
+}
+
+/**
+ * Build a `CorpusConfig` from inline `--contract` flags — the config-less parameterization
+ * of the same binary (D-0008 § CLI parameterization). Two shapes:
+ *
+ * - **one contract, no `--path`**: apply that contract to every `*.md` under the positional
+ *   `<path>` (the run root) — a single catch-all rule `include: ['**\/*.md']`.
+ * - **paired `--contract` + `--path`**: one rule per pair, `include: ['<dir>/**\/*.md']`,
+ *   matched relative to the run root (the cwd); a positional `<path>` is not used here.
+ *
+ * Contract refs must be `.yaml`/`.yml` (a code-authored contract is the deferred code escape).
+ * Throws on a count mismatch or an unsupported ref; the caller maps the throw to a `2` exit.
+ */
+function buildInlineConfig(
+  cwd: string,
+  contracts: string[],
+  paths: string[],
+  pathArg?: string,
+): { config: CorpusConfig; runRoot: string } {
+  const load = (ref: string): Rule["contract"] => {
+    if (!/\.ya?ml$/i.test(ref)) {
+      throw new Error(
+        `--contract must be a .yaml/.yml contract file (got '${ref}'); a code-authored contract is the deferred code escape`,
+      );
+    }
+    return loadContractFile(isAbsolute(ref) ? ref : resolve(cwd, ref));
+  };
+
+  // Single contract over a tree: `validate <path> --contract x.yaml`.
+  if (paths.length === 0) {
+    if (contracts.length !== 1) {
+      throw new Error(
+        `multiple --contract needs a matching --path for each (got ${contracts.length} --contract and no --path)`,
+      );
+    }
+    const runRoot = pathArg ? resolve(cwd, pathArg) : cwd;
+    return { config: { rules: [{ include: ["**/*.md"], contract: load(contracts[0]!) }] }, runRoot };
+  }
+
+  // Paired routing: `validate --contract a.yaml --path d1 --contract b.yaml --path d2`.
+  if (paths.length !== contracts.length) {
+    throw new Error(
+      `each --contract needs a matching --path (got ${contracts.length} --contract and ${paths.length} --path)`,
+    );
+  }
+  if (pathArg !== undefined) {
+    throw new Error(
+      `a positional <path> can't be combined with --contract/--path pairs; the --path of each pair is its target`,
+    );
+  }
+  const rules: Rule[] = contracts.map((ref, i) => {
+    const dir = paths[i]!.replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+$/, "");
+    const include = dir === "" || dir === "." ? "**/*.md" : `${dir}/**/*.md`;
+    return { include: [include], contract: load(ref) };
+  });
+  return { config: { rules }, runRoot: cwd };
 }
 
 /**

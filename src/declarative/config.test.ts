@@ -96,3 +96,66 @@ describe("CLI — validate with a .yaml config", () => {
     expect(res.code).toBe(0);
   });
 });
+
+describe("CLI — config-less --contract parameterization", () => {
+  const contract = () => join(dir, "doc.contract.yaml");
+
+  it("one contract over a tree (failing tree → exit 1)", async () => {
+    const res = await runCli(["validate", dir, "--contract", contract()], { cwd: dir });
+    expect(res.code).toBe(1); // bad.md has no Summary section
+  });
+
+  it("one contract over a clean subtree → exit 0", async () => {
+    const res = await runCli(["validate", join(dir, "clean"), "--contract", contract()], { cwd: dir });
+    expect(res.code).toBe(0);
+  });
+
+  it("inline contract/path pair routes by directory (clean subtree → exit 0)", async () => {
+    const res = await runCli(["validate", "--contract", contract(), "--path", "clean"], { cwd: dir });
+    expect(res.code).toBe(0);
+  });
+
+  it("inline pair pointed at the failing tree → exit 1", async () => {
+    const res = await runCli(["validate", "--contract", contract(), "--path", "."], { cwd: dir });
+    expect(res.code).toBe(1);
+  });
+
+  it("--contract and --config together → exit 2", async () => {
+    const res = await runCli(
+      ["validate", dir, "--contract", contract(), "--config", join(dir, "mc.yaml")],
+      { cwd: dir },
+    );
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain("either --contract or --config");
+  });
+
+  it("--path without --contract → exit 2", async () => {
+    const res = await runCli(["validate", dir, "--path", "clean"], { cwd: dir });
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain("--path requires a matching --contract");
+  });
+
+  it("contract/path count mismatch → exit 2", async () => {
+    const res = await runCli(
+      ["validate", "--contract", contract(), "--contract", contract(), "--path", "clean"],
+      { cwd: dir },
+    );
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain("matching --path");
+  });
+
+  it("positional <path> combined with pairs → exit 2", async () => {
+    const res = await runCli(
+      ["validate", dir, "--contract", contract(), "--path", "clean"],
+      { cwd: dir },
+    );
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain("positional");
+  });
+
+  it("a non-YAML --contract ref → exit 2 (code escape deferred)", async () => {
+    const res = await runCli(["validate", dir, "--contract", join(dir, "contract.ts")], { cwd: dir });
+    expect(res.code).toBe(2);
+    expect(res.stderr).toContain(".yaml");
+  });
+});
