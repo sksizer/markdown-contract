@@ -10,5 +10,6 @@
  * escape hatch (`$ref`) and cross-cutting rules are deferred (D-0008 § Out of scope).
  */
 export { loadContract, loadContractFile } from "./load.js";
+export { loadConfig, loadConfigFile } from "./config.js";
 export { DeclarativeError } from "./errors.js";
 export type { DeclarativeDoc } from "./parse.js";

@@ -12,13 +12,21 @@ import { isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 
+import { loadConfigFile } from "../declarative/index.js";
 import { runCorpus, type CorpusConfig } from "../runner/index.js";
 import { formatHuman, formatJson, formatSarif } from "./format.js";
 
 const USAGE =
   "usage: markdown-contract validate <path> [--format human|json|sarif] [--config <file>]";
 
-const DEFAULT_CONFIG_NAMES = ["markdown-contract.config.js", "markdown-contract.config.mjs"];
+const DEFAULT_CONFIG_NAMES = [
+  "markdown-contract.config.js",
+  "markdown-contract.config.mjs",
+  "markdown-contract.config.yaml",
+  "markdown-contract.config.yml",
+  "markdown-contract.yaml",
+  "markdown-contract.yml",
+];
 const VALID_FORMATS = new Set(["human", "json", "sarif"]);
 
 /** The result of the pure CLI core — what the thin wrapper writes and exits on. */
@@ -139,9 +147,14 @@ async function loadConfig(cwd: string, configFlag?: string): Promise<CorpusConfi
     configPath = found;
   }
 
+  // A declarative YAML config compiles to a CorpusConfig via the declarative front-end.
+  if (/\.ya?ml$/i.test(configPath)) {
+    return loadConfigFile(configPath);
+  }
+
   if (!/\.(?:js|mjs)$/.test(configPath)) {
     throw new Error(
-      `unsupported config extension: ${configPath} (only .js/.mjs are supported; a .ts config needs a loader)`,
+      `unsupported config extension: ${configPath} (only .js/.mjs/.yaml/.yml are supported; a .ts config needs a loader)`,
     );
   }
 
