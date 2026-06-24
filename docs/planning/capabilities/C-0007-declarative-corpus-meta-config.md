@@ -41,6 +41,7 @@ A consumer maps a corpus to contracts in one YAML file — a `rules` list of `in
 - A loader / compiler — `loadConfig(yaml) → CorpusConfig` (part of the `markdown-contract/declarative` subpath export) — plus `markdown-contract validate` accepting a `.yaml` / `.yml` config beside the existing `.js` / `.mjs`.
 - **Three first-class contract-ref forms** — inline definition, `.yaml` path, or registry name — with paths resolved relative to the config file and **first-match-wins** traversal matching the runner.
 - **CLI parameterization of the same binary, file-based or inline.** `markdown-contract validate <path> --config <meta.yaml>` runs a meta-config file; repeated `--contract <file> --path <dir>` pairs express the same routing inline (no file); and a lone `--contract <file>` against a positional `<path>` is the one-contract case ([[C-0006-declarative-yaml-contracts]]). All assemble one `CorpusConfig` and run the same engine.
+- **Glob scoping in every mode** — `--glob` / `--include` / `--exclude` (repeatable, relative to the run root) narrow *which files* a run touches, as a pre-filter that AND-composes with the config's own per-rule globs.
 
 ## Inputs
 
@@ -122,7 +123,17 @@ Apply a single contract to one tree — the degenerate one-rule case, owned by [
 markdown-contract validate ./notes/releases --contract release-note.contract.yaml
 ```
 
-`--config <file>` and the `--contract` / `--path` flags are mutually exclusive ways to populate the same `CorpusConfig`; the exact spelling of the repeatable pair flags is being finalized in [[D-0008-declarative-contract-dsl]] § CLI parameterization.
+`--config <file>` and the `--contract` / `--path` flags are mutually exclusive ways to populate the same `CorpusConfig`. Inline pairs are **repeated `--contract <f> --path <d>`**; the positional `<path>` is the run root for the single-contract case and can't be combined with pairs (a count mismatch or a positional-with-pairs is a usage error).
+
+**Scope which files** — in any of the three modes — with repeatable glob flags relative to the run root: `--glob <glob>` (the include alias), `--include <glob>`, `--exclude <glob>`:
+
+```bash
+# narrow a meta-config run to a subtree, dropping drafts
+markdown-contract validate ./docs --config markdown-contract.yaml \
+  --glob 'releases/**/*.md' --exclude '**/_*.md'
+```
+
+These compile to an `include` / `exclude` pre-filter on `runCorpus` that AND-narrows the run *before* rule matching — so they layer cleanly over a multi-rule meta-config, not just the config-less forms. See [[D-0008-declarative-contract-dsl]] § CLI parameterization.
 
 ## Hook points
 

@@ -201,6 +201,16 @@ The meta-config is one way to tell `markdown-contract validate` *what contract a
 
 `--config` and the `--contract` / `--path` flags are mutually exclusive ways to populate the same config object — the file form and the flag form are interchangeable. v1 adds, beside the existing `.js` / `.mjs` config recognition: `.yaml` / `.yml` recognition for `--config`, and the `--contract` (+ paired `--path`) flags for the config-less forms. This keeps the **one-contract case a single short command** while the meta-config remains the home for anything non-trivial — the same on-ramp / offramp shape as inline-vs-file contract refs.
 
+**Glob scoping — `--glob` / `--include` / `--exclude`.** Beyond *which contract*, the CLI scopes *which files* with repeatable glob flags, **relative to the run root** and applied in **every** mode (a `--contract`, the inline pairs, and a `--config`):
+
+| Flag | Meaning |
+|---|---|
+| `--glob <glob>` | an **include** filter, relative to the run root — the friendly alias of `--include` (so `validate ./docs --contract x.yaml --glob 'releases/**/*.md'` checks only that subset) |
+| `--include <glob>` | the same include filter, explicit name (repeatable) |
+| `--exclude <glob>` | drop matching files, relative to the run root (repeatable) |
+
+These are a **global pre-filter**: a file is validated only if it matches at least one include glob (when any are given) *and* no exclude glob, *then* the normal rule matching applies. Because that is an AND-narrowing across the whole run, it composes with a multi-rule `--config` — which a flat per-rule glob list can't express — so the filter lives at the runner (`runCorpus` takes optional `include` / `exclude`), and the CLI just forwards its flags. `--glob` does **not** change the run root (the positional `<path>` stays the root); it narrows *within* it. With no positional `<path>`, the run root is the cwd and `--glob` selects from there.
+
 ### Versioning — `mcVersion` from day one
 
 Every file carries `mcVersion: <integer>` and a `kind: contract | config`.
@@ -321,7 +331,7 @@ But the choice is **not** a foreclosure. The schema vocabulary is an isolated, c
 ## Consequences
 
 - A new front-end module (subpath export) plus a YAML-parser dependency; the engine stays YAML-free per the one-way layering of [[D-0006-packaging]].
-- The CLI's config loader gains `.yaml` / `.yml` recognition beside `.js` / `.mjs`, plus a `--contract` (and paired `--path`) flag for the config-less single-contract and inline-pair invocations — all funnelling into one `CorpusConfig` (see § CLI parameterization).
+- The CLI's config loader gains `.yaml` / `.yml` recognition beside `.js` / `.mjs`, plus a `--contract` (and paired `--path`) flag for the config-less single-contract and inline-pair invocations, and `--glob` / `--include` / `--exclude` glob scoping — all funnelling into one `CorpusConfig` (see § CLI parameterization). The scoping flags add an optional `include` / `exclude` pre-filter to `runCorpus`, a small additive runner change within the one-way `cli → runner` layering.
 - The closed vocabulary is a **maintained surface**: each new leaf type or schema keyword is a deliberate, versioned addition — the same discipline [[D-0004-content-plane]] imposes on leaves.
 - The code escape hatch (`$ref`, and code-authored contract refs) reintroduces a code dependency, so it is **deferred** — v1 is pure declarative YAML. When it lands the loader `import()`s the target (JS/ESM directly; `.ts` via a loader or Node type-stripping); runtime TypeScript is feasible, so the deferral is a scoping choice. Until then, contracts past the closed vocabulary are authored in TypeScript via the combinators.
 - Cross-cutting rules cannot be expressed in v1 YAML; corpora needing them author those contracts in TS (interop), or wait for the rules format version.
@@ -348,7 +358,8 @@ Chose a **subpath export within the one package** (`markdown-contract/declarativ
 
 - **`$ref` target resolution (deferred feature)** — when the code escape hatch lands: resolve against a JS/ESM module export (`.ts` via a loader / Node type-stripping); the open bits are how the `#Name` fragment selects the export (default vs named) and whether the loader ships a built-in TS hook.
 - **Named-leaf / anchor syntax** — the `content: { '<anchor>': <leaf> }` map form vs a list; final shape.
-- **CLI pair-flag spelling** — the exact surface for inline contract/target pairs (`--contract <f> --path <d>` repeated, vs a single `--contract <f>:<d>` form, vs positional pairs) and how it composes with the positional `<path>`; the semantics (one `CorpusConfig`, first match wins) are fixed, the spelling is not. The positional `<path>` is a directory run-root, not a glob (globs live in `include` / `exclude`); whether the config-less `--contract` mode should also take bare `--include` / `--exclude` glob flags — vs. requiring a meta-config the moment you need glob scoping — is open.
+- **CLI pair-flag spelling** — *resolved*: inline pairs are **repeated `--contract <f> --path <d>`**; the positional `<path>` is the run root for the single-contract case and may not be combined with pairs (a count mismatch or a positional-with-pairs is a usage error). See § CLI parameterization.
+- **Config-less glob scoping** — *resolved*: yes — `--glob` / `--include` / `--exclude` (repeatable, relative to the run root) scope any run, in every mode, as a global pre-filter at the runner (see § CLI parameterization). `--glob` is the include alias and narrows *within* the run root rather than replacing it.
 - **`format` keyword set** — resolved toward **broad** coverage: the formats Zod and JSON Schema both expose out of the box (see § Schema vocabulary). Still open: whether the rarer Zod id formats (`cuid2` / `ulid` / `nanoid`) and `e164` earn first-class keywords in v1 or wait for demand, and how our `format` names line up with a future JSON-Schema leaf dialect (our `date` / `datetime` vs JSON Schema's `date` / `date-time`).
 - **The meta-schema** — validating a contract YAML *before* compiling, for a friendly error surface: a schema over the parsed YAML that ideally dogfoods the engine's own finding model.
 - **Editor tooling** — whether and when to publish a JSON Schema for the YAML format itself.
