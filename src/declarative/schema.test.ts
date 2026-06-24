@@ -62,6 +62,37 @@ describe("compileSchema — the closed vocabulary → Zod", () => {
     expect(s.safeParse("nope").success).toBe(false);
   });
 
+  it("format: the broad closed set (Zod ∩ JSON Schema), each accepting/rejecting", () => {
+    const cases: Array<[string, string, string]> = [
+      // format, a valid value, an invalid value
+      ["url", "https://example.com", "not a url"],
+      ["uuid", "f47ac10b-58cc-4372-a567-0e02b2c3d479", "nope"],
+      ["hostname", "example.com", "not a host!"],
+      ["datetime", "2026-06-23T10:00:00Z", "2026-06-23"],
+      ["date", "2026-06-23", "23/06/2026"],
+      ["time", "10:00:00", "10am"],
+      ["duration", "P3Y6M4D", "3 years"],
+      ["ipv4", "192.168.0.1", "999.1.1.1"],
+      ["ipv6", "2001:db8::1", "192.168.0.1"],
+      ["cidrv4", "192.168.0.0/24", "192.168.0.0"],
+      ["nanoid", "V1StGXR8_Z5jdHi6B-myT", "short id!"],
+      ["cuid", "cjld2cjxh0000qzrmn831i7rn", "NOPE"],
+      ["ulid", "01ARZ3NDEKTSV4RRFFQ69G5FAV", "lowercase-ulid"],
+      ["base64", "aGVsbG8=", "not base64!!"],
+      ["e164", "+14155552671", "5552671"],
+    ];
+    for (const [format, ok, bad] of cases) {
+      const s = compileSchema({ type: "string", format });
+      expect(s.safeParse(ok).success, `${format} should accept ${ok}`).toBe(true);
+      expect(s.safeParse(bad).success, `${format} should reject ${bad}`).toBe(false);
+    }
+  });
+
+  it("rejects an unknown format with a helpful message", () => {
+    expect(() => compileSchema({ type: "string", format: "iban" })).toThrow(DeclarativeError);
+    expect(() => compileSchema({ type: "string", format: "iban" })).toThrow(/unsupported string format/);
+  });
+
   it("rejects the deferred $ref code escape hatch", () => {
     expect(() => compileSchema({ $ref: "./x.js#Y" })).toThrow(DeclarativeError);
   });

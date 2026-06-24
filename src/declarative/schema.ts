@@ -16,6 +16,39 @@ import { DeclarativeError } from "./errors.js";
 const describe = (v: unknown): string =>
   v === null ? "null" : Array.isArray(v) ? "a list" : typeof v;
 
+/**
+ * The closed `format` vocabulary (D-0008 § Schema vocabulary): the string formats Zod and
+ * JSON Schema both expose out of the box, each mapped to its Zod constructor. Deliberately
+ * broad so common shapes never fall back to a hand-written `pattern`; anything outside the
+ * set is a `pattern` (or the deferred `$ref`).
+ */
+const STRING_FORMATS: Record<string, () => z.ZodType> = {
+  // web / identity
+  email: () => z.email(),
+  url: () => z.url(),
+  uuid: () => z.uuid(),
+  hostname: () => z.hostname(),
+  // ISO-8601 temporals
+  datetime: () => z.iso.datetime(),
+  date: () => z.iso.date(),
+  time: () => z.iso.time(),
+  duration: () => z.iso.duration(),
+  // network
+  ipv4: () => z.ipv4(),
+  ipv6: () => z.ipv6(),
+  cidrv4: () => z.cidrv4(),
+  cidrv6: () => z.cidrv6(),
+  // id forms
+  nanoid: () => z.nanoid(),
+  cuid: () => z.cuid(),
+  cuid2: () => z.cuid2(),
+  ulid: () => z.ulid(),
+  // misc
+  base64: () => z.base64(),
+  emoji: () => z.emoji(),
+  e164: () => z.e164(),
+};
+
 /** Compile one schema node (the closed vocabulary) into a Zod schema. */
 export function compileSchema(node: unknown, path = "schema"): z.ZodType {
   if (node === null || typeof node !== "object" || Array.isArray(node)) {
@@ -78,10 +111,13 @@ function typed(n: Record<string, unknown>, path: string): z.ZodType {
   switch (n.type) {
     case "string": {
       if (typeof n.format === "string") {
-        if (n.format === "email") return z.email();
-        if (n.format === "url") return z.url();
-        if (n.format === "uuid") return z.uuid();
-        throw new DeclarativeError(`${path}: unsupported string format '${n.format}' (email | url | uuid)`);
+        const make = STRING_FORMATS[n.format];
+        if (!make) {
+          throw new DeclarativeError(
+            `${path}: unsupported string format '${n.format}' (expected one of: ${Object.keys(STRING_FORMATS).join(", ")})`,
+          );
+        }
+        return make();
       }
       let s = z.string();
       const min = num(n.min);
