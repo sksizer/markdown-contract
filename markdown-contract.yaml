@@ -1,0 +1,37 @@
+# markdown-contract — dogfood config for this project's own SDLC planning docs.
+#
+# Run it (from the repo root; this file is auto-discovered as a default config name):
+#
+#   markdown-contract validate docs/planning
+#
+# Scoping to docs/planning keeps the run fast and off the test fixtures (which are
+# intentionally malformed) and the freeform provenance/ notes. The globs key on the
+# document's id-prefixed filename, so they match wherever the docs live in the tree.
+#
+# Contract-file paths below resolve relative to THIS config file (the repo root);
+# the include globs match each file's path relative to the run root (the validated
+# <path>). See D-0008 § CLI parameterization.
+mcVersion: 1
+kind: config
+
+contracts:
+  capability: ./contracts/capability.contract.yaml
+  decision:   ./contracts/decision.contract.yaml
+  driver:     ./contracts/driver.contract.yaml
+  milestone:  ./contracts/milestone.contract.yaml
+  product:    ./contracts/product.contract.yaml
+  task:       ./contracts/task.contract.yaml
+
+rules:
+  - include: ['**/C-*.md', 'C-*.md']
+    contract: capability
+  - include: ['**/DR-*.md', 'DR-*.md']    # before D-*, though DR- and D- don't overlap
+    contract: driver
+  - include: ['**/D-*.md', 'D-*.md']
+    contract: decision
+  - include: ['**/M-*.md', 'M-*.md']
+    contract: milestone
+  - include: ['**/PR-*.md', 'PR-*.md']
+    contract: product
+  - include: ['**/T-*.md', 'T-*.md']
+    contract: task

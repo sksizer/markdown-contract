@@ -1,0 +1,23 @@
+# Contract for SDLC task docs (docs/planning/tasks/T-*.md).
+mcVersion: 1
+kind: contract
+
+frontmatter:
+  fields:
+    type: { const: task }
+    id: { type: string, pattern: '^T-[0-9A-Z]{4}$' }
+    status: { type: string, pattern: '^[a-z-]+/[a-z-]+$' }
+    created: { type: string, format: date }
+
+body:
+  order: none
+  allowUnknown: true
+  sections:
+    - section: Goal
+    - section: Today
+    - section: Proposed
+    - section: Approach
+    - section: Files to touch
+    - section: Acceptance criteria
+    - section: Out of scope
+    - section: Dependencies
