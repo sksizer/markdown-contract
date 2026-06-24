@@ -10,6 +10,7 @@ parent_key: null
 contains: []
 related:
   - '[[C-0006-declarative-yaml-contracts]]'
+  - '[[C-0008-config-scaffolding]]'
   - '[[C-0003-corpus-cli]]'
   - '[[C-0005-two-plane-contract-engine]]'
   - '[[D-0008-declarative-contract-dsl]]'
