@@ -42,11 +42,12 @@
  * surface (D-0009 § Consequences).
  *
  * This module implements the **single-contract core** (Phase 2) plus the full **value-type
- * ladder** (Phase 3): discovery, the body grammar (sections / order / unknown-admission), the
- * tight-but-accepting frontmatter field schemas (const / number / boolean / array / format /
- * enum / string), and YAML emission. The meta-mode directory cut lands in a following phase;
- * the interfaces (`InferOptions`, `InferredContract`, `InferResult`, `inferConfig`) are fixed
- * here and shared.
+ * ladder** (Phase 3) plus **meta-config mode** (Phase 4): discovery, the body grammar
+ * (sections / order / unknown-admission), the tight-but-accepting frontmatter field schemas
+ * (const / number / boolean / array / format / enum / string), the directory+depth cut with
+ * full-path naming / root contracts / stranded-file warnings, and YAML emission. The
+ * interfaces (`InferOptions`, `InferredContract`, `InferResult`, `inferConfig`) are fixed and
+ * shared.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, resolve, sep } from "node:path";
@@ -479,10 +480,9 @@ function inferBody(docs: ParsedDoc[], relax: boolean):
 // ── Naming & emission ──────────────────────────────────────────────────────────────
 
 /**
- * Slugify a directory basename into a contract name (D-0009 § Naming): lower-case, runs of
- * non-alphanumerics collapse to a single `-`, leading/trailing `-` trimmed. The directory
- * path is inherently unique so there is no de-collision step; the name is just a label the
- * author can rename. A name that slugs to empty falls back to `contract`.
+ * Slugify one path segment into a name fragment (D-0009 § Naming): lower-case, runs of
+ * non-alphanumerics collapse to a single `-`, leading/trailing `-` trimmed. A segment that
+ * slugs to empty falls back to `contract` (so a degenerate basename still produces a name).
  */
 function slugify(name: string): string {
   const slug = name
@@ -493,37 +493,213 @@ function slugify(name: string): string {
 }
 
 /**
- * Infer a config from the corpus under `root`. Pure: reads files, returns model + serialized
- * YAML; writes nothing. This phase implements **single-contract mode** (`opts.meta` falsy):
- * one contract over the whole subtree, the tightest shape that accepts every `*.md` under it.
+ * Name a directory group from its FULL relative path (D-0009 § Naming): slugify every path
+ * segment from the run root and join with `-` (`api/v1` → `api-v1`, `web/v1` → `web-v1`, a
+ * top-level `api` → `api`). The relative path is inherently unique, so the joined slug is too —
+ * no de-collision step. An empty relative path is the run root itself, named after its basename
+ * (or `root` when even that slugs empty). The name is just a label the author can rename.
  */
-export function inferConfig(root: string, opts?: InferOptions): InferResult {
-  const absRoot = resolve(root);
-  const relax = opts?.relax === true;
+function nameForDir(relDir: string, absRoot: string): string {
+  if (relDir === "") {
+    const base = slugify(basename(absRoot));
+    return base === "contract" ? "root" : base;
+  }
+  return relDir.split("/").map(slugify).join("-");
+}
 
-  const docs = discover(absRoot).map((rel) => parseDoc(absRoot, rel));
-
-  // Single-contract mode: the whole subtree is one group, named after the run-root basename.
+/**
+ * Generalize one group of docs into a contract `def` (D-0009 § Step 3 + Step 4) — the
+ * frontmatter and body planes inferred to the tightest shape that still accepts every doc in
+ * the group. Shared by single-contract mode (the whole subtree is one group) and meta mode
+ * (one group per directory at the depth cut). Returns the bare `def` object an
+ * `InferredContract` and `compileContractObject` both consume.
+ */
+function generalize(docs: ParsedDoc[], relax: boolean): Record<string, unknown> {
   const def: Record<string, unknown> = {};
   const frontmatter = inferFrontmatter(docs, relax);
   if (frontmatter) def.frontmatter = frontmatter;
   const body = inferBody(docs, relax);
   if (body) def.body = body;
+  return def;
+}
 
-  const name = slugify(basename(absRoot));
-  const contract: InferredContract = {
-    name,
-    include: ["**/*.md"],
-    def,
+/** The directory of a relative POSIX file path (`""` for a file directly in the run root). */
+function dirOf(rel: string): string {
+  const slash = rel.lastIndexOf("/");
+  return slash === -1 ? "" : rel.slice(0, slash);
+}
+
+/** The depth of a relative directory: `""` is depth 0, `api` is depth 1, `api/v1` is depth 2. */
+function depthOf(relDir: string): number {
+  return relDir === "" ? 0 : relDir.split("/").length;
+}
+
+/** The ancestor directory of `relDir` at exactly `depth` (`api/v1/x` at depth 2 → `api/v1`). */
+function ancestorAt(relDir: string, depth: number): string {
+  return relDir.split("/").slice(0, depth).join("/");
+}
+
+/** Get (creating on first sight, recording walk order) the doc bucket for a group key. */
+function bucketFor(
+  groups: Map<string, ParsedDoc[]>,
+  order: string[],
+  key: string,
+): ParsedDoc[] {
+  let bucket = groups.get(key);
+  if (!bucket) {
+    groups.set(key, (bucket = []));
+    order.push(key);
+  }
+  return bucket;
+}
+
+/**
+ * Build the meta-config result (D-0009 § Step 2 + Step 5): a uniform-depth cut at `depth`.
+ *
+ * Every file is routed by the ancestor directory at exactly `depth`:
+ *  - a file whose directory is at depth ≥ `depth` belongs to its depth-`depth` ancestor → that
+ *    directory gets ONE contract, recursive over its subtree (`<reldir>/**\/*.md`);
+ *  - a file sitting directly in the run root (depth-0 directory) ALWAYS belongs to the ROOT
+ *    contract, a DIRECT-ONLY `*.md` glob (never `**\/*.md`), so it can never overlap a subdir
+ *    glob — independent of the depth knob;
+ *  - a file in a directory strictly BETWEEN the root and the cut (depth ≥ 1 but `< depth`) is
+ *    STRANDED: uniform depth refuses to wrap it in a nested parent contract, so it is named in
+ *    a warning and routed nowhere (it matches no rule, so accept-by-construction still holds —
+ *    the self-check simply skips it). Only depth ≥ 2 can strand; depth 1 never does.
+ *
+ * Because every contract sits at one uniform depth and is never an ancestor of another, the
+ * globs never overlap and routing is order-independent. Contracts are named after the full
+ * relative-path slug of their directory. Output order is deterministic: groups in
+ * first-appearance (walk) order, with the root contract first when present.
+ */
+function inferMeta(
+  absRoot: string,
+  docs: ParsedDoc[],
+  depth: number,
+  relax: boolean,
+  inline: boolean,
+): InferResult {
+  // Route each doc to a group key (its depth-`depth` ancestor dir), tracking stranded files.
+  const groups = new Map<string, ParsedDoc[]>(); // group dir → its docs (first-appearance order)
+  const groupOrder: string[] = [];
+  const stranded: string[] = [];
+  let hasRoot = false;
+
+  for (const doc of docs) {
+    const fileDir = dirOf(doc.rel);
+    const fileDepth = depthOf(fileDir);
+    if (fileDepth === 0) {
+      // Directly in the run root — always the root contract, regardless of the depth knob.
+      hasRoot = true;
+      bucketFor(groups, groupOrder, "").push(doc);
+    } else if (fileDepth >= depth) {
+      // Deep enough to be routed to its depth-`depth` ancestor directory's contract.
+      bucketFor(groups, groupOrder, ancestorAt(fileDir, depth)).push(doc);
+    } else {
+      // In an intermediate directory between the root and a depth ≥ 2 cut — stranded
+      // (uniform depth never nests it under a parent contract).
+      stranded.push(doc.rel);
+    }
+  }
+
+  // Emit the root group first (its direct-only glob), then the subdir groups in walk order.
+  const orderedKeys = [
+    ...(hasRoot ? [""] : []),
+    ...groupOrder.filter((k) => k !== ""),
+  ];
+
+  const contracts: InferredContract[] = orderedKeys.map((key) => ({
+    name: nameForDir(key, absRoot),
+    include: [key === "" ? "*.md" : `${key}/**/*.md`],
+    def: generalize(groups.get(key)!, relax),
+  }));
+
+  const warnings = stranded.map(
+    (rel) =>
+      `stranded: ${rel} sits above the --depth ${depth} cut and is covered by no contract; ` +
+      `use a shallower --depth to include it`,
+  );
+
+  return {
+    mode: "meta",
+    contracts,
+    files: emitMetaFiles(contracts, inline),
+    warnings,
+  };
+}
+
+/**
+ * Serialize the meta-config files (D-0009 § Step 5). With `--inline`, ONE self-contained
+ * `markdown-contract.yaml` carries each contract's def inline on its rule. Otherwise the
+ * offramp shape: a `markdown-contract.yaml` whose `contracts` registry maps each name to
+ * `./contracts/<name>.contract.yaml`, with `rules` referencing the names, PLUS one
+ * `contracts/<name>.contract.yaml` per group. Rules follow contract (walk) order; globs are
+ * non-overlapping so order is purely for a clean diff.
+ */
+function emitMetaFiles(contracts: InferredContract[], inline: boolean): InferredFile[] {
+  if (inline) {
+    const config = {
+      mcVersion: 1,
+      kind: "config",
+      rules: contracts.map((c) => ({ include: c.include, contract: c.def })),
+    };
+    return [{ path: "markdown-contract.yaml", content: stringifyYaml(config) }];
+  }
+
+  const registry: Record<string, string> = {};
+  for (const c of contracts) registry[c.name] = `./contracts/${c.name}.contract.yaml`;
+  const config = {
+    mcVersion: 1,
+    kind: "config",
+    contracts: registry,
+    rules: contracts.map((c) => ({ include: c.include, contract: c.name })),
   };
 
+  const files: InferredFile[] = [
+    { path: "markdown-contract.yaml", content: stringifyYaml(config) },
+  ];
+  for (const c of contracts) {
+    files.push({
+      path: `contracts/${c.name}.contract.yaml`,
+      content: stringifyYaml({ mcVersion: 1, kind: "contract", ...c.def }),
+    });
+  }
+  return files;
+}
+
+/**
+ * Infer a config from the corpus under `root`. Pure: reads files, returns model + serialized
+ * YAML; writes nothing. Two modes (D-0009 § Two modes):
+ *  - **single-contract** (`opts.meta` falsy, the default) — one contract over the whole subtree,
+ *    the tightest shape that accepts every `*.md` under it;
+ *  - **meta-config** (`opts.meta` truthy) — a uniform-depth cut at `opts.depth ?? 1`: one
+ *    contract per directory at exactly that depth (recursive over its subtree) plus a root
+ *    contract for files directly in the run root, files stranded above a depth ≥ 2 cut warned.
+ *
+ * Both modes share the same generalization (`generalize`); meta is single-contract with the cut
+ * moved off the root. `opts.depth` 0 (or single mode) collapses to one contract over `**\/*.md`.
+ */
+export function inferConfig(root: string, opts?: InferOptions): InferResult {
+  const absRoot = resolve(root);
+  const relax = opts?.relax === true;
+  const docs = discover(absRoot).map((rel) => parseDoc(absRoot, rel));
+
+  // Meta mode: cut the tree at the depth knob (default 1). Depth 0 is single-contract mode.
+  const depth = opts?.depth ?? 1;
+  if (opts?.meta === true && depth >= 1) {
+    return inferMeta(absRoot, docs, depth, relax, opts?.inline === true);
+  }
+
+  // Single-contract mode: the whole subtree is one group, named after the run-root basename.
+  const def = generalize(docs, relax);
+  const name = slugify(basename(absRoot));
+  const contract: InferredContract = { name, include: ["**/*.md"], def };
   const content = stringifyYaml({ mcVersion: 1, kind: "contract", ...def });
-  const file: InferredFile = { path: `${name}.contract.yaml`, content };
 
   return {
     mode: "single",
     contracts: [contract],
-    files: [file],
+    files: [{ path: `${name}.contract.yaml`, content }],
     warnings: [],
   };
 }
