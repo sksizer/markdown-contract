@@ -81,7 +81,7 @@ The runtime routes a file to a contract by **glob over its path**, first match w
 - **Depth 1** → one group per top-level subdirectory, plus a group for files sitting directly in the root.
 - **Depth N** → directories deeper than `N` are absorbed into their depth-`N` ancestor; directories shallower than `N` that hold files directly form their own (clamped) group.
 
-A group's glob is recursive (`<reldir>/**/*.md`) when no deeper group lives in its subtree, and direct-only (`<reldir>/*.md`, or `*.md` for the root) when deeper groups do — so the globs partition the corpus cleanly and first-match-wins is unambiguous. Each group's contract is generalized over exactly the files routed to it. Contracts are **named after their directory** (the group dir's path relative to the root, slugified and de-collided); no document attribute is consulted for routing or naming.
+A group's glob is recursive (`<reldir>/**/*.md`) when no deeper group lives in its subtree, and direct-only (`<reldir>/*.md`, or `*.md` for the root) when deeper groups do — so the globs partition the corpus cleanly and first-match-wins is unambiguous. Each group's contract is generalized over exactly the files routed to it. Contracts are **named after their directory** — the group dir's path relative to the root, slugified (`api`, `api-v1`, `web-v1`) — which is inherently unique, so there is no de-collision step; the name is just a label the author can rename. No document attribute is ever consulted for routing or naming.
 
 This is intentionally general. It does not reproduce a type-per-contract split unless document types happen to line up with directories — which, when they do (as in this repo's `docs/planning`), falls out for free, and when they don't, is not something path routing could honor anyway.
 
@@ -91,7 +91,7 @@ For each group, derive the **tightest contract that still accepts every file in 
 
 - **Sections — enumerate all observed; require the universal, optional the rest.** A section is **required** iff it appears in *every* file of the group; every other section name seen in *any* file is emitted `optional: true`. The contract thus lists the group's complete observed vocabulary, enforcing the universal core and admitting the rest.
 - **Unknown sections — closed when the data is closed.** Emit `allowUnknown: false` (so a section never seen in the group is flagged) — this is safe because every observed section is already listed. `--relax` sets `allowUnknown: true`.
-- **Order — the strongest order consistent with every file.** If all files share one relative section order, emit `order: recognized-relative` (or `strict` when the order is total and gap-free across the group); otherwise `order: none`. The detected order also fixes the emitted section list order.
+- **Order — the strongest order consistent with every file.** Emit `order: strict` only when every file has the identical gap-free section sequence; emit `order: recognized-relative` when all files agree on the relative order of the sections they share; otherwise `order: none`. The detected order also fixes the emitted section list order.
 - **Frontmatter — strict when the key set is closed.** Required fields = keys present in *every* file; fields present in only some are `optional: true`. Emit `strict: true` when no file carried a key outside the observed set; else `strict: false`. Field value types come from Step 4.
 
 `--relax` inverts these to the permissive floor — `order: none`, `allowUnknown: true`, non-strict frontmatter, everything-non-universal optional, loosest value types — for authors who prefer to start loose and tighten by hand. A degenerate group is still correct either way: a single-file group generalizes to that file's exact shape; a heterogeneous group yields a small required core with much optional.
@@ -105,7 +105,7 @@ For each frontmatter field, collect its observed values across the group and pic
 3. Else all values are **booleans** → `{ type: boolean }`.
 4. Else all values are **arrays** → `{ type: array, of: <recursively inferred element schema> }`.
 5. Else all (string) values match one **`format`** from the [[D-0008-declarative-contract-dsl]] set (`date`, `datetime`, `email`, `url`, `uuid`, …) → `{ type: string, format: <name> }` (most specific match; `date` before `datetime`).
-6. Else the **distinct values form a small closed set** (count ≤ a threshold, and well below the file count, so it is clearly categorical) → `{ enum: [<observed values>] }`.
+6. Else the **distinct values form a small closed set** — ≤ 12 distinct values *and* fewer than half the file count, so it is clearly categorical rather than coincidentally repetitive → `{ enum: [<observed values>] }`. (A consequence: tiny corpora rarely enum — too few files to clear the ratio — which is the right call on thin evidence.)
 7. Else → `{ type: string }`.
 
 Every rung admits at least every value seen, so it cannot break accept-by-construction. `enum` (rung 6) is the deliberate tight default for categorical fields — it admits exactly the observed set and flags a novel value as drift; `--relax` drops rung 6 (categorical fields stay `type: string`). `pattern` and numeric/length `min`/`max` are **not** inferred by default (they over-fit string shape); `--infer-bounds` opts into them.
@@ -169,7 +169,7 @@ Inference is **deterministic** (stable group order from the directory walk, stab
 ### Grouping key — directory + depth (chosen) vs frontmatter `type` / filename scheme vs single contract
 
 - **Directory + depth (chosen).** Convention-free, general to any corpus, and routable by construction (the runtime routes by path). Depth is one knob for granularity.
-- **Frontmatter `type` / filename id-prefix (rejected).** An earlier draft used these; review flagged them as specific to this repo's SDLC docs, not a general pattern. They also can't be the routing key in general — two types sharing a directory with no filename distinction can't be separated by any path glob. They belong to *generalization* (the contract's content), not *grouping*. (A future opt-in that *names* a directory's contract from a uniform frontmatter `type`, purely cosmetic, is possible — see Open questions.)
+- **Frontmatter `type` / filename id-prefix (rejected).** An earlier draft used these; review flagged them as specific to this repo's SDLC docs, not a general pattern. They also can't be the routing key in general — two types sharing a directory with no filename distinction can't be separated by any path glob. They belong to *generalization* (the contract's content), not *grouping*. (Also considered: letting a uniform frontmatter `type` cosmetically *name* a contract — dropped, since names are directory-derived and the author can rename freely, so no frontmatter is consulted at all.)
 - **Always a single contract (offered as the default mode / depth 0).** Simplest, but on a deep or mixed tree the one contract's required core collapses to the universal intersection — coarse. Good for a quick floor; depth exists precisely to do better.
 
 ### Granularity — a depth cut (chosen) vs one contract per leaf directory vs flat
@@ -190,17 +190,22 @@ Both first-class in [[C-0007-declarative-corpus-meta-config]]; `--meta` defaults
 
 ### Verb name — `init` (chosen) vs `infer` / `scaffold` / `generate`
 
-`init` is the familiar "bootstrap a config here" verb (npm, git, tsc), which is what the user *intends*; *inference* is the mechanism, not the user-facing name. (Open to revisiting in review.)
+`init` is the familiar "bootstrap a config here" verb (npm, git, tsc), which is what the user *intends*; *inference* is the mechanism, not the user-facing name. *Resolved: `init`.*
 
 ## Open questions
 
-- **Default `--depth`** — 1 (one contract per top-level subdirectory) is proposed; confirm, and confirm depth 0 == single-contract mode is the right unification.
-- **Glob shape at the cut** — the recursive-vs-direct-only rule for clamped shallow groups and the exact first-match ordering; nail the corner cases (a directory with both direct files and deeper groups).
-- **Contract naming from directory paths** — slug + de-collision rule when two groups share a basename (`api/v1` vs `web/v1`): full relative path slug, or basename + disambiguating suffix?
-- **`enum` threshold** — the distinct-count cap and the distinct ≪ total ratio that make a field "clearly categorical" rather than coincidentally repetitive.
-- **`order` detection** — when to emit `strict` vs `recognized-relative`: how total/gap-free must the shared order be across the group.
-- **Optional cosmetic naming from frontmatter** — allow a uniform frontmatter `type` to *name* a directory's contract (never to group/route), as an opt-in nicety? Or keep naming purely directory-derived for predictability.
-- **Re-run merge** — regenerate-and-diff (v1) vs a merge mode that preserves manual tightenings across re-runs.
+Resolved in review (recorded here for provenance):
+
+- **Default `--depth`** — *resolved*: **1** (one contract per top-level subdirectory; files directly in the root form their own group). Depth 0 == single-contract mode.
+- **Contract naming** — *resolved*: always the directory's **full relative-path slug** (`api`, `api-v1`, `web-v1`) — inherently unique, so no de-collision rule; the name is just a label the author can rename. No frontmatter is consulted for naming.
+- **`enum` threshold** — *resolved*: a field becomes an `enum` only when its distinct values number **≤ 12 and fewer than half the files**.
+- **`order` detection** — *resolved*: `strict` only when every file has the identical gap-free sequence; `recognized-relative` when files agree on relative order; else `none`.
+- **Re-run behavior** — *resolved*: **regenerate; refuse to overwrite without `--force`**; a smart merge that preserves hand-tightenings is future work (§ Out of scope).
+- **Verb spelling** — *resolved*: **`init`**.
+
+Still open:
+
+- **Glob shape at the cut** — the recursive-vs-direct-only rule for clamped shallow groups and the exact first-match ordering; corner cases (a directory with both direct files and deeper groups) to nail in implementation.
 - **Meta-schema reuse** — whether the self-check should also validate the *emitted YAML* against the format's own meta-schema ([[D-0008-declarative-contract-dsl]] § Open questions) once that exists.
 
 ## Out of scope
