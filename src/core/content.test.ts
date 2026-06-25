@@ -211,6 +211,51 @@ describe("frontmatter plane", () => {
     expect(shape(find(c, src))).toEqual([{ id: "frontmatter/enum", line: 3 }]);
   });
 
+  // ── Messages name the field (the documentary cases) ───────────────────────────
+  // Every frontmatter message leads with the offending key, so a report says what to fix.
+
+  test("missing required key — message names the field, not 'received undefined'", () => {
+    const src = ["---", "status: open", "title: t", "---"].join("\n"); // id absent
+    const f = find(c, src).find((x) => x.id === "frontmatter/required");
+    expect(f?.message).toBe("frontmatter field ‘id’ is required");
+  });
+
+  test("const/literal mismatch — message names the field and its required value", () => {
+    const lit = contract({ frontmatter: z.strictObject({ type: z.literal("capability") }) });
+    const src = ["---", "type: feature", "---"].join("\n");
+    const f = find(lit, src).find((x) => x.id === "frontmatter/enum");
+    expect(f?.message).toBe("frontmatter field ‘type’ must be ‘capability’");
+  });
+
+  test("enum mismatch — message lists the allowed values", () => {
+    const src = ["---", "id: D-1", "status: draft", "title: t", "---"].join("\n");
+    const f = find(c, src).find((x) => x.id === "frontmatter/enum");
+    expect(f?.message).toBe("frontmatter field ‘status’ must be one of ‘open’, ‘closed’");
+  });
+
+  test("wrong type — message names the field, the expected type, and what was found", () => {
+    const typed = contract({ frontmatter: z.strictObject({ n: z.number() }) });
+    const src = ["---", "n: not-a-number", "---"].join("\n");
+    const f = find(typed, src).find((x) => x.id === "frontmatter/type");
+    expect(f?.message).toBe("frontmatter field ‘n’ must be a number (got string)");
+  });
+
+  test("pattern mismatch — message names the field", () => {
+    const pat = contract({ frontmatter: z.strictObject({ id: z.string().regex(/^C-\d{4}$/) }) });
+    const src = ["---", "id: C-1", "---"].join("\n");
+    const f = find(pat, src).find((x) => x.id === "frontmatter/type");
+    expect(f?.message).toBe("frontmatter field ‘id’ does not match the required pattern");
+  });
+
+  test("nested path — message renders array indices readably", () => {
+    const nested = contract({
+      frontmatter: z.strictObject({ related: z.array(z.string()) }),
+    });
+    const src = ["---", "related:", "  - 42", "---"].join("\n");
+    const f = find(nested, src).find((x) => x.id === "frontmatter/type");
+    expect(f?.message).toBe("frontmatter field ‘related[0]’ must be a string (got number)");
+  });
+
   test("unknown-key — frontmatter/unknown-key at the stray key's line", () => {
     const src = [
       "---", // 1
