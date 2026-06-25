@@ -1,0 +1,118 @@
+/**
+ * CLI-level tests for `markdown-contract init` (D-0009 § The CLI surface).
+ *
+ * These drive the real CLI through `runCli` over throwaway copies of the inference fixture
+ * vaults (copied into an OS temp dir via `mkdtempSync`, so a write-mode `init` never touches
+ * the checked-in fixtures). They cover the verb's full surface: `--dry-run`, the default write
+ * + `--force` clobber refusal, `--meta --depth N`, `--inline`, the `--check` drift guard,
+ * multi-root runs, and `--include`/`--exclude` scoping.
+ *
+ * Gated by `IMPLEMENTED["infer-cli"]`: the whole suite is `describe.skip` until the `init`
+ * verb lands, so in PR1 these only need to TYPE-CHECK — they never execute (the CLI has no
+ * `init` verb yet). The implementation phase that lands the verb flips the flag and these
+ * activate.
+ */
+import { cpSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { describe, expect, test } from "vitest";
+
+import { runCli } from "../src/cli/index.js";
+import { IMPLEMENTED } from "./components.js";
+
+/** Copy a fixture vault into a fresh temp dir so write-mode `init` runs never mutate fixtures. */
+function stageVault(rel: string): string {
+  const src = fileURLToPath(new URL(`./fixtures/infer/${rel}/vault`, import.meta.url));
+  const dst = mkdtempSync(join(tmpdir(), "mc-init-"));
+  cpSync(src, dst, { recursive: true });
+  return dst;
+}
+
+const suite = IMPLEMENTED["infer-cli"] ? describe : describe.skip;
+
+suite("markdown-contract init (CLI)", () => {
+  test("--dry-run prints YAML, writes nothing, exits 0", async () => {
+    const dir = stageVault("01-flat-uniform");
+    const r = await runCli(["init", dir, "--dry-run"], { cwd: dir });
+    expect(r.code).toBe(0);
+    expect(r.stdout).toContain("kind:");
+    // Nothing was written.
+    expect(existsSync(join(dir, "markdown-contract.yaml"))).toBe(false);
+    expect(existsSync(join(dir, "01-flat-uniform.contract.yaml"))).toBe(false);
+  });
+
+  test("default write creates a config; a re-run without --force exits 2; --force overwrites", async () => {
+    const dir = stageVault("01-flat-uniform");
+
+    const first = await runCli(["init", dir], { cwd: dir });
+    expect(first.code).toBe(0);
+    const written = await runCli(["validate", dir], { cwd: dir });
+    expect(written.code).toBe(0); // accept-by-construction over the written config
+
+    // A second run refuses to clobber the existing config.
+    const second = await runCli(["init", dir], { cwd: dir });
+    expect(second.code).toBe(2);
+
+    // --force overwrites and succeeds.
+    const forced = await runCli(["init", dir, "--force"], { cwd: dir });
+    expect(forced.code).toBe(0);
+  });
+
+  test("--meta --depth 1 writes markdown-contract.yaml + contracts/", async () => {
+    const dir = stageVault("07-tree-depth1");
+    const r = await runCli(["init", dir, "--meta", "--depth", "1"], { cwd: dir });
+    expect(r.code).toBe(0);
+    expect(existsSync(join(dir, "markdown-contract.yaml"))).toBe(true);
+    expect(existsSync(join(dir, "contracts"))).toBe(true);
+  });
+
+  test("--inline writes a single self-contained config", async () => {
+    const dir = stageVault("07-tree-depth1");
+    const r = await runCli(["init", dir, "--meta", "--inline"], { cwd: dir });
+    expect(r.code).toBe(0);
+    expect(existsSync(join(dir, "markdown-contract.yaml"))).toBe(true);
+    // Inline → no separate per-contract files dir.
+    expect(existsSync(join(dir, "contracts"))).toBe(false);
+  });
+
+  test("--check exits 0 when the config still accepts, 1 after a doc drifts", async () => {
+    const dir = stageVault("01-flat-uniform");
+    const init = await runCli(["init", dir], { cwd: dir });
+    expect(init.code).toBe(0);
+
+    const clean = await runCli(["init", dir, "--check"], { cwd: dir });
+    expect(clean.code).toBe(0);
+
+    // Mutate a doc so it drifts from the inferred shape (drop a required section).
+    const drifted = "---\ntitle: Alpha rollout\nstatus: open\n---\n\n## Summary\n\nNo other sections.\n";
+    writeFileSync(join(dir, "alpha.md"), drifted);
+    const after = await runCli(["init", dir, "--check"], { cwd: dir });
+    expect(after.code).toBe(1);
+  });
+
+  test("multi-root: init a b infers a config spanning both roots", async () => {
+    const a = stageVault("01-flat-uniform");
+    const b = stageVault("02-optional-sections");
+    const r = await runCli(["init", a, b, "--meta"], { cwd: a });
+    expect(r.code).toBe(0);
+  });
+
+  test("--include / --exclude scope which files feed inference", async () => {
+    const dir = stageVault("09-root-and-subdirs");
+
+    const included = await runCli(["init", dir, "--meta", "--include", "guides/**/*.md", "--dry-run"], { cwd: dir });
+    expect(included.code).toBe(0);
+    expect(included.stdout).toContain("guides");
+
+    const excluded = await runCli(["init", dir, "--meta", "--exclude", "reference/**/*.md", "--dry-run"], { cwd: dir });
+    expect(excluded.code).toBe(0);
+    expect(excluded.stdout).not.toContain("reference");
+  });
+
+  test("reads at least one fixture so the temp-stage helper type-checks", () => {
+    const dir = stageVault("01-flat-uniform");
+    expect(readFileSync(join(dir, "alpha.md"), "utf8")).toContain("## Summary");
+  });
+});
