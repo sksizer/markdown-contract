@@ -3,7 +3,7 @@ type: decision
 schema_version: '1'
 id: D-0009
 status: open/proposed
-title: Config inference — scaffolding a relaxed starting config from existing docs
+title: Config inference — scaffolding a tight-but-accepting config from existing docs
 created: '2026-06-24'
 related:
   - '[[C-0008-config-scaffolding]]'
@@ -24,23 +24,23 @@ tags:
 need_human_review: true
 ---
 
-# Config inference — scaffolding a relaxed starting config from existing docs
+# Config inference — scaffolding a tight-but-accepting config from existing docs
 
 ## Summary
 
-- `markdown-contract init <dir>…` infers a **relaxed starting config** from the markdown already in the target directories: it parses each file, clusters the files into document types, generalizes each cluster to the **loosest contract that still accepts every file in it**, and writes a meta-config + per-type contract files. The corpus passes the generated config by construction, verified by a self-check. This mechanizes exactly the hand-work that produced this repo's dogfood config; it realizes [[C-0008-config-scaffolding]]. ^summary
-- The output is a **scaffold, not a finished contract**. Three loosening defaults make "accepts the corpus" a guarantee, not a hope: bodies are `order: none` + `allowUnknown: true`; a section is **required only if present in *every* file** of its group (everything else observed is emitted `optional:`); frontmatter is `strict: false` with **required fields = the intersection of keys**. The author tightens from there — this is the on-ramp half of the project's "trivial to start, elegant offramps" principle.
-- **Grouping is fundamentally by path**, because the runtime routes by glob (first-match-wins over file paths — [[C-0003-corpus-cli]]). Files are clustered by their *path signature* — containing directory plus any `PREFIX-` filename token — and each cluster is **named** by its uniform frontmatter `type` (falling back to the prefix or directory name). Frontmatter `type` informs naming and a consistency check, but it is never the routing key, since no path glob can separate two types that share a directory.
-- **Value-type inference is conservative and lossless by default.** A frontmatter field becomes a `const` only when its value is identical across the group; `format: date` / `datetime` / etc. only when *every* value matches; `type: number` / `boolean` / `array` only when every value fits — otherwise it stays `type: string`. Tightening inferences that could reject a future-but-valid value (`enum` from an observed set, `pattern`, `min`/`max`, content-plane leaves) are **opt-in flags**, never on by default.
-- The inferer is a **producer** of [[C-0006-declarative-yaml-contracts]] / [[C-0007-declarative-corpus-meta-config]] YAML, then a **consumer** of its own output (it loads the scaffold back through the same loaders and runs it for the self-check). It adds no format and no engine surface; it respects the read-only posture of [[D-0007-engine-scope-and-fidelity]] (it only *writes the config it was asked to create*, never edits the docs).
+- `markdown-contract init <dir>…` infers a runnable config from the markdown already in the target directories. Two paths: **(1)** a **single contract** for one directory — the *tightest contract that still accepts every markdown file in its subtree*; and **(2)** a **meta-config across a tree**, which cuts the directory tree at a configurable **depth** and gives every directory at that cut a contract covering all markdown beneath it. It realizes [[C-0008-config-scaffolding]]. ^summary
+- **Grouping is by directory, with `--depth` as the granularity knob.** Directory structure is the one grouping that needs no convention in the documents *and* is exactly what the runtime routes on (globs over paths, first-match-wins — [[C-0003-corpus-cli]]). Depth 0 is one contract for the whole tree; depth 1 is a contract per top-level subdirectory; deeper cuts give finer contracts. This is deliberately general — it does **not** key on a frontmatter `type` field or a filename id scheme (those are specific to corpora like this repo's, not a pattern to bake into the tool).
+- **Generalization target: as tight as possible while still accepting every current file** (the accept-by-construction bound). Concretely: enumerate *all* observed sections (required = present in every file, the rest `optional:`), set `allowUnknown: false` when no unlisted section ever appeared, set `order` to the strongest order consistent with every file, and type each frontmatter field as specifically as its observed values allow. A **`--relax`** dial inverts this toward a permissive floor for those who prefer to start loose and ratchet up.
+- **Value-type inference is bounded by accept-all, then as tight as the data permits**: `const` when a value is uniform, `format`/`number`/`boolean`/`array` when every value fits, an `enum` of the observed values when they form a small closed set, else `type: string` — always admitting at least every value seen. The tightness is intentional: a future doc that doesn't fit is a **drift signal**, not a tool failure (`--check`), and the config is re-runnable and `--relax`-able.
+- The inferer is a **producer** of [[C-0006-declarative-yaml-contracts]] / [[C-0007-declarative-corpus-meta-config]] YAML and then a **consumer** of its own output (it loads the scaffold back through the same loaders and runs it for the self-check). It adds no format and no engine surface, and respects the read-only posture of [[D-0007-engine-scope-and-fidelity]] (it writes only the config it was asked to create, never edits the docs).
 
 ## Context
 
-[[C-0006-declarative-yaml-contracts]] and [[C-0007-declarative-corpus-meta-config]] let a consumer *author* contracts as data. But adopting them on an existing body of docs still means reading every file, finding the common section spine and frontmatter keys, and hand-writing the YAML — precisely what was done to produce this repo's dogfood config (`markdown-contract.yaml` + `contracts/*.contract.yaml` over `docs/planning`, 33 docs across six types). That hand-work is mechanical and repeatable: walk → parse → intersect → emit. This decision fixes the algorithm and its specifics so a single `markdown-contract init <dir>…` produces a runnable, relaxed config that accepts the corpus it was inferred from — the bootstrap on-ramp [[C-0008-config-scaffolding]] promises.
+[[C-0006-declarative-yaml-contracts]] and [[C-0007-declarative-corpus-meta-config]] let a consumer *author* contracts as data. But adopting them on an existing body of docs still means reading every file, finding the common section spine and frontmatter keys, and hand-writing the YAML. That hand-work is mechanical and repeatable: walk → parse → generalize → emit. This decision fixes the algorithm so a single `markdown-contract init <dir>…` produces a runnable config that accepts the corpus it was inferred from — the bootstrap on-ramp [[C-0008-config-scaffolding]] promises — on **any** markdown corpus.
 
-The building blocks already exist: `parse(src) → DocTree` is exported from `core` and yields the section tree and parsed frontmatter **without a contract** (exactly the inference input); the runner already walks a tree for `*.md`; and the loaders already round-trip the YAML the inferer will emit. So the work is wiring and policy, not new engine machinery. The hard part — and what this decision is for — is the *policy*: how to group files, how loose to be, what to infer about values, and how to project semantic types back onto the glob routing the runtime actually uses.
+Generality is the point. An earlier draft grouped files by a frontmatter `type` field and a `PREFIX-` filename token; review correctly flagged that as tied to this repo's own SDLC docs, not a generally useful pattern. The general grouping that needs no convention in the documents — and that matches how the runtime already routes — is the **directory tree itself**, with depth controlling how finely it is cut. Frontmatter and filenames are inputs to *generalization* (what the contract says), not to *grouping* (which files share a contract).
 
-This is a tooling capability over the declarative format; it ships standalone and does not change the engine or the format ([[D-0008-declarative-contract-dsl]]).
+The building blocks already exist: `parse(src) → DocTree` is exported from `core` and yields the section tree and parsed frontmatter **without a contract** (exactly the inference input); the runner already walks a tree for `*.md`; and the loaders round-trip the YAML the inferer emits. So the work is wiring and policy, not new engine machinery — and this decision is about the policy: the modes, the depth cut, how tight to generalize, and what to infer about values. It ships standalone over the declarative format and changes neither the engine nor the format ([[D-0008-declarative-contract-dsl]]).
 
 ## Decision
 
@@ -48,75 +48,79 @@ This is a tooling capability over the declarative format; it ships standalone an
 
 `init` is a pure pipeline with one defining guarantee:
 
-> **Accept-by-construction.** Running the generated config over the corpus it was inferred from reports **zero findings.** This is the definition of "relaxed enough", and it is *verified*, not assumed (§ Self-check).
+> **Accept-by-construction.** Running the generated config over the corpus it was inferred from reports **zero findings.** This is the floor under "as tight as possible": generalization tightens freely, but never past the point where a *current* file would fail. It is *verified*, not assumed (§ Self-check).
 
 The pipeline:
 
 ```text
 discover ─→ parse ─→ group ─→ generalize ─→ infer field schemas ─→ emit ─→ self-check
- (*.md)    (DocTree)  (types)  (loose contract)   (value types)      (YAML)   (run → 0 findings)
+ (*.md)    (DocTree)  (by dir   (tightest contract   (value types)      (YAML)   (run → 0 findings)
+                       & depth)   that accepts all)
 ```
 
-Everything below is the policy at each stage; the invariant is what every default is chosen to preserve.
+### Two modes
+
+| Mode | Invocation | Output | Grouping |
+|---|---|---|---|
+| **Single contract** | `init <dir>` | one `*.contract.yaml` | the whole subtree → one group |
+| **Meta-config** | `init <dir> --meta [--depth N]` | `markdown-contract.yaml` + `contracts/*.yaml` | each directory at the depth cut → one group |
+
+The modes are one mechanism at two granularities: single-contract is the meta-config with the cut at the root (depth 0). `--meta` is what asks for the router + per-directory files.
 
 ### Step 1 — Discover & parse
 
 Walk the target directories for `*.md` (the runner's existing walk), honoring the same `--glob` / `--include` / `--exclude` scoping as `validate` so a run can exclude fixtures or drafts up front. Parse each file with `parse` and extract the two inference inputs: the **parsed frontmatter** map, and the **section spine** (top-level heading names, in document order). A file that fails to parse is reported and skipped (it cannot constrain a contract that must accept it). Nested subsections are recorded but, in v1, only the top-level spine drives the contract (§ Out of scope).
 
-### Step 2 — Group files into document types
+### Step 2 — Group by directory and depth
 
-The runtime routes a file to a contract by **glob over its path**, first match wins ([[C-0003-corpus-cli]]). So grouping must ultimately be expressible as path globs — which forces the central decision:
+The runtime routes a file to a contract by **glob over its path**, first match wins ([[C-0003-corpus-cli]]). Directory structure is therefore the natural grouping: it is always expressible as routing, and unlike a frontmatter field or filename scheme it requires **no convention in the documents**.
 
-> **Group by path signature; name by frontmatter `type`.** Cluster files that share a *path signature* = `(containing directory, filename PREFIX- token)`. Derive the group's **name** from the frontmatter `type` value when it is uniform across the cluster, else from the prefix token (lowercased), else from the directory basename.
+> **Group each file by its containing directory, cut at `--depth N`.** A file is assigned to its ancestor directory at depth `N` (the target root is depth 0), or to its own containing directory if that is shallower than `N`. Each group becomes one contract; the group's glob covers the markdown it owns and the rules are ordered most-specific-path-first so first-match-wins routes every file to its group.
 
-Concretely, the default (`--group auto`):
+- **Depth 0** → one group (the whole tree) → the single-contract mode.
+- **Depth 1** → one group per top-level subdirectory, plus a group for files sitting directly in the root.
+- **Depth N** → directories deeper than `N` are absorbed into their depth-`N` ancestor; directories shallower than `N` that hold files directly form their own (clamped) group.
 
-1. For each file, compute its **prefix token**: if the basename matches `^([A-Za-z]+)-` capture the token (`C`, `DR`, `T`, …); else none.
-2. Cluster files sharing `(directory, prefix-token)`. Within a directory that has no prefix tokens at all, the cluster is the directory.
-3. **Name** each cluster: uniform frontmatter `type` → that value; else the prefix token lowercased; else the directory basename.
-4. **Emit globs** per cluster (§ Step 5): prefer the location-independent prefix form `['**/<PREFIX>-*.md', '<PREFIX>-*.md']` when a prefix exists; else the directory form `['<reldir>/**/*.md']`.
+A group's glob is recursive (`<reldir>/**/*.md`) when no deeper group lives in its subtree, and direct-only (`<reldir>/*.md`, or `*.md` for the root) when deeper groups do — so the globs partition the corpus cleanly and first-match-wins is unambiguous. Each group's contract is generalized over exactly the files routed to it. Contracts are **named after their directory** (the group dir's path relative to the root, slugified and de-collided); no document attribute is consulted for routing or naming.
 
-This reproduces the dogfood config from `docs/planning` exactly (one contract per `C-`/`D-`/`DR-`/`M-`/`PR-`/`T-` prefix, named from the `type:` constant).
+This is intentionally general. It does not reproduce a type-per-contract split unless document types happen to line up with directories — which, when they do (as in this repo's `docs/planning`), falls out for free, and when they don't, is not something path routing could honor anyway.
 
-**Why path, not frontmatter `type`, is the routing key.** It is tempting to group by the semantic `type:` field. But if two types share a directory and have no distinguishing filename prefix, *no path glob can separate them* — first-match-wins would hand both to whichever rule sorts first. So `type` cannot be the routing key in the general case. It earns its keep elsewhere: as the **group name**, and as a **consistency check** — if a path cluster mixes frontmatter `type` values, or if one `type` is split across path clusters that globs can't cleanly separate, `init` **warns** and explains that path routing can't mirror the semantic types (the author resolves by moving/renaming, accepting the path split, or re-running with `--group single`).
+### Step 3 — Generalize a group to the tightest accepting contract
 
-Overrides: `--group dir` (directory only), `--group prefix` (filename prefix only), `--group type` (by frontmatter `type`, emitting globs *derived* from where those files actually live, with the interleave warning above), `--group single` (one contract for the whole corpus — the universal intersection; loosest and simplest).
+For each group, derive the **tightest contract that still accepts every file in it**. Each choice tightens up to the accept-all bound:
 
-### Step 3 — Generalize a cluster to a relaxed contract
+- **Sections — enumerate all observed; require the universal, optional the rest.** A section is **required** iff it appears in *every* file of the group; every other section name seen in *any* file is emitted `optional: true`. The contract thus lists the group's complete observed vocabulary, enforcing the universal core and admitting the rest.
+- **Unknown sections — closed when the data is closed.** Emit `allowUnknown: false` (so a section never seen in the group is flagged) — this is safe because every observed section is already listed. `--relax` sets `allowUnknown: true`.
+- **Order — the strongest order consistent with every file.** If all files share one relative section order, emit `order: recognized-relative` (or `strict` when the order is total and gap-free across the group); otherwise `order: none`. The detected order also fixes the emitted section list order.
+- **Frontmatter — strict when the key set is closed.** Required fields = keys present in *every* file; fields present in only some are `optional: true`. Emit `strict: true` when no file carried a key outside the observed set; else `strict: false`. Field value types come from Step 4.
 
-For each group, derive the loosest contract that accepts every member. Three policies, each chosen to preserve accept-by-construction:
+`--relax` inverts these to the permissive floor — `order: none`, `allowUnknown: true`, non-strict frontmatter, everything-non-universal optional, loosest value types — for authors who prefer to start loose and tighten by hand. A degenerate group is still correct either way: a single-file group generalizes to that file's exact shape; a heterogeneous group yields a small required core with much optional.
 
-- **Body order & unknowns — always loosest.** Emit `order: none` and `allowUnknown: true`. Ordering and extra sections can then never produce a finding; the scaffold constrains *presence*, nothing else, until the author tightens.
-- **Required vs optional sections — intersection required, union optional.** A section is **required** iff it appears in *every* file of the group (the intersection of spines). Every other section name observed in *any* file is emitted with `optional: true` (the union minus the intersection). The scaffold thus documents the *whole observed vocabulary* while only enforcing the universal core — richer than a bare intersection, still guaranteed to accept every file. Section ordering in the emitted list follows the most common observed order (a stable, readable default; with `order: none` it is cosmetic).
-- **Frontmatter — non-strict, intersection required.** Emit `strict: false` (rich, varied frontmatter passes through). Required fields = keys present in *every* file; fields present in only some are emitted `optional: true`. Field value types come from Step 4.
+### Step 4 — Infer a field's schema (tight-but-accepting value ladder)
 
-A degenerate cluster is still correct: a single-file group generalizes to that file's full shape; a wildly heterogeneous group collapses to an empty required spine with everything optional — loose, but valid and accepting.
+For each frontmatter field, collect its observed values across the group and pick the **most specific schema that admits every observed value**, defaulting looser only when no tighter rung fits:
 
-### Step 4 — Infer a field's schema (conservative value-type ladder)
-
-For each frontmatter field, collect its observed values across the group and pick the **most specific schema that loses nothing and rejects no observed value**, defaulting to loose:
-
-1. All values **identical** → `{ const: <value> }`. (Captures a discriminator like `type: decision` precisely.)
-2. Else all values are **valid numbers** → `{ type: number }` (`int: true` if all integers).
+1. All values **identical** → `{ const: <value> }`.
+2. Else all values are **valid numbers** → `{ type: number }` (`int: true` if all integers; `min`/`max` only under `--infer-bounds`).
 3. Else all values are **booleans** → `{ type: boolean }`.
-4. Else all values are **arrays** → `{ type: array, of: { type: string } }` (element schema kept loose).
-5. Else all (string) values match one **`format`** from the [[D-0008-declarative-contract-dsl]] set — `date`, `datetime`, `time`, `email`, `url`, `uuid`, … — → `{ type: string, format: <name> }`. (First/most-specific match; `date` before `datetime`.)
-6. Else → `{ type: string }`.
+4. Else all values are **arrays** → `{ type: array, of: <recursively inferred element schema> }`.
+5. Else all (string) values match one **`format`** from the [[D-0008-declarative-contract-dsl]] set (`date`, `datetime`, `email`, `url`, `uuid`, …) → `{ type: string, format: <name> }` (most specific match; `date` before `datetime`).
+6. Else the **distinct values form a small closed set** (count ≤ a threshold, and well below the file count, so it is clearly categorical) → `{ enum: [<observed values>] }`.
+7. Else → `{ type: string }`.
 
-Crucially, **no tightening inference is on by default**: a field with a small distinct value set is *not* turned into an `enum` (a future-but-valid value would be rejected), and `pattern` / `min` / `max` are never synthesized. These are opt-in (§ The CLI surface). The ladder only ever emits facts that are true of *every* observed value and that admit at least as much as the data shows — so it cannot break accept-by-construction.
+Every rung admits at least every value seen, so it cannot break accept-by-construction. `enum` (rung 6) is the deliberate tight default for categorical fields — it admits exactly the observed set and flags a novel value as drift; `--relax` drops rung 6 (categorical fields stay `type: string`). `pattern` and numeric/length `min`/`max` are **not** inferred by default (they over-fit string shape); `--infer-bounds` opts into them.
 
 ### Step 5 — Emit
 
-- **Default output: the offramp shape.** A `markdown-contract.yaml` meta-config plus one `contracts/<name>.contract.yaml` per group, mirroring the dogfood layout — readable, diffable, and the natural thing to tighten file-by-file. `--inline` instead emits a single self-contained config with each contract inlined on its rule (the [[C-0007-declarative-corpus-meta-config]] on-ramp form) for small corpora.
-- **Rules** are ordered to respect first-match-wins: more specific globs before more general ones (e.g. `DR-*` before `D-*` even though they don't overlap — the dogfood config's own ordering note), and a deterministic order otherwise so re-runs diff cleanly.
-- **Glob synthesis** follows Step 2: prefix form when available, else directory form, both written relative to the run root (the [[D-0008-declarative-contract-dsl]] two-bases rule — contract *paths* are relative to the config file, *globs* to the run root). When `--group type` forces a non-path key, globs are the minimal covering set of the files' actual locations, emitted with a comment that they are derived.
-- Generated files carry a header comment marking them as a scaffold (`# generated by \`markdown-contract init\` — a starting point; tighten by hand`).
+- **Single-contract mode** writes one `<dir>.contract.yaml`. **Meta-config mode** writes a `markdown-contract.yaml` plus one `contracts/<dir-name>.contract.yaml` per group — the [[C-0007-declarative-corpus-meta-config]] offramp shape — or, with `--inline`, a single self-contained config with each contract inlined on its rule.
+- **Globs** follow Step 2 (directory-derived, recursive or direct-only per the depth cut), written relative to the run root (the [[D-0008-declarative-contract-dsl]] two-bases rule: contract *paths* relative to the config file, *globs* relative to the run root). **Rules** are ordered most-specific-path-first for first-match-wins, deterministic otherwise so re-runs diff cleanly.
+- Generated files carry a header comment marking them a snapshot (`# generated by \`markdown-contract init\` — a tight snapshot; tighten or --relax by hand`).
 
 ### Step 6 — Self-check (the accept-by-construction guarantee)
 
-After emitting, **load the scaffold back** through `loadConfig` / `loadContract` and run it over the corpus via `runCorpus`. The result **must be zero findings**; if it is not, that is an inferer bug (some emitted constraint is tighter than the data), and `init` reports it loudly rather than writing a config that rejects its own corpus. This doubles as the capability's strongest test (golden round-trip: `init docs/planning` → run → clean) and validates the inferer against the very loaders it targets.
+After emitting, **load the scaffold back** through `loadConfig` / `loadContract` and run it over the corpus via `runCorpus`. The result **must be zero findings**; if it is not, that is an inferer bug (some emitted constraint is tighter than the data allows), and `init` reports it loudly rather than writing a config that rejects its own corpus. This doubles as the capability's strongest test (golden round-trip: `init <dir>` → run → clean) and validates the inferer against the very loaders it targets.
 
-`--check` runs the *verification half only* against an **existing** config (no inference, no write): does the current config still accept the tree? A non-zero exit means a doc drifted from the inferred shape — a CI drift guard. (`validate` already does this; `--check` is the ergonomic alias scoped to "the config init would manage".)
+`--check` runs the *verification half only* against an **existing** config (no inference, no write): does the current config still accept the tree? A non-zero exit means a doc drifted from the inferred shape — a CI drift guard, and the natural complement to a tight snapshot.
 
 ### The CLI surface
 
@@ -125,92 +129,97 @@ A new `init` verb on the existing binary ([[C-0003-corpus-cli]]):
 ```text
 markdown-contract init <dir>…           one or more target roots (required)
 
-  --out <dir>            where to write (default: cwd)
+  --meta                emit a meta-config + per-directory contracts (default: single contract)
+  --depth <N>           directory cut for --meta (default 1; 0 = single contract)
+  --out <dir>           where to write (default: cwd)
   --inline              one self-contained config instead of meta-config + contracts/ files
-  --group <strategy>    auto (default) | dir | prefix | type | single
+  --relax               loosen generation toward a permissive floor (order:none, allowUnknown,
+                        non-strict frontmatter, no enums, loosest value types)
   --glob/--include/--exclude <glob>   scope which files feed inference (as in `validate`)
   --force               overwrite an existing config (default: refuse)
   --dry-run             print the would-be files to stdout; write nothing
   --check               verify an existing config still accepts the tree; infer/write nothing
-
-  # opt-in tightening (off by default — each can reject future-but-valid input):
-  --infer-enums[=N]     closed enum when a field's distinct values ≤ N (default N small)
-  --infer-content       infer content-plane leaves (tables/lists) when uniform across a group
+  --infer-bounds        opt into pattern / min / max inference (off by default — over-fits)
 ```
 
 `init` only ever *adds* a config and never edits the source docs (read-only on the corpus, per [[D-0007-engine-scope-and-fidelity]]); it refuses to clobber an existing config without `--force`.
 
 ### Idempotence & re-runs
 
-Inference is **deterministic** (stable group order, stable rule/field/section order), so re-running on an unchanged corpus is a no-op diff. There is no automatic *merge* into a hand-tightened config in v1 — re-running regenerates the scaffold and the author diffs/applies by hand. (A merge mode — regenerate, then re-apply manual tightenings — is a possible future, § Out of scope.)
+Inference is **deterministic** (stable group order from the directory walk, stable rule/field/section order), so re-running on an unchanged corpus is a no-op diff. There is no automatic *merge* into a hand-tightened config in v1 — re-running regenerates the snapshot and the author diffs/applies by hand. (A merge mode — regenerate, then re-apply manual tightenings — is a possible future, § Out of scope.)
 
 ## Why
 
-- **The hand-work is mechanical, so mechanize it.** The dogfood config was produced by exactly this pipeline by hand; turning it into a command removes the single biggest cost of adopting contracts on existing docs.
-- **"Relaxed enough" must be a guarantee, not a hope.** Defining the target as *accept-by-construction* and *verifying it with the real loaders* (§ Self-check) is what makes the output trustworthy: the scaffold provably runs clean before the author ever sees it.
-- **Route by path because the runtime routes by path.** Grouping by path signature (and only *naming* by `type`) keeps the generated config honest — it can never emit routing a glob can't actually perform — and reproduces the dogfood shape on the obvious corpus.
-- **Default loose; tighten by hand.** Every loosening (`order: none`, `optional:` over required, `string` over `enum`, non-strict frontmatter) avoids the one failure that would make the tool useless: a "starting" config that rejects the docs it was built from. Tightening is cheap and human; over-constraining is the tool's cardinal sin.
+- **Directory + depth is the one general grouping.** It needs no convention in the documents, works on any corpus, and is exactly what the runtime routes on — so the generated config can never describe routing a glob can't perform. Keying on a frontmatter `type` or filename scheme would tie the tool to corpora shaped like ours.
+- **Depth is one knob for the whole granularity spectrum.** The same corpus yields one broad contract or a fine per-directory mesh by changing a single integer — no per-type configuration, no taxonomy to maintain.
+- **As tight as possible, bounded by accept-all, is the useful default.** A maximally-loose stub tells the author almost nothing; a tight snapshot captures the structure the files actually share and turns the contract into a real description (and, via `--check`, a drift tripwire). The accept-all bound keeps it from ever rejecting a file it was built from; `--relax` serves the start-loose preference.
+- **Tightness that flags novel input is a feature, not a bug.** A future doc that doesn't fit the snapshot is surfaced as drift, which is the point of a contract; the config is re-runnable and relaxable, so tightness is cheap to walk back.
 - **Producer of the formats, not a new one.** Emitting [[C-0006-declarative-yaml-contracts]] / [[C-0007-declarative-corpus-meta-config]] YAML and loading it back keeps one source of truth and lets the inferer ride every future format addition for free.
 
 ## Consequences
 
-- A new code path in the `markdown-contract/declarative` front-end (a `init`/`infer` module) plus an `init` verb in the CLI; imports stay one-way `cli → runner → core` per [[D-0006-packaging]]; the engine and the format are untouched.
-- The inferer **depends on its own output loaders** (it round-trips through `loadConfig` / `loadContract` for the self-check) — a deliberate, healthy coupling that makes the golden round-trip test (`init` a corpus → run → zero findings) the capability's backbone.
-- **Conservative-by-default means the scaffold is loose.** Users who want tighter output must opt in (`--infer-enums`, `--infer-content`) or hand-tighten. This is intentional, but it means the first run is a floor, not a finished contract — documented as such in the generated header and the capability ([[C-0008-config-scaffolding]]).
-- **Path-vs-type grouping can warn rather than perfectly partition.** Corpora that interleave document types in one directory with no filename prefix cannot be cleanly routed; `init` warns and the author resolves. This is inherent to glob routing, not a tool limitation.
+- A new code path in the `markdown-contract/declarative` front-end (an `init`/`infer` module) plus an `init` verb in the CLI; imports stay one-way `cli → runner → core` per [[D-0006-packaging]]; the engine and the format are untouched.
+- **Contracts follow the filesystem, not semantics.** Grouping by directory means a contract's scope is a directory subtree; where document *types* don't line up with directories, one contract may span several types (looser, but correct) or one type may split across directories. That is the cost of a convention-free, route-faithful grouping; the author reorganizes directories, picks a different `--depth`, or hand-edits. Semantic (e.g. frontmatter-`type`) grouping is explicitly **not** in scope (Options considered).
+- **A tight snapshot can flag future-but-valid docs.** This is intended (drift signal) and bounded (never rejects a current file); `--relax` and re-running are the escape valves. Documented in the generated header and the capability ([[C-0008-config-scaffolding]]).
+- The inferer **depends on its own output loaders** (round-trips through `loadConfig` / `loadContract` for the self-check) — a deliberate, healthy coupling that makes the golden round-trip (`init` a corpus → run → zero findings) the capability's backbone test.
 - Adds no new runtime dependency (YAML serialization uses the `yaml` package already present for the loaders).
 
 ## Options considered
 
-### Grouping key — path signature (chosen) vs frontmatter `type` vs single contract
+### Grouping key — directory + depth (chosen) vs frontmatter `type` / filename scheme vs single contract
 
-- **Path signature, named by `type` (chosen).** Groups are routable by construction (the runtime routes by path), reproduce the dogfood shape, and need no frontmatter; `type` adds semantic names and a consistency check.
-- **Frontmatter `type` as the routing key (rejected as default).** Semantically the "right" partition, but not generally routable: two types sharing a directory with no filename prefix cannot be separated by any path glob, so it would silently misroute. Kept as `--group type` (derived globs + interleave warning) for corpora that *are* path-separated by type.
-- **Single contract for everything (offered as `--group single`).** Simplest and loosest, but the required spine collapses to the universal intersection across all types — usually near-empty and uninformative on a heterogeneous corpus. Good for a quick floor, not the default.
-- **One contract per directory (`--group dir`).** A clean middle ground when filenames carry no prefix; it is the fallback inside `auto` already.
+- **Directory + depth (chosen).** Convention-free, general to any corpus, and routable by construction (the runtime routes by path). Depth is one knob for granularity.
+- **Frontmatter `type` / filename id-prefix (rejected).** An earlier draft used these; review flagged them as specific to this repo's SDLC docs, not a general pattern. They also can't be the routing key in general — two types sharing a directory with no filename distinction can't be separated by any path glob. They belong to *generalization* (the contract's content), not *grouping*. (A future opt-in that *names* a directory's contract from a uniform frontmatter `type`, purely cosmetic, is possible — see Open questions.)
+- **Always a single contract (offered as the default mode / depth 0).** Simplest, but on a deep or mixed tree the one contract's required core collapses to the universal intersection — coarse. Good for a quick floor; depth exists precisely to do better.
 
-### Looseness — intersection-only vs intersection-required + union-optional (chosen)
+### Granularity — a depth cut (chosen) vs one contract per leaf directory vs flat
 
-A bare intersection (required = universal sections, nothing else emitted) is the minimal accepting contract, but it *discards* the rest of the observed vocabulary, so the scaffold tells the author less than the corpus showed. **Intersection-required + union-optional** (chosen) emits every observed section — universal ones required, the rest `optional:` — so the generated contract is a complete map of the corpus's structure that the author edits down, while still accepting every file. The extra cost is a few `optional:` lines; the gain is a far more useful starting point.
+A **depth cut** (chosen) lets one knob span "whole tree" to "every directory", and clamps cleanly for shallow branches. One-contract-per-leaf-directory is just the deepest cut (`--depth ∞`) — available, but rarely the right default (too many tiny contracts). A flat "one contract per immediate child, no recursion" is `--depth 1` with non-recursive globs — a special case the depth model already covers.
 
-### Value inference — conservative/lossless (chosen) vs eager (enums, patterns, ranges)
+### Generalization tightness — tight-but-accepting (chosen) vs loosest floor
 
-Eagerly inferring `enum` from a small value set, or `pattern`/`min`/`max` from observed strings/numbers, produces a tighter, more "finished-looking" contract — but each such inference can reject a future-but-valid value the corpus simply hasn't seen yet, **breaking accept-by-construction's spirit on the next document**. The default stays lossless (only facts true of every observed value, admitting at least the observed range); tightening inferences are opt-in flags. The tool optimizes for "never wrong", not "looks complete".
+An earlier draft defaulted to the *loosest* accepting contract (everything optional, `order: none`, `allowUnknown: true`, no enums) — a floor to tighten by hand. Review asked for "as tight as possible but relaxed enough for all to pass", so the default is now the **tightest contract consistent with the corpus** (enumerated sections, detected order, closed unknowns, categorical enums), with the loose floor available as **`--relax`**. The tight default produces a contract that actually describes the docs; the accept-all bound keeps it honest; `--relax` preserves the start-loose path. The brittleness of tightness (flagging novel-but-valid docs) is accepted as a drift signal, not avoided.
 
-### Output — meta-config + files (chosen default) vs single inline config
+### Value inference — tight-but-accepting incl. enums (chosen) vs lossless-only
 
-Both are first-class in [[C-0007-declarative-corpus-meta-config]]; `init` defaults to the **meta-config + `contracts/` files** offramp shape because it is what you tighten file-by-file and matches the dogfood layout, with `--inline` for the single-file on-ramp on small corpora. No need to choose — the flag exposes the same duality the format already has.
+The tight default infers `enum` from a small closed value set and `const`/`format` where they fit — the tightest schema admitting every observed value. The looser alternative (only `const`/`format`/scalar types, never `enum`) is what `--relax` selects. `pattern` and numeric/length bounds stay opt-in (`--infer-bounds`) in both, since they over-fit even relative to the observed data.
+
+### Output — meta-config + files (default for `--meta`) vs single inline config
+
+Both first-class in [[C-0007-declarative-corpus-meta-config]]; `--meta` defaults to the **meta-config + `contracts/` files** offramp shape (what you tighten file-by-file), with `--inline` for the single-file on-ramp on small trees. Single-contract mode just writes the one contract file.
 
 ### Verb name — `init` (chosen) vs `infer` / `scaffold` / `generate`
 
-`init` is the familiar "bootstrap a config here" verb (npm, git, tsc), which is what the user *intends*; *inference* is the mechanism that makes it useful, not the user-facing name. `infer`/`scaffold`/`generate` describe the implementation; `init` describes the goal. (Open to revisiting in review — see Open questions.)
+`init` is the familiar "bootstrap a config here" verb (npm, git, tsc), which is what the user *intends*; *inference* is the mechanism, not the user-facing name. (Open to revisiting in review.)
 
 ## Open questions
 
-- **Verb spelling** — `init` (chosen, goal-named) vs `infer`/`scaffold` (mechanism-named). Final call in review.
-- **`auto` grouping precedence** — confirm the `(directory, prefix-token)` signature and the prefix-vs-directory glob preference are the right defaults, and the exact prefix regex (`^([A-Za-z]+)-`? include digits? a minimum token length to avoid false positives like `README-NOTES.md`).
-- **Optional-section threshold** — emit *every* non-universal section as `optional:` (chosen), or only those above a frequency threshold (to drop one-off sections as noise)? A threshold trades completeness for tidiness.
-- **`--infer-enums` default N and ratio** — when opted in, what distinct-count cap (and should it also require distinct ≪ total, so it is clearly categorical) avoids spurious enums?
-- **Content-plane inference (`--infer-content`)** — how uniform must a section's blocks be across the group before emitting a `table`/`list` leaf (identical columns? a column superset?), and is v1 the place for it at all.
-- **Nested subsection grammar** — v1 infers only the top-level spine; whether/when to recurse into `children:` grammars from observed nesting.
+- **Default `--depth`** — 1 (one contract per top-level subdirectory) is proposed; confirm, and confirm depth 0 == single-contract mode is the right unification.
+- **Glob shape at the cut** — the recursive-vs-direct-only rule for clamped shallow groups and the exact first-match ordering; nail the corner cases (a directory with both direct files and deeper groups).
+- **Contract naming from directory paths** — slug + de-collision rule when two groups share a basename (`api/v1` vs `web/v1`): full relative path slug, or basename + disambiguating suffix?
+- **`enum` threshold** — the distinct-count cap and the distinct ≪ total ratio that make a field "clearly categorical" rather than coincidentally repetitive.
+- **`order` detection** — when to emit `strict` vs `recognized-relative`: how total/gap-free must the shared order be across the group.
+- **Optional cosmetic naming from frontmatter** — allow a uniform frontmatter `type` to *name* a directory's contract (never to group/route), as an opt-in nicety? Or keep naming purely directory-derived for predictability.
 - **Re-run merge** — regenerate-and-diff (v1) vs a merge mode that preserves manual tightenings across re-runs.
 - **Meta-schema reuse** — whether the self-check should also validate the *emitted YAML* against the format's own meta-schema ([[D-0008-declarative-contract-dsl]] § Open questions) once that exists.
 
 ## Out of scope
 
-- **Tightening inference by default** — `enum`s from value sets, `pattern` / `min` / `max`, content-plane leaves: opt-in only (`--infer-enums`, `--infer-content`), never default, because each can reject future-but-valid input.
+- **Semantic grouping** — grouping by frontmatter `type` or a filename id scheme: not a general pattern, not routable in general, and out (frontmatter informs *generalization*, not *grouping*).
+- **`pattern` / `min` / `max` inference by default** — opt-in via `--infer-bounds`; over-fits even the observed data.
+- **Content-plane inference** — `table` / `list` leaves from uniform section blocks: future work, not v1.
 - **Cross-cutting `rule` / `docRule` inference** — out, mirroring [[D-0008-declarative-contract-dsl]] (rules aren't in the v1 YAML at all).
 - **Editing the source documents** — `init` is read-only on the corpus and only writes the config it is asked to create ([[D-0007-engine-scope-and-fidelity]]); it never "fixes" docs to fit a contract.
 - **Merging into a hand-tightened config** — v1 regenerates and the author diffs; an automatic merge mode is a possible future.
-- **Non-top-level structure** — v1 infers the top-level section spine only; deep nested grammars are future work.
+- **Non-top-level structure** — v1 infers the top-level section spine only; deep nested section grammars are future work (directory *depth* is handled; section *nesting* is not).
 
 ## References
 
 - [[C-0008-config-scaffolding]] — the capability this decision realizes (the `init` command).
 - [[C-0006-declarative-yaml-contracts]] — the contract format `init` emits.
 - [[C-0007-declarative-corpus-meta-config]] — the meta-config format `init` emits, and the inline ↔ file-ref duality `--inline` exposes.
-- [[C-0003-corpus-cli]] — the binary `init` adds a verb to, and the glob-routing (first-match-wins) that forces path-based grouping.
+- [[C-0003-corpus-cli]] — the binary `init` adds a verb to, and the glob-routing (first-match-wins) that makes directory the natural grouping.
 - [[C-0005-two-plane-contract-engine]] — the runtime whose `parse` supplies the inference input and whose `runCorpus` powers the self-check.
-- [[D-0008-declarative-contract-dsl]] — the format and `format`-set this produces, the two-bases path/glob rule, and the deferred-tightening posture it mirrors.
+- [[D-0008-declarative-contract-dsl]] — the format and `format`-set this produces, the two-bases path/glob rule, and the vocabulary it draws on.
 - [[D-0007-engine-scope-and-fidelity]] — the read-only posture `init` inherits (writes config, never edits docs).
 - [[D-0006-packaging]] — the one-package / one-way layering the inferer respects.
