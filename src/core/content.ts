@@ -38,12 +38,18 @@ import type {
 
 // ── The runtime shape we cast a leaf's ZodType to (the public `ZodType` is a placeholder) ──
 
-/** A Zod issue, narrowed to the fields the remap needs. */
+/** A Zod issue, narrowed to the fields the remap and the message builder need. */
 interface ZodIssue {
   path: (string | number)[];
   code: string;
   message?: string;
   keys?: string[];
+  /** `invalid_type`: the expected JS type, e.g. "string" (zod v4 drops `received`). */
+  expected?: string;
+  /** `invalid_value`: the allowed value(s) — one entry for a literal, many for an enum. */
+  values?: unknown[];
+  /** `invalid_format`: the string format that failed, e.g. "regex" / "date" / "email". */
+  format?: string;
 }
 
 /** The runtime face of a zod schema: `safeParse` plus the issue stream on failure. */
@@ -395,6 +401,85 @@ function frontmatterIdFor(issue: ZodIssue): string {
   }
 }
 
+/** Render a Zod issue path as a readable key reference: `[]` → "", `["a","b"]` → "a.b", `["related",0]` → "related[0]". */
+function formatKeyPath(path: (string | number)[]): string {
+  let s = "";
+  for (const seg of path) {
+    if (typeof seg === "number") s += `[${seg}]`;
+    else s += s === "" ? seg : `.${seg}`;
+  }
+  return s;
+}
+
+/** The JS type name of a value, for "(got number)" hints — distinguishing null and array from object. */
+function typeName(v: unknown): string {
+  if (v === null) return "null";
+  if (Array.isArray(v)) return "array";
+  return typeof v;
+}
+
+/** The value addressed by `path` within `data` (undefined when any segment is absent). */
+function valueAt(data: unknown, path: (string | number)[]): unknown {
+  let node: unknown = data;
+  for (const seg of path) {
+    if (node === null || node === undefined || typeof node !== "object") return undefined;
+    node = (node as Record<string | number, unknown>)[seg];
+  }
+  return node;
+}
+
+/**
+ * Build a field-qualified message for a frontmatter Zod issue. Zod's own message names a
+ * type or a literal but never the offending key, so a report reads "expected string, received
+ * undefined" with no clue which field is wrong. Every message here instead leads with the
+ * field — `frontmatter field ‘<key>’ …` — so the report names exactly what to fix.
+ *
+ * `id` is the already-resolved finding id, so a missing-required key (an `invalid_type` whose
+ * value is undefined) reads "is required" rather than "must be a string". `data` is the parsed
+ * frontmatter, used to report the actual type on a wrong-type mismatch (zod v4 drops `received`).
+ */
+function frontmatterMessage(issue: ZodIssue, id: string, data: unknown): string {
+  const field = formatKeyPath(issue.path);
+  const at = field ? `frontmatter field ‘${field}’` : "frontmatter";
+
+  if (id === "frontmatter/required") return `${at} is required`;
+
+  switch (issue.code) {
+    case "invalid_enum_value": // zod v3 enum mismatch
+    case "invalid_value": {
+      // zod v4 literal/enum mismatch — `values` is the allowed set (one entry for a literal).
+      const values = Array.isArray(issue.values) ? issue.values : [];
+      if (values.length === 1) return `${at} must be ‘${String(values[0])}’`;
+      if (values.length > 1) return `${at} must be one of ${values.map((v) => `‘${String(v)}’`).join(", ")}`;
+      return `${at} has an invalid value`;
+    }
+    case "invalid_type": {
+      const got = typeName(valueAt(data, issue.path));
+      return issue.expected
+        ? `${at} must be a ${issue.expected} (got ${got})`
+        : `${at} has the wrong type (got ${got})`;
+    }
+    case "invalid_format":
+      // a `pattern`/`format` constraint (D-0008 schema vocabulary) — name the format, else "pattern".
+      return issue.format && issue.format !== "regex"
+        ? `${at} is not a valid ${issue.format}`
+        : `${at} does not match the required pattern`;
+    case "too_small":
+      return `${at} is too small`;
+    case "too_big":
+      return `${at} is too large`;
+    case "custom":
+      // a `.refine()` / `.superRefine()` predicate speaks its own rule — keep its message,
+      // field-qualified when it addresses a key, verbatim when it is document-level.
+      return field && issue.message ? `${at}: ${issue.message}` : (issue.message ?? `${at} is invalid`);
+    default:
+      // an unhandled code: lead with the field but keep Zod's detail rather than discard it.
+      return field
+        ? `${at}: ${issue.message ?? "is invalid"}`
+        : (issue.message ?? "frontmatter is invalid");
+  }
+}
+
 /**
  * Validate the document frontmatter against a declared Zod schema, remapping each Zod issue
  * to its key's source line via `tree.frontmatter.lineForPath(issue.path)` (AC-5). When the
@@ -441,7 +526,7 @@ function matchFrontmatter(tree: DocTree, schema: ZodType, ctx: Ctx, out: Finding
     out.push(
       ctx.finding({
         id,
-        message: issue.message ?? `frontmatter key ‘${issue.path.join(".")}’ is invalid`,
+        message: frontmatterMessage(issue, id, data),
         ...(pos ? { pos } : {}),
       }),
     );
@@ -450,12 +535,7 @@ function matchFrontmatter(tree: DocTree, schema: ZodType, ctx: Ctx, out: Finding
 
 /** Whether the value addressed by `path` is absent from `data` (a missing required key). */
 function isMissingRequired(data: unknown, path: (string | number)[]): boolean {
-  let node: unknown = data;
-  for (const seg of path) {
-    if (node === null || node === undefined || typeof node !== "object") return true;
-    node = (node as Record<string | number, unknown>)[seg];
-  }
-  return node === undefined;
+  return valueAt(data, path) === undefined;
 }
 
 // ── Public entry ─────────────────────────────────────────────────────────────────
