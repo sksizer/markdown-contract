@@ -41,11 +41,12 @@
  * output (the self-check loads the scaffold back and runs it); it adds no format and no engine
  * surface (D-0009 § Consequences).
  *
- * This module implements the **single-contract core** (Phase 2): discovery, the body grammar
- * (sections / order / unknown-admission), base-type frontmatter, and YAML emission. The value
- * ladder beyond base types (const / format / enum) and the meta-mode directory cut land in the
- * following phases; their interfaces (`InferOptions`, `InferredContract`, `InferResult`,
- * `inferConfig`) are fixed here and shared.
+ * This module implements the **single-contract core** (Phase 2) plus the full **value-type
+ * ladder** (Phase 3): discovery, the body grammar (sections / order / unknown-admission), the
+ * tight-but-accepting frontmatter field schemas (const / number / boolean / array / format /
+ * enum / string), and YAML emission. The meta-mode directory cut lands in a following phase;
+ * the interfaces (`InferOptions`, `InferredContract`, `InferResult`, `inferConfig`) are fixed
+ * here and shared.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, resolve, sep } from "node:path";
@@ -53,6 +54,7 @@ import { basename, resolve, sep } from "node:path";
 import { stringify as stringifyYaml } from "yaml";
 
 import { parse } from "../core/index.js";
+import { compileSchema } from "./schema.js";
 
 /** Options for `inferConfig` — mirrors the `init` CLI flags (D-0009 § The CLI surface). */
 export interface InferOptions {
@@ -275,34 +277,148 @@ function topoSort(union: string[], edges: Map<string, Set<string>>): string[] {
   return out;
 }
 
-// ── Frontmatter (D-0009 § Step 3 — frontmatter; Step 4 base types only this phase) ─
+// ── Frontmatter (D-0009 § Step 3 — frontmatter; Step 4 — the value-type ladder) ────
 
 /**
- * Pick the BASE schema type that admits every observed value of one field (Phase 2 — the
- * base rung of the value ladder; const / format / enum land in Phase 3). The choice is the
- * loosest base type that accepts every value seen, so it can never break accept-by-
- * construction: all-arrays → `{ type: array, of: { type: string } }`; all-booleans →
- * `{ type: boolean }`; all-numbers → `{ type: number }`; else `{ type: string }`.
+ * The ordered `format` candidates the ladder auto-detects (a conservative subset of the
+ * D-0008 `format` vocabulary). Each is **structurally distinctive** — a plain word or free-form
+ * phrase can never accidentally match — so detecting one is a genuine signal, not a coincidence.
+ * The loose D-0008 formats (`hostname`, `cuid2`, `base64`, `emoji`, …) are deliberately
+ * EXCLUDED here: an ordinary token like `policy` validates as a `hostname`/`cuid2`, which would
+ * mislabel a categorical or free-form field as a format. The order is most-specific-first so
+ * `date` is preferred over `datetime` when both could match (D-0009 § Step 4, rung 5); a value
+ * is validated through the very `compileSchema` the self-check uses, so a detected format is
+ * accept-by-construction by definition.
  */
-function baseFieldSchema(values: unknown[]): Record<string, unknown> {
-  if (values.length > 0 && values.every((v) => Array.isArray(v))) {
-    return { type: "array", of: { type: "string" } };
+const FORMAT_CANDIDATES = [
+  "date",
+  "datetime",
+  "time",
+  "duration",
+  "email",
+  "url",
+  "uuid",
+  "ulid",
+  "ipv4",
+  "ipv6",
+  "e164",
+] as const;
+
+/** Whether every observed string value validates against the given `format` (via the engine's own compiler). */
+function allMatchFormat(values: string[], format: string): boolean {
+  const schema = compileSchema({ type: "string", format });
+  return values.every((v) => schema.safeParse(v).success);
+}
+
+/** A deep structural-equality check over JSON-shaped values, for the `const` (all-identical) rung. */
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((x, i) => deepEqual(x, b[i]));
   }
-  if (values.length > 0 && values.every((v) => typeof v === "boolean")) {
+  if (a !== null && b !== null && typeof a === "object" && typeof b === "object") {
+    const ka = Object.keys(a as object);
+    const kb = Object.keys(b as object);
+    return (
+      ka.length === kb.length &&
+      ka.every((k) => deepEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]))
+    );
+  }
+  return false;
+}
+
+/** A schema for one rung is only valid if it admits every observed value, so YAML-typed scalars (`const`) stay JSON-shaped. */
+function isScalar(v: unknown): v is string | number | boolean {
+  return typeof v === "string" || typeof v === "number" || typeof v === "boolean";
+}
+
+/**
+ * Infer one field's schema from its observed values — the **tight-but-accepting value ladder**
+ * (D-0009 § Step 4). For the observed values of a single frontmatter key, pick the *most
+ * specific* schema that still admits *every* value, defaulting looser only when no tighter rung
+ * fits — so the choice can never break accept-by-construction:
+ *
+ *  1. all values **identical** (a scalar) → `{ const: <value> }`;
+ *  2. else all **numbers** → `{ type: number }` (`int: true` if all integers);
+ *  3. else all **booleans** → `{ type: boolean }`;
+ *  4. else all **arrays** → `{ type: array, of: <recursively inferred LOOSE element schema> }`;
+ *  5. else all **strings matching one `format`** (most specific; `date` before `datetime`) →
+ *     `{ type: string, format: <name> }`;
+ *  6. else a **small closed categorical set** — ≤ 12 distinct values AND fewer than half the
+ *     files — → `{ enum: [<observed values, first-appearance order>] }`;
+ *  7. else → `{ type: string }`.
+ *
+ * `fileCount` is the group's file count (the rung-6 ratio gate). `relax` skips rung 6 so a
+ * categorical field stays `{ type: string }` (D-0009 § Step 4 — `--relax` drops enums). `min` /
+ * `max` / `pattern` are never inferred here (opt-in via `--infer-bounds`, a future phase), so
+ * every rung stays at-or-below the accept-all bound.
+ */
+function inferFieldSchema(values: unknown[], fileCount: number, relax: boolean): Record<string, unknown> {
+  if (values.length === 0) return { type: "string" };
+
+  // Rung 1 — all identical (scalar) → const. Arrays/objects that happen to be identical fall
+  // through to their own rung (the compiler's `const` is scalar-only), still accept-by-construction.
+  const first = values[0];
+  if (isScalar(first) && values.every((v) => deepEqual(v, first))) {
+    return { const: first };
+  }
+
+  // Rung 2 — all numbers → number (int when every value is an integer).
+  if (values.every((v) => typeof v === "number")) {
+    return (values as number[]).every((n) => Number.isInteger(n))
+      ? { type: "number", int: true }
+      : { type: "number" };
+  }
+
+  // Rung 3 — all booleans → boolean.
+  if (values.every((v) => typeof v === "boolean")) {
     return { type: "boolean" };
   }
-  if (values.length > 0 && values.every((v) => typeof v === "number")) {
-    return { type: "number" };
+
+  // Rung 4 — all arrays → array; the element schema is inferred LOOSELY over every element
+  // flattened across the field (no enum — `relax`-style — and ratio'd against the element count),
+  // so it admits each item the corpus actually carries.
+  if (values.every((v) => Array.isArray(v))) {
+    const items = (values as unknown[][]).flat();
+    return { type: "array", of: inferFieldSchema(items, items.length, true) };
   }
+
+  // Rung 5 — all strings matching one format (most specific first; validated via the engine).
+  if (values.every((v) => typeof v === "string")) {
+    const strings = values as string[];
+    for (const format of FORMAT_CANDIDATES) {
+      if (allMatchFormat(strings, format)) return { type: "string", format };
+    }
+
+    // Rung 6 — a small closed categorical set → enum (unless --relax, which keeps it a string).
+    // The compiler's `enum` is strings-only; the ratio (< half the files) keeps a coincidentally
+    // repetitive free-form field from enum'ing on thin evidence (D-0009 § Step 4, rung 6).
+    if (!relax) {
+      const distinct: string[] = [];
+      const seen = new Set<string>();
+      for (const s of strings) {
+        if (!seen.has(s)) {
+          seen.add(s);
+          distinct.push(s);
+        }
+      }
+      if (distinct.length <= 12 && distinct.length * 2 < fileCount) {
+        return { enum: distinct };
+      }
+    }
+  }
+
+  // Rung 7 — fallback: a plain string accepts every value.
   return { type: "string" };
 }
 
 /**
  * Generalize the frontmatter plane (D-0009 § Step 3 — frontmatter). Keys in first-appearance
  * order (deterministic); required = present in EVERY doc, the rest `optional: true`. Field
- * value types come from the base-type rung (this phase). `strict: true` is always safe here:
- * every key any doc carried is listed, so the key set is closed by construction; `--relax`
- * drops it to non-strict.
+ * value types come from the value-type ladder (`inferFieldSchema`), the *tightest* schema that
+ * still admits every observed value. `strict: true` is always safe here: every key any doc
+ * carried is listed, so the key set is closed by construction; `--relax` drops it to non-strict
+ * and (via the ladder) drops categorical enums.
  */
 function inferFrontmatter(docs: ParsedDoc[], relax: boolean): { strict?: boolean; fields: Record<string, unknown> } | undefined {
   const keys: string[] = [];
@@ -320,11 +436,14 @@ function inferFrontmatter(docs: ParsedDoc[], relax: boolean): { strict?: boolean
   }
   if (keys.length === 0) return undefined;
 
+  // The rung-6 ratio gates `enum` against the group's file count, not a field's present-count,
+  // so a half-optional field doesn't enum on coincidence (D-0009 § Step 4, rung 6).
+  const fileCount = docs.length;
   const fields: Record<string, unknown> = {};
   for (const key of keys) {
     const present = docs.filter((d) => key in d.frontmatter).length;
     const optional = present < docs.length;
-    const schema = baseFieldSchema(values.get(key)!);
+    const schema = inferFieldSchema(values.get(key)!, fileCount, relax);
     fields[key] = optional ? { ...schema, optional: true } : schema;
   }
 

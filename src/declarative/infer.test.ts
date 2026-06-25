@@ -98,24 +98,26 @@ describe("inferConfig — order detection (D-0009 § Step 3 — order)", () => {
   });
 });
 
-describe("inferConfig — frontmatter base types + required/optional + strict", () => {
+describe("inferConfig — frontmatter required/optional + strict", () => {
   it("required = present in every file; partial keys → optional", () => {
     file("one.md", "---\ntitle: A\nstatus: open\n---\n\n## S\n\nx\n");
     file("two.md", "---\ntitle: B\n---\n\n## S\n\nx\n");
     const fm = def(inferConfig(root).contracts[0]!).frontmatter!;
     expect(fm.strict).toBe(true);
     expect(fm.fields!.title).toEqual({ type: "string" });
-    expect(fm.fields!.status).toEqual({ type: "string", optional: true });
+    // `status` is present in only one file → optional; its one observed value → const (rung 1).
+    expect(fm.fields!.status).toEqual({ const: "open", optional: true });
   });
 
-  it("picks the base type that admits every observed value", () => {
+  it("picks the tightest type that admits every observed value (the value ladder)", () => {
     file("one.md", "---\nn: 1\nb: true\narr: [x, y]\ns: hello\n---\n\n## S\n\nx\n");
     file("two.md", "---\nn: 2\nb: false\narr: [z]\ns: 2026-01-01\n---\n\n## S\n\nx\n");
     const fields = def(inferConfig(root).contracts[0]!).frontmatter!.fields!;
-    expect(fields.n).toEqual({ type: "number" });
+    // All-integer numbers → number(int); booleans → boolean; arrays → array of loose element.
+    expect(fields.n).toEqual({ type: "number", int: true });
     expect(fields.b).toEqual({ type: "boolean" });
     expect(fields.arr).toEqual({ type: "array", of: { type: "string" } });
-    // No format/const/enum this phase — a plain string accepts every value.
+    // `hello` matches no format and the set is too small to enum (2 distinct ≥ half of 2) → string.
     expect(fields.s).toEqual({ type: "string" });
   });
 
@@ -126,6 +128,47 @@ describe("inferConfig — frontmatter base types + required/optional + strict", 
     expect(def(c).frontmatter!.strict).toBeUndefined();
     expect(def(c).body!.order).toBe("none");
     expect(def(c).body!.allowUnknown).toBe(true);
+  });
+});
+
+describe("inferConfig — value-type ladder (D-0009 § Step 4)", () => {
+  /** Six files exercising the ladder, so the rung-6 enum ratio (< half of 6) is satisfiable. */
+  function ladderVault(): void {
+    for (let i = 1; i <= 6; i++) {
+      const severity = i % 2 === 0 ? "high" : "low";
+      file(
+        `f${i}.md`,
+        `---\nkind: policy\nversion: ${i}\nactive: ${i % 2 === 0}\n` +
+          `created: 2024-0${i}-0${i}\nseverity: ${severity}\ntitle: Doc ${i}\n---\n\n## Body\n\nx\n`,
+      );
+    }
+  }
+
+  it("walks const → number(int) → boolean → format → enum → string", () => {
+    ladderVault();
+    const fields = def(inferConfig(root).contracts[0]!).frontmatter!.fields!;
+    expect(fields.kind).toEqual({ const: "policy" }); // rung 1 — uniform
+    expect(fields.version).toEqual({ type: "number", int: true }); // rung 2 — all integers
+    expect(fields.active).toEqual({ type: "boolean" }); // rung 3
+    expect(fields.created).toEqual({ type: "string", format: "date" }); // rung 5 — ISO dates
+    expect(fields.severity).toEqual({ enum: ["low", "high"] }); // rung 6 — small closed set
+    expect(fields.title).toEqual({ type: "string" }); // rung 7 — all-distinct free-form
+  });
+
+  it("--relax drops rung 6: a categorical field stays a plain string", () => {
+    ladderVault();
+    const fields = def(inferConfig(root, { relax: true }).contracts[0]!).frontmatter!.fields!;
+    expect(fields.severity).toEqual({ type: "string" });
+    // The tighter, non-categorical rungs still fire under --relax.
+    expect(fields.kind).toEqual({ const: "policy" });
+    expect(fields.created).toEqual({ type: "string", format: "date" });
+  });
+
+  it("non-integer numbers → number (no int)", () => {
+    file("a.md", "---\nratio: 1.5\n---\n\n## S\n\nx\n");
+    file("b.md", "---\nratio: 2\n---\n\n## S\n\nx\n");
+    const fields = def(inferConfig(root).contracts[0]!).frontmatter!.fields!;
+    expect(fields.ratio).toEqual({ type: "number" });
   });
 });
 
