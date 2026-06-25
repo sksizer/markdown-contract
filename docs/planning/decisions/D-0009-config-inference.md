@@ -75,13 +75,13 @@ Walk the target directories for `*.md` (the runner's existing walk), honoring th
 
 The runtime routes a file to a contract by **glob over its path**, first match wins ([[C-0003-corpus-cli]]). Directory structure is therefore the natural grouping: it is always expressible as routing, and unlike a frontmatter field or filename scheme it requires **no convention in the documents**.
 
-> **Group each file by its containing directory, cut at `--depth N`.** A file is assigned to its ancestor directory at depth `N` (the target root is depth 0), or to its own containing directory if that is shallower than `N`. Each group becomes one contract; the group's glob covers the markdown it owns and the rules are ordered most-specific-path-first so first-match-wins routes every file to its group.
+> **Make one contract per directory at depth `N`, covering its whole subtree.** The target root is depth 0. Every directory at *exactly* depth `N` gets one contract with a recursive glob over its subtree (`<reldir>/**/*.md`); any files sitting directly in the run root get a single root contract (`*.md`). **All generated contracts live at the same depth — never nested**, so no contract is an ancestor of another, the globs never overlap, and routing is unambiguous regardless of rule order.
 
-- **Depth 0** → one group (the whole tree) → the single-contract mode.
-- **Depth 1** → one group per top-level subdirectory, plus a group for files sitting directly in the root.
-- **Depth N** → directories deeper than `N` are absorbed into their depth-`N` ancestor; directories shallower than `N` that hold files directly form their own (clamped) group.
+- **Depth 0** → one contract for the whole tree → single-contract mode.
+- **Depth 1** (default) → one contract per top-level subdirectory (each recursive over its subtree), plus the root contract for any files directly in the root. This always covers every file.
+- **Depth N ≥ 2** → one contract per depth-`N` directory, plus the root contract. Files that sit *between* the root and depth `N` (directly in an intermediate directory) are **not** wrapped in a nested contract — that is exactly the parent/child (and cross-branch niece/nephew) split that uniform depth avoids. Instead the tool **warns** and suggests a shallower `--depth`. Depth ≥ 2 is the only case that can strand files; the default never does.
 
-A group's glob is recursive (`<reldir>/**/*.md`) when no deeper group lives in its subtree, and direct-only (`<reldir>/*.md`, or `*.md` for the root) when deeper groups do — so the globs partition the corpus cleanly and first-match-wins is unambiguous. Each group's contract is generalized over exactly the files routed to it. Contracts are **named after their directory** — the group dir's path relative to the root, slugified (`api`, `api-v1`, `web-v1`) — which is inherently unique, so there is no de-collision step; the name is just a label the author can rename. No document attribute is ever consulted for routing or naming.
+Each contract is generalized over the markdown under its directory. Contracts are **named after their directory** — the dir's path relative to the root, slugified (`api`, `api-v1`) — inherently unique, so there is no de-collision step; the name is just a label the author can rename. No document attribute is ever consulted for routing or naming.
 
 This is intentionally general. It does not reproduce a type-per-contract split unless document types happen to line up with directories — which, when they do (as in this repo's `docs/planning`), falls out for free, and when they don't, is not something path routing could honor anyway.
 
@@ -118,7 +118,7 @@ Every rung admits at least every value seen, so it cannot break accept-by-constr
 
 ### Step 6 — Self-check (the accept-by-construction guarantee)
 
-After emitting, **load the scaffold back** through `loadConfig` / `loadContract` and run it over the corpus via `runCorpus`. The result **must be zero findings**; if it is not, that is an inferer bug (some emitted constraint is tighter than the data allows), and `init` reports it loudly rather than writing a config that rejects its own corpus. This doubles as the capability's strongest test (golden round-trip: `init <dir>` → run → clean) and validates the inferer against the very loaders it targets.
+After emitting, **load the scaffold back** through `loadConfig` / `loadContract` and run it over the corpus via `runCorpus`. The result **must be zero findings**; if it is not, that is an inferer bug (some emitted constraint is tighter than the data allows), and `init` reports it loudly rather than writing a config that rejects its own corpus. The load-back also leans on the loaders' own validation — they throw `DeclarativeError` on any malformed YAML (a bad `kind` / `mcVersion`, an ill-formed schema, an unsupported `format`) — so the self-check confirms the *emitted YAML is well-formed* for free, not just that it accepts the corpus. This doubles as the capability's strongest test (golden round-trip: `init <dir>` → run → clean) and validates the inferer against the very loaders it targets.
 
 `--check` runs the *verification half only* against an **existing** config (no inference, no write): does the current config still accept the tree? A non-zero exit means a doc drifted from the inferred shape — a CI drift guard, and the natural complement to a tight snapshot.
 
@@ -174,7 +174,7 @@ Inference is **deterministic** (stable group order from the directory walk, stab
 
 ### Granularity — a depth cut (chosen) vs one contract per leaf directory vs flat
 
-A **depth cut** (chosen) lets one knob span "whole tree" to "every directory", and clamps cleanly for shallow branches. One-contract-per-leaf-directory is just the deepest cut (`--depth ∞`) — available, but rarely the right default (too many tiny contracts). A flat "one contract per immediate child, no recursion" is `--depth 1` with non-recursive globs — a special case the depth model already covers.
+A **depth cut** (chosen) lets one knob span "whole tree" to "every directory", with **all contracts at one uniform depth (never nested)**. One-contract-per-leaf-directory is just the deepest cut (`--depth ∞`) — available, but rarely the right default (too many tiny contracts). The price of uniform depth is that a deep cut can strand markdown sitting above it; the tool **warns** rather than silently nesting a parent contract (the default depth never strands).
 
 ### Generalization tightness — tight-but-accepting (chosen) vs loosest floor
 
@@ -203,10 +203,10 @@ Resolved in review (recorded here for provenance):
 - **Re-run behavior** — *resolved*: **regenerate; refuse to overwrite without `--force`**; a smart merge that preserves hand-tightenings is future work (§ Out of scope).
 - **Verb spelling** — *resolved*: **`init`**.
 
-Still open:
+- **Depth semantics & glob shape** — *resolved*: contracts are **uniform-depth** — one per directory at exactly `--depth N`, each recursive over its subtree, plus an optional root contract for files directly in the run root. They are never nested, so no two globs overlap and there is no recursive-vs-direct-only case (the earlier draft's clamp is gone). Files stranded between the root and the cut — only possible at depth ≥ 2 — are **warned**, not wrapped in a nested contract; the default depth 1 never strands.
+- **Contract-YAML validation** — *resolved*: covered implicitly today. The loaders validate as they compile and throw `DeclarativeError` on malformed YAML (bad `kind` / `mcVersion`, ill-formed schema, unsupported `format`), so `init`'s load-back self-check already validates its own emitted YAML. A dedicated declarative/finding-based meta-schema over contract files (richer errors, all at once, dogfooding the engine) is an optional future upgrade tracked in [[D-0008-declarative-contract-dsl]] § Open questions — not required for `init`.
 
-- **Glob shape at the cut** — the recursive-vs-direct-only rule for clamped shallow groups and the exact first-match ordering; corner cases (a directory with both direct files and deeper groups) to nail in implementation.
-- **Meta-schema reuse** — whether the self-check should also validate the *emitted YAML* against the format's own meta-schema ([[D-0008-declarative-contract-dsl]] § Open questions) once that exists.
+No open questions remain for v1.
 
 ## Out of scope
 
