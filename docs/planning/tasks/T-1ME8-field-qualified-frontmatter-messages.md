@@ -2,9 +2,10 @@
 type: task
 schema_version: '5'
 id: T-1ME8
-status: open/ready
+status: closed/done
 created: '2026-06-24'
-last_reviewed: '2026-06-24'
+last_reviewed: '2026-06-25'
+completion_note: 'Built the field-qualified frontmatter message builder in matchFrontmatter — every frontmatter/* finding now leads with the offending key (a removed id reads "frontmatter field ‘id’ is required" instead of "received undefined"), across required / const / enum / wrong-type / pattern / nested-path. One change lifts human / json / sarif alike. Carried by PR #34; full suite green (399), typecheck + dogfood clean.'
 related:
 - '[[C-0001-contract-validation]]'
 - '[[D-0001-finding-model]]'
@@ -76,12 +77,12 @@ Nested paths render readably: `issue.path` → `a.b` for keys, `related[0]` for 
 
 ## Acceptance criteria
 
-- [ ] AC-1: Every `frontmatter/*` finding message names the offending key (`issue.path`), rendered readably for nested / array paths.
-- [ ] AC-2: A missing required key reads ``frontmatter field ‘id’ is required`` — no raw `expected string, received undefined`.
-- [ ] AC-3: A const / enum mismatch names the field **and** its expected value(s): ``frontmatter field ‘type’ must be ‘capability’`` (const) / ``… must be one of ‘…’, ‘…’`` (enum).
-- [ ] AC-4: A wrong-type / pattern / format failure names the field and the expectation.
-- [ ] AC-5: The change is confined to message construction — `id`, `level`, `pos`, deterministic ordering, and the `frontmatter/unknown-key` branch are unchanged; human, JSON, and SARIF all carry the improved text with **no formatter edits**.
-- [ ] AC-6: Peer tests in `content.test.ts` pin the exact messages (reported cases lead); the dogfood corpus and the full suite stay green.
+- [x] AC-1: Every `frontmatter/*` finding message names the offending key (`issue.path`), rendered readably for nested / array paths.
+- [x] AC-2: A missing required key reads ``frontmatter field ‘id’ is required`` — no raw `expected string, received undefined`.
+- [x] AC-3: A const / enum mismatch names the field **and** its expected value(s): ``frontmatter field ‘type’ must be ‘capability’`` (const) / ``… must be one of ‘…’, ‘…’`` (enum).
+- [x] AC-4: A wrong-type / pattern / format failure names the field and the expectation.
+- [x] AC-5: The change is confined to message construction — `id`, `level`, `pos`, deterministic ordering, and the `frontmatter/unknown-key` branch are unchanged; human, JSON, and SARIF all carry the improved text with **no formatter edits**.
+- [x] AC-6: Peer tests in `content.test.ts` pin the exact messages (reported cases lead); the dogfood corpus and the full suite stay green.
 
 ## Out of scope
 
