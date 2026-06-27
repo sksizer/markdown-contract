@@ -2,8 +2,10 @@
 type: task
 schema_version: '5'
 id: T-2CSL
-status: open/ready
+status: closed/done
 created: '2026-06-27'
+last_reviewed: '2026-06-27'
+completion_note: 'Capped const/enum string length at DEFAULT_MAX_CONST_STRING_LENGTH (64, overridable via --max-const-len) in inferFieldSchema rungs 1 and 6, threaded through a shared field-inference options bag (also carrying T-3MCE''s floor). init --meta no longer freezes a long completion_note as a const. Implemented in PR #41 alongside T-3MCE; peer tests cover the cap/boundary/enum-exclusion and the CLI flag validation; full suite green (472), typecheck + validate docs/planning clean.'
 related:
 - '[[C-0008-config-scaffolding]]'
 - '[[D-0009-config-inference]]'

@@ -2,8 +2,10 @@
 type: task
 schema_version: '5'
 id: T-3MCE
-status: open/ready
+status: closed/done
 created: '2026-06-27'
+last_reviewed: '2026-06-27'
+completion_note: 'Added a minimum example-count floor (DEFAULT_MIN_CONST_EXAMPLES = 3, overridable via --min-const-examples) to rung 1 of inferFieldSchema so a uniform scalar is pinned as const only when observed in at least N documents; --min-const-examples 1 restores the prior single-example behavior. version and the date fields no longer pin as const from the 2-doc milestones group. Implemented in PR #41 alongside T-2CSL through one shared field-inference options bag; peer tests cover the floor/boundary and CLI flag validation; full suite green (472), validate docs/planning clean.'
 related:
 - '[[C-0008-config-scaffolding]]'
 - '[[D-0009-config-inference]]'
