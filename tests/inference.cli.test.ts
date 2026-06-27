@@ -111,6 +111,24 @@ suite("markdown-contract init (CLI)", () => {
     expect(excluded.stdout).not.toContain("reference");
   });
 
+  test("--max-const-len: a non-integer is a usage error (exit 2); a valid integer runs", async () => {
+    const dir = stageVault("01-flat-uniform");
+    const bad = await runCli(["init", dir, "--max-const-len", "abc", "--dry-run"], { cwd: dir });
+    expect(bad.code).toBe(2);
+    expect(bad.stderr).toContain("--max-const-len");
+    const ok = await runCli(["init", dir, "--max-const-len", "10", "--dry-run"], { cwd: dir });
+    expect(ok.code).toBe(0);
+  });
+
+  test("--min-const-examples: a value below 1 is a usage error (exit 2); >= 1 runs", async () => {
+    const dir = stageVault("01-flat-uniform");
+    const bad = await runCli(["init", dir, "--min-const-examples", "0", "--dry-run"], { cwd: dir });
+    expect(bad.code).toBe(2);
+    expect(bad.stderr).toContain("--min-const-examples");
+    const ok = await runCli(["init", dir, "--min-const-examples", "1", "--dry-run"], { cwd: dir });
+    expect(ok.code).toBe(0);
+  });
+
   test("reads at least one fixture so the temp-stage helper type-checks", () => {
     const dir = stageVault("01-flat-uniform");
     expect(readFileSync(join(dir, "alpha.md"), "utf8")).toContain("## Summary");

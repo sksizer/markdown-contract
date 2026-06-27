@@ -34,6 +34,7 @@ const USAGE = [
   "",
   "       markdown-contract init <dir> ... [--meta] [--depth <n>] [--relax] [--inline]",
   "       [--out <dir>] [--force] [--dry-run] [--check] [--infer-bounds]",
+  "       [--max-const-len <n>] [--min-const-examples <n>]",
   "       [--glob <glob> ...] [--include <glob> ...] [--exclude <glob> ...]",
 ].join("\n");
 
@@ -95,6 +96,8 @@ export async function runCli(
         "dry-run": { type: "boolean" }, // print the would-be files to stdout; write nothing
         check: { type: "boolean" }, // verify an existing config still accepts the tree
         "infer-bounds": { type: "boolean" }, // opt into pattern / min / max inference
+        "max-const-len": { type: "string" }, // cap: strings longer than this never become const/enum
+        "min-const-examples": { type: "string" }, // floor: a uniform scalar needs >= n docs to become const
       },
       allowPositionals: true,
     });
@@ -198,6 +201,8 @@ interface InitFlags {
   "dry-run"?: boolean;
   check?: boolean;
   "infer-bounds"?: boolean;
+  "max-const-len"?: string;
+  "min-const-examples"?: string;
   glob?: string[];
   include?: string[];
   exclude?: string[];
@@ -242,6 +247,24 @@ function runInit(cwd: string, roots: string[], flags: InitFlags): CliResult {
     }
   }
 
+  // --max-const-len: a non-negative integer (0 disables string const/enum). Bad value → usage error.
+  let maxConstStringLength: number | undefined;
+  if (flags["max-const-len"] !== undefined) {
+    maxConstStringLength = Number(flags["max-const-len"]);
+    if (!Number.isInteger(maxConstStringLength) || maxConstStringLength < 0) {
+      return { code: 2, stdout: "", stderr: `markdown-contract: --max-const-len must be a non-negative integer (got '${flags["max-const-len"]}')` };
+    }
+  }
+
+  // --min-const-examples: an integer >= 1 (1 restores pinning on a single example). Bad value → usage error.
+  let minConstExamples: number | undefined;
+  if (flags["min-const-examples"] !== undefined) {
+    minConstExamples = Number(flags["min-const-examples"]);
+    if (!Number.isInteger(minConstExamples) || minConstExamples < 1) {
+      return { code: 2, stdout: "", stderr: `markdown-contract: --min-const-examples must be an integer >= 1 (got '${flags["min-const-examples"]}')` };
+    }
+  }
+
   const include = [...(flags.glob ?? []), ...(flags.include ?? [])];
   const exclude = flags.exclude ?? [];
   const scope = {
@@ -269,6 +292,8 @@ function runInit(cwd: string, roots: string[], flags: InitFlags): CliResult {
     inline: flags.inline === true,
     inferBounds: flags["infer-bounds"] === true,
     ...(depth !== undefined ? { depth } : {}),
+    ...(maxConstStringLength !== undefined ? { maxConstStringLength } : {}),
+    ...(minConstExamples !== undefined ? { minConstExamples } : {}),
     ...scope,
   };
 

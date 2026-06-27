@@ -105,7 +105,15 @@ describe("inferConfig — frontmatter required/optional + strict", () => {
     const fm = def(inferConfig(root).contracts[0]!).frontmatter!;
     expect(fm.strict).toBe(true);
     expect(fm.fields!.title).toEqual({ type: "string" });
-    // `status` is present in only one file → optional; its one observed value → const (rung 1).
+    // `status` is present in only one file → optional; one example is below the default
+    // min-const-examples floor (3), so it is NOT pinned as a const — it falls to a plain string.
+    expect(fm.fields!.status).toEqual({ type: "string", optional: true });
+  });
+
+  it("--min-const-examples 1 restores pinning a single-example uniform field as const", () => {
+    file("one.md", "---\ntitle: A\nstatus: open\n---\n\n## S\n\nx\n");
+    file("two.md", "---\ntitle: B\n---\n\n## S\n\nx\n");
+    const fm = def(inferConfig(root, { minConstExamples: 1 }).contracts[0]!).frontmatter!;
     expect(fm.fields!.status).toEqual({ const: "open", optional: true });
   });
 
@@ -169,6 +177,71 @@ describe("inferConfig — value-type ladder (D-0009 § Step 4)", () => {
     file("b.md", "---\nratio: 2\n---\n\n## S\n\nx\n");
     const fields = def(inferConfig(root).contracts[0]!).frontmatter!.fields!;
     expect(fields.ratio).toEqual({ type: "number" });
+  });
+});
+
+describe("inferConfig — const string-length cap (T-2CSL)", () => {
+  /** N files each carrying the same `<key>: <value>` frontmatter line. */
+  function repeat(n: number, key: string, value: string): void {
+    for (let i = 0; i < n; i++) file(`f${i}.md`, `---\n${key}: ${value}\n---\n\n## S\n\nx\n`);
+  }
+
+  it("pins a uniform short string as const", () => {
+    repeat(3, "label", "draft"); // 5 chars, uniform across 3 docs (clears the floor) → const
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.label).toEqual({ const: "draft" });
+  });
+
+  it("a uniform string longer than the cap falls through to a plain string", () => {
+    repeat(3, "note", `"${"x".repeat(65)}"`); // 65 > default cap 64
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.note).toEqual({ type: "string" });
+  });
+
+  it("the cap is inclusive: a string of exactly the cap length is still const", () => {
+    const atCap = "a".repeat(64);
+    repeat(3, "k", `"${atCap}"`);
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.k).toEqual({ const: atCap });
+  });
+
+  it("--max-const-len 0 disables string const; numeric const is untouched", () => {
+    for (let i = 0; i < 3; i++) file(`f${i}.md`, "---\ns: hi\nn: 5\n---\n\n## S\n\nx\n");
+    const fields = def(inferConfig(root, { maxConstStringLength: 0 }).contracts[0]!).frontmatter!.fields!;
+    expect(fields.s).toEqual({ type: "string" }); // every non-empty string is over a 0 cap
+    expect(fields.n).toEqual({ const: 5 });        // the cap is string-only
+  });
+
+  it("excludes a field from enum when any observed value is over the cap", () => {
+    // 6 docs, 2 distinct values → would enum (2*2 < 6), but one value is over-length so rung 6 is skipped.
+    for (let i = 0; i < 6; i++) {
+      const v = i % 2 === 0 ? "short" : `"${"y".repeat(70)}"`;
+      file(`g${i}.md`, `---\ntag: ${v}\n---\n\n## S\n\nx\n`);
+    }
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.tag).toEqual({ type: "string" });
+  });
+});
+
+describe("inferConfig — min-const-examples floor (T-3MCE)", () => {
+  function repeat(n: number, key: string, value: string): void {
+    for (let i = 0; i < n; i++) file(`f${i}.md`, `---\n${key}: ${value}\n---\n\n## S\n\nx\n`);
+  }
+
+  it("does not pin a uniform field seen in fewer than 3 docs (default floor)", () => {
+    repeat(2, "kind", "policy"); // uniform, but only 2 examples < 3
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.kind).toEqual({ type: "string" });
+  });
+
+  it("pins a uniform field once seen in exactly 3 docs (the boundary)", () => {
+    repeat(3, "kind", "policy");
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.kind).toEqual({ const: "policy" });
+  });
+
+  it("a uniform date below the floor falls to format, not const", () => {
+    repeat(2, "created", "2026-06-21");
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.created).toEqual({ type: "string", format: "date" });
+  });
+
+  it("--min-const-examples 1 pins on a single example", () => {
+    repeat(1, "kind", "policy");
+    expect(def(inferConfig(root, { minConstExamples: 1 }).contracts[0]!).frontmatter!.fields!.kind).toEqual({ const: "policy" });
   });
 });
 

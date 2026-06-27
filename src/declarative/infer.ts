@@ -56,6 +56,7 @@ import picomatch from "picomatch";
 import { stringify as stringifyYaml } from "yaml";
 
 import { parse } from "../core/index.js";
+import { DEFAULT_MAX_CONST_STRING_LENGTH, DEFAULT_MIN_CONST_EXAMPLES } from "./constants.js";
 import { compileSchema } from "./schema.js";
 
 /** Options for `inferConfig` — mirrors the `init` CLI flags (D-0009 § The CLI surface). */
@@ -65,8 +66,25 @@ export interface InferOptions {
   relax?: boolean;       // loosen generation toward a permissive floor
   inline?: boolean;      // single self-contained config instead of per-dir contract files
   inferBounds?: boolean; // opt into pattern / min / max inference
+  maxConstStringLength?: number; // strings longer than this never become const/enum (default DEFAULT_MAX_CONST_STRING_LENGTH)
+  minConstExamples?: number;     // a uniform scalar needs >= this many docs to become const (default DEFAULT_MIN_CONST_EXAMPLES)
   include?: string[];    // glob pre-filter (relative to root), as `validate`
   exclude?: string[];
+}
+
+/**
+ * The resolved value-ladder knobs threaded into `inferFieldSchema` — one bag so the const
+ * string-length cap and the min-examples floor ride the same plumbing as `relax`. Resolved once
+ * at the `inferConfig` boundary from `InferOptions` (with defaults applied), then passed down
+ * unchanged through `generalize` → `inferFrontmatter` → `inferFieldSchema`.
+ */
+interface FieldInferOptions {
+  /** `--relax`: drop strict + categorical enums toward a permissive floor. */
+  relax: boolean;
+  /** Strings longer than this never become a `const` nor enter an `enum`. */
+  maxConstStringLength: number;
+  /** A uniform scalar needs at least this many observed docs to become a `const`. */
+  minConstExamples: number;
 }
 
 /**
@@ -358,29 +376,38 @@ function isScalar(v: unknown): v is string | number | boolean {
  * specific* schema that still admits *every* value, defaulting looser only when no tighter rung
  * fits — so the choice can never break accept-by-construction:
  *
- *  1. all values **identical** (a scalar) → `{ const: <value> }`;
+ *  1. all values **identical** (a scalar), seen in **≥ `opts.minConstExamples`** docs, and — for
+ *     strings — **≤ `opts.maxConstStringLength`** long → `{ const: <value> }`;
  *  2. else all **numbers** → `{ type: number }` (`int: true` if all integers);
  *  3. else all **booleans** → `{ type: boolean }`;
  *  4. else all **arrays** → `{ type: array, of: <recursively inferred LOOSE element schema> }`;
  *  5. else all **strings matching one `format`** (most specific; `date` before `datetime`) →
  *     `{ type: string, format: <name> }`;
- *  6. else a **small closed categorical set** — ≤ 12 distinct values AND fewer than half the
- *     files — → `{ enum: [<observed values, first-appearance order>] }`;
+ *  6. else a **small closed categorical set** — ≤ 12 distinct values, fewer than half the files,
+ *     and no value over the string-length cap — → `{ enum: [<observed values, first-appearance order>] }`;
  *  7. else → `{ type: string }`.
  *
- * `fileCount` is the group's file count (the rung-6 ratio gate). `relax` skips rung 6 so a
- * categorical field stays `{ type: string }` (D-0009 § Step 4 — `--relax` drops enums). `min` /
- * `max` / `pattern` are never inferred here (opt-in via `--infer-bounds`, a future phase), so
- * every rung stays at-or-below the accept-all bound.
+ * `fileCount` is the group's file count (the rung-6 ratio gate). `opts` carries the ladder knobs:
+ * `relax` skips rung 6 so a categorical field stays `{ type: string }` (D-0009 § Step 4 — `--relax`
+ * drops enums); `maxConstStringLength` keeps a long free-text value off rungs 1 and 6;
+ * `minConstExamples` keeps a uniform scalar off rung 1 until enough docs back it. Each guard only
+ * ever loosens the rung, so accept-by-construction holds. `min` / `max` / `pattern` are never
+ * inferred here (opt-in via `--infer-bounds`, a future phase).
  */
-function inferFieldSchema(values: unknown[], fileCount: number, relax: boolean): Record<string, unknown> {
+function inferFieldSchema(values: unknown[], fileCount: number, opts: FieldInferOptions): Record<string, unknown> {
   if (values.length === 0) return { type: "string" };
 
   // Rung 1 — all identical (scalar) → const. Arrays/objects that happen to be identical fall
   // through to their own rung (the compiler's `const` is scalar-only), still accept-by-construction.
+  // Two guards keep a coincidentally-uniform field from being frozen on thin/unwieldy evidence:
+  // a string longer than the cap is never a const, and any scalar needs at least
+  // `minConstExamples` observations. Either miss falls through to a looser rung — still
+  // accept-by-construction (D-0009 § Self-check).
   const first = values[0];
   if (isScalar(first) && values.every((v) => deepEqual(v, first))) {
-    return { const: first };
+    const overLength = typeof first === "string" && first.length > opts.maxConstStringLength;
+    const tooFewExamples = values.length < opts.minConstExamples;
+    if (!overLength && !tooFewExamples) return { const: first };
   }
 
   // Rung 2 — all numbers → number (int when every value is an integer).
@@ -400,7 +427,7 @@ function inferFieldSchema(values: unknown[], fileCount: number, relax: boolean):
   // so it admits each item the corpus actually carries.
   if (values.every((v) => Array.isArray(v))) {
     const items = (values as unknown[][]).flat();
-    return { type: "array", of: inferFieldSchema(items, items.length, true) };
+    return { type: "array", of: inferFieldSchema(items, items.length, { ...opts, relax: true }) };
   }
 
   // Rung 5 — all strings matching one format (most specific first; validated via the engine).
@@ -412,8 +439,10 @@ function inferFieldSchema(values: unknown[], fileCount: number, relax: boolean):
 
     // Rung 6 — a small closed categorical set → enum (unless --relax, which keeps it a string).
     // The compiler's `enum` is strings-only; the ratio (< half the files) keeps a coincidentally
-    // repetitive free-form field from enum'ing on thin evidence (D-0009 § Step 4, rung 6).
-    if (!relax) {
+    // repetitive free-form field from enum'ing on thin evidence (D-0009 § Step 4, rung 6). An enum
+    // must admit EVERY observed value, so a value over the const string-length cap can't be
+    // dropped — if any value exceeds it, skip rung 6 and let the field fall to `{ type: string }`.
+    if (!opts.relax && !strings.some((s) => s.length > opts.maxConstStringLength)) {
       const distinct: string[] = [];
       const seen = new Set<string>();
       for (const s of strings) {
@@ -440,7 +469,7 @@ function inferFieldSchema(values: unknown[], fileCount: number, relax: boolean):
  * carried is listed, so the key set is closed by construction; `--relax` drops it to non-strict
  * and (via the ladder) drops categorical enums.
  */
-function inferFrontmatter(docs: ParsedDoc[], relax: boolean): { strict?: boolean; fields: Record<string, unknown> } | undefined {
+function inferFrontmatter(docs: ParsedDoc[], opts: FieldInferOptions): { strict?: boolean; fields: Record<string, unknown> } | undefined {
   const keys: string[] = [];
   const seen = new Set<string>();
   const values = new Map<string, unknown[]>();
@@ -463,13 +492,13 @@ function inferFrontmatter(docs: ParsedDoc[], relax: boolean): { strict?: boolean
   for (const key of keys) {
     const present = docs.filter((d) => key in d.frontmatter).length;
     const optional = present < docs.length;
-    const schema = inferFieldSchema(values.get(key)!, fileCount, relax);
+    const schema = inferFieldSchema(values.get(key)!, fileCount, opts);
     fields[key] = optional ? { ...schema, optional: true } : schema;
   }
 
   // The key set is closed by construction (every observed key is listed), so strict is safe;
   // `--relax` loosens to non-strict (D-0009 § Step 3 — frontmatter; § --relax).
-  return relax ? { fields } : { strict: true, fields };
+  return opts.relax ? { fields } : { strict: true, fields };
 }
 
 // ── Body (D-0009 § Step 3 — sections / order / unknown) ────────────────────────────
@@ -533,11 +562,11 @@ function nameForDir(relDir: string, absRoot: string): string {
  * (one group per directory at the depth cut). Returns the bare `def` object an
  * `InferredContract` and `compileContractObject` both consume.
  */
-function generalize(docs: ParsedDoc[], relax: boolean): Record<string, unknown> {
+function generalize(docs: ParsedDoc[], opts: FieldInferOptions): Record<string, unknown> {
   const def: Record<string, unknown> = {};
-  const frontmatter = inferFrontmatter(docs, relax);
+  const frontmatter = inferFrontmatter(docs, opts);
   if (frontmatter) def.frontmatter = frontmatter;
-  const body = inferBody(docs, relax);
+  const body = inferBody(docs, opts.relax);
   if (body) def.body = body;
   return def;
 }
@@ -595,7 +624,7 @@ function inferMeta(
   absRoot: string,
   docs: ParsedDoc[],
   depth: number,
-  relax: boolean,
+  opts: FieldInferOptions,
   inline: boolean,
 ): InferResult {
   // Route each doc to a group key (its depth-`depth` ancestor dir), tracking stranded files.
@@ -630,7 +659,7 @@ function inferMeta(
   const contracts: InferredContract[] = orderedKeys.map((key) => ({
     name: nameForDir(key, absRoot),
     include: [key === "" ? "*.md" : `${key}/**/*.md`],
-    def: generalize(groups.get(key)!, relax),
+    def: generalize(groups.get(key)!, opts),
   }));
 
   const warnings = stranded.map(
@@ -700,7 +729,12 @@ function emitMetaFiles(contracts: InferredContract[], inline: boolean): Inferred
  */
 export function inferConfig(root: string, opts?: InferOptions): InferResult {
   const absRoot = resolve(root);
-  const relax = opts?.relax === true;
+  // Resolve the value-ladder knobs once (defaults applied) and thread the one bag downward.
+  const fieldOpts: FieldInferOptions = {
+    relax: opts?.relax === true,
+    maxConstStringLength: opts?.maxConstStringLength ?? DEFAULT_MAX_CONST_STRING_LENGTH,
+    minConstExamples: opts?.minConstExamples ?? DEFAULT_MIN_CONST_EXAMPLES,
+  };
   const docs = discover(absRoot, { include: opts?.include, exclude: opts?.exclude }).map((rel) =>
     parseDoc(absRoot, rel),
   );
@@ -708,11 +742,11 @@ export function inferConfig(root: string, opts?: InferOptions): InferResult {
   // Meta mode: cut the tree at the depth knob (default 1). Depth 0 is single-contract mode.
   const depth = opts?.depth ?? 1;
   if (opts?.meta === true && depth >= 1) {
-    return inferMeta(absRoot, docs, depth, relax, opts?.inline === true);
+    return inferMeta(absRoot, docs, depth, fieldOpts, opts?.inline === true);
   }
 
   // Single-contract mode: the whole subtree is one group, named after the run-root basename.
-  const def = generalize(docs, relax);
+  const def = generalize(docs, fieldOpts);
   const name = slugify(basename(absRoot));
   const contract: InferredContract = { name, include: ["**/*.md"], def };
   const content = stringifyYaml({ mcVersion: 1, kind: "contract", ...def });
