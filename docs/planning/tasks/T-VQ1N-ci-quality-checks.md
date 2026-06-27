@@ -101,3 +101,27 @@ Raised via `/sdlc:task-auto-define`: the project already declares
 `quality_checks` in `sdlc.yaml` and runs them locally during task-work,
 but has no automation to run them on PRs or pushes, so regressions are
 only caught by hand.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-27. PR: pending._
+
+### Acceptance criteria coverage
+
+- AC-1: auto — `.github/workflows/ci.yml` parsed clean (`python3 -c "import yaml; yaml.safe_load(...)"` → `YAML OK`); `on:` declares `pull_request: {}` and `push: { branches: [main] }`.
+- AC-2: agent-manual — inspected the workflow: `npm ci`, then `npm run typecheck` (step "Typecheck") and `npm run test` (step "Test") run as two separate named steps.
+- AC-3: auto — `actions/setup-node@v4` pins `node-version: "20"` with `cache: npm`; runner default not used.
+- AC-4: deferred-user — the workflow is correct and will trigger on `pull_request` and `push` to `main`, but a green run (and red-on-deliberate-failure) is observable only after this PR opens and GitHub Actions runs. Please spot-check the PR's checks once CI runs.
+- AC-5: agent-manual — README renders `[![CI](…/actions/workflows/ci.yml/badge.svg)](…/actions/workflows/ci.yml)` immediately under the H1; image is the workflow badge, link target is the run-history page.
+
+### What worked
+
+- The implementation was a clean two-file change; the project's quality gate (`npm run test`, `npm run typecheck`) ran green in the worktree (`OK 2/2`) with zero new drift against the baseline.
+- `worktree_init` (`npm install`) bootstrapped the worktree deps correctly, so the in-worktree quality run actually exercised vitest/tsc.
+
+### Friction and automation gaps
+
+- The task-lifecycle mutators (`ensure_ready_mutate.ts`, `start_task.ts`) run `sdlc docs generate` as a side effect and committed SDLC-plugin template docs (`docs/index.md`, `docs/glossary.md`, `docs/references.md`, titled "# SDLC", linking `[[PR-0001-sdlc]]` / `[[D-K9PX-system-architecture]]`) into markdown-contract on main — wrong corpus, broken wikilinks to entities this project does not own. Required an extra `git rm` commit to keep the PR clean — the docs-generate side-effect in the task-state mutators should resolve the consuming project's content root (or be opt-in per project) so it does not sweep foreign generated docs into task-state commits.
+- The quality baseline (Step 3a) is captured from the main checkout, where `node_modules` is not installed, so both verbs recorded `exit 127` (command not found) and meaningless npm-echo "findings" instead of real ones — a misleading baseline. Baseline capture should run `worktree_init` first (or capture from a deps-installed tree) so the pre-existing-drift baseline reflects real check output.
+- `lease_authority` lives only as an uncommitted edit in the main checkout's `sdlc.yaml` (not on `origin/main`), so the worktree's `sdlc.yaml` lacked it and every in-worktree lease op needed an explicit `--authority origin`. The preflight should flag "lease_authority present only in the working tree, not committed" so the config actually reaches worktrees.
+- The Step 3b permissions probe reported `Bash(npm:*)`, `Bash(node:*)`, and worktree `Write`/`Edit` as missing, but the runtime sandbox allowed all of them (every npm/node/git/bun command and the file edits executed without denial). The probe's static settings-file read diverged from the effective sandbox — a known best-effort limitation, noted so it is not mistaken for a real gap.
