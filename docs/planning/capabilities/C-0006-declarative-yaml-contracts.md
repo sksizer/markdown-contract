@@ -10,6 +10,7 @@ parent_key: null
 contains: []
 related:
   - '[[C-0007-declarative-corpus-meta-config]]'
+  - '[[C-0008-config-scaffolding]]'
   - '[[C-0003-corpus-cli]]'
   - '[[C-0005-two-plane-contract-engine]]'
   - '[[C-0001-contract-validation]]'

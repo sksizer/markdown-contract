@@ -8,6 +8,8 @@ created: '2026-06-21'
 related:
   - '[[C-0006-declarative-yaml-contracts]]'
   - '[[C-0007-declarative-corpus-meta-config]]'
+  - '[[C-0008-config-scaffolding]]'
+  - '[[D-0009-config-inference]]'
   - '[[C-0003-corpus-cli]]'
   - '[[C-0005-two-plane-contract-engine]]'
   - '[[D-0004-content-plane]]'
