@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-VQ1N
-status: open/ready
+status: in-progress
 created: '2026-06-27'
 related: []
 tags:
@@ -12,6 +12,7 @@ need_human_review: false
 impact: medium
 complexity: small
 readiness_verified_at: '2026-06-27T17:02:50Z'
+last_reviewed: '2026-06-27'
 ---
 # Add a CI workflow that runs the quality checks (test, typecheck) on PRs and pushes to main
 
