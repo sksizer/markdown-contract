@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-VQ1N
-status: planning/draft
+status: open/ready
 created: '2026-06-27'
 related: []
 tags:
