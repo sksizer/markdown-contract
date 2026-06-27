@@ -11,6 +11,7 @@ tags:
 need_human_review: false
 impact: medium
 complexity: small
+readiness_verified_at: '2026-06-27T17:02:50Z'
 ---
 # Add a CI workflow that runs the quality checks (test, typecheck) on PRs and pushes to main
 
