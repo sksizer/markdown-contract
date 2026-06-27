@@ -135,3 +135,87 @@ active surface is visible as it grows.
 
 A real-corpus end-to-end case that needs several planes is tagged with the **highest** one it
 reaches (e.g. a full decision contract → `validate`; a typed read of it → `consumption`).
+
+## Inference fixtures
+
+The config-inference feature (D-0009 / C-0008) — `markdown-contract init <dir>…`, which scaffolds
+a tight-but-accepting config from existing markdown — has its own fixture family. Where a
+validation/consumption fixture is one document, an **inference fixture is a whole input vault**: a
+small, realistic miniature corpus that `inferConfig(dir, opts)` is run over, end to end.
+
+### Layout
+
+Each fixture is a self-contained directory under `tests/fixtures/infer/`:
+
+| Path | Role |
+|---|---|
+| `tests/fixtures/infer/NN-name/vault/` | The **input markdown vault** — the corpus `inferConfig` reads (frontmatter + `## H2` sections). |
+| `tests/fixtures/infer/NN-name/fixture.ts` | `export default` an `InferenceFixture`; `dir` is the absolute path to `./vault`. |
+| `tests/fixtures/infer/_assert.ts` | Shared accessors for inspecting an `InferredContract.def` (sections/order/fields) by name. |
+| `tests/fixtures/infer/index.ts` | Barrel — imports each `NN-name/fixture.js`, exports the array. |
+| `tests/inference.test.ts` | Feeds the barrel to `runInferenceFixtures("inference", …)`. |
+| `tests/inference.cli.test.ts` | CLI-level `init` tests, gated by `IMPLEMENTED["infer-cli"]`. |
+
+The vault `dir` is computed from the fixture module:
+
+```ts
+import { fileURLToPath } from "node:url";
+const dir = fileURLToPath(new URL("./vault", import.meta.url));
+```
+
+### The `InferenceFixture` shape
+
+```ts
+export interface InferenceFixture {
+  id: string; title: string; component: Component; // an `infer-*` gating component
+  dir: string;                                     // ABSOLUTE path to the input vault
+  opts?: InferOptions;                             // mirrors the init flags (meta/depth/relax/…)
+  assert?: (result: InferResult) => void;          // the inferred-shape check
+  note?: string;
+}
+```
+
+### The three auto-tests
+
+`runInferenceFixtures` runs, per fixture:
+
+1. **accept-by-construction** — the defining guarantee (D-0009 § The shape). The inferred
+   contracts are loaded back through `compileContractObject`, assembled into a `CorpusConfig`, and
+   run via `runCorpus` over the vault; the run must report **zero error-level findings**. The
+   generated config can never reject the corpus it was built from.
+2. **deterministic** — `inferConfig` is run twice and the `contracts` must be identical
+   (D-0009 § Idempotence — re-running on an unchanged corpus is a no-op diff).
+3. **inferred shape** — runs only when the fixture sets `assert`; inspects
+   `result.contracts[…].def` / `.name` / `.include`, `result.warnings`, and `result.mode`
+   against the spec (e.g. which sections are required vs `optional`, the detected `order`, each
+   frontmatter field's value-ladder schema, the directory-slug names and globs).
+
+### The fixture ladder
+
+A graded, additive set (simple → complex): `01-flat-uniform`, `02-optional-sections`,
+`03-order-recognized`, `04-order-strict`, `05-order-conflict` (sections + order, single-contract);
+`06-frontmatter-values` (the value-type ladder); `07-tree-depth1`, `08-tree-depth2`,
+`09-root-and-subdirs`, `10-stranded-depth` (directory + depth grouping, naming, root contracts,
+stranded-file warnings); `11-relax` (the permissive `--relax` floor).
+
+### Greening convention
+
+The inference fixtures gate on four `infer-*` components in `tests/components.ts`, flipped in
+pipeline order by the implementation phases:
+
+```
+infer-core → infer-values → infer-meta → infer-cli
+```
+
+| component | greens fixtures that need… |
+|---|---|
+| `infer-core` | section enumeration / required-vs-optional / order detection (single-contract). |
+| `infer-values` | the frontmatter value-type ladder (const/number/boolean/array/format/enum/string). |
+| `infer-meta` | directory + depth grouping, full-path-slug naming, root contracts, stranded warnings. |
+| `infer-cli` | the `init` verb + `--relax` (the CLI surface and its loosening dial). |
+
+A fixture runs **iff** `IMPLEMENTED[its component]` is `true`; otherwise the harness skips it
+(green, not failing) — exactly the convention the validation/consumption families use. In PR1 all
+four flags are `false`, so every inference fixture and the whole `init` CLI suite are skipped, the
+`inferConfig` stub (which throws `notImplemented`) never executes, and the suite stays green. Each
+implementation phase flips its flag in the PR that lands the component.

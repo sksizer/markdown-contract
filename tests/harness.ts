@@ -24,6 +24,10 @@ import { describe, expect, test } from "vitest";
 
 import { ContractError } from "../src/index.js";
 import type { Contract, Doc, Finding } from "../src/index.js";
+import { compileContractObject, inferConfig } from "../src/declarative/index.js";
+import type { InferOptions, InferResult } from "../src/declarative/index.js";
+import { runCorpus } from "../src/runner/index.js";
+import type { CorpusConfig } from "../src/runner/index.js";
 import { IMPLEMENTED, type Component } from "./components.js";
 
 const DEFAULT_PATH = "fixture.md";
@@ -145,6 +149,68 @@ export function runConsumptionFixtures(label: string, fixtures: ConsumptionFixtu
       const doc = contract.read(fx.source, ctx);
       for (const r of fx.reads ?? []) {
         expect(r.get(doc), r.label).toEqual(r.equals);
+      }
+    });
+  }
+}
+
+/**
+ * An inference fixture (D-0009 / C-0008). Each fixture is a self-contained input vault — a
+ * small, realistic miniature markdown corpus — under `tests/fixtures/infer/NN-name/vault/`,
+ * pointed at by an absolute `dir`. `inferConfig(dir, opts)` is run over it and the result is
+ * exercised by three auto-tests (see `runInferenceFixtures`):
+ *  - **accept-by-construction** — the inferred config, loaded back through
+ *    `compileContractObject` and run via `runCorpus`, reports zero error-level findings (the
+ *    defining guarantee, D-0009 § The shape).
+ *  - **deterministic** — inferring twice yields identical contracts (D-0009 § Idempotence).
+ *  - **inferred shape** — the optional `assert` callback inspects the model against the spec.
+ */
+export interface InferenceFixture {
+  id: string;
+  title: string;
+  /** the gating component (skipped until `IMPLEMENTED[component]`): an `infer-*` flag. */
+  component: Component;
+  /** ABSOLUTE path to the input vault (compute via `fileURLToPath(new URL("./vault", import.meta.url))`). */
+  dir: string;
+  opts?: InferOptions;
+  /** the inferred-shape assertion — runs only when present. */
+  assert?: (result: InferResult) => void;
+  note?: string;
+}
+
+/**
+ * Run the inference fixtures. Mirrors `runValidationFixtures`: a per-suite census line, then
+ * one `describe` (or `describe.skip` while the gating `infer-*` component is unimplemented)
+ * per fixture, each with up to three tests. The `inferConfig` stub throws `notImplemented`
+ * until the pipeline lands, so a skipped fixture type-checks but never executes the stub.
+ */
+export function runInferenceFixtures(label: string, fixtures: InferenceFixture[]): void {
+  census(label, fixtures);
+  for (const fx of fixtures) {
+    const suite = IMPLEMENTED[fx.component] ? describe : describe.skip;
+    suite(`[${fx.id}] ${fx.title} · ${fx.component}`, () => {
+      test("accept-by-construction", () => {
+        const r = inferConfig(fx.dir, fx.opts);
+        const cfg: CorpusConfig = {
+          rules: r.contracts.map((c) => ({
+            include: c.include,
+            contract: compileContractObject(c.def),
+          })),
+        };
+        const { findings } = runCorpus(cfg, { cwd: fx.dir });
+        expect(findings.filter((f) => f.level === "error")).toEqual([]);
+      });
+
+      test("deterministic", () => {
+        const a = inferConfig(fx.dir, fx.opts);
+        const b = inferConfig(fx.dir, fx.opts);
+        expect(b.contracts).toEqual(a.contracts);
+      });
+
+      if (fx.assert) {
+        test("inferred shape", () => {
+          fx.assert!(inferConfig(fx.dir, fx.opts));
+        });
       }
     });
   }
