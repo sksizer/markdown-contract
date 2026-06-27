@@ -2,8 +2,10 @@
 type: task
 schema_version: '5'
 id: T-5GLB
-status: open/ready
+status: closed/done
 created: '2026-06-27'
+last_reviewed: '2026-06-27'
+completion_note: 'Collapsed the six dogfood include rules in markdown-contract.yaml from two-entry [**/X-*.md, X-*.md] pairs to single **/X-*.md globs, and extracted the runner matcher into an exported compileMatcher() with a new peer test (src/runner/corpus.test.ts) pinning that one **/-prefixed glob spans both the run root and nested files. Confirmed this is a config + test change, not an init/infer change (the config predates init). Implemented in PR #40; validate docs/planning clean, full suite green.'
 related:
 - '[[D-0008-declarative-contract-dsl]]'
 depends_on: []
