@@ -245,6 +245,21 @@ describe("inferConfig — min-const-examples floor (T-3MCE)", () => {
   });
 });
 
+describe("inferConfig — nullable fields (accept-by-construction)", () => {
+  it("an all-null field infers a nullable string placeholder (not a bare string that rejects null)", () => {
+    file("a.md", "---\nparent: null\n---\n\n## S\n\nx\n");
+    file("b.md", "---\nparent: null\n---\n\n## S\n\nx\n");
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.parent).toEqual({ type: "string", nullable: true });
+  });
+
+  it("a field mixing null and non-null infers the non-null type, marked nullable", () => {
+    file("a.md", "---\nn: 1\n---\n\n## S\n\nx\n");
+    file("b.md", "---\nn: null\n---\n\n## S\n\nx\n");
+    // 'n' is present in both files (one null) → required; the non-null value is a number.
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.n).toEqual({ type: "number", int: true, nullable: true });
+  });
+});
+
 describe("inferConfig — meta mode (D-0009 § Step 2 — directory + depth)", () => {
   /** A name→include map over a meta result's contracts, for order-independent assertions. */
   function includes(cs: InferredContract[]): Record<string, string[]> {

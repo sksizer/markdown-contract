@@ -397,6 +397,17 @@ function isScalar(v: unknown): v is string | number | boolean {
 function inferFieldSchema(values: unknown[], fileCount: number, opts: FieldInferOptions): Record<string, unknown> {
   if (values.length === 0) return { type: "string" };
 
+  // Null — handled before the rungs. No base rung admits `null` (string/number/boolean/array and
+  // enum/const all reject it), so a field with a `null` observation would otherwise infer a schema
+  // that rejects its own corpus (breaking accept-by-construction, D-0009 § Self-check). Infer over
+  // the non-null values and mark the result `nullable`; an all-null field becomes a nullable string
+  // placeholder (the author can tighten the base type by hand).
+  if (values.some((v) => v === null)) {
+    const nonNull = values.filter((v) => v !== null);
+    const baseSchema = nonNull.length > 0 ? inferFieldSchema(nonNull, fileCount, opts) : { type: "string" };
+    return { ...baseSchema, nullable: true };
+  }
+
   // Rung 1 — all identical (scalar) → const. Arrays/objects that happen to be identical fall
   // through to their own rung (the compiler's `const` is scalar-only), still accept-by-construction.
   // Two guards keep a coincidentally-uniform field from being frozen on thin/unwieldy evidence:
