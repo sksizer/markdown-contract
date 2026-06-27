@@ -37,7 +37,7 @@ export const IMPLEMENTED: Record<Component, boolean> = {
   consumption: true,
   cli: false,
   "infer-core": true,
-  "infer-values": false,
+  "infer-values": true,
   "infer-meta": false,
   "infer-cli": false,
 };
