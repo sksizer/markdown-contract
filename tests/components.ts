@@ -39,5 +39,5 @@ export const IMPLEMENTED: Record<Component, boolean> = {
   "infer-core": true,
   "infer-values": true,
   "infer-meta": true,
-  "infer-cli": false,
+  "infer-cli": true,
 };

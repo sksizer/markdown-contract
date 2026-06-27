@@ -52,6 +52,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, resolve, sep } from "node:path";
 
+import picomatch from "picomatch";
 import { stringify as stringifyYaml } from "yaml";
 
 import { parse } from "../core/index.js";
@@ -107,14 +108,28 @@ function toPosix(p: string): string {
   return sep === "/" ? p : p.split(sep).join("/");
 }
 
+/** picomatch options — `dot` so dotfiles match like any other file (mirrors the runner). */
+const PICOMATCH_OPTS = { dot: true } as const;
+
 /**
  * Recursively collect every `*.md` under `root`, returned as paths relative to `root`
  * (POSIX-separated), in a deterministic order: directory entries are sorted before
  * recursion, so re-running over an unchanged corpus walks the files identically
  * (D-0009 § Idempotence). Mirrors the runner's own `walkSync` so inference sees exactly
  * the file set the self-check will route.
+ *
+ * An optional `include` / `exclude` glob pre-filter (relative to `root`, matched with the same
+ * `picomatch` and AND-narrowing semantics the runner uses — D-0009 § Step 1, "the same `--glob`
+ * / `--include` / `--exclude` scoping as validate") narrows which files feed inference: a file is
+ * kept only if it matches at least one `include` glob (when any are given) and no `exclude` glob.
+ * The self-check applies the identical scope, so what inference saw is exactly what is routed.
  */
-function discover(root: string): string[] {
+function discover(root: string, scope?: { include?: string[]; exclude?: string[] }): string[] {
+  const include =
+    scope?.include && scope.include.length > 0 ? picomatch(scope.include, PICOMATCH_OPTS) : null;
+  const exclude =
+    scope?.exclude && scope.exclude.length > 0 ? picomatch(scope.exclude, PICOMATCH_OPTS) : null;
+
   const out: string[] = [];
   const recur = (absDir: string, relDir: string): void => {
     const entries = readdirSync(absDir, { withFileTypes: true });
@@ -122,7 +137,11 @@ function discover(root: string): string[] {
     for (const entry of entries) {
       const rel = relDir === "" ? entry.name : `${relDir}/${entry.name}`;
       if (entry.isDirectory()) recur(resolve(absDir, entry.name), rel);
-      else if (entry.isFile() && entry.name.endsWith(".md")) out.push(rel);
+      else if (entry.isFile() && entry.name.endsWith(".md")) {
+        if (exclude && exclude(rel)) continue;
+        if (include && !include(rel)) continue;
+        out.push(rel);
+      }
     }
   };
   recur(root, "");
@@ -682,7 +701,9 @@ function emitMetaFiles(contracts: InferredContract[], inline: boolean): Inferred
 export function inferConfig(root: string, opts?: InferOptions): InferResult {
   const absRoot = resolve(root);
   const relax = opts?.relax === true;
-  const docs = discover(absRoot).map((rel) => parseDoc(absRoot, rel));
+  const docs = discover(absRoot, { include: opts?.include, exclude: opts?.exclude }).map((rel) =>
+    parseDoc(absRoot, rel),
+  );
 
   // Meta mode: cut the tree at the depth knob (default 1). Depth 0 is single-contract mode.
   const depth = opts?.depth ?? 1;
