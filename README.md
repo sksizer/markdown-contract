@@ -1,5 +1,7 @@
 # markdown-contract
 
+[![CI](https://github.com/sksizer/markdown-contract/actions/workflows/ci.yml/badge.svg)](https://github.com/sksizer/markdown-contract/actions/workflows/ci.yml)
+
 Validate and consume markdown-as-data: per-type **contracts** over a single parse —
 a **structure plane** (a regular tree grammar over sections and block kinds), a
 **content plane** (Zod over each block's data), and a typed **out-of-model** you can
