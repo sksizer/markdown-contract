@@ -172,6 +172,87 @@ describe("inferConfig — value-type ladder (D-0009 § Step 4)", () => {
   });
 });
 
+describe("inferConfig — meta mode (D-0009 § Step 2 — directory + depth)", () => {
+  /** A name→include map over a meta result's contracts, for order-independent assertions. */
+  function includes(cs: InferredContract[]): Record<string, string[]> {
+    return Object.fromEntries(cs.map((c) => [c.name, c.include]));
+  }
+
+  it("depth 1 → one recursive contract per top-level subdir, full-path slug names", () => {
+    file("api/orders.md", "## Request\n\nx\n");
+    file("guides/intro.md", "## Overview\n\nx\n");
+    const r = inferConfig(root, { meta: true });
+    expect(r.mode).toBe("meta");
+    expect(r.contracts.map((c) => c.name).sort()).toEqual(["api", "guides"]);
+    expect(includes(r.contracts)).toEqual({
+      api: ["api/**/*.md"],
+      guides: ["guides/**/*.md"],
+    });
+    expect(r.warnings).toEqual([]);
+  });
+
+  it("depth 2 → full relative-path slug names (api/v1 → api-v1), no nested contracts", () => {
+    file("api/v1/users.md", "## Request\n\nx\n");
+    file("api/v2/users.md", "## Request\n\nx\n");
+    file("web/v1/home.md", "## Overview\n\nx\n");
+    const r = inferConfig(root, { meta: true, depth: 2 });
+    expect(r.contracts.map((c) => c.name).sort()).toEqual(["api-v1", "api-v2", "web-v1"]);
+    expect(includes(r.contracts)["api-v1"]).toEqual(["api/v1/**/*.md"]);
+    expect(includes(r.contracts)["web-v1"]).toEqual(["web/v1/**/*.md"]);
+  });
+
+  it("files directly in the root get a direct-only `*.md` root contract", () => {
+    file("about.md", "## Overview\n\nx\n");
+    file("guides/setup.md", "## Steps\n\nx\n");
+    const r = inferConfig(root, { meta: true });
+    const rootContract = r.contracts.find((c) => c.include.includes("*.md"));
+    expect(rootContract).toBeDefined();
+    expect(rootContract!.include).toEqual(["*.md"]); // direct-only, never **/*.md
+    expect(includes(r.contracts)["guides"]).toEqual(["guides/**/*.md"]);
+  });
+
+  it("warns (does not nest) for a file stranded above a depth ≥ 2 cut", () => {
+    file("api/overview.md", "## Overview\n\nx\n"); // depth 1 — above the depth-2 cut
+    file("api/v1/users.md", "## Request\n\nx\n");
+    const r = inferConfig(root, { meta: true, depth: 2 });
+    expect(r.warnings.length).toBeGreaterThan(0);
+    expect(r.warnings.join("\n")).toContain("api/overview.md");
+    // No contract is an ancestor of another (no `api/**` wrapping `api/v1/**`).
+    expect(r.contracts.map((c) => c.name)).toEqual(["api-v1"]);
+  });
+
+  it("emits a meta-config registry plus one contract file per group", () => {
+    file("api/orders.md", "## Request\n\nx\n");
+    file("guides/intro.md", "## Overview\n\nx\n");
+    const r = inferConfig(root, { meta: true });
+    const paths = r.files.map((f) => f.path).sort();
+    expect(paths).toEqual([
+      "contracts/api.contract.yaml",
+      "contracts/guides.contract.yaml",
+      "markdown-contract.yaml",
+    ]);
+    const cfg = parse(r.files.find((f) => f.path === "markdown-contract.yaml")!.content) as {
+      kind: string;
+      contracts: Record<string, string>;
+      rules: Array<{ include: string[]; contract: string }>;
+    };
+    expect(cfg.kind).toBe("config");
+    expect(cfg.contracts.api).toBe("./contracts/api.contract.yaml");
+    expect(cfg.rules.map((rule) => rule.contract).sort()).toEqual(["api", "guides"]);
+  });
+
+  it("--inline emits one self-contained config with inline contract defs", () => {
+    file("api/orders.md", "## Request\n\nx\n");
+    file("guides/intro.md", "## Overview\n\nx\n");
+    const r = inferConfig(root, { meta: true, inline: true });
+    expect(r.files.map((f) => f.path)).toEqual(["markdown-contract.yaml"]);
+    const cfg = parse(r.files[0]!.content) as {
+      rules: Array<{ include: string[]; contract: Record<string, unknown> }>;
+    };
+    expect(cfg.rules.every((rule) => typeof rule.contract === "object")).toBe(true);
+  });
+});
+
 describe("inferConfig — emission + determinism", () => {
   it("serializes a loadable contract document and is deterministic", () => {
     file("one.md", "---\ntitle: A\n---\n\n## Summary\n\nx\n");
