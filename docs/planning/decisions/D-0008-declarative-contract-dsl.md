@@ -2,7 +2,7 @@
 type: decision
 schema_version: '1'
 id: D-0008
-status: open/proposed
+status: open/accepted
 title: Declarative contract DSL — a versioned YAML format compiled to the runtime
 created: '2026-06-21'
 related:
