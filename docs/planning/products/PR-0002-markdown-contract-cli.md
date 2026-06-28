@@ -22,6 +22,7 @@ need_human_review: true
 - A general-purpose command-line tool for markdown structural and quality checking across a document tree — the `markdown-contract` bin over the library. ^summary
 - A declarative dir → contract config validates a whole tree in one run, emitting CI-friendly output (human / JSON / SARIF) with a meaningful exit code.
 - Corpus-agnostic: any project with structured markdown adopts it without writing a bespoke linter; SDLC is the flagship consumer, not the scope.
+- Distributed beyond the npm bin as a **single self-contained, cross-platform binary** that is both the CLI and — in `daemon` mode — a **local web UI** for managing and monitoring multiple vaults. This expands how the product is *delivered and used*, not what the engine does (capability [[C-0009-single-binary-and-vault-dashboard]]).
 
 ## What it is
 
@@ -29,11 +30,11 @@ markdown-contract CLI is the command-line offering built on the library ([[PR-00
 
 ## Boundary
 
-**Inside:** the `markdown-contract` bin; argv parsing; the dir → contract config format; the output formatters (human / JSON / SARIF); exit codes; and CI / commit-hook integration.
+**Inside:** the `markdown-contract` bin; argv parsing; the dir → contract config format; the output formatters (human / JSON / SARIF); exit codes; CI / commit-hook integration; the **single-binary packaging**; and the **`daemon`-mode local web UI** (the managed-vault dashboard).
 
 **Outside:** the validation engine, the typed model, and the parse / projection — all the library ([[PR-0001-markdown-contract]]); the CLI is a *consumer* of it and holds no business logic. Markdown generation and formatting are out of scope for the whole family.
 
-This Product ships from the **same npm package** as the library — one package, two faces (the `bin` over the `exports`), per the Package & CLI shape in [`../../provenance/d0014/review-checklist.md`](../../provenance/d0014/review-checklist.md). It is a distinct *offering*, not a distinct package. (Provisional name — open to a dedicated CLI name on review.)
+This Product ships from the **same npm package** as the library — one package, two faces (the `bin` over the `exports`), per the Package & CLI shape in [`../../provenance/d0014/review-checklist.md`](../../provenance/d0014/review-checklist.md). It is a distinct *offering*, not a distinct package. (Provisional name — open to a dedicated CLI name on review.) Beyond npm, the same offering is also distributed as a **single self-contained binary** (no Node toolchain needed) that additionally hosts a local web UI in `daemon` mode — an additive build target over the same library, adding no validation logic. The distribution + UI shape is fixed by [[D-0012-distribution-single-exec-and-web-ui]] (over the monorepo tooling of [[D-0010-monorepo-tooling]]); the capability is [[C-0009-single-binary-and-vault-dashboard]].
 
 ## Drivers & goals
 
@@ -46,4 +47,6 @@ The use-case Drivers scoped to this Product are catalogued under [Drivers](../dr
 ## References
 
 - Library: [[PR-0001-markdown-contract]] · [[vision]]
+- Capability: [[C-0009-single-binary-and-vault-dashboard]] (single-binary distribution + local vault dashboard)
+- Decisions: [[D-0012-distribution-single-exec-and-web-ui]] (distribution + UI) · [[D-0010-monorepo-tooling]] (workspace + moon)
 - Plan: [`../../provenance/d0014/review-checklist.md`](../../provenance/d0014/review-checklist.md)
