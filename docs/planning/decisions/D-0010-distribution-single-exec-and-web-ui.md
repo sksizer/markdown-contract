@@ -112,9 +112,11 @@ File-watching and SQLite are **orthogonal**: watching keeps the in-memory live s
 
 A static SPA + a standalone daemon binary is exactly Tauri's model: Tauri shell + our Nuxt SPA as the webview + the Bun-compiled daemon as a **sidecar**. So the Tauri wrap reuses everything here and needs no Rust reimplementation of the JS engine. We note it and stop; we do not build for it yet.
 
-### D7 — The repo becomes a workspace: `packages/core` + `apps/web`
+### D7 — A Bun workspace (`packages/core` + `apps/web`) orchestrated by moon
 
-Split the single package into a workspace. **`packages/core`** is today's Node ESM library (engine + runner + declarative + the CLI bin) — the canonical npm artifact of D1, with its `tsc`/`vitest` flow unchanged. **`apps/web`** is the Nuxt SPA + Nitro daemon that depends on it (the D3 `daemon` consumer lives here; a sibling `apps/daemon` can split out later if the server outgrows the Nuxt app). **Bun workspaces** are the natural choice — consistent with the chosen compile runtime (D2) and the existing `bun.lock` — keeping one lockfile and one toolchain across library, binary, and UI.
+Split the single package into a workspace. **`packages/core`** is today's Node ESM library (engine + runner + declarative + the CLI bin) — the canonical npm artifact of D1, with its `tsc`/`vitest` flow unchanged. **`apps/web`** is the Nuxt SPA + Nitro daemon that depends on it (the D3 `daemon` consumer lives here; a sibling `apps/daemon` can split out later if the server outgrows the Nuxt app). **Bun workspaces** are the package layer — consistent with the chosen compile runtime (D2) and the existing `bun.lock` — keeping one lockfile across library, binary, and UI.
+
+On top of the workspace, **[moon](https://moonrepo.dev) is the task runner + toolchain manager**: it models the cross-project task graph (build / typecheck / test / `lint:docs`, later the Nuxt build and the `bun build --compile` matrix), caches by inputs/outputs, and **pins the Bun/Node versions** for every dev and CI run — reproducibility that directly serves the cross-compiled binary (D2). moon over Bun composes cleanly (moon enables its `javascript` + `bun` toolchains and respects `package.json` workspaces). The decisive reason over the TS-native runners is **polyglot reach**: when the Tauri shell (D6) adds Rust, moon keeps the TS library, the Nuxt app, and the Rust crate in one dependency graph — Turborepo and Nx are JavaScript-centric. Cost: a smaller community, and moon v2 ("Phobos", May 2026) is a recent rearchitecture (pin a version). **Turborepo is the fallback** if the project ever drops the Rust/Tauri path and stays TS-only. Adoption is tracked by [[T-MOON-adopt-moon-monorepo]].
 
 ## Why
 
@@ -160,6 +162,18 @@ SPA ships a static client + a Nitro JSON API: simplest to embed in one binary, l
 
 Recommendation: ship the registry + in-memory live status in v1 (file-watching optional, also DB-free); add SQLite only when persisted history/trends are wanted. **File-watching and SQLite are independent** — the earlier framing that coupled them was wrong (corrected in D4).
 
+### Monorepo task runner — moon (chosen) vs Turborepo vs Nx
+
+| | **moon** (chosen) | Turborepo | Nx |
+|---|---|---|---|
+| Language reach | Polyglot (JS/TS, **Rust**, Go, …) | JS/TS-centric | JS/TS-centric (+ plugins) |
+| Toolchain pinning | **Built-in** (pins Bun/Node per repo) | external (you pin) | external (you pin) |
+| Bun support | First-class toolchain (v2) | works (as PM) | works (as PM) |
+| Footprint / community | Rust core; smaller (~50K/wk) | simple; large (~2M/wk) | feature-rich/heavy; largest (~5M/wk) |
+| Fit here | Tauri/Rust future + reproducible cross-compile | best *if TS-only* | overkill at 2–3 packages |
+
+Chosen **moon** for polyglot reach (the Rust/Tauri future, D6) and built-in toolchain reproducibility (matters for the cross-compiled binary, D2). **Turborepo** is the fallback if the repo stays TS-only; **Nx** is rejected as overkill at this size.
+
 ### Library posture — additive binary (chosen) vs Bun/Deno-first pivot
 
 Rejected the pivot: making the compiled binary primary would risk runtime-specific APIs leaking into shipped library code and reopen [[D-0006-packaging]] for no gain. The binary is a *consumer-facing convenience*; the library remains the canonical, runtime-neutral artifact.
@@ -192,4 +206,8 @@ Rejected the pivot: making the compiled binary primary would risk runtime-specif
 - Nitro — Node server preset: https://nitro.build/deploy/node
 - Nuxt — Deployment (SPA `ssr:false`, presets): https://nuxt.com/docs/4.x/getting-started/deployment
 - Nuxt — Rendering modes: https://nuxt.com/docs/4.x/guide/concepts/rendering
-- Internal: [[D-0006-packaging]] (Node ESM library), [[C-0003-corpus-cli]] (runner/CLI API), [[C-0008-config-scaffolding]] (`init`/`--check`), [[PR-0002-markdown-contract-cli]], [[DR-0004-markdown-quality-cli]]
+- moon — task runner + toolchain: https://moonrepo.dev/moon
+- moon — Bun handbook: https://moonrepo.dev/docs/guides/javascript/bun-handbook
+- moon — v2.0 ("Phobos") release: https://www.infoq.com/news/2026/05/moonrepo-2-release/
+- Monorepo tools compared (Turborepo vs Nx vs moon, 2026): https://www.pkgpulse.com/guides/turborepo-vs-nx-vs-moon-2026
+- Internal: [[D-0006-packaging]] (Node ESM library), [[C-0003-corpus-cli]] (runner/CLI API), [[C-0008-config-scaffolding]] (`init`/`--check`), [[PR-0002-markdown-contract-cli]], [[DR-0004-markdown-quality-cli]], [[T-MOON-adopt-moon-monorepo]]
