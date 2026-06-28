@@ -20,55 +20,52 @@ impact: medium
 complexity: small
 autonomy: supervised
 ---
-# Text-constraint fixture corpus + dogfood
+# Text-constraint dogfood + final closeout
 
 ## Goal
 
-Prove the feature end-to-end and lock it against regression: a fixture-corpus case showing a YAML `requires` / `forbids` contract and its TS-authored equivalent produce identical findings, plus at least one in-repo `*.contract.yaml` that dogfoods the vocabulary. The per-module peer unit tests are owned by the implementation tasks; this task owns the assembled-pipeline proof under `tests/`.
+Seal the milestone: prove the vocabulary on a **live** in-repo document (not just dummy fixtures) and confirm the gated fixture corpus is fully active and green. The dummy-data fixtures and the `text-*` gates are authored up front by [[T-TXSC-text-constraint-fixture-scaffold]] and greened slice-by-slice by the implementation tasks; this task adds the real-document dogfood and the final census check that nothing text-related is left skipped.
 
 ## Today
 
-The fixture corpus and the YAML/TS parity harness exist but cover no text constraint.
+By the time this task runs, the gated text fixtures (TS + `.contract.yaml` peers) are green and both `text-*` flags are `true`; no contract dogfoods the feature on a real document.
 
 | Location | Role today |
 |---|---|
-| `tests/yaml-parity.test.ts` | Asserts every TS fixture has a `.contract.yaml` peer yielding identical findings |
-| `tests/harness.ts` | `loadSource(import.meta.url, "./x.md")` — verbatim fixture-document loader |
-| `tests/fixtures/validation/17-node-level-custom-rule.ts` | The model case (`.ts` + `.contract.yaml` + `.pass.md` + `.fail.md`) |
-| `contracts/` | The dogfooded in-repo `*.contract.yaml` set |
+| `tests/components.ts#IMPLEMENTED` | `text-api` / `text-yaml` flipped `true` by [[T-TXAP-text-predicate-builders]] / [[T-TXYL-declarative-requires-forbids]] |
+| `tests/yaml-parity.test.ts` | Asserts the text fixtures' YAML peers match their TS twins (greened in T-TXYL) |
+| `contracts/` | The dogfooded in-repo `*.contract.yaml` set — no `requires` / `forbids` yet |
+| `tests/harness.ts` | Emits the census (`active / skipped / total`) per fixture component |
 
 ## Proposed
 
-A new validation fixture (e.g. `tests/fixtures/validation/NN-text-constraints.*`) carries a TS contract using `requires` / `forbids` / `textRule`, its `.contract.yaml` peer, and pass/fail `.md` documents — so the parity harness asserts the YAML and TS surfaces emit the same `text/*` findings (id, level, line). At least one contract under `contracts/` gains a `requires` / `forbids` block exercising a real check, confirming the vocabulary works on live documents. Fixtures use dummy data; the SDLC corpus is untouched.
+At least one contract under `contracts/` gains a `requires` / `forbids` block exercising a real check against the document(s) it binds, confirming the vocabulary works on live repo content (not only dummy fixtures). A census/closeout assertion confirms no `text-*` fixture remains skipped and the full suite is green. The SDLC corpus is untouched.
 
 ## Approach
 
-1. Author `NN-text-constraints.ts` (section `requires`, body-root `forbids`, a count, a `regex`) plus its `.contract.yaml` peer and `.pass.md` / `.fail.md` documents, following the fixture-17 shape and the peer-`.md` rule (verbatim bytes via `loadSource`).
-2. Confirm `tests/yaml-parity.test.ts` picks up the new pair and asserts identical findings; add a focused parity assertion if the harness needs an explicit entry.
-3. Add a `requires` / `forbids` block to one existing `contracts/*.contract.yaml` (or a small new one) to dogfood the feature against a real document.
-4. Run the full suite; ensure vitest discovers the new fixtures and everything is green.
+1. Add a `requires` / `forbids` block to one existing `contracts/*.contract.yaml` (or a small new one) that asserts a real, true invariant of the document(s) it binds; run `markdown-contract validate` to confirm it passes.
+2. Confirm both `text-api` and `text-yaml` are `true` and the census reports zero skipped `text-*` fixtures.
+3. Run the full suite (`vitest run`) and the docs lint; ensure everything is green.
 
 ## Files to touch
 
 | Location | Kind | Change |
 |---|---|---|
-| `tests/fixtures/validation/` | modify | New `NN-text-constraints` fixture set (`.ts` + `.contract.yaml` + `.pass.md` + `.fail.md`) |
-| `tests/yaml-parity.test.ts` | modify | Ensure the new TS/YAML pair is exercised for finding parity |
-| `contracts/` | modify | Dogfood `requires` / `forbids` on one in-repo contract |
+| `contracts/` | modify | Dogfood `requires` / `forbids` on one in-repo contract against a real document |
 
 ## Acceptance criteria
 
-- [ ] AC-1: A validation fixture exists with a TS contract using `requires` / `forbids` / `textRule`, a `.contract.yaml` peer, and `.pass.md` / `.fail.md` documents authored as peer `.md` files (verbatim bytes).
-- [ ] AC-2: `tests/yaml-parity.test.ts` asserts the YAML and TS forms emit identical `text/*` findings (id, level, line) on the shared documents.
-- [ ] AC-3: The fail document yields the expected `text/requires` / `text/forbids` / `text/count` findings at the expected lines; the pass document yields none.
-- [ ] AC-4: At least one `contracts/*.contract.yaml` carries a working `requires` / `forbids` block (dogfood), validating cleanly against its target document(s).
-- [ ] AC-5: `vitest` discovers the new fixtures (`tests/**/*.test.ts`) and the full suite is green; all fixtures use dummy data.
+- [ ] AC-1: At least one `contracts/*.contract.yaml` carries a working `requires` / `forbids` block (dogfood) that validates cleanly against its target document(s) via `markdown-contract validate`.
+- [ ] AC-2: `IMPLEMENTED["text-api"]` and `IMPLEMENTED["text-yaml"]` are both `true`, and the harness census reports zero skipped `text-*` fixtures.
+- [ ] AC-3: The full suite (`vitest run`) and `markdown-contract validate docs/planning` are green.
+- [ ] AC-4: The dogfood asserts a genuine invariant of a real document; the SDLC corpus and dummy fixtures are untouched.
 
 ## Out of scope
 
+- Authoring the dummy fixtures and the `text-*` gates — [[T-TXSC-text-constraint-fixture-scaffold]].
 - The matcher, builders, and declarative compiler and their peer unit tests — [[T-TXMC-text-match-core]], [[T-TXAP-text-predicate-builders]], [[T-TXYL-declarative-requires-forbids]].
 - Migrating the SDLC plugin's `invariants.yaml` onto contracts — the consumer's work ([[DR-0005-validate-sdlc-corpus]]).
 
 ## Dependencies
 
-- Hard: needs the declarative surface from `[[T-TXYL-declarative-requires-forbids]]` (and transitively the builders and core). Parity requires both the TS and YAML surfaces to exist.
+- Hard: needs the full feature live — `[[T-TXYL-declarative-requires-forbids]]` (and transitively the builders, matcher, and scaffold) — since the dogfood exercises a real `.contract.yaml`.

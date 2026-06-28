@@ -57,6 +57,8 @@ A match-spec compiler (`src/declarative/text.ts`, sibling to `schema.ts`) valida
 | `src/declarative/text.test.ts` | new | Peer unit test — minimal compile first, then rejections |
 | `src/declarative/body.ts` | modify | Recognize `requires` / `forbids` on a section node and on the body root |
 | `src/declarative/index.ts` | modify | Export any new declarative type if the public surface needs it |
+| `tests/fixtures/validation/` | modify | Add the `.contract.yaml` parity peers for the T-TXSC text fixtures |
+| `tests/components.ts` | modify | Flip `IMPLEMENTED["text-yaml"]` → `true` |
 
 ## Acceptance criteria
 
@@ -66,12 +68,13 @@ A match-spec compiler (`src/declarative/text.ts`, sibling to `schema.ts`) valida
 - [ ] AC-4: A `requires` and a `forbids` entry over the same literal `pattern` at the same scope (or a single entry with `max < min`) is rejected as a contradiction; `regex`-vs-`regex` overlap is not analyzed.
 - [ ] AC-5: The findings produced by a YAML `requires` / `forbids` are identical (id, level, position, message) to the equivalent TS builder from [[T-TXAP-text-predicate-builders]].
 - [ ] AC-6: `src/declarative/text.test.ts` is green and reads first as a worked example of authoring a constraint.
+- [ ] AC-7: The `.contract.yaml` parity peers for the T-TXSC text fixtures are added and `IMPLEMENTED["text-yaml"]` is flipped to `true`; `tests/yaml-parity.test.ts` asserts the YAML and TS forms emit identical `text/*` findings.
 
 ## Out of scope
 
 - The matcher, finding area, and TS builders — [[T-TXMC-text-match-core]] and [[T-TXAP-text-predicate-builders]].
 - A first-class `anyOf` / OR group entry — deferred (D-0011 § Out of scope); v1 OR is a single `regex` entry's alternation.
-- The cross-fixture parity proof and dogfood — [[T-TXFX-text-constraint-fixtures]].
+- Authoring the gated fixtures up front — [[T-TXSC-text-constraint-fixture-scaffold]]; the live dogfood contract and the final census-clean closeout — [[T-TXFX-text-constraint-fixtures]].
 - Migrating the SDLC plugin's `invariants.yaml` — the consumer's work, not this repo's.
 
 ## Dependencies

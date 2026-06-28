@@ -11,6 +11,7 @@ related:
 - '[[C-0005-two-plane-contract-engine]]'
 depends_on:
 - '[[T-TXMC-text-match-core]]'
+- '[[T-TXSC-text-constraint-fixture-scaffold]]'
 tags:
 - text-match
 - combinators
@@ -54,10 +55,9 @@ Give combinator authors a first-class way to attach required / forbidden phrase 
 
 | Location | Kind | Change |
 |---|---|---|
-| `src/core/text-constraints.ts` | new | `requires` / `forbids` / `textRule` builders over the matcher |
+| `src/core/text-constraints.ts` | modify | Replace the T-TXSC stub with the real `requires` / `forbids` / `textRule` builders over the matcher |
 | `src/core/text-constraints.test.ts` | new | Peer unit test — happy-path pass/fail first, then purity + counts |
-| `src/core/index.ts` | modify | Re-export the builders from the core barrel |
-| `src/index.ts` | modify | Re-export `requires` / `forbids` / `textRule` from the public barrel |
+| `tests/components.ts` | modify | Flip `IMPLEMENTED["text-api"]` → `true` (greens the gated TS fixtures) |
 
 ## Acceptance criteria
 
@@ -66,13 +66,14 @@ Give combinator authors a first-class way to attach required / forbidden phrase 
 - [ ] AC-3: `min` / `max` counts and `regex` / `normalize` / `ignoreCase` behave identically to the matcher's unit contract; `note` and `level` flow onto the finding.
 - [ ] AC-4: Each emitted finding carries a stable, per-entry id (synthesized from scope + pattern, overridable via the spec's `id`), so two requirements on one section are distinct findings.
 - [ ] AC-5: A `requires` spec with `max: 0` (or `max < min`) is rejected at build time with a clear error; `forbids` is the absence form.
-- [ ] AC-6: The builders are exported from `src/index.ts`; `src/core/text-constraints.test.ts` is green and reads as documentation.
+- [ ] AC-6: The builders are exported from `src/index.ts` (replacing the T-TXSC stub); `src/core/text-constraints.test.ts` is green and reads as documentation.
+- [ ] AC-7: `IMPLEMENTED["text-api"]` is flipped to `true` and the gated TS fixtures from [[T-TXSC-text-constraint-fixture-scaffold]] (section `requires`, body-root `forbids`, `count`, `regex`) now run and are green.
 
 ## Out of scope
 
 - YAML recognition and the closed match-spec vocabulary validation — [[T-TXYL-declarative-requires-forbids]].
 - Cross-entry duplicate / contradiction rejection — that is a declarative compile-time check ([[T-TXYL-declarative-requires-forbids]]); the builder only enforces single-spec purity (`max >= min`).
-- The fixture-corpus parity proof and dogfood contract — [[T-TXFX-text-constraint-fixtures]].
+- Authoring the gated fixtures (done up front in [[T-TXSC-text-constraint-fixture-scaffold]]); the `.contract.yaml` parity peers ([[T-TXYL-declarative-requires-forbids]]); the live dogfood and final census ([[T-TXFX-text-constraint-fixtures]]).
 
 ## Dependencies
 

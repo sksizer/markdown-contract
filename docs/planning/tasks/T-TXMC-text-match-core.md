@@ -68,6 +68,7 @@ A pure matcher (`src/core/text-match.ts`) takes a scope's rendered text plus one
 
 ## Out of scope
 
+- The gated fixture corpus and the `text-*` enable gates — authored up front by [[T-TXSC-text-constraint-fixture-scaffold]]; this task's own verification is its peer unit test (a validate-level fixture needs the builders to exist, so the matcher has no gated corpus fixture of its own).
 - The combinator builders (`requires` / `forbids` / `textRule`) and scope binding — [[T-TXAP-text-predicate-builders]].
 - Any YAML / declarative recognition — [[T-TXYL-declarative-requires-forbids]].
 - Duplicate / contradiction rejection (a compile-time concern of the declarative loader) — [[T-TXYL-declarative-requires-forbids]].
