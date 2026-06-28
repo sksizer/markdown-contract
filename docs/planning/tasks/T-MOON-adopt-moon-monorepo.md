@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-MOON
-status: open/ready
+status: in-progress
 created: '2026-06-28'
 related:
 - '[[D-0010-monorepo-tooling]]'
@@ -20,6 +20,7 @@ impact: medium
 complexity: medium
 autonomy: supervised
 readiness_verified_at: '2026-06-28T18:15:13Z'
+last_reviewed: '2026-06-28'
 ---
 # Adopt moon as the repo's task runner + toolchain manager
 
@@ -92,3 +93,19 @@ Add moon config that models the existing tasks and pins the toolchain, keeping n
 ## Dependencies
 
 - Realizes [[D-0010-monorepo-tooling]] (Bun workspace + moon) and keeps [[D-0006-packaging]] intact (npm library canonical). The Bun runtime + workspace choice is [[D-0010-monorepo-tooling]]; its use for the cross-compiled binary is [[D-0012-distribution-single-exec-and-web-ui]]. Coordinate with the CI quality-checks workflow so the workflow has a single task source of truth.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-28. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
