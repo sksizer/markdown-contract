@@ -2,7 +2,7 @@
 type: milestone
 schema_version: '1'
 id: M-0002
-status: open/planned
+status: closed/done
 title: Declarative YAML contracts — v1 loader, DSL, and meta-config
 created: '2026-06-21'
 related:

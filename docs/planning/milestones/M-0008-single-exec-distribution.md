@@ -1,7 +1,7 @@
 ---
 type: milestone
 schema_version: '1'
-id: M-0006
+id: M-0008
 title: Single-executable distribution — the cross-platform CLI binary
 status: open/planned
 created: '2026-06-28'
