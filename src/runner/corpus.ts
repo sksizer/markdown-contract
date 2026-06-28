@@ -45,11 +45,22 @@ interface CompiledRule {
 /** picomatch options — `dot` so dotfiles match like any other file. */
 const PICOMATCH_OPTS = { dot: true } as const;
 
+/**
+ * Compile a glob set into a matcher under the runner's own matching options (`PICOMATCH_OPTS`).
+ * This is the single code path `compile` uses for both `include` and `exclude`, so a test that
+ * drives it exercises the runner's real semantics — notably that a single `**\/`-prefixed glob
+ * spans both the run root and nested files (so configs need only one entry per rule). A test
+ * against this helper fails if those semantics ever regress (an `opts` change or a picomatch
+ * upgrade), rather than passing against a re-specified `{ dot: true }` in the test.
+ */
+export function compileMatcher(globs: string[]): ReturnType<typeof picomatch> {
+  return picomatch(globs, PICOMATCH_OPTS);
+}
+
 function compile(config: CorpusConfig): CompiledRule[] {
   return config.rules.map((r) => ({
-    include: picomatch(r.include, PICOMATCH_OPTS),
-    exclude:
-      r.exclude && r.exclude.length > 0 ? picomatch(r.exclude, PICOMATCH_OPTS) : null,
+    include: compileMatcher(r.include),
+    exclude: r.exclude && r.exclude.length > 0 ? compileMatcher(r.exclude) : null,
     contract: r.contract,
   }));
 }

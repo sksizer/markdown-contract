@@ -22,16 +22,19 @@ contracts:
   product:    ./contracts/product.contract.yaml
   task:       ./contracts/task.contract.yaml
 
+# A single `**/`-prefixed glob matches both root-level and nested files under the runner's
+# matcher (picomatch, `dot: true`), so one entry per rule covers the whole tree — no need for
+# a separate bare `X-*.md` entry for the run root.
 rules:
-  - include: ['**/C-*.md', 'C-*.md']
+  - include: ['**/C-*.md']
     contract: capability
-  - include: ['**/DR-*.md', 'DR-*.md']    # before D-*, though DR- and D- don't overlap
+  - include: ['**/DR-*.md']    # before D-*, though DR- and D- don't overlap
     contract: driver
-  - include: ['**/D-*.md', 'D-*.md']
+  - include: ['**/D-*.md']
     contract: decision
-  - include: ['**/M-*.md', 'M-*.md']
+  - include: ['**/M-*.md']
     contract: milestone
-  - include: ['**/PR-*.md', 'PR-*.md']
+  - include: ['**/PR-*.md']
     contract: product
-  - include: ['**/T-*.md', 'T-*.md']
+  - include: ['**/T-*.md']
     contract: task
