@@ -27,10 +27,10 @@ need_human_review: true
 
 ## Summary
 
-- Ship `markdown-contract` three ways from **one codebase**: the existing **npm library** (canonical, unchanged — [[D-0006-packaging]]), a **single self-contained executable** for the CLI, and a **local web UI** the same binary serves in a `daemon` mode. The UI tracks several managed vaults and shows each one's validation status. ^summary
+- Ship `markdown-contract` from **one codebase** as: the existing **npm library** (canonical, unchanged — [[D-0006-packaging]]) and **one self-contained executable** that is *both* the CLI and — in `daemon` mode — a **local web UI**. The Nuxt SPA is **compiled into that same binary** (not a separate download); the UI tracks several managed vaults and shows each one's validation status. ^summary
 - **The library stays Node ESM and canonical.** The executable and the daemon are *additional build targets* compiled from the same `src/`; no engine rewrite, and the one-way layering (`cli → runner → core`) gains one more peer consumer (`daemon → runner/declarative`), never the reverse.
 - **Single executable via Bun `build --compile`.** It is the only option that cross-compiles from a single host to **darwin/linux/windows × x64/arm64**, runs our Node ESM directly (bundling used `node_modules`), and has a first-class **Nitro `bun` preset** — so the daemon and the binary share one runtime. Deno `compile` is a viable fallback; Node SEA is rejected for cross-platform.
-- **UI = Nuxt in SPA mode (`ssr: false`) + a Nitro JSON API** over the runner. Static client, no SSR; Nitro is kept only for its server-route/conventions value as the daemon's HTTP layer. This is also the exact decomposition a future **Tauri** shell wants (static frontend + a sidecar backend), so nothing here blocks that path.
+- **UI = Nuxt in SPA mode (`ssr: false`) + a Nitro JSON API** over the runner, **embedded in the binary**. Bun's `build --compile` bundles the built SPA's client assets into the executable (D2/D3), so `markdown-contract daemon` serves the UI straight from the binary — no SSR, no separate web server. This is also the exact decomposition a future **Tauri** shell wants (static frontend + a sidecar backend), so nothing here blocks that path.
 - **Vault tracking is three layers, not one store.** A **flat-file registry** holds which vaults are managed (durable intent); **live per-vault status is in-memory + SSE**, refreshed on demand or by an optional file-watch (no database); **SQLite is only for persisted history/trends** (cheap under Bun, added when wanted). File-watching and SQLite are orthogonal — watching keeps in-memory status fresh; SQLite keeps a record.
 
 ## Context
@@ -55,16 +55,15 @@ So the work is **distribution wiring and a thin server/UI**, not new engine mach
 ### The shape
 
 ```text
-                         ┌─────────────── one codebase (src/) ───────────────┐
-   core  ◄── runner ◄────┤  cli (today)         daemon (new)                  │
- (engine)  (corpus API)  │   argv→runner→exit    HTTP/JSON over runner + SPA  │
-                         └────────────────────────────────────────────────────┘
-        published as ▼            compiled as ▼                 served by ▼
-   npm Node ESM library     Bun single-exec (per OS/arch)   Nuxt SPA (ssr:false)
-   (canonical, D-0006)      `markdown-contract` binary       + Nitro JSON API
-                                  │  daemon mode  ─────────────────┘
-                                  ▼
-                       future: Tauri shell + daemon-as-sidecar
+            ┌──────────── one codebase (Bun workspace · moon, D7) ───────────┐
+ core ◄ runner ◄┤ packages/core: library + CLI      apps/web: daemon + Nuxt SPA │
+(engine)(corpus)└────────────────────────────────────────────────────────────────┘
+       published ▼                        bun build --compile (per OS/arch) ▼
+  npm Node ESM library            ── ONE binary `markdown-contract` ──
+  (canonical, D-0006)              ├─ CLI     →  markdown-contract validate …
+                                   └─ daemon  →  markdown-contract daemon
+                                                 └─ embedded Nuxt SPA + JSON API
+                                   future: Tauri shell wraps this binary (sidecar)
 ```
 
 ### D1 — The library stays Node-canonical; binaries are a build target
@@ -82,13 +81,14 @@ bun build --compile --target=bun-windows-x64   src/cli/index.ts --outfile dist/b
 # …darwin-x64, linux-arm64, windows-arm64
 ```
 
-Bun runs our Node ESM directly, so the binary is the same code paths as the npm CLI. Deno `compile` is the documented **fallback** (also cross-compiles, npm support since Deno 2) if Bun proves unsuitable; **Node SEA is rejected** for first-class cross-platform (see Options). The comparison is in Options considered.
+Bun runs our Node ESM directly, so the binary is the same code paths as the npm CLI. Crucially, **the same compile embeds the web UI** (the answer to "can we compile the Nuxt SPA into the CLI binary?" — yes): importing the built SPA's HTML entry makes Bun bundle the client JS/CSS into the executable and serve it with correct MIME types, and `with { type: "file" }` / `Bun.embeddedFiles` cover any explicit assets. So a single `bun build --compile` of the CLI entry — which pulls in the daemon, which imports the SPA — yields **one binary = CLI + daemon + embedded UI**, no separate UI artifact (D3). Whole-*directory* asset embedding still has rough edges in Bun (issues #5445/#23852), so the SPA is embedded via an HTML/explicit-file entry — the one integration spike to de-risk first (Open questions). Deno `compile` is the documented **fallback** (also cross-compiles, npm support since Deno 2) if Bun proves unsuitable; **Node SEA is rejected** for first-class cross-platform (see Options).
 
-### D3 — Daemon + UI: Nuxt SPA + Nitro JSON API over the runner
+### D3 — One binary, two faces: CLI + an embedded-SPA daemon
 
-- A new **`daemon` consumer** (in the `apps/web` workspace package — see D7) starts a **local, single-user, localhost** HTTP server and serves a **Nuxt SPA (`ssr: false`)** plus a **JSON API** whose handlers call `runCorpus` / `inferConfig` / the `--check` drift logic. It imports `runner` + `declarative` only — the same one-way layering the CLI obeys; it never reaches into `core` internals.
-- **Nitro is the daemon's HTTP layer** (the user's ask: Nuxt/Nitro conventions for cheap), built with the **`bun` preset** so the server and the compiled binary share the Bun runtime. The client is **static** (SPA), embedded in / served by the binary; no SSR.
-- The verb: `markdown-contract daemon [--port N] [--open]` boots the server; the binary therefore *is* the app. (Name TBD — `daemon` vs `serve` vs `ui`.)
+- **There is a *single* compiled executable.** Run as a CLI (`markdown-contract validate …`) it behaves exactly as today; run as `markdown-contract daemon` it boots a **local, single-user, localhost** server that serves the **Nuxt SPA bundled into the binary** plus a **JSON API**. The SPA is compiled *into* this binary (D2) — no separate UI download, no external web server, nothing to point a browser at but `localhost`.
+- **The daemon is a `runner`/`declarative` consumer** (code in `apps/web` — D7): its API handlers call `runCorpus` / `inferConfig` / the `--check` drift logic, obeying the same one-way layering as the CLI; it never reaches into `core` internals.
+- **Nitro is the daemon's HTTP layer** (Nuxt/Nitro conventions for cheap), built with the **`bun` preset** so the server shares the binary's Bun runtime. `ssr: false` → the client is a **static SPA**; Nitro serves the embedded client + the `/api` routes. No SSR.
+- The verb name is TBD (`daemon` vs `serve` vs `ui`); flags `--port`, `--open`.
 - API sketch (thin over the library): `GET /api/vaults` (registry + last status), `POST /api/vaults` (register a path+config), `POST /api/vaults/:id/validate` (run → findings), `GET /api/vaults/:id/check` (drift, via `init --check`), optional `GET /api/events` (SSE) for live status when watching is enabled.
 
 ### D4 — Vault tracking: registry (file) · live status (memory) · history (SQLite, later)
@@ -110,17 +110,24 @@ File-watching and SQLite are **orthogonal**: watching keeps the in-memory live s
 
 ### D6 — Tauri is a clean forward path, not designed-for now
 
-A static SPA + a standalone daemon binary is exactly Tauri's model: Tauri shell + our Nuxt SPA as the webview + the Bun-compiled daemon as a **sidecar**. So the Tauri wrap reuses everything here and needs no Rust reimplementation of the JS engine. We note it and stop; we do not build for it yet.
+A static SPA + a standalone daemon binary is exactly Tauri's model: Tauri shell + our Nuxt SPA as the webview + the Bun-compiled daemon as a **sidecar**. So the Tauri wrap reuses everything here and needs no Rust reimplementation of the engine *for the wrap itself* (a Rust core may still come later for performance — D8). We note it and stop; we do not build for it yet.
 
 ### D7 — A Bun workspace (`packages/core` + `apps/web`) orchestrated by moon
 
 Split the single package into a workspace. **`packages/core`** is today's Node ESM library (engine + runner + declarative + the CLI bin) — the canonical npm artifact of D1, with its `tsc`/`vitest` flow unchanged. **`apps/web`** is the Nuxt SPA + Nitro daemon that depends on it (the D3 `daemon` consumer lives here; a sibling `apps/daemon` can split out later if the server outgrows the Nuxt app). **Bun workspaces** are the package layer — consistent with the chosen compile runtime (D2) and the existing `bun.lock` — keeping one lockfile across library, binary, and UI.
 
-On top of the workspace, **[moon](https://moonrepo.dev) is the task runner + toolchain manager**: it models the cross-project task graph (build / typecheck / test / `lint:docs`, later the Nuxt build and the `bun build --compile` matrix), caches by inputs/outputs, and **pins the Bun/Node versions** for every dev and CI run — reproducibility that directly serves the cross-compiled binary (D2). moon over Bun composes cleanly (moon enables its `javascript` + `bun` toolchains and respects `package.json` workspaces). The decisive reason over the TS-native runners is **polyglot reach**: when the Tauri shell (D6) adds Rust, moon keeps the TS library, the Nuxt app, and the Rust crate in one dependency graph — Turborepo and Nx are JavaScript-centric. Cost: a smaller community, and moon v2 ("Phobos", May 2026) is a recent rearchitecture (pin a version). **Turborepo is the fallback** if the project ever drops the Rust/Tauri path and stays TS-only. Adoption is tracked by [[T-MOON-adopt-moon-monorepo]].
+On top of the workspace, **[moon](https://moonrepo.dev) is the task runner + toolchain manager**: it models the cross-project task graph (build / typecheck / test / `lint:docs`, later the Nuxt build and the `bun build --compile` matrix), caches by inputs/outputs, and **pins the Bun/Node versions** for every dev and CI run — reproducibility that directly serves the cross-compiled binary (D2). moon over Bun composes cleanly (moon enables its `javascript` + `bun` toolchains and respects `package.json` workspaces). The decisive reason over the TS-native runners is **polyglot reach**: when the Tauri shell (D6) — or a future Rust core (D8) — adds Rust, moon keeps the TS library, the Nuxt app, and the Rust crate in one dependency graph — Turborepo and Nx are JavaScript-centric. Cost: a smaller community, and moon v2 ("Phobos", May 2026) is a recent rearchitecture (pin a version). **Turborepo is the fallback** if the project ever drops the Rust path and stays TS-only. Adoption is tracked by [[T-MOON-adopt-moon-monorepo]].
+
+### D8 — Noted future directions (recorded, not designed here)
+
+- **A Rust core, for performance.** The engine may later be reimplemented in Rust — a rewrite, or a parallel implementation behind the same contract semantics and findings — if validation throughput on very large vaults warrants it. This is a *second* polyglot driver beyond Tauri (D6) and a further reason the workspace is moon-orchestrated (D7). It changes nothing here: the JS library stays canonical (D1) unless and until that work is justified, and the daemon/UI keep talking to whichever core implements the contract.
+- **An OS-native UI, on demand.** If a true native desktop app is wanted beyond a Tauri-wrapped web UI, that is a later, demand-driven option. The single-binary daemon + static SPA over a stable JSON API keeps *both* the Tauri path (D6) and a native-UI-over-the-same-API path open.
+
+Both are explicitly out of scope now (Out of scope); they are recorded so the architecture stays compatible with them.
 
 ## Why
 
-- **One codebase, three artifacts, no fork.** Keeping the library Node-canonical (D1) and treating the binary/daemon as build targets means the engine, the CLI, and the UI all run the *same* validated `runner`/`core` code — no second implementation to drift.
+- **One codebase, two artifacts, no fork.** Keeping the library Node-canonical (D1) and treating the single binary (CLI + embedded-SPA daemon) as a build target means the engine, the CLI, and the UI all run the *same* validated `runner`/`core` code — no second implementation to drift.
 - **Bun is the only single-command cross-platform story** that also matches our stack: it runs Node ESM as-is (so D-0006 holds), targets all six OS/arch combos from one host, and shares its runtime with Nitro's `bun` preset and `bun:sqlite` — collapsing "binary runtime", "daemon runtime", and "embedded DB" into one choice.
 - **SPA over SSR is correct for a local tool.** There is no SEO or first-paint argument for a localhost dashboard; SSR only adds in-binary weight and surface. `ssr: false` still gives the Nuxt/Nitro DX the user asked for.
 - **Flat-file-first keeps the engine's statelessness honest.** The registry is small, human-editable, and recomputable, and live status is just in-memory + SSE; we add the database only when *persisted history* earns its complexity — and even then it's a zero-dep `bun:sqlite` store, not a new deployment dependency.
@@ -180,6 +187,7 @@ Rejected the pivot: making the compiled binary primary would risk runtime-specif
 
 ## Open questions
 
+- **SPA-in-binary embedding (the one packaging spike)** — validate Bun's HTML/explicit-file embedding of the built Nuxt client into the CLI binary end to end (whole-*directory* embedding has known gaps, #5445/#23852). De-risk before committing to the workspace split.
 - **Daemon verb & lifecycle** — `daemon` vs `serve` vs `ui` (undecided); foreground-only for v1 or background/auto-start (launchd/systemd/Task Scheduler); port selection + `--open`.
 - **File-watching in v1?** — live status is in-memory + SSE either way (no DB, per D4); the only question is whether v1 ships the watcher for push-on-change or starts with on-demand/refresh and adds watching later.
 - **Signing timeline** — *when* the unsigned-v1 stance flips: who holds the Apple Developer ID and the Windows OV/EV cert, and at which release notarisation enters the pipeline.
@@ -189,6 +197,7 @@ Rejected the pivot: making the compiled binary primary would risk runtime-specif
 ## Out of scope
 
 - **The Tauri desktop app** — acknowledged as the forward path (D6); not built or designed here beyond keeping the SPA + sidecar shape compatible.
+- **A Rust core reimplementation and an OS-native UI** — recorded as future directions (D8); not designed or built here. The architecture stays compatible with both (stable contract semantics + a stable JSON API).
 - **Multi-user / networked / hosted service** — the daemon is local, single-user, loopback-only. A hosted SaaS is a separate decision.
 - **Auth, RBAC, remote vaults** — out by virtue of localhost single-user.
 - **Engine/format changes** — none; this is distribution and a thin adapter over existing library APIs ([[C-0003-corpus-cli]], [[C-0008-config-scaffolding]]).
@@ -196,8 +205,10 @@ Rejected the pivot: making the compiled binary primary would risk runtime-specif
 
 ## References
 
-- Bun — Single-file executable & cross-compilation: https://bun.com/docs/bundler/executables
+- Bun — Single-file executable & cross-compilation (embeds frontend assets via HTML import / `with { type: "file" }` / `Bun.embeddedFiles`): https://bun.com/docs/bundler/executables
 - Bun — cross-compiling executables (overview): https://developer.mamezou-tech.com/en/blogs/2024/05/20/bun-cross-compile/
+- Bun — embedding a Vite/Vue SPA into a single binary (worked example): https://dev.to/calumk/using-bun-compilebuild-to-embed-an-express-vite-vue-application-1e41
+- Bun — directory-embedding gaps (spike risk): https://github.com/oven-sh/bun/issues/5445
 - Deno — `deno compile` (npm support, `--target` cross-compile): https://docs.deno.com/runtime/reference/cli/compile/
 - Deno 1.34 — compile supports npm packages: https://deno.com/blog/v1.34
 - Node.js — Single executable applications (cross-platform caveats): https://nodejs.org/api/single-executable-applications.html

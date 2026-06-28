@@ -46,4 +46,5 @@ The use-case Drivers scoped to this Product are catalogued under [Drivers](../dr
 ## References
 
 - Library: [[PR-0001-markdown-contract]] · [[vision]]
+- Capabilities: [[C-0009-single-binary-and-vault-dashboard]] (single-binary distribution + local vault dashboard — [[D-0010-distribution-single-exec-and-web-ui]])
 - Plan: [`../../provenance/d0014/review-checklist.md`](../../provenance/d0014/review-checklist.md)
