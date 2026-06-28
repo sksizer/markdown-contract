@@ -8,6 +8,7 @@ last_reviewed: '2026-06-28'
 related:
 - '[[M-0008-example-use-case-catalog]]'
 - '[[D-0010-monorepo-tooling]]'
+- '[[D-0012-distribution-single-exec-and-web-ui]]'
 depends_on:
 - '[[T-MOON-adopt-moon-monorepo]]'
 tags:
@@ -51,7 +52,7 @@ regression-checked against real CLI/library output, keeping snippets honest.
 1. Land **after** [[T-MOON-adopt-moon-monorepo]] so the site is a moon project, not a
    bespoke build.
 2. Pick the static-site stack — the Nuxt SPA is already in-house per
-   [[D-0010-monorepo-tooling]]; reuse it or a docs generator.
+   [[D-0012-distribution-single-exec-and-web-ui]]; reuse it or a docs generator.
 3. Model the catalog as data (the example-entry schema) so pages are *generated*, not
    hand-copied.
 4. Apply the flagged snippet corrections before publishing (the rule-id drift in
@@ -79,7 +80,7 @@ regression-checked against real CLI/library output, keeping snippets honest.
 ## Out of scope
 
 Writing the missing library tests (separate follow-ups); the `daemon` / local web-UI
-([[D-0010-monorepo-tooling]]); hosting and deploy specifics.
+([[D-0012-distribution-single-exec-and-web-ui]]); hosting and deploy specifics.
 
 ## Dependencies
 

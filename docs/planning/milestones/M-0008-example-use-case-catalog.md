@@ -17,6 +17,7 @@ tags:
 related:
   - '[[T-MOON-adopt-moon-monorepo]]'
   - '[[D-0010-monorepo-tooling]]'
+  - '[[D-0012-distribution-single-exec-and-web-ui]]'
   - '[[T-9XB3-test-harness-and-fixtures]]'
   - '[[B-DRAG-docrule-runcorpus-aggregation]]'
   - '[[B-DREF-dialect-referential-integrity]]'
@@ -99,7 +100,7 @@ top-to-bottom, each step adding exactly one idea.
 - Writing the recommended missing tests — scoped to
   [[T-ROUT-runcorpus-first-match-routing]] and the backlog notes.
 - Examples for the not-yet-built `daemon` / local web-UI surface
-  ([[D-0010-monorepo-tooling]], proposed) — a future catalog addition
+  ([[D-0012-distribution-single-exec-and-web-ui]], proposed) — a future catalog addition
   once that surface ships.
 - Finalizing the illustrative artifacts as *runnable, regression-checked* docs. The
   sketches are accurate to real flags/API but a few carry flagged corrections (see
@@ -2006,7 +2007,7 @@ Cross-referenced all **99** examples against the fixture corpus (`tests/fixtures
   and the backlog notes ([[B-DRAG-docrule-runcorpus-aggregation]],
   [[B-DREF-dialect-referential-integrity]], [[B-DANF-dialect-anchor-fragment-edges]],
   [[B-IOUT-init-out-placement]]).
-- **The `daemon` / local web-UI surface** ([[D-0010-monorepo-tooling]]) —
+- **The `daemon` / local web-UI surface** ([[D-0012-distribution-single-exec-and-web-ui]]) —
   proposed, not shipped; it earns its own examples once built.
 - **The moon adoption / workspace split itself** — [[T-MOON-adopt-moon-monorepo]] and
   [[D-0010-monorepo-tooling]] own that; this catalog only *targets* the
@@ -2035,14 +2036,15 @@ Cross-referenced all **99** examples against the fixture corpus (`tests/fixtures
   and the validation / consumption / inference fixtures under `tests/fixtures/` — is the
   baseline of "what's already tested."
 - The **moon monorepo** the site will live in ([[T-MOON-adopt-moon-monorepo]]) and the
-  distribution / build-aspects decision ([[D-0010-monorepo-tooling]]).
+  distribution ([[D-0012-distribution-single-exec-and-web-ui]]) and build-aspects ([[D-0010-monorepo-tooling]]) decisions.
 
 ## References
 
 - The capability surface the catalog covers — `docs/planning/vision.md` and the
   `cli` &rarr; `runner` &rarr; `core` surfaces plus `declarative` and `dialect`.
-- [[D-0010-monorepo-tooling]] — the single-exec + web-UI distribution
-  decision and the moon workspace; PR #46.
+- [[D-0012-distribution-single-exec-and-web-ui]] — the single-exec + web-UI distribution
+  decision; PR #46.
+- [[D-0010-monorepo-tooling]] — the moon workspace / monorepo-tooling decision.
 - [[T-MOON-adopt-moon-monorepo]] — adopting moon as the task runner / toolchain manager.
 - Follow-ups: [[T-ROUT-runcorpus-first-match-routing]],
   [[T-SITE-bootstrap-docs-website]], [[B-DRAG-docrule-runcorpus-aggregation]],
