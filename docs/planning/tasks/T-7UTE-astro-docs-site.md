@@ -4,7 +4,8 @@ schema_version: '5'
 id: T-7UTE
 status: planning/draft
 created: '2026-06-28'
-related: []
+related:
+- '[[M-0007-documentation-site]]'
 tags:
 - docs
 - tooling
