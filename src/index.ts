@@ -29,16 +29,19 @@ export {
   code,
   contract,
   docRule,
+  forbids,
   gap,
   list,
   maxWords,
   oneOf,
   optional,
   parse,
+  requires,
   rule,
   section,
   sections,
   table,
+  textRule,
 } from "./core/index.js";
 
 // The corpus runner is library API, surfaced at the package root:
