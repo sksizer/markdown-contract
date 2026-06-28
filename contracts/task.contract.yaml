@@ -6,7 +6,27 @@ frontmatter:
   fields:
     type: { const: task }
     id: { type: string, pattern: '^T-[0-9A-Z]{4}$' }
-    status: { type: string, pattern: '^[a-z-]+/[a-z-]+$' }
+    # Canonical task lifecycle, mirrored from the SDLC plugin schema
+    # (lib/model/entities/task/schema.ts). Four majors: planning/<stage>,
+    # open/<stage>, in-progress[/blocked], closed/<reason>. Note `in-progress`
+    # is a valid BARE status — the old `^[a-z-]+/[a-z-]+$` pattern wrongly
+    # required a slash and rejected it.
+    status:
+      enum:
+        - planning/draft
+        - planning/proposed
+        - planning/needs-definition
+        - planning/backlog
+        - open/ready
+        - in-progress
+        - in-progress/blocked
+        - closed/done
+        - closed/superseded
+        - closed/partially-superseded
+        - closed/obsoleted
+        - closed/relocated
+        - closed/no-repro
+        - closed/wontdo
     created: { type: string, format: date }
 
 body:
