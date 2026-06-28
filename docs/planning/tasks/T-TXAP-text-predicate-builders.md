@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-TXAP
-status: open/ready
+status: in-progress
 created: '2026-06-28'
 related:
 - '[[M-0004-declarative-text-constraints]]'
@@ -21,6 +21,7 @@ impact: high
 complexity: medium
 autonomy: supervised
 readiness_verified_at: '2026-06-28T23:50:17Z'
+last_reviewed: '2026-06-28'
 ---
 # TS-API predicate builders — `requires` / `forbids` / `textRule`
 
@@ -79,3 +80,19 @@ Give combinator authors a first-class way to attach required / forbidden phrase 
 ## Dependencies
 
 - Hard: needs the matcher, finding area, and id synthesis from `[[T-TXMC-text-match-core]]`.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-28. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
