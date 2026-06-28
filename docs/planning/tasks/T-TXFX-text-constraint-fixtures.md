@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-TXFX
-status: open/ready
+status: planning/draft
 created: '2026-06-28'
 related:
 - '[[M-0004-declarative-text-constraints]]'
