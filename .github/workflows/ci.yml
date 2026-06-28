@@ -11,6 +11,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history so moon can hash inputs / detect touched files reliably.
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -18,11 +21,25 @@ jobs:
           node-version: "20"
           cache: npm
 
+      # npm stays canonical (D-0006): npm ci installs deps AND the pinned moon CLI
+      # (@moonrepo/cli) from package-lock.json.
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck
-        run: npm run typecheck
+      # Cache the proto-managed toolchain (the pinned Node 20.x moon downloads on
+      # first task run). Keyed on the toolchain pins so a version bump busts it.
+      - name: Cache moon toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/.proto
+          key: ${{ runner.os }}-proto-${{ hashFiles('.moon/toolchains.yml') }}
+          restore-keys: ${{ runner.os }}-proto-
 
-      - name: Test
-        run: npm run test
+      # Single task source of truth: run the suite through moon (no duplicate
+      # tsc/vitest definitions here — they live in moon.yml). moon installs the
+      # pinned Node toolchain on first run, then build/typecheck/test run cached.
+      # lint-docs is a moon task too, but it's run locally rather than gated in CI
+      # because it validates in-flight planning docs (which are mid-edit on any
+      # task branch); see moon.yml.
+      - name: Run build, typecheck, and test via moon
+        run: npx moon run :build :typecheck :test
