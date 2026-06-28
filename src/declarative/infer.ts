@@ -56,7 +56,9 @@ import picomatch from "picomatch";
 import { stringify as stringifyYaml } from "yaml";
 
 import { parse } from "../core/index.js";
+import { toCamelKey } from "../core/camel.js";
 import { DEFAULT_MAX_CONST_STRING_LENGTH, DEFAULT_MIN_CONST_EXAMPLES } from "./constants.js";
+import { DeclarativeError } from "./errors.js";
 import { compileSchema } from "./schema.js";
 
 /** Options for `inferConfig` — mirrors the `init` CLI flags (D-0009 § The CLI surface). */
@@ -85,6 +87,20 @@ interface FieldInferOptions {
   maxConstStringLength: number;
   /** A uniform scalar needs at least this many observed docs to become a `const`. */
   minConstExamples: number;
+}
+
+/**
+ * Diagnostics collected while generalizing a corpus into contracts (T-KCOL). A `warning` is
+ * advisory — inference proceeds and the scaffold is still written (e.g. two case-variant headings
+ * merged into one aliased section). An `error` is fatal — the corpus cannot yield a faithful,
+ * accept-by-construction contract (e.g. two key-colliding headings appear together as peers in one
+ * doc), so `inferConfig` aborts with all collected errors rather than emit a contract that would
+ * fail its own self-check. A shared sink threads down `inferConfig → inferMeta → generalize →
+ * inferBody` so diagnostics from every group surface together in one run.
+ */
+interface InferSink {
+  warnings: string[];
+  errors: string[];
 }
 
 /**
@@ -210,11 +226,6 @@ function sectionUnion(docs: ParsedDoc[]): string[] {
     }
   }
   return out;
-}
-
-/** A section is required iff it appears in EVERY doc (D-0009 § Step 3 — sections). */
-function isUniversal(name: string, docs: ParsedDoc[]): boolean {
-  return docs.every((d) => d.sections.includes(name));
 }
 
 /**
@@ -397,6 +408,17 @@ function isScalar(v: unknown): v is string | number | boolean {
 function inferFieldSchema(values: unknown[], fileCount: number, opts: FieldInferOptions): Record<string, unknown> {
   if (values.length === 0) return { type: "string" };
 
+  // Null — handled before the rungs. No base rung admits `null` (string/number/boolean/array and
+  // enum/const all reject it), so a field with a `null` observation would otherwise infer a schema
+  // that rejects its own corpus (breaking accept-by-construction, D-0009 § Self-check). Infer over
+  // the non-null values and mark the result `nullable`; an all-null field becomes a nullable string
+  // placeholder (the author can tighten the base type by hand).
+  if (values.some((v) => v === null)) {
+    const nonNull = values.filter((v) => v !== null);
+    const baseSchema = nonNull.length > 0 ? inferFieldSchema(nonNull, fileCount, opts) : { type: "string" };
+    return { ...baseSchema, nullable: true };
+  }
+
   // Rung 1 — all identical (scalar) → const. Arrays/objects that happen to be identical fall
   // through to their own rung (the compiler's `const` is scalar-only), still accept-by-construction.
   // Two guards keep a coincidentally-uniform field from being frozen on thin/unwieldy evidence:
@@ -503,22 +525,84 @@ function inferFrontmatter(docs: ParsedDoc[], opts: FieldInferOptions): { strict?
 
 // ── Body (D-0009 § Step 3 — sections / order / unknown) ────────────────────────────
 
+/** Render a sample of `list` for a diagnostic, capping the tail so a big vault stays readable. */
+function sampleList(list: string[], n = 5): string {
+  return list.length <= n ? list.join(", ") : `${list.slice(0, n).join(", ")} (and ${list.length - n} more)`;
+}
+
 /**
  * Generalize the body plane (D-0009 § Step 3 — sections + order + unknown admission). Lists
  * the group's complete observed section vocabulary in the detected order; required = universal,
  * the rest `optional: true`; `allowUnknown: false` (every observed section is listed, so the
  * unknown door is safe to close) — `--relax` opens it and drops order to `none`.
+ *
+ * Sections are keyed by their generated camelCase key (`core/camel.ts`), and two DISTINCT
+ * spellings that collapse to the same key cannot be two sibling sections (the engine's build-time
+ * `contract/key-collision` guard). So before emitting, observed spellings are grouped by key and
+ * each clash collapses into ONE section: the first-seen spelling is the primary, the rest become
+ * `aliases` (the engine accepts alias spellings for one slot) — a warning records the merge. The
+ * one case that cannot be merged is two clashing spellings appearing TOGETHER as peers in a single
+ * doc: the merged slot would then match twice (`structure/duplicate-section`), so that is a fatal
+ * `sink.errors` entry naming the offending file(s) (T-KCOL). A heading that yields no key (no
+ * alphanumerics) generates no alias and so can never collide — it is emitted unchanged.
  */
-function inferBody(docs: ParsedDoc[], relax: boolean):
-  | { order: Order; allowUnknown: boolean; sections: Array<{ section: string; optional?: boolean }> }
+function inferBody(docs: ParsedDoc[], relax: boolean, sink: InferSink):
+  | { order: Order; allowUnknown: boolean; sections: Array<{ section: string; aliases?: string[]; optional?: boolean }> }
   | undefined {
   const { order, sections } = detectOrder(docs);
   if (sections.length === 0) return undefined;
 
-  const entries = sections.map((name) => {
-    const required = isUniversal(name, docs);
-    return required ? { section: name } : { section: name, optional: true };
-  });
+  // Group observed spellings by their generated key, in first-appearance (union) order.
+  const byKey = new Map<string, string[]>();
+  for (const name of sections) {
+    const key = toCamelKey(name);
+    if (key === "") continue; // no alphanumerics ⇒ no generated alias ⇒ cannot collide
+    let spellings = byKey.get(key);
+    if (!spellings) byKey.set(key, (spellings = []));
+    spellings.push(name);
+  }
+
+  const filesWith = (spelling: string): string[] =>
+    docs.filter((d) => d.sections.includes(spelling)).map((d) => d.rel);
+
+  const entries: Array<{ section: string; aliases?: string[]; optional?: boolean }> = [];
+  const emitted = new Set<string>(); // primary spellings already emitted
+  for (const name of sections) {
+    const key = toCamelKey(name);
+    const spellings = key === "" ? [name] : byKey.get(key)!;
+    const primary = spellings[0]!;
+    if (name !== primary) continue; // an alias spelling — its slot is emitted at the primary
+    if (emitted.has(primary)) continue;
+    emitted.add(primary);
+
+    const aliases = spellings.slice(1);
+    // Required iff every doc carries at least ONE of the (merged) spellings.
+    const required = docs.every((d) => spellings.some((s) => d.sections.includes(s)));
+    const entry: { section: string; aliases?: string[]; optional?: boolean } = { section: primary };
+    if (aliases.length > 0) entry.aliases = aliases;
+    if (!required) entry.optional = true;
+    entries.push(entry);
+
+    if (aliases.length === 0) continue;
+    const quoted = spellings.map((s) => `‘${s}’`).join(" / ");
+    // A single doc with MORE THAN ONE of the clashing spellings as peers can't be merged: the one
+    // slot would match twice. That genuine ambiguity is fatal — name every offending file.
+    const coDocs = docs
+      .filter((d) => spellings.filter((s) => d.sections.includes(s)).length > 1)
+      .map((d) => d.rel);
+    if (coDocs.length > 0) {
+      sink.errors.push(
+        `sibling headings ${quoted} collapse to the same key ‘${key}’ and appear together as peers ` +
+          `in ${sampleList(coDocs)}; they cannot be one section. Rename the headings so they differ ` +
+          `(or split the file), then re-run.`,
+      );
+    } else {
+      const examples = spellings.map((s) => `‘${s}’ in ${filesWith(s)[0]}`).join(", ");
+      sink.warnings.push(
+        `merged variant headings ${quoted} into one section ‘${primary}’ (shared key ‘${key}’); seen as ${examples}`,
+      );
+    }
+  }
 
   return relax
     ? { order: "none", allowUnknown: true, sections: entries }
@@ -562,11 +646,11 @@ function nameForDir(relDir: string, absRoot: string): string {
  * (one group per directory at the depth cut). Returns the bare `def` object an
  * `InferredContract` and `compileContractObject` both consume.
  */
-function generalize(docs: ParsedDoc[], opts: FieldInferOptions): Record<string, unknown> {
+function generalize(docs: ParsedDoc[], opts: FieldInferOptions, sink: InferSink): Record<string, unknown> {
   const def: Record<string, unknown> = {};
   const frontmatter = inferFrontmatter(docs, opts);
   if (frontmatter) def.frontmatter = frontmatter;
-  const body = inferBody(docs, opts.relax);
+  const body = inferBody(docs, opts.relax, sink);
   if (body) def.body = body;
   return def;
 }
@@ -626,6 +710,7 @@ function inferMeta(
   depth: number,
   opts: FieldInferOptions,
   inline: boolean,
+  sink: InferSink,
 ): InferResult {
   // Route each doc to a group key (its depth-`depth` ancestor dir), tracking stranded files.
   const groups = new Map<string, ParsedDoc[]>(); // group dir → its docs (first-appearance order)
@@ -659,20 +744,21 @@ function inferMeta(
   const contracts: InferredContract[] = orderedKeys.map((key) => ({
     name: nameForDir(key, absRoot),
     include: [key === "" ? "*.md" : `${key}/**/*.md`],
-    def: generalize(groups.get(key)!, opts),
+    def: generalize(groups.get(key)!, opts, sink),
   }));
 
-  const warnings = stranded.map(
-    (rel) =>
+  for (const rel of stranded) {
+    sink.warnings.push(
       `stranded: ${rel} sits above the --depth ${depth} cut and is covered by no contract; ` +
-      `use a shallower --depth to include it`,
-  );
+        `use a shallower --depth to include it`,
+    );
+  }
 
   return {
     mode: "meta",
     contracts,
     files: emitMetaFiles(contracts, inline),
-    warnings,
+    warnings: sink.warnings,
   };
 }
 
@@ -739,22 +825,37 @@ export function inferConfig(root: string, opts?: InferOptions): InferResult {
     parseDoc(absRoot, rel),
   );
 
+  // Diagnostics from every group accumulate here; a fatal `error` aborts AFTER all are collected,
+  // so one run names every heading clash to fix rather than failing on the first (T-KCOL).
+  const sink: InferSink = { warnings: [], errors: [] };
+
   // Meta mode: cut the tree at the depth knob (default 1). Depth 0 is single-contract mode.
   const depth = opts?.depth ?? 1;
+  let result: InferResult;
   if (opts?.meta === true && depth >= 1) {
-    return inferMeta(absRoot, docs, depth, fieldOpts, opts?.inline === true);
+    result = inferMeta(absRoot, docs, depth, fieldOpts, opts?.inline === true, sink);
+  } else {
+    // Single-contract mode: the whole subtree is one group, named after the run-root basename.
+    const def = generalize(docs, fieldOpts, sink);
+    const name = slugify(basename(absRoot));
+    const contract: InferredContract = { name, include: ["**/*.md"], def };
+    const content = stringifyYaml({ mcVersion: 1, kind: "contract", ...def });
+    result = {
+      mode: "single",
+      contracts: [contract],
+      files: [{ path: `${name}.contract.yaml`, content }],
+      warnings: sink.warnings,
+    };
   }
 
-  // Single-contract mode: the whole subtree is one group, named after the run-root basename.
-  const def = generalize(docs, fieldOpts);
-  const name = slugify(basename(absRoot));
-  const contract: InferredContract = { name, include: ["**/*.md"], def };
-  const content = stringifyYaml({ mcVersion: 1, kind: "contract", ...def });
-
-  return {
-    mode: "single",
-    contracts: [contract],
-    files: [{ path: `${name}.contract.yaml`, content }],
-    warnings: [],
-  };
+  // Accept-by-construction (D-0009): if the corpus can't yield a faithful contract, refuse to emit
+  // one that would fail its own self-check — abort with every collected clash named.
+  if (sink.errors.length > 0) {
+    const lead =
+      sink.errors.length === 1
+        ? `cannot infer a contract — a heading key-collision needs fixing:`
+        : `cannot infer a contract — ${sink.errors.length} heading key-collisions need fixing:`;
+    throw new DeclarativeError(`${lead}\n${sink.errors.map((e) => `  - ${e}`).join("\n")}`);
+  }
+  return result;
 }
