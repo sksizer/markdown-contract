@@ -19,4 +19,4 @@ that must NOT bump the exit code to 1.
 
 Surfaced by catalog examples `REAL-WORLD-SCHEMAS-12` (dangling `depends_on`) and
 `REAL-WORLD-SCHEMAS-13` (membership / supersession graph) in
-[[M-0003-example-use-case-catalog]]. Priority: medium.
+[[M-0004-example-use-case-catalog]]. Priority: medium.

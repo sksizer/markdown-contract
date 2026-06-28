@@ -18,6 +18,6 @@ Two thin assertions missing from the dialect unit tests:
    round-trip uses it but only checks `target` / `kind`, not the fragment value.
 
 Surfaced by catalog examples `DIALECT-02` (anchor a section, read it from `.anchors`) and
-`DIALECT-05` (read heading and anchor fragments) in [[M-0003-example-use-case-catalog]].
+`DIALECT-05` (read heading and anchor fragments) in [[M-0004-example-use-case-catalog]].
 Priority: low — small, targeted assertions in the existing
 `src/core/dialect/*.test.ts` / `src/core/projection.test.ts`.

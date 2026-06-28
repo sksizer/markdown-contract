@@ -1,7 +1,7 @@
 ---
 type: milestone
 schema_version: '1'
-id: M-0003
+id: M-0004
 title: Example use-case catalog — the categorized basis for the docs and marketing site
 status: open/active
 created: '2026-06-28'
