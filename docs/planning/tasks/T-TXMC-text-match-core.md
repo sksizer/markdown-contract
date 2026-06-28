@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-TXMC
-status: open/ready
+status: in-progress
 created: '2026-06-28'
 related:
 - '[[M-0004-declarative-text-constraints]]'
@@ -18,6 +18,7 @@ impact: high
 complexity: medium
 autonomy: supervised
 readiness_verified_at: '2026-06-28T22:08:28Z'
+last_reviewed: '2026-06-28'
 ---
 # Text-match predicate core + the `text/*` finding area
 
@@ -78,3 +79,19 @@ A pure matcher (`src/core/text-match.ts`) takes a scope's rendered text plus one
 ## Dependencies
 
 - None new — builds directly on the existing finding model ([[D-0001-finding-model]]) and engine. It is the foundation [[T-TXAP-text-predicate-builders]] depends on.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-28. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
