@@ -39,6 +39,7 @@
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
+    "@moonrepo/cli": "2.3.5",
     "@types/mdast": "^4.0.4",
     "@types/node": "^20.14.0",
     "@types/picomatch": "^4.0.3",
