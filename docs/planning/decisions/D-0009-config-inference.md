@@ -2,7 +2,7 @@
 type: decision
 schema_version: '1'
 id: D-0009
-status: open/proposed
+status: open/accepted
 title: Config inference — scaffolding a tight-but-accepting config from existing docs
 created: '2026-06-24'
 related:

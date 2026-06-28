@@ -13,10 +13,12 @@ related:
   - '[[C-0003-corpus-cli]]'
   - '[[M-0002-declarative-yaml-contracts-v1]]'
 contains:
+  - '[[T-INIT-config-inference-init-verb]]'
   - '[[T-2CSL-const-string-length-cap]]'
   - '[[T-3MCE-min-examples-before-const]]'
   - '[[T-NULL-nullable-field-inference]]'
   - '[[T-KCOL-infer-heading-key-collisions]]'
+  - '[[T-RUNS-validate-run-summary]]'
 tags:
   - yaml
   - declarative
