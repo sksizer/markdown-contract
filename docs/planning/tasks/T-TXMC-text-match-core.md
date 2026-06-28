@@ -1,24 +1,26 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-TXMC
 status: in-progress
-created: '2026-06-28'
+created: 2026-06-28
 related:
-- '[[M-0004-declarative-text-constraints]]'
-- '[[D-0011-declarative-text-constraints]]'
-- '[[C-0009-declarative-text-constraints]]'
-- '[[D-0001-finding-model]]'
+  - "[[M-0004-declarative-text-constraints]]"
+  - "[[D-0011-declarative-text-constraints]]"
+  - "[[C-0009-declarative-text-constraints]]"
+  - "[[D-0001-finding-model]]"
 tags:
-- text-match
-- findings
-- engine
+  - text-match
+  - findings
+  - engine
 need_human_review: true
 impact: high
 complexity: medium
 autonomy: supervised
-readiness_verified_at: '2026-06-28T22:08:28Z'
-last_reviewed: '2026-06-28'
+readiness_verified_at: 2026-06-28T22:08:28Z
+last_reviewed: 2026-06-28
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/66
 ---
 # Text-match predicate core + the `text/*` finding area
 
