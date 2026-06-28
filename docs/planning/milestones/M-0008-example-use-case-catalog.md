@@ -2043,7 +2043,7 @@ Cross-referenced all **99** examples against the fixture corpus (`tests/fixtures
 - The capability surface the catalog covers — `docs/planning/vision.md` and the
   `cli` &rarr; `runner` &rarr; `core` surfaces plus `declarative` and `dialect`.
 - [[D-0012-distribution-single-exec-and-web-ui]] — the single-exec + web-UI distribution
-  decision; PR #46.
+  decision.
 - [[D-0010-monorepo-tooling]] — the moon workspace / monorepo-tooling decision.
 - [[T-MOON-adopt-moon-monorepo]] — adopting moon as the task runner / toolchain manager.
 - Follow-ups: [[T-ROUT-runcorpus-first-match-routing]],
