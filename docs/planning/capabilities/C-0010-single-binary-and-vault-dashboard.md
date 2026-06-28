@@ -1,7 +1,7 @@
 ---
 type: capability
 schema_version: '1'
-id: C-0009
+id: C-0010
 kind: feature
 title: Single-binary distribution and local vault dashboard
 status: open/proposed
