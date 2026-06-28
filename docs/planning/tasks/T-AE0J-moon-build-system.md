@@ -4,7 +4,8 @@ schema_version: '5'
 id: T-AE0J
 status: planning/draft
 created: '2026-06-28'
-related: []
+related:
+- '[[M-0005-monorepo-tooling]]'
 tags:
 - build
 - tooling
