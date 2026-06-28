@@ -100,12 +100,21 @@ _Captured by /sdlc:task-work on 2026-06-28. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — `npx moon run :build :typecheck :test` all succeed (483 tests pass, `dist/` emitted); `:lint-docs` runs `build` (dep) then the same `validate docs/planning` step as the npm script. moon pinned to `2.3.5` (`npx moon --version`).
+- AC-2: agent-manual — no-change re-run of `:build :typecheck :test` is a cache hit (`3 completed (3 cached)`, ~39ms); `lint-docs` has `deps: ['build']` and hydrates `build`/`dist/` from cache (observed `markdown-contract:build (cached, …)` before lint-docs ran).
+- AC-3: auto — `.moon/toolchains.yml` pins Node `20.20.2` and Bun `1.3.14`; moon resolves/runs tasks on the pinned Node via proto.
+- AC-4: auto — `npm pack --dry-run` lists 30 `dist/**.js` files and 0 `*.test.*` files (tests excluded via `tsconfig.build.json`); `package.json` scripts are byte-unchanged (only the `@moonrepo/cli` devDep added); `npm run build`/`typecheck`/`test` still pass as pass-throughs.
+- AC-5: agent-manual (local) / deferred-user (GitHub) — `.github/workflows/ci.yml` runs `npx moon run :build :typecheck :test` (single source of truth in `moon.yml`, no duplicate tsc/vitest defs); `moon ci` is green locally. Actual GitHub Actions green is only confirmable after the branch is pushed.
+- AC-6: agent-manual — `.moon/cache` (and `.moon/docker`) are gitignored (`git status --ignored`); `README.md` Develop section documents the `moon run :<task>` / `moon ci` commands and a pinned-versions table (moon 2.3.5, Node 20.20.2, Bun 1.3.14).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- moon v2's own `moon toolchain info <id>` surfaced that the node/bun WASM plugins are runtime-only (dependency install disabled), which made the "pin Bun/Node without disturbing npm's lockfile" requirement (AC-3 + AC-4) fall out cleanly rather than being a conflict.
+- The baseline-gated quality gate ran clean (`OK 2/2`, pre-existing findings ignored) — no triage of unrelated drift was needed.
+- Caching worked first try: declaring explicit `inputs`/`outputs` gave correct cache hits with no tuning.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- moon v2's runtime-only node toolchain does not put `node_modules/.bin` on PATH, so tasks defined as direct `tsc`/`vitest` invocations fail with "command not found"; tasks must wrap the npm scripts (`npm run build`). This is undocumented in the task spec — a moon-adoption task template should note "wrap npm scripts, don't invoke bin-resolved tools directly under the runtime-only node toolchain."
+- `moon run :lint-docs` fails on this very task file because the orchestrator sets `status: in-progress` (a bare stage) while the project's own `validate docs/planning` requires the `^[a-z-]+/[a-z-]+$` `stage/reason` pattern. The mismatch is between the SDLC task-status vocabulary (allows bare `in-progress`) and markdown-contract's own docs-validation schema. It is benign here (lint-docs is `runInCI: false` and the finding clears when the task reaches `closed/done`), but it points at a real gap: the project's docs-validation pattern and the SDLC status enum should be reconciled so in-flight task docs don't fail the repo's own validator.
+
