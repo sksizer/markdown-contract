@@ -115,6 +115,11 @@ _Captured by /sdlc:task-work on 2026-06-28. PR: pending._
 
 ### Friction and automation gaps
 
-- moon v2's runtime-only node toolchain does not put `node_modules/.bin` on PATH, so tasks defined as direct `tsc`/`vitest` invocations fail with "command not found"; tasks must wrap the npm scripts (`npm run build`). This is undocumented in the task spec — a moon-adoption task template should note "wrap npm scripts, don't invoke bin-resolved tools directly under the runtime-only node toolchain."
-- `moon run :lint-docs` fails on this very task file because the orchestrator sets `status: in-progress` (a bare stage) while the project's own `validate docs/planning` requires the `^[a-z-]+/[a-z-]+$` `stage/reason` pattern. The mismatch is between the SDLC task-status vocabulary (allows bare `in-progress`) and markdown-contract's own docs-validation schema. It is benign here (lint-docs is `runInCI: false` and the finding clears when the task reaches `closed/done`), but it points at a real gap: the project's docs-validation pattern and the SDLC status enum should be reconciled so in-flight task docs don't fail the repo's own validator.
+- moon v2's runtime-only node toolchain does not put `node_modules/.bin` on PATH, so tasks defined as direct `tsc`/`vitest` invocations fail with "command not found"; tasks must wrap the npm scripts (`npm run build`). This is undocumented in the task spec — a moon-adoption task template should note "wrap npm scripts, don't invoke bin-resolved tools directly under the runtime-only node toolchain." → [[T-U6W3-document-moon-npm-script-wrapping]]
+- `moon run :lint-docs` fails on this very task file because the orchestrator sets `status: in-progress` (a bare stage) while the project's own `validate docs/planning` requires the `^[a-z-]+/[a-z-]+$` `stage/reason` pattern. The mismatch is between the SDLC task-status vocabulary (allows bare `in-progress`) and markdown-contract's own docs-validation schema. It is benign here (lint-docs is `runInCI: false` and the finding clears when the task reaches `closed/done`), but it points at a real gap: the project's docs-validation pattern and the SDLC status enum should be reconciled so in-flight task docs don't fail the repo's own validator. → [[T-Y9JR-reconcile-docs-validation-sdlc-status]]
+
+### Spawned follow-up tasks
+
+- [[T-U6W3-document-moon-npm-script-wrapping]] (https://github.com/sksizer/markdown-contract/pull/59) — spawned: document the moon wrap-npm-scripts convention under the runtime-only node toolchain.
+- [[T-Y9JR-reconcile-docs-validation-sdlc-status]] (https://github.com/sksizer/markdown-contract/pull/60) — spawned: reconcile the project's docs-validation status pattern with the SDLC status enum so in-flight task files validate.
 
