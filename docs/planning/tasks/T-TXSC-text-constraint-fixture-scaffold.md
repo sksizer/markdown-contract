@@ -1,25 +1,27 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-TXSC
 status: in-progress
-created: '2026-06-28'
+created: 2026-06-28
 related:
-- '[[M-0004-declarative-text-constraints]]'
-- '[[D-0011-declarative-text-constraints]]'
-- '[[C-0009-declarative-text-constraints]]'
-- '[[T-9XB3-test-harness-and-fixtures]]'
+  - "[[M-0004-declarative-text-constraints]]"
+  - "[[D-0011-declarative-text-constraints]]"
+  - "[[C-0009-declarative-text-constraints]]"
+  - "[[T-9XB3-test-harness-and-fixtures]]"
 tags:
-- text-match
-- fixtures
-- tests
-- scaffold
+  - text-match
+  - fixtures
+  - tests
+  - scaffold
 need_human_review: true
 impact: high
 complexity: medium
 autonomy: supervised
-readiness_verified_at: '2026-06-28T22:07:54Z'
-last_reviewed: '2026-06-28'
+readiness_verified_at: 2026-06-28T22:07:54Z
+last_reviewed: 2026-06-28
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/65
 ---
 # Text-constraint fixture scaffold + the `text-*` enable gates
 
