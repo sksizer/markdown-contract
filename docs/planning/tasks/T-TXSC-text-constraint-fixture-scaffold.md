@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-TXSC
-status: open/ready
+status: in-progress
 created: '2026-06-28'
 related:
 - '[[M-0004-declarative-text-constraints]]'
@@ -19,6 +19,7 @@ impact: high
 complexity: medium
 autonomy: supervised
 readiness_verified_at: '2026-06-28T22:07:54Z'
+last_reviewed: '2026-06-28'
 ---
 # Text-constraint fixture scaffold + the `text-*` enable gates
 
@@ -76,3 +77,19 @@ The harness already supports gated, grow-as-you-implement fixtures; there is no 
 ## Dependencies
 
 - None. This is the first task in the milestone — the target the implementation tasks green against.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-28. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
