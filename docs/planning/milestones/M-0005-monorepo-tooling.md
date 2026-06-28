@@ -3,7 +3,7 @@ type: milestone
 schema_version: '1'
 id: M-0005
 title: Monorepo tooling — a Bun workspace orchestrated by moon
-status: open/planned
+status: open/active
 created: '2026-06-28'
 related:
   - '[[D-0010-monorepo-tooling]]'
@@ -13,6 +13,8 @@ related:
   - '[[PR-0002-markdown-contract-cli]]'
 contains:
   - '[[T-MOON-adopt-moon-monorepo]]'
+  - '[[T-WKSP-bun-workspace-split]]'
+  - '[[T-AE0J-moon-build-system]]'
 tags:
   - monorepo
   - tooling
