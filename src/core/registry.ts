@@ -68,12 +68,24 @@ export const RULE_LEVELS: Record<string, FindingLevel> = {
   "summary/names-contract": "warn",
 };
 
+/**
+ * Default severities for the text plane (`text/*` — D-0011). Every declarative text constraint
+ * emits through these three ids: `text/requires` (a required phrase is missing), `text/forbids`
+ * (a forbidden phrase is present), and `text/count` (a `min` / `max` occurrence bound is
+ * violated). All default to `error`, overridable per entry via the spec's `level`.
+ */
+export const TEXT_LEVELS: Record<string, FindingLevel> = {
+  "text/requires": "error",
+  "text/forbids": "error",
+  "text/count": "error",
+};
+
 /** The id → default-level registry. T-3NC8 extends it with rule ids. */
 export type LevelRegistry = Record<string, FindingLevel>;
 
-/** A fresh registry seeded with the structure-, content-, and rule-plane defaults. */
+/** A fresh registry seeded with the structure-, content-, text-, and rule-plane defaults. */
 export function defaultRegistry(): LevelRegistry {
-  return { ...STRUCTURE_LEVELS, ...CONTENT_LEVELS, ...RULE_LEVELS };
+  return { ...STRUCTURE_LEVELS, ...CONTENT_LEVELS, ...TEXT_LEVELS, ...RULE_LEVELS };
 }
 
 /**
