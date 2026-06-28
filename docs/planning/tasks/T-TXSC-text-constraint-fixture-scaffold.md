@@ -86,12 +86,23 @@ _Captured by /sdlc:task-work on 2026-06-28. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `npm run typecheck` + vitest census; `text-api` / `text-yaml` are in the `Component` union and `IMPLEMENTED` (both `false`) with a documented flip order (`text-api → text-yaml`).
+- AC-2: auto — `npm run typecheck` (the four fixtures compile against `ValidationFixture`) + the census counts them; fixtures `22-text-requires-section`, `23-text-forbids-body-root`, `24-text-requires-count`, `25-text-regex` each carry `.pass.md` / `.fail.md` peers and expected `text/*` findings, all `component: "text-api"`.
+- AC-3: auto — `npm run typecheck`; `requires` / `forbids` / `textRule` no-op stubs export from `src/index.ts` (via `src/core/index.ts`), so the gated fixtures that call them compile without the real matcher.
+- AC-4: auto — `npm run test`; full suite green (`489 passed | 8 skipped`), census moved `54 active / 0 skipped / 54 total` → `54 active / 4 skipped / 58 total` (4 new fixtures skipped, not failing).
+- AC-5: auto — `npm run test` (yaml-parity "peers exist" stays green) + `git diff --name-only` (no `.contract.yaml` added).
+- AC-6: auto — `git diff --name-only` confirms only `src/` and `tests/` changed; no `provenance/` or end-to-end corpus touched; fixtures use invented dummy markdown.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The fixtures-first gated pattern worked exactly as designed: both `text-*` flags `false` skipped the four fixtures green and the census self-reported them as skipped (`54 active / 4 skipped / 58 total`) with no manual intervention.
+- The baseline-gated quality gate passed clean on the first run (`OK 2/2`, no new drift against the `origin/main` baseline).
+- The existing `tests/fixtures/validation/17-node-level-custom-rule.ts` was an unambiguous template to mirror (`.ts` + `.pass.md` + `.fail.md` + expected findings via `loadSource`).
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The always-on `tests/yaml-parity.test.ts` "peers exist" check globs `./fixtures/validation/*.ts` (non-recursive) and asserts a `.contract.yaml` peer for every match — so authoring the gated fixtures directly under `tests/fixtures/validation/` (as the `## Files to touch` table literally said) would have failed that always-on harness, contradicting AC-5. The implementer correctly worked around it by placing the fixtures under a `tests/fixtures/validation/text/` subdirectory the non-recursive glob skips, but the spec didn't flag the coupling — future "fixtures-first, no-parity-peer" task specs should state that parity-peerless gated fixtures must live in a subdirectory to dodge the non-recursive parity glob (or `yaml-parity.test.ts`'s glob should learn to exclude gated/peerless fixtures so placement stops being load-bearing). → [[T-4E9T-yaml-parity-glob-skips-peerless-fixtures]]
+
+### Spawned follow-up tasks
+
+- [[T-4E9T-yaml-parity-glob-skips-peerless-fixtures]] (https://github.com/sksizer/markdown-contract/pull/63) — spawned, Local: teach `yaml-parity.test.ts`'s "peers exist" glob to skip gated/peerless fixtures so subdirectory placement stops being load-bearing.

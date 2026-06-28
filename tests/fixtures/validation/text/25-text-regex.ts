@@ -1,0 +1,41 @@
+import { contract, sections, section, requires } from "../../../../src/index.js";
+import type { ValidationFixture } from "../../../harness.js";
+import { loadSource } from "../../../harness.js";
+
+// D-0011 / C-0009 — `regex` match spec: a single regex entry expresses an OR-of-literals (the
+// v1 disjunction escape). The `Failure modes` section must document at least one lease failure
+// marker — `LEASE-CONFLICT ref=` or `LEASE-MISSING ref=` — captured as one alternation. A
+// regex miss reports like a `requires` miss, at the section heading.
+//
+// GATED on `text-api` (skipped-green until T-TXAP lands the matcher + builders). The expected
+// finding id is the illustrative `text/requires` area id; T-TXAP tightens it to the synthesized
+// per-entry id when it flips the flag.
+const v25: ValidationFixture = {
+  id: "v25",
+  title: "Regex requires — one alternation entry expresses OR-of-literals",
+  component: "text-api",
+  path: "docs/skill.md",
+  build: () =>
+    contract({
+      body: sections({ order: "recognized-relative", allowUnknown: true }, [
+        section("Failure modes", {
+          rules: [requires([{ regex: "LEASE-(CONFLICT|MISSING) ref=", note: "lease failure markers" }])],
+        }),
+      ]),
+    }),
+  cases: [
+    {
+      label: "pass — a LEASE-CONFLICT marker matches the alternation",
+      source: loadSource(import.meta.url, "./25-text-regex.pass.md"),
+      findings: [],
+    },
+    {
+      label: "fail — no lease marker present; the regex require fires at the heading",
+      source: loadSource(import.meta.url, "./25-text-regex.fail.md"),
+      findings: [{ id: "text/requires", level: "error", line: 1 }],
+    },
+  ],
+  note: "Expected id is the illustrative `text/requires` area id; tightened in T-TXAP.",
+};
+
+export default v25;

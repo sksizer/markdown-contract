@@ -31,6 +31,9 @@ export {
 } from "./grammar.js";
 // Content leaves:
 export { code, list, maxWords, table } from "./leaves.js";
+// Declarative text-constraint builders (D-0011; stub until T-TXAP):
+export { forbids, requires, textRule } from "./text-constraints.js";
+export type { TextMatchSpec, TextRuleSpec } from "./text-constraints.js";
 // Engine entry points (the doors `contract()` delegates to):
 export { read, validate } from "./validate.js";
 // Out-of-model entry:
