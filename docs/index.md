@@ -71,9 +71,11 @@ Milestones are product releases; order is ascending `version`. Source:
 | Version | ID | Milestone | Status |
 | --- | --- | --- | --- |
 | `0.1.0` | [[M-0001-initial-contract-engine-and-cli]] | Initial release — the two-plane contract engine and CLI | closed/done |
-| — | [[M-0002-declarative-yaml-contracts-v1]] | Declarative YAML contracts — v1 loader, DSL, and meta-config | open/planned |
+| — | [[M-0002-declarative-yaml-contracts-v1]] | Declarative YAML contracts — v1 loader, DSL, and meta-config | closed/done |
 | — | [[M-0005-monorepo-tooling]] | Monorepo tooling — a Bun workspace orchestrated by moon | open/planned |
-| — | [[M-0006-single-exec-distribution]] | Single-executable distribution — the cross-platform CLI binary | open/planned |
+| — | [[M-0006-documentation-site]] | Published documentation site | open/planned |
+| — | [[M-0008-single-exec-distribution]] | Single-executable distribution — the cross-platform CLI binary | open/planned |
+| — | [[M-0009-local-web-ui-vault-dashboard]] | Local web UI & vault dashboard — the bundled daemon surface | open/tbd |
 
 ## Features
 

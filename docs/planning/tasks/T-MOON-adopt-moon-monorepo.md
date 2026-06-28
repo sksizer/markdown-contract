@@ -1,26 +1,28 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-MOON
 status: in-progress
-created: '2026-06-28'
+created: 2026-06-28
 related:
-- '[[D-0010-monorepo-tooling]]'
-- '[[D-0006-packaging]]'
-- '[[D-0012-distribution-single-exec-and-web-ui]]'
+  - "[[D-0010-monorepo-tooling]]"
+  - "[[D-0006-packaging]]"
+  - "[[D-0012-distribution-single-exec-and-web-ui]]"
 tags:
-- monorepo
-- tooling
-- moon
-- bun
-- ci
-- build
+  - monorepo
+  - tooling
+  - moon
+  - bun
+  - ci
+  - build
 need_human_review: true
 impact: medium
 complexity: medium
 autonomy: supervised
-readiness_verified_at: '2026-06-28T18:15:13Z'
-last_reviewed: '2026-06-28'
+readiness_verified_at: 2026-06-28T18:15:13Z
+last_reviewed: 2026-06-28
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/61
 ---
 # Adopt moon as the repo's task runner + toolchain manager
 
