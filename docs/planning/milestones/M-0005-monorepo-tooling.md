@@ -36,11 +36,11 @@ moon is adopted with a pinned toolchain and cached `build`/`typecheck`/`test`/`l
 ## Scope
 
 **In:** the Bun workspace; moon config + pinned toolchain; task modeling + CI via moon; the moon build-system setup (PR #47); [[T-MOON-adopt-moon-monorepo]].
-**Out:** the binary / UI / docs site themselves (M-0006 / M-0007 / later); remote caching; Rust crates.
+**Out:** the binary / docs site / UI themselves (M-0008 / M-0006 / M-0009 later); remote caching; Rust crates.
 
 ## Success criteria
 
 - A Bun workspace with `packages/core` (library + CLI) and `apps/web` scaffolded under one lockfile.
 - moon runs `build`/`typecheck`/`test`/`lint:docs` with caching and a pinned Bun/Node toolchain; CI runs the suite via moon.
 - The npm publish flow (`tsc` → `dist`, tests excluded) is unchanged.
-- Later milestones (M-0006 distribution, M-0007 docs site) add their builds as moon projects without retooling.
+- Later milestones (M-0008 distribution, M-0006 docs site) add their builds as moon projects without retooling.
