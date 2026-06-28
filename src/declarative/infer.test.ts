@@ -28,7 +28,7 @@ function file(rel: string, body: string): void {
 /** The single contract's `def`, typed loosely for direct property reads. */
 function def(c: InferredContract): {
   frontmatter?: { strict?: boolean; fields?: Record<string, Record<string, unknown>> };
-  body?: { order?: string; allowUnknown?: boolean; sections?: Array<{ section: string; optional?: boolean }> };
+  body?: { order?: string; allowUnknown?: boolean; sections?: Array<{ section: string; aliases?: string[]; optional?: boolean }> };
 } {
   return c.def as never;
 }
@@ -338,6 +338,51 @@ describe("inferConfig — meta mode (D-0009 § Step 2 — directory + depth)", (
       rules: Array<{ include: string[]; contract: Record<string, unknown> }>;
     };
     expect(cfg.rules.every((rule) => typeof rule.contract === "object")).toBe(true);
+  });
+});
+
+describe("inferConfig — heading key-collision handling (T-KCOL)", () => {
+  // Two spellings that differ only by case both generate the camelCase key `scheduleForToday`.
+  // Across separate docs they are the same logical section: collapse to ONE aliased slot + warn.
+  it("merges case-variant headings across docs into one aliased section, with a warning", () => {
+    file("mon.md", "## Schedule For today\n\nx\n");
+    file("tue.md", "## Schedule For Today\n\nx\n");
+    const r = inferConfig(root);
+    expect(def(r.contracts[0]!).body!.sections).toEqual([
+      { section: "Schedule For today", aliases: ["Schedule For Today"] },
+    ]);
+    expect(r.warnings).toHaveLength(1);
+    expect(r.warnings[0]).toContain("scheduleForToday");
+    expect(r.warnings[0]).toMatch(/merged variant headings/);
+  });
+
+  // Accept-by-construction: the merged contract must accept BOTH spellings with no error finding.
+  it("the merged contract accepts both spellings (no error findings)", () => {
+    file("mon.md", "## Schedule For today\n\nx\n");
+    file("tue.md", "## Schedule For Today\n\nx\n");
+    const contract = compileContractObject(inferConfig(root).contracts[0]!.def);
+    const a = contract.validate("## Schedule For today\n\nx\n", { path: "a.md" });
+    const b = contract.validate("## Schedule For Today\n\nx\n", { path: "b.md" });
+    expect(a.findings.filter((f) => f.level === "error")).toEqual([]);
+    expect(b.findings.filter((f) => f.level === "error")).toEqual([]);
+  });
+
+  // The one case that cannot merge: both spellings as PEERS in a single doc would make the merged
+  // slot match twice (structure/duplicate-section). That is fatal — abort, naming the file.
+  it("aborts with a descriptive error when key-colliding headings are peers in one doc", () => {
+    file("both.md", "## Schedule For today\n\nx\n\n## Schedule For Today\n\nx\n");
+    expect(() => inferConfig(root)).toThrow(/both\.md/);
+    expect(() => inferConfig(root)).toThrow(/scheduleForToday/);
+    expect(() => inferConfig(root)).toThrow(/Schedule For today.*Schedule For Today/);
+  });
+
+  // A heading with no alphanumeric content generates no key, so it can never collide.
+  it("does not treat keyless headings (no alphanumerics) as a collision", () => {
+    file("a.md", "## ---\n\nx\n");
+    file("b.md", "## ***\n\nx\n");
+    const r = inferConfig(root);
+    expect(r.warnings).toEqual([]);
+    expect(r.contracts[0]!.def).toBeDefined();
   });
 });
 

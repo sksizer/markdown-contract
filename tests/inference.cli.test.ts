@@ -134,3 +134,33 @@ suite("markdown-contract init (CLI)", () => {
     expect(readFileSync(join(dir, "alpha.md"), "utf8")).toContain("## Summary");
   });
 });
+
+suite("markdown-contract init — heading key-collision (T-KCOL)", () => {
+  /** A fresh empty temp vault to write ad-hoc collision fixtures into. */
+  function freshVault(): string {
+    return mkdtempSync(join(tmpdir(), "mc-kcol-"));
+  }
+
+  test("does not crash on key-colliding peer headings — exits 2 with a descriptive message", async () => {
+    // Two case-variant headings as PEERS in one doc both key to `scheduleForToday`. This used to
+    // escape as an uncaught ContractBuildError stack trace from the self-check; now it is a clean
+    // exit-2 diagnostic naming the file.
+    const dir = freshVault();
+    writeFileSync(join(dir, "both.md"), "## Schedule For today\n\nx\n\n## Schedule For Today\n\nx\n");
+    const r = await runCli(["init", dir, "--meta", "--force"], { cwd: dir });
+    expect(r.code).toBe(2);
+    expect(r.stderr).toContain("both.md");
+    expect(r.stderr).toContain("scheduleForToday");
+    expect(r.stdout).toBe(""); // a crash would have produced no captured result at all
+  });
+
+  test("merges case-variant headings across docs and self-checks clean (exit 0, with a warning)", async () => {
+    const dir = freshVault();
+    writeFileSync(join(dir, "mon.md"), "## Schedule For today\n\nx\n");
+    writeFileSync(join(dir, "tue.md"), "## Schedule For Today\n\nx\n");
+    const r = await runCli(["init", dir, "--meta", "--force"], { cwd: dir });
+    expect(r.code).toBe(0);
+    expect(r.stdout).toMatch(/warning: merged variant headings/);
+    expect(r.stdout).toContain("self-check: clean");
+  });
+});

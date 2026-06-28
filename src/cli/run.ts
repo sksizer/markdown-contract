@@ -429,12 +429,23 @@ function selfCheck(
   const errors: string[] = [];
   results.forEach((r, i) => {
     const root = absRoots[i]!;
-    const config: CorpusConfig = {
-      rules: r.contracts.map((c) => ({ include: c.include, contract: compileContractObject(c.def) })),
-    };
+    // Compile each contract on its own so a build-time guard (e.g. contract/key-collision) is
+    // reported as a clean, attributed self-check failure — naming the contract and its globs —
+    // instead of escaping as an uncaught throw that crashes the verb (T-KCOL).
+    const rules: CorpusConfig["rules"] = [];
+    let compileFailed = false;
+    for (const c of r.contracts) {
+      try {
+        rules.push({ include: c.include, contract: compileContractObject(c.def) });
+      } catch (err) {
+        errors.push(`${root}: contract '${c.name}' (${c.include.join(", ")}) failed to compile — ${(err as Error).message}`);
+        compileFailed = true;
+      }
+    }
+    if (compileFailed) return;
     let findings: ReturnType<typeof runCorpus>["findings"];
     try {
-      findings = runCorpus(config, { cwd: root, ...scope }).findings;
+      findings = runCorpus({ rules }, { cwd: root, ...scope }).findings;
     } catch (err) {
       errors.push(`${root}: self-check failed to run — ${(err as Error).message}`);
       return;
