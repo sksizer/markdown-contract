@@ -1,9 +1,9 @@
 ---
 type: milestone
 schema_version: '1'
-id: M-0008
+id: M-0007
 title: Example use-case catalog — the categorized basis for the docs and marketing site
-status: open/active
+status: open/planned
 created: '2026-06-28'
 tasks:
   - '[[T-ROUT-runcorpus-first-match-routing]]'
@@ -2025,10 +2025,11 @@ Cross-referenced all **99** examples against the fixture corpus (`tests/fixtures
   wikilink validation, in-doc dead-anchor checks) are compositions the engine *allows* but
   doesn't ship as fixtures — open question whether to promote any to supported, tested
   features beyond documenting them.
-- **Milestone status.** Marked `open/active`: the catalog is delivered in this document, but
-  the axis, boundaries, and follow-up split await human review (`need_human_review: true`).
-- **Milestone number is a placeholder.** `M-0008` is provisional — to be renumbered once the
-  surrounding milestone sequence (including the planned marketing-site milestone) is settled.
+- **Milestone status.** Marked `open/planned`: the catalog content is drafted in this document,
+  but it sits behind the docs-site milestone in the delivery order, and its axis, boundaries, and
+  follow-up split await human review (`need_human_review: true`).
+- **Milestone number.** Numbered `M-0007` in the settled delivery order: it follows the docs-site
+  milestone (which it supplies with content) and precedes single-exec distribution.
 
 ## Dependencies
 

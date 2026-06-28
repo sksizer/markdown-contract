@@ -16,6 +16,6 @@ suite defaults to cwd. A small CLI test should assert the generated files land u
 `--out` directory (config + `contracts/`), not in cwd.
 
 Surfaced by catalog example `INFERENCE-INIT-08` (inline vs split, and place with
-`--out`/`--force`) in [[M-0008-example-use-case-catalog]]. Priority: low. Related:
+`--out`/`--force`) in [[M-0007-example-use-case-catalog]]. Priority: low. Related:
 [[B-OUTD-init-out-defaults-to-cwd-not-inferred-root]] — the design question of what `--out`
 should *default* to (this note is only about *test coverage* of the existing flag).

@@ -6,7 +6,7 @@ status: open/ready
 created: '2026-06-28'
 last_reviewed: '2026-06-28'
 related:
-- '[[M-0008-example-use-case-catalog]]'
+- '[[M-0007-example-use-case-catalog]]'
 - '[[D-0010-monorepo-tooling]]'
 - '[[D-0012-distribution-single-exec-and-web-ui]]'
 depends_on:
@@ -27,14 +27,14 @@ autonomy: supervised
 ## Goal
 
 Stand up the public marketing + documentation **website** for markdown-contract, generated
-from the [[M-0008-example-use-case-catalog]] catalog, as a new project in the moon monorepo
+from the [[M-0007-example-use-case-catalog]] catalog, as a new project in the moon monorepo
 (e.g. `apps/docs`) alongside `packages/core` and `apps/web` — per
 [[D-0010-monorepo-tooling]].
 
 ## Today
 
 There is no public website. The example catalog exists as a planning document
-([[M-0008-example-use-case-catalog]]): 8 categories, 99 additive examples, each with an
+([[M-0007-example-use-case-catalog]]): 8 categories, 99 additive examples, each with an
 `id` / `name` / `demonstrates` / `artifact` / `surfaces` / `builds_on` and a coverage
 verdict. The repo is adopting a moon-orchestrated workspace
 ([[T-MOON-adopt-moon-monorepo]]); the site is a natural additional **build aspect** there.
@@ -85,5 +85,5 @@ Writing the missing library tests (separate follow-ups); the `daemon` / local we
 ## Dependencies
 
 Depends on [[T-MOON-adopt-moon-monorepo]] (the monorepo it slots into) and the catalog
-[[M-0008-example-use-case-catalog]]; aligns with
+[[M-0007-example-use-case-catalog]]; aligns with
 [[D-0010-monorepo-tooling]].

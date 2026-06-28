@@ -6,7 +6,7 @@ status: open/ready
 created: '2026-06-28'
 last_reviewed: '2026-06-28'
 related:
-- '[[M-0008-example-use-case-catalog]]'
+- '[[M-0007-example-use-case-catalog]]'
 - '[[T-J9TZ-cli-and-corpus-runner]]'
 depends_on: []
 tags:
@@ -37,7 +37,7 @@ named `contracts` map and a *global* `runCorpus` exclude pre-filter, and
 `tests/fixtures/corpus/markdown-contract.config.mjs` wires multiple rules — but those rules
 use **disjoint** globs (`D-*` vs `T-*`), so nothing asserts precedence when globs
 **overlap**, nor a per-rule `exclude`. Surfaced by catalog examples `DECLARATIVE-YAML-11`,
-`EMBED-AND-CI-03`, and `REAL-WORLD-SCHEMAS-11` in [[M-0008-example-use-case-catalog]].
+`EMBED-AND-CI-03`, and `REAL-WORLD-SCHEMAS-11` in [[M-0007-example-use-case-catalog]].
 
 ## Proposed
 
@@ -83,5 +83,5 @@ global include/exclude pre-filter is already tested; this task is about *per-rul
 
 ## Dependencies
 
-Closes a test gap identified by [[M-0008-example-use-case-catalog]]; concerns the corpus
+Closes a test gap identified by [[M-0007-example-use-case-catalog]]; concerns the corpus
 runner delivered by [[T-J9TZ-cli-and-corpus-runner]].
