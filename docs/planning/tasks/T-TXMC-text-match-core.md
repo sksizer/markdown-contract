@@ -86,12 +86,21 @@ _Captured by /sdlc:task-work on 2026-06-28. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `npm run test` (`src/core/text-match.test.ts`: present/absent literal, regex hits each pinned to `{line,col}`, match inside an inline code span).
+- AC-2: auto — `npm run test` (the three `normalize` cases — default-on collapses wrapped whitespace, `normalize:false` exact bytes — plus `ignoreCase folds case`).
+- AC-3: auto — `npm run test` (`buildTextFindings`: requires-miss at heading/document position, forbids one-per-hit at the offending line, count overflow/shortfall messages, `note` appended).
+- AC-4: auto — `npm run test` (a `docRule` driven through public `validate` shows `text/*` sorting between `content` and `rule`; registry seeds `text/requires|forbids|count` = `error`; explicit `spec.level` overrides).
+- AC-5: auto — `npm run test` (id shape `text/<kind>/<scopeKey>/<patternHash>`, stable across entry reordering via FNV-1a of the normalized pattern, explicit `spec.id` returned verbatim).
+- AC-6: auto — `npm run test` + `npm run typecheck` (peer test leads with plain `matchText` input→output cases, then id synthesis, builder, plane integration; 28/28 green).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- One-pass implementation: the sub-agent satisfied all six ACs and produced a 28-case peer test with the quality gate green on the first full run (`OK 2/2`).
+- Baseline-gated quality gate cleanly reported zero new drift, so no triage of pre-existing findings was needed.
+- The readiness gate passed all mechanical scanners (touchpoints, placeholders, claim-resolvers, corpus-assumptions) with no definition gap — the spec was genuinely implementation-ready as written.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 7's baseline-gated gate run from the worktree defaulted `--baseline-dir` to the *worktree's* `.sdlc/quality-baselines/` and failed `baseline not found`, even though Step 3a captured the baseline in the *main repo's* dir — task-work should pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` (or `--project-root <main-repo>`) explicitly at Step 7 so the gate finds the baseline the capture step wrote.
+- `lease_authority:` was uncommitted in main's working tree, so a worktree branched from committed main lacked it; every lease shell-out from the worktree needed a `SDLC_LEASE_AUTHORITY=origin` env override — projects adopting leases should commit `lease_authority:` to `sdlc.yaml` so worktrees inherit it, or task-work should resolve and thread the authority to all lease invocations rather than relying on the worktree's `sdlc.yaml`.
+- Under heavy parallel `/sdlc:task-work` load, the `--commit-on main` verify/start commits were discarded from local `main` by a peer process resetting `main` to `origin/main`, leaving them only on the task branch (main reverted to `open/ready`); the lease guarded re-pickup correctly, but the task-state-on-main invariant did not hold transiently — a follow-up could make the start/verify commits push to a durable ref or detect-and-reland when a peer reset discards them.
