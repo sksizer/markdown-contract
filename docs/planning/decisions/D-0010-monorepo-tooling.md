@@ -8,7 +8,7 @@ created: '2026-06-28'
 related:
   - '[[D-0006-packaging]]'
   - '[[D-0012-distribution-single-exec-and-web-ui]]'
-  - '[[C-0009-single-binary-and-vault-dashboard]]'
+  - '[[C-0010-single-binary-and-vault-dashboard]]'
   - '[[T-MOON-adopt-moon-monorepo]]'
   - '[[PR-0002-markdown-contract-cli]]'
 tags:
@@ -34,7 +34,7 @@ need_human_review: true
 
 Today the repo is a single npm package with plain npm scripts (`build`/`typecheck`/`test`/`lint:docs`): no task caching, no affected-detection, and no pinned runtime — the toolchain version is implicit. That is fine for one package.
 
-It stops being fine on the near horizon ([[D-0012-distribution-single-exec-and-web-ui]], [[C-0009-single-binary-and-vault-dashboard]]): a **Nuxt UI app** lands beside the library, a **cross-compiled binary matrix** needs a *reproducible* runtime, and **Rust** arrives later (a Tauri shell, and possibly a parallel Rust core for performance). That trajectory needs (a) a **workspace** to link multiple packages under one lockfile and (b) a **task runner + toolchain manager** that caches a cross-project graph and pins runtimes across machines and CI.
+It stops being fine on the near horizon ([[D-0012-distribution-single-exec-and-web-ui]], [[C-0010-single-binary-and-vault-dashboard]]): a **Nuxt UI app** lands beside the library, a **cross-compiled binary matrix** needs a *reproducible* runtime, and **Rust** arrives later (a Tauri shell, and possibly a parallel Rust core for performance). That trajectory needs (a) a **workspace** to link multiple packages under one lockfile and (b) a **task runner + toolchain manager** that caches a cross-project graph and pins runtimes across machines and CI.
 
 The building blocks: Bun is already the chosen compile/runtime and a `bun.lock` is already present; Bun workspaces handle the package layer. The open choice is the task runner on top — and whether it must reach beyond JavaScript.
 
@@ -96,4 +96,4 @@ Chosen **Bun workspaces**: the project already commits to Bun as the compile run
 - moon — Bun handbook: https://moonrepo.dev/docs/guides/javascript/bun-handbook
 - moon — v2.0 ("Phobos") release: https://www.infoq.com/news/2026/05/moonrepo-2-release/
 - Monorepo tools compared (Turborepo vs Nx vs moon, 2026): https://www.pkgpulse.com/guides/turborepo-vs-nx-vs-moon-2026
-- Internal: [[D-0006-packaging]] (Node ESM library, canonical), [[D-0012-distribution-single-exec-and-web-ui]] (the distribution this enables), [[C-0009-single-binary-and-vault-dashboard]], [[T-MOON-adopt-moon-monorepo]], [[PR-0002-markdown-contract-cli]]
+- Internal: [[D-0006-packaging]] (Node ESM library, canonical), [[D-0012-distribution-single-exec-and-web-ui]] (the distribution this enables), [[C-0010-single-binary-and-vault-dashboard]], [[T-MOON-adopt-moon-monorepo]], [[PR-0002-markdown-contract-cli]]
