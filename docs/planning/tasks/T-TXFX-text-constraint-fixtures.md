@@ -5,7 +5,7 @@ id: T-TXFX
 status: open/ready
 created: '2026-06-28'
 related:
-- '[[M-0003-declarative-text-constraints]]'
+- '[[M-0004-declarative-text-constraints]]'
 - '[[D-0011-declarative-text-constraints]]'
 - '[[C-0009-declarative-text-constraints]]'
 - '[[DR-0005-validate-sdlc-corpus]]'

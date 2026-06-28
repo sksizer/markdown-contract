@@ -1,7 +1,7 @@
 ---
 type: milestone
 schema_version: '1'
-id: M-0003
+id: M-0004
 status: open/planned
 title: Declarative text constraints — requires / forbids
 created: '2026-06-28'
