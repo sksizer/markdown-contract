@@ -85,7 +85,7 @@ body:
 ## Underlying implementation
 
 - A `requires` / `forbids` compiler in `src/declarative/body.ts`, validating each entry against the closed vocabulary and emitting library-built `rule` / `docRule` specs; the predicate matches the bound scope's rendered text (including code spans and fenced blocks). The engine ([[C-0005-two-plane-contract-engine]]) is untouched and imports stay one-way.
-- Not yet built. The exact surface (node attributes vs. a `text` content leaf vs. a general rule) is fixed by [[D-0011-declarative-text-constraints]] at review.
+- Not yet built. The surface is fixed by [[D-0011-declarative-text-constraints]] to **(A) — `requires` / `forbids` node attributes** (over a `text` content leaf or a general rule).
 
 ## Notes
 

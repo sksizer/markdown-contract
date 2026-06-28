@@ -2,7 +2,7 @@
 type: decision
 schema_version: '1'
 id: D-0011
-status: open/proposed
+status: open/accepted
 title: Declarative text constraints — required / forbidden phrase rules compiled to node rules
 created: '2026-06-28'
 related:
@@ -31,7 +31,7 @@ need_human_review: true
 - It is **not a second engine and not a general predicate language**. A `requires`/`forbids` block compiles to the runtime's existing node-local `rule` / cross-plane `docRule` machinery ([[C-0005-two-plane-contract-engine]]) — the same machinery a TS author already uses by hand. The package's own fixture `17-node-level-custom-rule.ts` ("the Summary section's prose must mention `outcome`") is structurally this exact check; this decision promotes that one shape from a hand-written predicate to a versioned declarative attribute.
 - This is the **narrow, concrete slice** of the rules-in-YAML work that [[D-0008-declarative-contract-dsl]] explicitly deferred ("rules get their own decision when the demand is concrete"). The demand is now concrete: the SDLC plugin ([[DR-0005-validate-sdlc-corpus]]) wants to retire its bespoke `invariants.yaml` SKILL.md prose linter onto contracts, and that linter is **entirely** required-phrase / forbidden-phrase / required-section / required-tool-ref checks. This decision covers text constraints **only**; the general `when`/`require` predicate DSL and the `$ref` code escape hatch stay deferred.
 - The vocabulary is **additive within `mcVersion: 1`** — new optional keys on a section node and on the body root, no breaking change, no version bump (per [[D-0008-declarative-contract-dsl]] § Versioning).
-- The **central open fork** — resolve at review — is the *surface*: `requires` / `forbids` as **node attributes** (recommended) vs. a **`text` content leaf** vs. a **general declarative rule**. All three are worked below.
+- The **surface** is **decided: (A)** — `requires` / `forbids` as **node attributes**, over a `text` content leaf (B) or a general declarative rule (C). The alternatives and the reasoning are kept below for the record.
 
 ^summary
 
@@ -158,11 +158,11 @@ So every entry gets **its own** id rather than a whole list collapsing onto one 
 
 `requires` / `forbids` are **new optional keys** on the section node and the body root. Per [[D-0008-declarative-contract-dsl]] § Versioning, additive keys stay within the current format version — no `mcVersion` bump, and every existing v1 contract keeps validating unchanged.
 
-## The constraint surface — node attributes vs. content leaf vs. general rule (the central fork)
+## The constraint surface — node attributes vs. content leaf vs. general rule (decided: A)
 
-How should a text constraint be *spelled* in YAML? Three candidate surfaces, worked on the same example (the `Output contract` section must contain `DONE pr=`; the document must never contain `}scripts/`). **This is the decision to confirm at review.**
+How should a text constraint be *spelled* in YAML? Three candidate surfaces, worked on the same example (the `Output contract` section must contain `DONE pr=`; the document must never contain `}scripts/`). **Decided at review: (A).** The alternatives are kept below for the record.
 
-**(A) `requires` / `forbids` node attributes — recommended.**
+**(A) `requires` / `forbids` node attributes — chosen.**
 
 ```yaml
 body:
@@ -205,7 +205,7 @@ sections:
 - **For:** the most general — a step toward the deferred `when` / `require` predicate DSL; one surface for all future rule kinds.
 - **Against:** this is precisely the "real expression language to design, parse, document, and version" that [[D-0008-declarative-contract-dsl]] deferred. It pays the cost of generality to express a closed, finite shape. We can always grow into it later; opening the general-rule surface now to ship phrase-match is over-scoped.
 
-**Recommendation: (A).** It is the truest fit for the constraint (a property of a node / the document), the only one that covers both the section and document scopes with one spelling, and the cleanest migration target. (B) breaks the leaf abstraction; (C) prematurely opens the general-predicate surface D-0008 deliberately closed. The match-spec vocabulary and compile-to-`rule`/`docRule` semantics above are independent of which surface wins — only the spelling changes.
+**Decision: (A).** It is the truest fit for the constraint (a property of a node / the document), the only one that covers both the section and document scopes with one spelling, and the cleanest migration target. (B) breaks the leaf abstraction; (C) prematurely opens the general-predicate surface D-0008 deliberately closed. The match-spec vocabulary and compile-to-`rule`/`docRule` semantics above are independent of the surface — only the spelling is fixed by this choice.
 
 ## Why
 
@@ -227,7 +227,7 @@ sections:
 
 ### Surface — node attributes (A) vs. content leaf (B) vs. general rule (C)
 
-Worked in full above (§ The constraint surface). (A) recommended; (B) breaks the single-block leaf abstraction and can't reach document scope; (C) over-scopes into the deferred predicate language. To be confirmed at review.
+Worked in full above (§ The constraint surface). **(A) chosen**; (B) breaks the single-block leaf abstraction and can't reach document scope; (C) over-scopes into the deferred predicate language.
 
 ### Leave it in TypeScript (no declarative form)
 
@@ -243,7 +243,8 @@ The legacy linter matches *required* phrases whitespace-normalized but *forbidde
 
 ## Open questions
 
-- **Surface (A/B/C)** — the central fork above; resolve at review.
+The surface fork (A/B/C) is **resolved — (A)**. The remaining questions are implementation-time details that do not block the decision:
+
 - **Finding id discriminator** — the per-entry identity scheme is decided (synthesized `text/<kind>/<scopeKey>/<patternHash>`, author-overridable via `id`; § Finding identity). The residual choice is the discriminator's exact form — a hash of the normalized pattern vs. a readable slug of it — and whether to additionally emit SARIF `partialFingerprints` for cross-run result baselining. Affects how findings sort and how consumers filter / suppress.
 - **Default `normalize`** — `true` (tolerate prose line-wrapping) is proposed as the default; confirm, and confirm `forbids` shares the same default (with `normalize: false` for exact-byte forbids).
 - **`regex` flags** — whether `regex` accepts inline flags / a `flags` key, and how `ignoreCase` composes with a `regex` that sets its own.
