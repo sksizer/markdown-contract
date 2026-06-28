@@ -6,8 +6,8 @@ status: open/ready
 created: '2026-06-28'
 last_reviewed: '2026-06-28'
 related:
-- '[[M-0010-example-use-case-catalog]]'
-- '[[D-0010-distribution-single-exec-and-web-ui]]'
+- '[[M-0008-example-use-case-catalog]]'
+- '[[D-0010-monorepo-tooling]]'
 depends_on:
 - '[[T-MOON-adopt-moon-monorepo]]'
 tags:
@@ -26,14 +26,14 @@ autonomy: supervised
 ## Goal
 
 Stand up the public marketing + documentation **website** for markdown-contract, generated
-from the [[M-0010-example-use-case-catalog]] catalog, as a new project in the moon monorepo
+from the [[M-0008-example-use-case-catalog]] catalog, as a new project in the moon monorepo
 (e.g. `apps/docs`) alongside `packages/core` and `apps/web` — per
-[[D-0010-distribution-single-exec-and-web-ui]] § D7.
+[[D-0010-monorepo-tooling]].
 
 ## Today
 
 There is no public website. The example catalog exists as a planning document
-([[M-0010-example-use-case-catalog]]): 8 categories, 99 additive examples, each with an
+([[M-0008-example-use-case-catalog]]): 8 categories, 99 additive examples, each with an
 `id` / `name` / `demonstrates` / `artifact` / `surfaces` / `builds_on` and a coverage
 verdict. The repo is adopting a moon-orchestrated workspace
 ([[T-MOON-adopt-moon-monorepo]]); the site is a natural additional **build aspect** there.
@@ -51,7 +51,7 @@ regression-checked against real CLI/library output, keeping snippets honest.
 1. Land **after** [[T-MOON-adopt-moon-monorepo]] so the site is a moon project, not a
    bespoke build.
 2. Pick the static-site stack — the Nuxt SPA is already in-house per
-   [[D-0010-distribution-single-exec-and-web-ui]]; reuse it or a docs generator.
+   [[D-0010-monorepo-tooling]]; reuse it or a docs generator.
 3. Model the catalog as data (the example-entry schema) so pages are *generated*, not
    hand-copied.
 4. Apply the flagged snippet corrections before publishing (the rule-id drift in
@@ -79,10 +79,10 @@ regression-checked against real CLI/library output, keeping snippets honest.
 ## Out of scope
 
 Writing the missing library tests (separate follow-ups); the `daemon` / local web-UI
-([[D-0010-distribution-single-exec-and-web-ui]]); hosting and deploy specifics.
+([[D-0010-monorepo-tooling]]); hosting and deploy specifics.
 
 ## Dependencies
 
 Depends on [[T-MOON-adopt-moon-monorepo]] (the monorepo it slots into) and the catalog
-[[M-0010-example-use-case-catalog]]; aligns with
-[[D-0010-distribution-single-exec-and-web-ui]].
+[[M-0008-example-use-case-catalog]]; aligns with
+[[D-0010-monorepo-tooling]].
