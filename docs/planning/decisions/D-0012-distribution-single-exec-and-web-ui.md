@@ -8,7 +8,7 @@ created: '2026-06-28'
 related:
   - '[[D-0010-monorepo-tooling]]'
   - '[[D-0006-packaging]]'
-  - '[[C-0009-single-binary-and-vault-dashboard]]'
+  - '[[C-0010-single-binary-and-vault-dashboard]]'
   - '[[PR-0002-markdown-contract-cli]]'
   - '[[C-0003-corpus-cli]]'
   - '[[C-0008-config-scaffolding]]'
@@ -207,4 +207,4 @@ Rejected the pivot: making the compiled binary primary would risk runtime-specif
 - Nitro — Node server preset: https://nitro.build/deploy/node
 - Nuxt — Deployment (SPA `ssr:false`, presets): https://nuxt.com/docs/4.x/getting-started/deployment
 - Nuxt — Rendering modes: https://nuxt.com/docs/4.x/guide/concepts/rendering
-- Internal: [[D-0010-monorepo-tooling]] (workspace + moon, the build substrate), [[D-0006-packaging]] (Node ESM library), [[C-0003-corpus-cli]] (runner/CLI API), [[C-0008-config-scaffolding]] (`init`/`--check`), [[C-0009-single-binary-and-vault-dashboard]], [[PR-0002-markdown-contract-cli]], [[DR-0004-markdown-quality-cli]]
+- Internal: [[D-0010-monorepo-tooling]] (workspace + moon, the build substrate), [[D-0006-packaging]] (Node ESM library), [[C-0003-corpus-cli]] (runner/CLI API), [[C-0008-config-scaffolding]] (`init`/`--check`), [[C-0010-single-binary-and-vault-dashboard]], [[PR-0002-markdown-contract-cli]], [[DR-0004-markdown-quality-cli]]
