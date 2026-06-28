@@ -5,7 +5,7 @@ id: T-7UTE
 status: planning/draft
 created: '2026-06-28'
 related:
-- '[[M-0007-documentation-site]]'
+- '[[M-0006-documentation-site]]'
 tags:
 - docs
 - tooling
