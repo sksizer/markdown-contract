@@ -19,6 +19,7 @@ need_human_review: true
 impact: medium
 complexity: medium
 autonomy: supervised
+readiness_verified_at: '2026-06-28T18:15:13Z'
 ---
 # Adopt moon as the repo's task runner + toolchain manager
 
