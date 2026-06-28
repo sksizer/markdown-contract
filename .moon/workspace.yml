@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://moonrepo.dev/schemas/workspace.json
+
+# The single project today is the repo root. Mapping it by name keeps the later
+# packages/* + apps/web split (D-0010, D-0012) a pure *add* of projects rather
+# than a retool. See docs/planning/tasks/T-MOON-adopt-moon-monorepo.md.
+projects:
+  markdown-contract: "."
+
+# Version control system. The repo is git, default branch is main.
+vcs:
+  client: "git"
+  defaultBranch: "main"
+  provider: "github"

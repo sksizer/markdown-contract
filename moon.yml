@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://moonrepo.dev/schemas/project.json
+#
+# Root project (mapped to '.' in .moon/workspace.yml). Models the four existing
+# npm scripts as cached moon tasks. The package.json scripts stay as thin
+# pass-throughs (AC-4) — this file is the single task source of truth that CI
+# runs through (AC-5).
+#
+# moon task ids cannot contain ':', so `lint:docs` becomes `lint-docs`.
+
+layer: 'library'
+language: 'typescript'
+
+tasks:
+  # Wraps `npm run build` (= `tsc -p tsconfig.build.json`) → emits dist/
+  # (co-located *.test.ts excluded by tsconfig.build.json). The npm script is run
+  # rather than `tsc` directly because moon v2's runtime-only node toolchain does
+  # not put node_modules/.bin on PATH; npm does. dist/ is the declared output, so
+  # a no-change re-run is a cache hit and downstream tasks (lint-docs) hydrate
+  # dist/ from cache.
+  build:
+    command: 'npm run build'
+    toolchain: 'node'
+    inputs:
+      - 'src/**/*'
+      - 'tsconfig.json'
+      - 'tsconfig.build.json'
+      - 'package.json'
+    outputs:
+      - 'dist'
+
+  # Wraps `npm run typecheck` (= `tsc --noEmit`) — type-checks src + tests against
+  # the root tsconfig (which includes both). No outputs (pure check), so caching
+  # keys purely on inputs.
+  typecheck:
+    command: 'npm run typecheck'
+    toolchain: 'node'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # Wraps `npm run test` (= `vitest run`) — the full suite (src/**/*.test.ts unit
+  # peers + tests/** integration corpus, per vitest.config.ts).
+  test:
+    command: 'npm run test'
+    toolchain: 'node'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'contracts/**/*'
+      - 'vitest.config.ts'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `lint:docs` was `npm run build && node dist/cli/index.js validate
+  # docs/planning`. The build half is modeled as a dep, so this task only runs
+  # the validate step; moon ensures `build` (and thus dist/) is fresh first.
+  #
+  # runInCI: false — this lints the project's OWN in-flight planning docs, which
+  # are legitimately mid-edit on any task branch (e.g. a task is `in-progress`
+  # while being worked), so it would red-flag every task PR. It's a local author
+  # gate, not a CI gate (current CI never ran it either). Run it with
+  # `moon run :lint-docs`.
+  lint-docs:
+    command: 'node dist/cli/index.js validate docs/planning'
+    toolchain: 'node'
+    deps:
+      - 'build'
+    inputs:
+      - 'docs/planning/**/*'
+      - 'dist/**/*'
+    options:
+      runInCI: false

@@ -21,3 +21,7 @@ dist/
 .sdlc/*
 !.sdlc/skill-ext/
 !.sdlc/skill-ext/**
+
+# moon
+.moon/cache
+.moon/docker
