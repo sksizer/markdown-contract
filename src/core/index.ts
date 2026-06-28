@@ -35,3 +35,12 @@ export { code, list, maxWords, table } from "./leaves.js";
 export { read, validate } from "./validate.js";
 // Out-of-model entry:
 export { buildModel } from "./model.js";
+// Text-match predicate core + the `text/*` finding area (D-0011):
+export { buildTextFindings, matchText, synthesizeTextId } from "./text-match.js";
+export type {
+  TextFindingInput,
+  TextFindingKind,
+  TextKind,
+  TextMatchResult,
+  TextMatchSpec,
+} from "./text-match.js";

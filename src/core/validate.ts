@@ -39,14 +39,18 @@ function asTree(input: string | DocTree): DocTree {
 
 // ── Deterministic ordering (D-0001 E3 / proposed-shape §4) ─────────────────────────
 
-/** The four merge planes, in their tie-break order. A finding's plane is its id prefix. */
-const PLANE_ORDER = ["frontmatter", "structure", "content", "rule"] as const;
+/**
+ * The merge planes, in their tie-break order. A finding's plane is its id prefix. `text` sits
+ * after `content` and before `rule` (D-0011): a declarative text constraint's `text/*` finding
+ * sorts into its own plane rather than being lumped in with the custom-rule namespace.
+ */
+const PLANE_ORDER = ["frontmatter", "structure", "content", "text", "rule"] as const;
 
 /**
- * The plane a finding belongs to, derived from its id prefix. The four named planes map by
- * their leading segment; any other prefix (a contract-chosen rule namespace like `task/...`
- * or `summary/...`, minted by `rule` / `docRule`) is the `rule` plane — so a custom rule id
- * sorts after `content`, as D-0001 requires.
+ * The plane a finding belongs to, derived from its id prefix. The named planes map by their
+ * leading segment; any other prefix (a contract-chosen rule namespace like `task/...` or
+ * `summary/...`, minted by `rule` / `docRule`) is the `rule` plane — so a custom rule id sorts
+ * after `content` and `text`, as D-0001 requires.
  */
 function planeRank(id: string): number {
   const area = id.slice(0, id.indexOf("/"));
@@ -58,7 +62,7 @@ function planeRank(id: string): number {
  * Sort findings deterministically so goldens pin (D-0001 E3):
  *   1. ascending `pos.line` — a no-`pos` (whole-document) finding sorts FIRST, as line 0;
  *   2. ties on a line break by `pos.col` (a no-`col` finding sorts first, as col 0);
- *   3. then by PLANE order (`frontmatter` → `structure` → `content` → `rule`);
+ *   3. then by PLANE order (`frontmatter` → `structure` → `content` → `text` → `rule`);
  *   4. then by stable emission order (the index the finding was collected at).
  * The sort is total and stable; the `i` tie-break makes it deterministic across engines.
  */
