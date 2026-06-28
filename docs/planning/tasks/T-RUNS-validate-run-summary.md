@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-RUNS
-status: open/ready
+status: planning/needs-definition
 created: '2026-06-27'
 related:
 - '[[C-0003-corpus-cli]]'
@@ -18,6 +18,15 @@ need_human_review: true
 impact: medium
 complexity: small
 autonomy: supervised
+definition_gap: 'The ## Files to touch table carries an invalid Kind value: the row
+  for src/runner/corpus.test.ts uses ''add/modify'', but the table-only readiness
+  verifier accepts only ''new'', ''modify'', or ''delete''. Since src/runner/corpus.test.ts
+  already exists in the tree, change that Kind cell to ''modify'' (keep the ''create
+  if absent'' detail in the Change note if useful, but the Kind column must be one
+  of the three valid values). All other aspects pass: every required section (Goal,
+  Today, Approach, Files to touch, Acceptance criteria, Out of scope) and frontmatter
+  (status, impact, complexity, created) are present, and the placeholder, claim-resolver,
+  and corpus-assumption scans are clean.'
 ---
 # Always print a run summary on `validate` — total files scanned, and per-contract matched counts
 
