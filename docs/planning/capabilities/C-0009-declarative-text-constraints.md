@@ -45,19 +45,33 @@ A consumer adds `requires` / `forbids` to a section node or the body root of a d
 
 ## Inputs
 
-- A section node or the body root of a `*.contract.yaml`, carrying `requires` / `forbids`.
+- A section node or the body root of a `*.contract.yaml`, carrying `requires` / `forbids`. Both are **lists** — multiple constraints are multiple list items, each an independent check.
 
 ```yaml
 body:
+  # document scope (body root): each list item is one whole-document check
   forbids:
     - pattern: "}scripts/"          # must appear nowhere in the document
       normalize: false              # exact bytes
+    - pattern: "}validators/"       # a second, independent entry
+      normalize: false
+  requires:
+    - pattern: "sdlc task close-commit"
+
   sections:
     - section: Output contract
+      # section scope: each list item is one check over this section's subtree
       requires:
         - pattern: "DONE pr="       # must appear in this section's subtree
           note: "primary success signal"
+        - pattern: "ALREADY-CLOSED"
+        - regex: "LEASE-(CONFLICT|MISSING) ref="   # a regex entry — matches either
+        - pattern: "WARNING"
+          max: 0                    # the forbids dual — must not appear here
+    - section: Notes
 ```
+
+**Authoring multiple entries.** `requires` / `forbids` are lists, so N phrases is N items, each emitting its own finding (at the section heading for a `requires` miss, the offending line for a `forbids` hit). The same keys work on a **section node** (matches that section's subtree) and on the **body root** (matches the whole document). Per entry: `pattern` (literal) or `regex`; `min` / `max` for the occurrence count (`requires` defaults `min: 1`, `forbids` is `max: 0`); plus `normalize` / `ignoreCase` / `note`. This is a 1:1 map from the `invariants.yaml` lists it replaces.
 
 ## Outputs
 

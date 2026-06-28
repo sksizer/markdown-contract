@@ -74,21 +74,29 @@ body:
   order: recognized-relative
   allowUnknown: true
 
-  # document-scoped text constraints (the body root)
-  requires:
-    - pattern: "sdlc task close-commit"      # a required literal, anywhere in the doc
+  # document scope (body root): each list item is one whole-document check
   forbids:
     - pattern: "}scripts/"                    # a retired path class — must appear nowhere
       normalize: false                        # exact bytes (see § Match spec)
       note: "route through the op substrate (sdlc <noun> <verb>)"
+    - pattern: "}validators/"                 # a second, independent entry
+      normalize: false
+  requires:
+    - pattern: "sdlc task close-commit"       # a required literal, anywhere in the doc
+    - pattern: "conventions/commit-messages.md"
 
   sections:
     - section: Output contract
-      # section-scoped text constraints (this section's subtree)
+      # section scope: each list item is one check over this section's subtree
       requires:
         - pattern: "DONE pr="
           note: "the orchestrator's primary success signal"
         - pattern: "ALREADY-CLOSED"
+        - pattern: "STALE-PR pr="
+        - regex: "LEASE-(CONFLICT|MISSING) ref="   # a regex entry — matches either marker
+          note: "lease failure markers"
+        - pattern: "WARNING"
+          max: 0                              # the forbids dual — must not appear in THIS section
     - section: Notes        # plain presence — already a structure-plane check
     - section: Failure modes
 ```
@@ -111,6 +119,15 @@ Each entry in `requires` / `forbids` is a YAML map. The vocabulary is closed and
 `requires` and `forbids` are duals: `forbids: [{ pattern: X }]` is exactly `requires: [{ pattern: X, max: 0, min: 0 }]`, but both spellings exist because the intent reads differently and the finding message differs ("required phrase not found" vs. "forbidden phrase present"). The `min` / `max` pair is the "how many times" knob — present-at-least-once is the default, but `min: 2` or `max: 1` are expressible for the rarer cases.
 
 **Match scope is raw text, including code.** The predicate matches against the bound scope's rendered text **including inline code spans and fenced code blocks** — required markers and CLI invocations routinely live in code fences, so excluding them would miss the most important phrases. (This differs from the structure plane's heading discovery, which ignores fenced regions; text constraints deliberately do not.)
+
+### Multiple entries and scopes
+
+`requires` and `forbids` are **lists** — multiple constraints are multiple list items, and **each item is an independent check that emits its own finding** (there is no combining; N phrases is N entries). The same two keys attach at **two scopes**:
+
+- on a **section node** → the entry matches that section's subtree text;
+- on the **body root** → the entry matches the whole document.
+
+A phrase required in one section and a phrase forbidden document-wide are simply entries in different lists. This is a 1:1 map from the `invariants.yaml` this replaces ([[DR-0005-validate-sdlc-corpus]]): a `required_phrases:` list of N becomes a `requires:` list of N — entries that carried a `section:` hint move onto that section node, section-less entries onto the body root — and `forbidden_phrases:` becomes `forbids:` on the body root.
 
 ### Findings and positions
 
