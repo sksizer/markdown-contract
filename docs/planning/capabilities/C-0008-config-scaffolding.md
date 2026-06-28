@@ -4,7 +4,7 @@ schema_version: '1'
 id: C-0008
 kind: feature
 title: Config scaffolding
-status: open/planned
+status: open/active
 created: '2026-06-24'
 parent_key: null
 contains: []
