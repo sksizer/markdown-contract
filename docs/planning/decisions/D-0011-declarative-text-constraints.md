@@ -93,10 +93,10 @@ body:
           note: "the orchestrator's primary success signal"
         - pattern: "ALREADY-CLOSED"
         - pattern: "STALE-PR pr="
-        - regex: "LEASE-(CONFLICT|MISSING) ref="   # a regex entry — matches either marker
+        - regex: "LEASE-(CONFLICT|MISSING) ref="   # one regex entry = OR of two markers (§ AND vs OR)
           note: "lease failure markers"
-        - pattern: "WARNING"
-          max: 0                              # the forbids dual — must not appear in THIS section
+      forbids:
+        - pattern: "WARNING"                       # absence is its own key — never `max: 0` inside `requires`
     - section: Notes        # plain presence — already a structure-plane check
     - section: Failure modes
 ```
@@ -111,12 +111,13 @@ Each entry in `requires` / `forbids` is a YAML map. The vocabulary is closed and
 | `regex` | a regular expression to find (alternative to `pattern`) | — |
 | `normalize` | collapse runs of whitespace before matching, so prose line-wrapping is tolerated | `true` |
 | `ignoreCase` | case-insensitive match | `false` |
-| `min` | (`requires` only) minimum number of occurrences | `1` |
-| `max` | maximum number of occurrences (`forbids` is sugar for `max: 0`) | unbounded (`requires`) / `0` (`forbids`) |
+| `min` | minimum occurrences (`requires` only; must be ≥ 1) | `1` (`requires`) |
+| `max` | maximum occurrences; must be ≥ `min` — a `requires` entry may **not** set `max: 0` (use `forbids`) | unbounded (`requires`) / `0` (`forbids`) |
+| `id` | optional author-supplied stable finding id; pins identity across pattern edits (§ Finding identity) | synthesized |
 | `note` | author rationale, appended to the finding message | — |
 | `level` | finding severity — `error` \| `warn` | `error` |
 
-`requires` and `forbids` are duals: `forbids: [{ pattern: X }]` is exactly `requires: [{ pattern: X, max: 0, min: 0 }]`, but both spellings exist because the intent reads differently and the finding message differs ("required phrase not found" vs. "forbidden phrase present"). The `min` / `max` pair is the "how many times" knob — present-at-least-once is the default, but `min: 2` or `max: 1` are expressible for the rarer cases.
+`requires` and `forbids` share one `min` / `max` count model underneath, but the **authoring surface keeps them pure**: `requires` is presence (`min ≥ 1`, optionally an upper bound — `min: 1, max: 1` for "exactly once"); `forbids` is absence (`max: 0`, optionally `max: N` for "no more than N"). A `requires` entry whose bound would express absence — `max: 0`, or any `max < min` — is a **`DeclarativeError`**, not silent sugar: absence is `forbids`'s job, so a multi-entry `requires:` list always reads uniformly as "all of these must be present." The two keys exist because the intent reads differently and the finding message differs ("required phrase not found" vs. "forbidden phrase present").
 
 **Match scope is raw text, including code.** The predicate matches against the bound scope's rendered text **including inline code spans and fenced code blocks** — required markers and CLI invocations routinely live in code fences, so excluding them would miss the most important phrases. (This differs from the structure plane's heading discovery, which ignores fenced regions; text constraints deliberately do not.)
 
@@ -129,12 +130,29 @@ Each entry in `requires` / `forbids` is a YAML map. The vocabulary is closed and
 
 A phrase required in one section and a phrase forbidden document-wide are simply entries in different lists. This is a 1:1 map from the `invariants.yaml` this replaces ([[DR-0005-validate-sdlc-corpus]]): a `required_phrases:` list of N becomes a `requires:` list of N — entries that carried a `section:` hint move onto that section node, section-less entries onto the body root — and `forbidden_phrases:` becomes `forbids:` on the body root.
 
+### AND vs OR
+
+**A list is conjunctive (AND).** Every entry in a `requires` / `forbids` list must hold; there is no `OR` *across* entries, and each entry reports independently. A genuine "any one of these" is expressed in v1 by a single `regex` entry with alternation — `regex: "X|Y"` — as the example uses for the two `LEASE-*` markers. That form is intentionally lossy: it emits one finding reporting the raw pattern, not which alternative was missing. A first-class disjunction (an `anyOf:` group entry) is **deferred**, not built in v1 (§ Out of scope). To keep that door open additively, **every list entry is always a YAML map, never a bare scalar** — so a future `{ anyOf: [...] }` entry shape is a pure addition that leaves existing leaf entries untouched.
+
+### Compile-time consistency
+
+Two classes of authoring mistake are caught when the contract is compiled — raising a `DeclarativeError`, consistent with the existing loader — rather than surfacing as confusing findings at validation time:
+
+- **Duplicate entries.** Two entries in the *same list at the same scope* with an identical normalized spec — same `(pattern | regex, normalize, ignoreCase, min, max)` — are a copy-paste error and are rejected. (Across *different* scopes the same phrase is a different check — required in a section *and* document-wide — and is not a duplicate.)
+- **Contradictions.** At the same scope, a `requires` and a `forbids` entry over the same literal `pattern` (matched on identical `pattern` / `normalize` / `ignoreCase`) are unsatisfiable and are rejected; so is a single entry with `max < min`. This check is **literal-only** — two `regex` entries are not statically proven to overlap or be disjoint, so the compiler does not attempt contradiction detection across regexes (it rejects only byte-identical regex sources, as duplicates). Promising more would be false confidence.
+
 ### Findings and positions
 
 - A `requires` miss → an `error`-level finding positioned at the **section's heading line** (section-scoped) or document-level with no `pos` (body root), message `required phrase <repr> not found in <scope>` + the `note`.
 - A `forbids` hit → an `error`-level finding positioned at the **line of the offending match**, message `forbidden phrase <repr> present` + the `note`.
 - A count violation (`min` / `max`) → `<phrase> found N times, expected …`.
-- Finding ids are namespaced under a stable area so they sort into their own plane in the merged finding stream — proposed `text/requires`, `text/forbids`, `text/count` (final id spelling is an open question below).
+- Finding ids are namespaced under a stable `text/*` area so they sort into their own plane in the merged finding stream — `text/requires`, `text/forbids`, `text/count` — with a per-entry discriminator appended (§ Finding identity).
+
+### Finding identity
+
+Each entry compiles to its own `rule` / `docRule`, and that rule's finding `id` is load-bearing downstream: it becomes the SARIF `ruleId` (`src/cli/format.ts`), the key the run's `rules` descriptor array dedupes on, and a sort key. SARIF defines `ruleId` as a **stable, opaque** identifier — human meaning lives in the rule `name` and the `message`, so the id need *not* be semantic — but it **must be stable**, or triage / baseline / suppression state keyed on it is orphaned across runs.
+
+So every entry gets **its own** id rather than a whole list collapsing onto one `text/requires` — which would make individual phrase-requirements unaddressable, a regression from the hand-written rules this replaces, where each check already carries a unique id like `summary/mentions-outcome`. The default id is **synthesized and stable**: `text/<requires|forbids>/<scopeKey>/<patternHash>`, where `scopeKey` is the section's generated OOM key (`doc` for the body root) and `patternHash` is a short hash of the normalized pattern. This is stable under **reordering** entries (it is not index-based) and unique across scopes; it changes only when the section is renamed or the pattern is edited — both legitimately "a different check." An author who wants identity to survive a pattern edit sets an explicit **`id`** on the entry, mirroring how a hand-written `rule(id, …)` names ids today. Cross-*run* result identity for baselining — SARIF's `partialFingerprints` — is a heavier, separate mechanism the engine does not emit today; it is noted as a later upgrade, not built here.
 
 ### Versioning — additive within `mcVersion: 1`
 
@@ -199,6 +217,7 @@ sections:
 ## Consequences
 
 - **Declarative front-end (`src/declarative/body.ts`).** `sectionOpts(...)` and the body-root level compiler gain `requires` / `forbids` recognition, validated against the closed match-spec vocabulary (a sibling to `compileSchema`), compiling to library-built `rule` / `docRule` specs. A malformed entry is a `DeclarativeError`, consistent with the existing loader.
+- **Compile-time consistency & identity (`src/declarative/body.ts`).** The compiler rejects duplicate entries and literal `requires` / `forbids` contradictions (and `max < min`) as `DeclarativeError`s (§ Compile-time consistency), and synthesizes a stable per-entry finding id (`text/<kind>/<scopeKey>/<patternHash>`) unless the entry supplies an explicit `id` (§ Finding identity).
 - **TS-API parity (`src/core`).** A library-supplied predicate builder (e.g. `requires([...])` / `forbids([...])`, or `textRule(...)`) so a combinator-authored contract gets the same checks without hand-writing the predicate — the declarative form compiles to these. Exact API named at implementation.
 - **A new finding area (`text/*`).** Registered with default `error` level (overridable per entry via `level`), sorting into its own plane in the merged stream.
 - **Closed, maintained surface.** Each match-spec key is a deliberate, versioned addition — the same discipline [[D-0004-content-plane]] imposes on leaves and [[D-0008-declarative-contract-dsl]] on the schema vocabulary.
@@ -225,7 +244,7 @@ The legacy linter matches *required* phrases whitespace-normalized but *forbidde
 ## Open questions
 
 - **Surface (A/B/C)** — the central fork above; resolve at review.
-- **Finding id spelling** — `text/requires` / `text/forbids` / `text/count`, or fold count into the requires/forbids ids. Affects how findings sort and how consumers filter.
+- **Finding id discriminator** — the per-entry identity scheme is decided (synthesized `text/<kind>/<scopeKey>/<patternHash>`, author-overridable via `id`; § Finding identity). The residual choice is the discriminator's exact form — a hash of the normalized pattern vs. a readable slug of it — and whether to additionally emit SARIF `partialFingerprints` for cross-run result baselining. Affects how findings sort and how consumers filter / suppress.
 - **Default `normalize`** — `true` (tolerate prose line-wrapping) is proposed as the default; confirm, and confirm `forbids` shares the same default (with `normalize: false` for exact-byte forbids).
 - **`regex` flags** — whether `regex` accepts inline flags / a `flags` key, and how `ignoreCase` composes with a `regex` that sets its own.
 - **Count keywords** — ship `min` / `max` now, or start with presence/absence only and add counts on demand? (The migration needs only `min: 1` and `forbids`; counts are speculative generality.)
@@ -233,6 +252,7 @@ The legacy linter matches *required* phrases whitespace-normalized but *forbidde
 
 ## Out of scope
 
+- **Disjunction across entries (`anyOf` / OR groups)** — a first-class "any one of these" entry (`requires: [{ anyOf: [...] }]`) is deferred. v1 expresses OR-of-literals through a single `regex` entry's alternation; the richer grouped form is a later additive extension (entries are always maps precisely to keep it additive — § AND vs OR).
 - The general `when` / `require` **predicate DSL** — boolean composition, cross-field / cross-plane conditions — still deferred to a future format version ([[D-0008-declarative-contract-dsl]] § Out of scope).
 - The **`$ref` code escape hatch** (a YAML reference to a named TS export) — unchanged, still deferred.
 - **Document repair / autofix** — the engine is read-only ([[D-0007-engine-scope-and-fidelity]]); a `requires` miss reports, it does not insert the phrase.

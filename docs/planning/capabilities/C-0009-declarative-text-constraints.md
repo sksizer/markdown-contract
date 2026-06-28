@@ -39,7 +39,7 @@ A consumer adds `requires` / `forbids` to a section node or the body root of a d
 ## What it provides
 
 - Two new optional keys — `requires` / `forbids` — on every section node and on the body root, recognized by the declarative loader.
-- A closed per-entry **match-spec vocabulary**: `pattern` | `regex`, `normalize`, `ignoreCase`, `min` / `max`, `note`, `level`.
+- A closed per-entry **match-spec vocabulary**: `pattern` | `regex`, `normalize`, `ignoreCase`, `min` / `max`, `id`, `note`, `level`.
 - **TS-API parity** — a predicate builder so a combinator-authored contract gets the same checks without hand-writing the rule.
 - `text/*` findings (default `error`, overridable per entry via `level`), positioned at the section heading (a `requires` miss) or the offending line (a `forbids` hit).
 
@@ -65,13 +65,13 @@ body:
         - pattern: "DONE pr="       # must appear in this section's subtree
           note: "primary success signal"
         - pattern: "ALREADY-CLOSED"
-        - regex: "LEASE-(CONFLICT|MISSING) ref="   # a regex entry — matches either
-        - pattern: "WARNING"
-          max: 0                    # the forbids dual — must not appear here
+        - regex: "LEASE-(CONFLICT|MISSING) ref="   # one regex entry = OR of two markers
+      forbids:
+        - pattern: "WARNING"        # absence is its own key — never max:0 inside requires
     - section: Notes
 ```
 
-**Authoring multiple entries.** `requires` / `forbids` are lists, so N phrases is N items, each emitting its own finding (at the section heading for a `requires` miss, the offending line for a `forbids` hit). The same keys work on a **section node** (matches that section's subtree) and on the **body root** (matches the whole document). Per entry: `pattern` (literal) or `regex`; `min` / `max` for the occurrence count (`requires` defaults `min: 1`, `forbids` is `max: 0`); plus `normalize` / `ignoreCase` / `note`. This is a 1:1 map from the `invariants.yaml` lists it replaces.
+**Authoring multiple entries.** `requires` / `forbids` are lists, so N phrases is N items, each emitting its own finding (at the section heading for a `requires` miss, the offending line for a `forbids` hit). A list is **conjunctive** — every entry must hold; for "any one of" use a single `regex` entry's alternation (`regex: "X|Y"`), the OR escape until a first-class `anyOf` group lands. The two keys stay **pure** — `requires` is presence, `forbids` is absence — so a `requires` entry may not express absence via `max: 0` (that is a `forbids`; the compiler rejects it, along with duplicate and contradictory entries). The same keys work on a **section node** (matches that section's subtree) and on the **body root** (matches the whole document). Per entry: `pattern` (literal) or `regex`; `min` / `max` for the occurrence count (`requires` defaults `min: 1`); plus `normalize` / `ignoreCase` / `note`, and an optional `id`. Each entry's finding carries its own stable id — synthesized from scope + pattern unless `id` is set — so individual requirements stay addressable downstream (SARIF `ruleId`, suppression). This is a 1:1 map from the `invariants.yaml` lists it replaces.
 
 ## Outputs
 
