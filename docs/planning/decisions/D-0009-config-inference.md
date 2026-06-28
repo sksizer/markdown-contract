@@ -100,15 +100,15 @@ For each group, derive the **tightest contract that still accepts every file in 
 
 For each frontmatter field, collect its observed values across the group and pick the **most specific schema that admits every observed value**, defaulting looser only when no tighter rung fits:
 
-1. All values **identical** → `{ const: <value> }`.
+1. All values **identical**, observed in at least **`--min-const-examples`** documents (default 3), and — for strings — no longer than **`--max-const-len`** characters (default 64) → `{ const: <value> }`. The two guards keep a field that is uniform only by coincidence on a small corpus, or whose one value is a free-text paragraph, from being frozen as a literal; below either threshold the field falls through to a looser rung (still accept-by-construction). `--min-const-examples 1` restores pinning on a single example.
 2. Else all values are **valid numbers** → `{ type: number }` (`int: true` if all integers; `min`/`max` only under `--infer-bounds`).
 3. Else all values are **booleans** → `{ type: boolean }`.
 4. Else all values are **arrays** → `{ type: array, of: <recursively inferred element schema> }`.
 5. Else all (string) values match one **`format`** from the [[D-0008-declarative-contract-dsl]] set (`date`, `datetime`, `email`, `url`, `uuid`, …) → `{ type: string, format: <name> }` (most specific match; `date` before `datetime`).
-6. Else the **distinct values form a small closed set** — ≤ 12 distinct values *and* fewer than half the file count, so it is clearly categorical rather than coincidentally repetitive → `{ enum: [<observed values>] }`. (A consequence: tiny corpora rarely enum — too few files to clear the ratio — which is the right call on thin evidence.)
+6. Else the **distinct values form a small closed set** — ≤ 12 distinct values *and* fewer than half the file count, so it is clearly categorical rather than coincidentally repetitive — *and* no value exceeds `--max-const-len` → `{ enum: [<observed values>] }`. (A consequence: tiny corpora rarely enum — too few files to clear the ratio — which is the right call on thin evidence.) The length cap applies here too: an `enum` must admit every observed value, so a value over the cap can't simply be dropped — the whole field falls to `type: string` instead.
 7. Else → `{ type: string }`.
 
-Every rung admits at least every value seen, so it cannot break accept-by-construction. `enum` (rung 6) is the deliberate tight default for categorical fields — it admits exactly the observed set and flags a novel value as drift; `--relax` drops rung 6 (categorical fields stay `type: string`). `pattern` and numeric/length `min`/`max` are **not** inferred by default (they over-fit string shape); `--infer-bounds` opts into them.
+Every rung admits at least every value seen, so it cannot break accept-by-construction. `enum` (rung 6) is the deliberate tight default for categorical fields — it admits exactly the observed set and flags a novel value as drift; `--relax` drops rung 6 (categorical fields stay `type: string`). The **`--max-const-len`** cap (default 64) keeps a long free-text value off rungs 1 and 6, and the **`--min-const-examples`** floor (default 3) keeps a uniform scalar off rung 1 until enough documents back it; both only ever loosen a rung, so accept-by-construction holds, and both are overridable per run. `pattern` and numeric/length `min`/`max` are **not** inferred by default (they over-fit string shape); `--infer-bounds` opts into them.
 
 ### Step 5 — Emit
 
@@ -135,6 +135,8 @@ markdown-contract init <dir>…           one or more target roots (required)
   --inline              one self-contained config instead of meta-config + contracts/ files
   --relax               loosen generation toward a permissive floor (order:none, allowUnknown,
                         non-strict frontmatter, no enums, loosest value types)
+  --max-const-len <N>   strings longer than N are never pinned as a const nor enum'd (default 64)
+  --min-const-examples <N>  a uniform scalar needs ≥ N documents to be pinned as const (default 3; 1 = pin on one example)
   --glob/--include/--exclude <glob>   scope which files feed inference (as in `validate`)
   --force               overwrite an existing config (default: refuse)
   --dry-run             print the would-be files to stdout; write nothing
