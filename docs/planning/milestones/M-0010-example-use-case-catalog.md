@@ -1,7 +1,7 @@
 ---
 type: milestone
 schema_version: '1'
-id: M-0004
+id: M-0010
 title: Example use-case catalog — the categorized basis for the docs and marketing site
 status: open/active
 created: '2026-06-28'
@@ -2026,6 +2026,8 @@ Cross-referenced all **99** examples against the fixture corpus (`tests/fixtures
   features beyond documenting them.
 - **Milestone status.** Marked `open/active`: the catalog is delivered in this document, but
   the axis, boundaries, and follow-up split await human review (`need_human_review: true`).
+- **Milestone number is a placeholder.** `M-0010` is provisional — to be renumbered once the
+  surrounding milestone sequence (including the planned marketing-site milestone) is settled.
 
 ## Dependencies
 

@@ -20,6 +20,6 @@ Two novel, currently-uncovered compositions the engine *allows* but no fixture e
 
 Surfaced by catalog examples `DIALECT-10` (flag a dead anchor with a docRule) and
 `DIALECT-11` (validate every wikilink across a vault) in
-[[M-0004-example-use-case-catalog]]. Priority: medium. Open question (see the milestone):
+[[M-0010-example-use-case-catalog]]. Priority: medium. Open question (see the milestone):
 whether vault-wide wikilink validation should become a first-class supported feature rather
 than only a documented composition.
