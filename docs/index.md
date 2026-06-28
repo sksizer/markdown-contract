@@ -64,6 +64,7 @@ Milestones are product releases; order is ascending `version`. Source:
 | Version | ID | Milestone |
 | --- | --- | --- |
 | — | [[M-0003-config-inference]] | Config inference & `init` scaffolding |
+| — | [[M-0004-declarative-text-constraints]] | Declarative text constraints — requires / forbids |
 
 **Deferred / emerging / obsoleted** — milestones not in effect today
 (planned, draft, or closed), rendered as a table:
@@ -72,7 +73,6 @@ Milestones are product releases; order is ascending `version`. Source:
 | --- | --- | --- | --- |
 | `0.1.0` | [[M-0001-initial-contract-engine-and-cli]] | Initial release — the two-plane contract engine and CLI | closed/done |
 | — | [[M-0002-declarative-yaml-contracts-v1]] | Declarative YAML contracts — v1 loader, DSL, and meta-config | closed/done |
-| — | [[M-0004-declarative-text-constraints]] | Declarative text constraints — requires / forbids | open/planned |
 | — | [[M-0005-monorepo-tooling]] | Monorepo tooling — a Bun workspace orchestrated by moon | open/planned |
 | — | [[M-0006-documentation-site]] | Published documentation site | open/planned |
 | — | [[M-0007-example-use-case-catalog]] | Example use-case catalog — the categorized basis for the docs and marketing site | open/planned |
@@ -89,6 +89,7 @@ Source: [`./planning/capabilities/`](./planning/capabilities/).
 | [[C-0001-contract-validation]] | Contract validation | ![[C-0001-contract-validation#^summary]] |
 | [[C-0002-typed-consumption]] | Typed consumption | ![[C-0002-typed-consumption#^summary]] |
 | [[C-0003-corpus-cli]] | Corpus CLI | ![[C-0003-corpus-cli#^summary]] |
+| [[C-0008-config-scaffolding]] | Config scaffolding | ![[C-0008-config-scaffolding#^summary]] |
 
 **Emerging / obsoleted:**
 
@@ -96,7 +97,6 @@ Source: [`./planning/capabilities/`](./planning/capabilities/).
 | --- | --- | --- | --- |
 | [[C-0006-declarative-yaml-contracts]] | Declarative YAML contracts | ![[C-0006-declarative-yaml-contracts#^summary]] | open/planned |
 | [[C-0007-declarative-corpus-meta-config]] | Declarative corpus meta-config | ![[C-0007-declarative-corpus-meta-config#^summary]] | open/planned |
-| [[C-0008-config-scaffolding]] | Config scaffolding | ![[C-0008-config-scaffolding#^summary]] | open/planned |
 | [[C-0009-declarative-text-constraints]] | Declarative text constraints | ![[C-0009-declarative-text-constraints#^summary]] | open/planned |
 | [[C-0010-single-binary-and-vault-dashboard]] | Single-binary distribution and local vault dashboard | ![[C-0010-single-binary-and-vault-dashboard#^summary]] | open/proposed |
 
@@ -131,13 +131,13 @@ link inline; single-file ADRs transclude their `^summary`.
 | [[D-0006-packaging]] | ![[D-0006-packaging#^summary]] |
 | [[D-0007-engine-scope-and-fidelity]] | ![[D-0007-engine-scope-and-fidelity#^summary]] |
 | [[D-0008-declarative-contract-dsl]] | ![[D-0008-declarative-contract-dsl#^summary]] |
+| [[D-0009-config-inference]] | ![[D-0009-config-inference#^summary]] |
 | [[D-0011-declarative-text-constraints]] | ![[D-0011-declarative-text-constraints#^summary]] |
 
 **Emerging / obsoleted:**
 
 | Decision | Summary | Status |
 | --- | --- | --- |
-| [[D-0009-config-inference]] | ![[D-0009-config-inference#^summary]] | open/proposed |
 | [[D-0010-monorepo-tooling]] | ![[D-0010-monorepo-tooling#^summary]] | open/proposed |
 | [[D-0012-distribution-single-exec-and-web-ui]] | ![[D-0012-distribution-single-exec-and-web-ui#^summary]] | open/proposed |
 
