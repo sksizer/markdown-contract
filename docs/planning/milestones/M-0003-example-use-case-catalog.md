@@ -22,6 +22,8 @@ related:
   - '[[B-DREF-dialect-referential-integrity]]'
   - '[[B-DANF-dialect-anchor-fragment-edges]]'
   - '[[B-IOUT-init-out-placement]]'
+  - '[[C-0009-declarative-text-constraints]]'
+  - '[[D-0011-declarative-text-constraints]]'
 contains: []
 need_human_review: true
 ---
@@ -54,7 +56,9 @@ top-to-bottom, each step adding exactly one idea.
   governance, where each of the eight rungs is exactly **one adoptable surface**, so every
   example has a single home. (The four proposals and the rationale are in
   *How the axis was chosen* below.)
-- **99 examples across 8 categories**, CLI first, additive within each.
+- **99 shipped examples across 8 categories**, CLI first, additive within
+  each — plus **9 planned** examples previewing upcoming declarative text
+  constraints (below).
 - **Coverage against the existing tests:** 85 covered, 9 partial,
   5 uncovered; 8 are genuinely novel scenarios; 10 examples
   recommend a new test.
@@ -64,6 +68,13 @@ top-to-bottom, each step adding exactly one idea.
 - **The review produced six follow-ups:** a task to pin first-match routing
   ([[T-ROUT-runcorpus-first-match-routing]]), four backlog notes for the remaining gaps,
   and a task to build the site ([[T-SITE-bootstrap-docs-website]]).
+- **Upcoming features previewed (PR #50).** 9 examples preview **declarative text
+  constraints** — the `requires:` / `forbids:` phrase vocabulary of
+  [[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]] — marked
+  &#128679; *planned*, extending the Declarative-YAML, in-code, and real-world-schema
+  categories. They compile to the engine's existing rule / docRule machinery (fixture
+  `17-node-level-custom-rule.ts` is the hand-written seed) and stay out of the shipped
+  coverage counts.
 
 ^summary
 
@@ -78,6 +89,9 @@ top-to-bottom, each step adding exactly one idea.
   existing fixture/test already covers it (with a link), plus an add-a-test recommendation
   for the genuine gaps.
 - The **follow-up entities** for the real test gaps and the site build.
+- **Upcoming features**, where they extend a category, included as &#128679; *planned*
+  examples — the [[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]]
+  text-constraint vocabulary (PR #50) — kept separate from the shipped coverage counts.
 
 **Out**
 
@@ -108,7 +122,7 @@ top-to-bottom, each step adding exactly one idea.
 ## Success criteria
 
 - [x] Catalog spans broad categories with tens of examples — CLI first, additive within
-  each. (99 examples across 8 categories; CLI is rung 1.)
+  each. (99 shipped + 9 planned examples across 8 categories; CLI is rung 1.)
 - [x] Every example states the example-entry schema fields.
 - [x] Every example carries a coverage verdict: *needs a test* and *matches an existing
   fixture/test* (with a link where one exists).
@@ -159,17 +173,19 @@ existing fixture/test?* (status + link).
 
 ### Catalog at a glance
 
-| # | Category | Examples | Covered | Partial | Uncovered | Add tests |
-|---|----------|:--------:|:-------:|:-------:|:---------:|:---------:|
-| 1 | **CLI Quickstart: Validate from the Terminal** `cli` | 12 | 12 | 0 | 0 | 0 |
-| 2 | **Scaffold and Guard: init, Inference, and Drift Checks** `inference-init` | 10 | 8 | 1 | 1 | 1 |
-| 3 | **Declarative YAML: Contracts and Corpus Config, No Code** `declarative-yaml` | 13 | 12 | 1 | 0 | 1 |
-| 4 | **Authoring Contracts in Code: Structure, Content, and Custom Rules** `validation-planes` | 16 | 16 | 0 | 0 | 0 |
-| 5 | **Consume as Typed Data: Reading the Document as a Model** `consume-as-data` | 11 | 11 | 0 | 0 | 0 |
-| 6 | **Dialect: Anchors, Wikilinks, and Vault References** `dialect` | 11 | 6 | 2 | 3 | 4 |
-| 7 | **Embed and Automate: the Runner Library and CI Gates** `embed-and-ci` | 11 | 8 | 3 | 0 | 1 |
-| 8 | **Real-World Schemas: Document Templates and Cross-Document Governance** `real-world-schemas` | 15 | 12 | 2 | 1 | 3 |
-| | **Total** | **99** | 85 | 9 | 5 | 10 |
+Counts are over **shipped** examples; the **Planned** column is the upcoming declarative text constraints (C-0009 / D-0011), tracked separately.
+
+| # | Category | Examples | Covered | Partial | Uncovered | Add tests | Planned |
+|---|----------|:--------:|:-------:|:-------:|:---------:|:---------:|:-------:|
+| 1 | **CLI Quickstart: Validate from the Terminal** `cli` | 12 | 12 | 0 | 0 | 0 | — |
+| 2 | **Scaffold and Guard: init, Inference, and Drift Checks** `inference-init` | 10 | 8 | 1 | 1 | 1 | — |
+| 3 | **Declarative YAML: Contracts and Corpus Config, No Code** `declarative-yaml` | 13 | 12 | 1 | 0 | 1 | 7 |
+| 4 | **Authoring Contracts in Code: Structure, Content, and Custom Rules** `validation-planes` | 16 | 16 | 0 | 0 | 0 | 1 |
+| 5 | **Consume as Typed Data: Reading the Document as a Model** `consume-as-data` | 11 | 11 | 0 | 0 | 0 | — |
+| 6 | **Dialect: Anchors, Wikilinks, and Vault References** `dialect` | 11 | 6 | 2 | 3 | 4 | — |
+| 7 | **Embed and Automate: the Runner Library and CI Gates** `embed-and-ci` | 11 | 8 | 3 | 0 | 1 | — |
+| 8 | **Real-World Schemas: Document Templates and Cross-Document Governance** `real-world-schemas` | 15 | 12 | 2 | 1 | 3 | 1 |
+| | **Total** | **99** | 85 | 9 | 5 | 10 | **9** |
 
 ### 1. CLI Quickstart: Validate from the Terminal — `cli`
 
@@ -534,6 +550,13 @@ The markdown-contract/declarative surface: author a full contract (mcVersion 1, 
 | 11 | **DECLARATIVE-YAML-11** Route several globs first-match-wins, with named contracts and exclude | A multi-rule config with a named contracts map, per-rule exclude, and first-match-wins precedence. | yes · add &rarr; [[T-ROUT-runcorpus-first-match-routing]] | &#9680; partial — src/declarative/config.test.ts (contracts name map; global runCorpus exclude) |
 | 12 | **DECLARATIVE-YAML-12** Run a YAML config from the CLI | Feeding a declarative config into the validate command, which auto-discovers markdown-contract.yaml or takes an explicit --config. | yes | &#10003; covered — src/cli/index.test.ts (--config, --format json/sarif, exit 0/1/2, bad --format); tests/inference.cli.test.ts:51 (validate <dir> au |
 | 13 | **DECLARATIVE-YAML-13** YAML contract and its TypeScript equivalent, identical findings | That a YAML-authored contract compiles to the same Contract as the combinator API, producing identical findings. | yes | &#10003; covered — tests/yaml-parity.test.ts (full corpus YAML<->TS parity); src/declarative/body.test.ts (expectParity); src/declarative/load.test.t |
+| 14 | **DECLARATIVE-YAML-14** Require a phrase in a section | A section node carries requires: so its prose must contain a literal phrase (compiles to a node-local rule). | on impl | &#128679; planned — C-0009 / D-0011 · seed `tests/fixtures/validation/17-node-level-custom-rule.ts` |
+| 15 | **DECLARATIVE-YAML-15** Forbid a phrase document-wide | forbids: on the body root asserts a phrase appears nowhere in the document (compiles to a docRule). | on impl | &#128679; planned — C-0009 / D-0011 |
+| 16 | **DECLARATIVE-YAML-16** Match by regex instead of a literal | A regex: entry matches a pattern (here either of two markers) rather than a fixed substring. | on impl | &#128679; planned — C-0009 / D-0011 |
+| 17 | **DECLARATIVE-YAML-17** Tune the match: normalize and ignoreCase | normalize folds whitespace (tolerating prose line-wrapping) and ignoreCase makes the match case-insensitive. | on impl | &#128679; planned — C-0009 / D-0011 |
+| 18 | **DECLARATIVE-YAML-18** Bound occurrences with min / max | min and max constrain how many times a phrase may occur; max: 0 is the in-section forbids dual. | on impl | &#128679; planned — C-0009 / D-0011 |
+| 19 | **DECLARATIVE-YAML-19** Annotate and downgrade: note + level | Each entry can carry an author note (appended to the message) and a level to warn instead of error. | on impl | &#128679; planned — C-0009 / D-0011 |
+| 20 | **DECLARATIVE-YAML-20** Retire an invariants list across both scopes | Independent entries on the body root (whole-doc) and on a section node together replace an invariants.yaml linter. | on impl | &#128679; planned — C-0009 / D-0011 |
 
 **Sketches**
 
@@ -732,6 +755,122 @@ contract({ frontmatter: z.object({
 ```
 `surfaces:` loadContract vs contract({frontmatter}); both yield a Contract whose validate() emits the same frontmatter/* findings
 
+**DECLARATIVE-YAML-14 — Require a phrase in a section** · _builds on DECLARATIVE-YAML-13_  &#128679; PLANNED  
+_A section node carries requires: so its prose must contain a literal phrase (compiles to a node-local rule)._
+
+```yaml
+mcVersion: 1
+kind: contract
+body:
+  sections:
+    - section: Output contract
+      requires:
+        - pattern: "DONE pr="          # this section's text must contain it
+          note: "primary success signal"
+```
+`surfaces:` requires: on a section node -> a node-local rule; text/requires finding at the section heading
+
+> &#128679; **Planned (C-0009 / D-0011)** — the proposed declarative syntax, not yet shipped. Compiles to the engine's existing rule / docRule machinery. Seed (hand-written): `tests/fixtures/validation/17-node-level-custom-rule.ts`.
+
+**DECLARATIVE-YAML-15 — Forbid a phrase document-wide** · _builds on DECLARATIVE-YAML-14_  &#128679; PLANNED  
+_forbids: on the body root asserts a phrase appears nowhere in the document (compiles to a docRule)._
+
+```yaml
+mcVersion: 1
+kind: contract
+body:
+  forbids:
+    - pattern: "}scripts/"     # must appear nowhere in the document
+      normalize: false         # exact bytes, no whitespace folding
+      note: "route through the op substrate"
+  sections:
+    - section: Notes
+```
+`surfaces:` forbids: on the body root -> a whole-document docRule; text/forbids finding at the offending line
+
+> &#128679; **Planned (C-0009 / D-0011)** — the proposed declarative syntax, not yet shipped. Compiles to the engine's existing rule / docRule machinery.
+
+**DECLARATIVE-YAML-16 — Match by regex instead of a literal** · _builds on DECLARATIVE-YAML-14_  &#128679; PLANNED  
+_A regex: entry matches a pattern (here either of two markers) rather than a fixed substring._
+
+```yaml
+body:
+  sections:
+    - section: Output contract
+      requires:
+        - regex: "LEASE-(CONFLICT|MISSING) ref="   # matches either marker
+          note: "lease failure markers"
+```
+`surfaces:` regex: entry (the alternative to pattern:) in a match spec
+
+> &#128679; **Planned (C-0009 / D-0011)** — the proposed declarative syntax, not yet shipped. Compiles to the engine's existing rule / docRule machinery.
+
+**DECLARATIVE-YAML-17 — Tune the match: normalize and ignoreCase** · _builds on DECLARATIVE-YAML-14_  &#128679; PLANNED  
+_normalize folds whitespace (tolerating prose line-wrapping) and ignoreCase makes the match case-insensitive._
+
+```yaml
+body:
+  requires:
+    - pattern: "sdlc task close-commit"
+      normalize: true     # collapse whitespace runs; tolerate line-wrapping (default)
+      ignoreCase: true    # case-insensitive (default false)
+```
+`surfaces:` normalize (default true) and ignoreCase (default false) on a match spec
+
+> &#128679; **Planned (C-0009 / D-0011)** — the proposed declarative syntax, not yet shipped. Compiles to the engine's existing rule / docRule machinery.
+
+**DECLARATIVE-YAML-18 — Bound occurrences with min / max** · _builds on DECLARATIVE-YAML-15_  &#128679; PLANNED  
+_min and max constrain how many times a phrase may occur; max: 0 is the in-section forbids dual._
+
+```yaml
+body:
+  sections:
+    - section: Output contract
+      requires:
+        - pattern: "DONE pr="
+          min: 1            # present at least once (the default)
+        - pattern: "WARNING"
+          max: 0            # must NOT appear in this section (forbids dual)
+```
+`surfaces:` min/max occurrence count; forbids == requires{max:0}; text/count finding
+
+> &#128679; **Planned (C-0009 / D-0011)** — the proposed declarative syntax, not yet shipped. Compiles to the engine's existing rule / docRule machinery.
+
+**DECLARATIVE-YAML-19 — Annotate and downgrade: note + level** · _builds on DECLARATIVE-YAML-15_  &#128679; PLANNED  
+_Each entry can carry an author note (appended to the message) and a level to warn instead of error._
+
+```yaml
+body:
+  forbids:
+    - pattern: "TODO"
+      level: warn          # downgrade from the default error
+      note: "ship without TODOs (warning only)"
+```
+`surfaces:` per-entry level (error\|warn) and note appended to the finding message
+
+> &#128679; **Planned (C-0009 / D-0011)** — the proposed declarative syntax, not yet shipped. Compiles to the engine's existing rule / docRule machinery.
+
+**DECLARATIVE-YAML-20 — Retire an invariants list across both scopes** · _builds on DECLARATIVE-YAML-18_  &#128679; PLANNED  
+_Independent entries on the body root (whole-doc) and on a section node together replace an invariants.yaml linter._
+
+```yaml
+mcVersion: 1
+kind: contract
+body:
+  forbids:
+    - { pattern: "}validators/", normalize: false }    # forbidden_phrases
+  requires:
+    - { pattern: "conventions/commit-messages.md" }    # required tool-ref, anywhere
+  sections:
+    - section: Output contract
+      requires:
+        - { pattern: "ALREADY-CLOSED" }                # required phrase, this section
+        - { pattern: "STALE-PR pr=" }
+```
+`surfaces:` multiple independent entries across two scopes (section subtree + whole doc); 1:1 map from invariants.yaml
+
+> &#128679; **Planned (C-0009 / D-0011)** — the proposed declarative syntax, not yet shipped. Compiles to the engine's existing rule / docRule machinery.
+
 
 ### 4. Authoring Contracts in Code: Structure, Content, and Custom Rules — `validation-planes`
 
@@ -757,6 +896,7 @@ The programmatic API as the engine that powers all three validation planes from 
 | 14 | **VALIDATION-PLANES-14** A custom node rule with its own level | rule(id, fn) attached via SectionOpts.rules runs on its bound section node and mints a finding at a level it chooses. | yes | &#10003; covered — tests/fixtures/validation/17-node-level-custom-rule.ts, tests/fixtures/validation/17a-node-rule-violation-with-pos.ts |
 | 15 | **VALIDATION-PLANES-15** A cross-cutting docRule over the whole doc | docRule(id, fn) sees the typed Doc (frontmatter and body together) to enforce relationships no single plane can. | yes | &#10003; covered — tests/fixtures/validation/16-cross-plane-docrule.ts, tests/fixtures/validation/16a-docrule-violation.ts, src/core/validate.test.ts |
 | 16 | **VALIDATION-PLANES-16** All three planes in one deterministic order | One validate() merges frontmatter, structure, content, and rule findings and sorts them by line, then col, then plane. | yes | &#10003; covered — src/core/validate.test.ts, tests/fixtures/validation/08a-both-planes-fail-merged.ts |
+| 17 | **VALIDATION-PLANES-17** The same checks in code (TS-API parity) | Library predicate builders give a combinator-authored contract the same text checks the YAML compiles to. | on impl | &#128679; planned — C-0009 / D-0011 · seed `tests/fixtures/validation/17-node-level-custom-rule.ts` |
 
 **Sketches**
 
@@ -995,6 +1135,24 @@ const { findings } = c.validate(src, { path: "doc.md" });
 //   { id: "content/max-words",       pos: { line: 9 } } ]
 ```
 `surfaces:` Contract.validate(); ValidationResult.findings; deterministic line→col→plane sort
+
+**VALIDATION-PLANES-17 — The same checks in code (TS-API parity)** · _builds on VALIDATION-PLANES-16_  &#128679; PLANNED  
+_Library predicate builders give a combinator-authored contract the same text checks the YAML compiles to._
+
+```ts
+import { contract, sections, section, requires, forbids } from "markdown-contract";
+// (planned) predicate builders — the same checks the requires:/forbids: YAML compiles to
+const c = contract({
+  body: sections({}, [
+    section("Output contract", { rules: [requires([{ pattern: "DONE pr=" }])] }),
+  ]),
+  rules: [forbids([{ pattern: "}scripts/", normalize: false }])],   // document-level
+});
+// same text/requires + text/forbids findings as the YAML form
+```
+`surfaces:` TS-API parity: library-supplied requires()/forbids()/textRule() builders compiling to rule/docRule (exact API named at implementation)
+
+> &#128679; **Planned (C-0009 / D-0011)** — the proposed declarative syntax, not yet shipped. Compiles to the engine's existing rule / docRule machinery. Seed (hand-written): `tests/fixtures/validation/17-node-level-custom-rule.ts`.
 
 
 ### 5. Consume as Typed Data: Reading the Document as a Model — `consume-as-data`
@@ -1552,6 +1710,7 @@ The capstone where every surface converges on real documents. The applied half t
 | 13 | **REAL-WORLD-SCHEMAS-13** Referential graph: membership and supersession | docRules asserting a milestone's members all exist and no entity references a superseded id. | maybe · add &rarr; [[B-DRAG-docrule-runcorpus-aggregation]] | &#9680; partial — tests/fixtures/validation/16-cross-plane-docrule.ts, src/core/finding.test.ts, src/cli/format.test.ts |
 | 14 | **REAL-WORLD-SCHEMAS-14** Scaffold and drift-check a corpus with init | Inferring a tight contract from existing docs and re-checking the tree for drift. | yes | &#10003; covered — tests/inference.cli.test.ts |
 | 15 | **REAL-WORLD-SCHEMAS-15** Validate the self-hosted SDLC corpus end to end | Running the whole planning tree against its per-type contracts via an auto-discovered config. | yes | &#10003; covered — src/cli/index.test.ts, tests/inference.cli.test.ts |
+| 16 | **REAL-WORLD-SCHEMAS-16** Retire an SDLC invariants.yaml prose linter onto a contract | The SDLC plugin's required/forbidden-phrase, required-section and tool-ref linter becomes one declarative contract. | on impl | &#128679; planned — C-0009 / D-0011 |
 
 **Sketches**
 
@@ -1787,6 +1946,28 @@ markdown-contract validate docs/planning --format sarif > findings.sarif
 ```
 `surfaces:` CLI validate over a tree; auto-discovered markdown-contract.yaml; --format sarif; the full structure + content + rules planes from one parse
 
+**REAL-WORLD-SCHEMAS-16 — Retire an SDLC invariants.yaml prose linter onto a contract** · _builds on REAL-WORLD-SCHEMAS-15_  &#128679; PLANNED  
+_The SDLC plugin's required/forbidden-phrase, required-section and tool-ref linter becomes one declarative contract._
+
+```yaml
+# invariants.yaml (a bespoke SKILL.md linter)  ->  skill.contract.yaml
+mcVersion: 1
+kind: contract
+body:
+  forbids:
+    - { pattern: "}scripts/", normalize: false }     # forbidden_phrases
+  requires:
+    - { pattern: "sdlc task close-commit" }          # required_tool_refs (anywhere)
+  sections:
+    - section: Output contract
+      requires:
+        - { pattern: "DONE pr=" }                    # required_phrases (section-scoped)
+    - section: Notes                                 # required_h2_sections
+```
+`surfaces:` the SDLC invariants.yaml linter retired onto contracts (DR-0005): required/forbidden phrases + required sections + tool-refs as one declarative contract
+
+> &#128679; **Planned (C-0009 / D-0011)** — the proposed declarative syntax, not yet shipped. Compiles to the engine's existing rule / docRule machinery.
+
 
 ### Test-coverage review and recommended tests
 
@@ -1815,6 +1996,8 @@ Cross-referenced all **99** examples against the fixture corpus (`tests/fixtures
 - `CLI-02`, `CLI-03` use `structure/missing-section`; the real id is `structure/section-missing`.
 - `CLI-05`, `CLI-06` use `content/enum` / `structure/unknown-section`; the real ids are `frontmatter/enum` / `frontmatter/unknown-key`.
 - `INFERENCE-INIT-05` (`--infer-bounds`): the flag is parsed but **not yet read** in `src/declarative/infer.ts` (min/max/pattern inference is a future phase) — document it as a no-op / planned, not as working behavior.
+
+**Planned features (C-0009 / D-0011).** 9 examples are marked &#128679; *planned* (declarative text constraints — in the Declarative-YAML, in-code, and real-world-schema categories) and are **excluded from the counts above**. Each compiles to the engine's existing `rule` / `docRule` machinery, with `tests/fixtures/validation/17-node-level-custom-rule.ts` as the hand-written seed; when the feature lands ([[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]]) these examples become its fixtures.
 
 ## Out of scope
 
@@ -1863,5 +2046,9 @@ Cross-referenced all **99** examples against the fixture corpus (`tests/fixtures
   [[T-SITE-bootstrap-docs-website]], [[B-DRAG-docrule-runcorpus-aggregation]],
   [[B-DREF-dialect-referential-integrity]], [[B-DANF-dialect-anchor-fragment-edges]],
   [[B-IOUT-init-out-placement]].
+- [[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]] — the
+  upcoming `requires` / `forbids` text-constraint vocabulary (PR #50), previewed here as
+  &#128679; planned examples.
 - Catalog generated by a 22-agent workflow on 2026-06-28 (4 proposal lenses → synthesis →
-  8 category fills → 8 coverage reviews → gap consolidation).
+  8 category fills → 8 coverage reviews → gap consolidation); planned text-constraint
+  examples added from PR #50.
