@@ -18,6 +18,7 @@ need_human_review: true
 impact: high
 complexity: medium
 autonomy: supervised
+readiness_verified_at: '2026-06-28T22:07:54Z'
 ---
 # Text-constraint fixture scaffold + the `text-*` enable gates
 
