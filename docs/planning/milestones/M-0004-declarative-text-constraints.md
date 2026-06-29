@@ -20,6 +20,7 @@ contains:
   - '[[T-TXAP-text-predicate-builders]]'
   - '[[T-TXYL-declarative-requires-forbids]]'
   - '[[T-TXFX-text-constraint-fixtures]]'
+  - '[[T-VITE-upgrade-vitest]]'
 tags:
   - yaml
   - declarative
