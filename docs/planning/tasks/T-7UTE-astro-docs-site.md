@@ -2,10 +2,13 @@
 type: task
 schema_version: '5'
 id: T-7UTE
-status: planning/draft
+status: open/ready
 created: '2026-06-28'
 related:
 - '[[M-0006-documentation-site]]'
+- '[[M-0005-monorepo-tooling]]'
+depends_on:
+- '[[T-WKSP-bun-workspace-split]]'
 tags:
 - docs
 - tooling
@@ -16,6 +19,7 @@ complexity: large
 # Stand up an Astro + Starlight documentation site for markdown-contract (overview, contract format, CLI, and typed-consumption API)
 
 > ASSUMPTIONS (extrapolated by sub-agent — review carefully):
+> - **SCOPE UPDATE (M-0006 readiness):** build the site as a **moon `apps/docs` project** in the Bun workspace (depends on [[T-WKSP-bun-workspace-split]]), with the Bun toolchain via moon — per [[D-0010-monorepo-tooling]] and M-0006's "builds as a moon project" success criterion. This **supersedes** the standalone-`website/` / npm / "not a root workspace" assumptions and AC-9 below; align the project directory (`apps/docs`), scaffolding, and CI to moon + Bun at implementation. GitHub Pages remains the deploy target.
 > - **Framework: Astro + Starlight** (Astro's official docs framework) rather than plain Astro — it ships sidebar nav, search, and the docs content-collection out of the box, so the work is content authoring, not chrome building.
 > - **Site directory: `website/`** (a new top-level dir), chosen over `docs/` because `docs/` already holds this repo's self-hosted SDLC planning corpus (`docs/planning/`), and over `docs-site/` for brevity. `website/` reads unambiguously as "the published site" next to the planning `docs/`.
 > - **Standalone sibling package, not a root workspace** — `website/` carries its own manifest / lockfile and is never added to the root package's workspaces, keeping the published library (`files: ["dist"]`) and its dependency tree free of the Astro toolchain.

@@ -13,33 +13,8 @@
  * it (scope-text resolution, `text/*` finding synthesis, per-entry id, `requires`/`forbids`
  * purity enforcement) land in T-TXAP, which flips `IMPLEMENTED["text-api"]` to `true`.
  */
-import type { DocRule, FindingLevel, Rule } from "./types.js";
-
-/**
- * One required / forbidden text-match entry — a closed match-spec vocabulary (D-0011 § The
- * match spec). Exactly one of `pattern` (a literal substring) or `regex` (a regular-expression
- * source) is supplied; the remaining keys tune matching and the emitted finding.
- */
-export interface TextMatchSpec {
-  /** the literal substring to find (one of `pattern` / `regex`). */
-  pattern?: string;
-  /** a regular-expression source to find (alternative to `pattern`). */
-  regex?: string;
-  /** collapse whitespace runs before matching, so prose line-wrapping is tolerated. Default `true`. */
-  normalize?: boolean;
-  /** case-insensitive match. Default `false`. */
-  ignoreCase?: boolean;
-  /** minimum occurrences (`requires` only; must be ≥ 1). Default `1`. */
-  min?: number;
-  /** maximum occurrences; must be ≥ `min` (a `requires` entry may not set `max: 0` — use `forbids`). */
-  max?: number;
-  /** explicit stable finding id; pins identity across pattern edits. Synthesized from scope + pattern when omitted. */
-  id?: string;
-  /** author rationale, appended to the finding message. */
-  note?: string;
-  /** finding severity. Default `error`. */
-  level?: Extract<FindingLevel, "error" | "warn">;
-}
+import type { DocRule, Rule } from "./types.js";
+import type { TextMatchSpec } from "./text-match.js";
 
 /**
  * The document-scoped options for `textRule(...)` — `requires` / `forbids` lists, each a set of

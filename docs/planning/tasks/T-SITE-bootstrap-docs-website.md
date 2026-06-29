@@ -11,6 +11,7 @@ related:
 - '[[D-0012-distribution-single-exec-and-web-ui]]'
 depends_on:
 - '[[T-MOON-adopt-moon-monorepo]]'
+- '[[T-7UTE-astro-docs-site]]'
 tags:
 - docs
 - website
@@ -22,7 +23,12 @@ impact: high
 complexity: large
 autonomy: supervised
 ---
-# Bootstrap the marketing + docs website from the example catalog
+# Generate & publish the example catalog pages into the docs site
+
+> SCOPE UPDATE (M-0007 readiness): M-0006 / [[T-7UTE-astro-docs-site]] stands up the Astro
+> site **shell**; this task (M-0007) **generates and publishes the example catalog content**
+> as pages **into that shell**. Where the body below describes standing up the site /
+> `apps/docs`, read it as contributing the example pages to the T-7UTE site. Depends on T-7UTE.
 
 ## Goal
 

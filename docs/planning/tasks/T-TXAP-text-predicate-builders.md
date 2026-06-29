@@ -1,25 +1,29 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-TXAP
-status: open/ready
-created: '2026-06-28'
+status: in-progress
+created: 2026-06-28
 related:
-- '[[M-0004-declarative-text-constraints]]'
-- '[[D-0011-declarative-text-constraints]]'
-- '[[C-0009-declarative-text-constraints]]'
-- '[[C-0005-two-plane-contract-engine]]'
+  - "[[M-0004-declarative-text-constraints]]"
+  - "[[D-0011-declarative-text-constraints]]"
+  - "[[C-0009-declarative-text-constraints]]"
+  - "[[C-0005-two-plane-contract-engine]]"
 depends_on:
-- '[[T-TXMC-text-match-core]]'
-- '[[T-TXSC-text-constraint-fixture-scaffold]]'
+  - "[[T-TXMC-text-match-core]]"
+  - "[[T-TXSC-text-constraint-fixture-scaffold]]"
 tags:
-- text-match
-- combinators
-- core-api
+  - text-match
+  - combinators
+  - core-api
 need_human_review: true
 impact: high
 complexity: medium
 autonomy: supervised
+readiness_verified_at: 2026-06-28T23:50:17Z
+last_reviewed: 2026-06-28
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/71
 ---
 # TS-API predicate builders — `requires` / `forbids` / `textRule`
 
@@ -78,3 +82,19 @@ Give combinator authors a first-class way to attach required / forbidden phrase 
 ## Dependencies
 
 - Hard: needs the matcher, finding area, and id synthesis from `[[T-TXMC-text-match-core]]`.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-28. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._

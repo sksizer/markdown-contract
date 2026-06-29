@@ -15,6 +15,7 @@ contains:
   - '[[T-MOON-adopt-moon-monorepo]]'
   - '[[T-WKSP-bun-workspace-split]]'
   - '[[T-AE0J-moon-build-system]]'
+  - '[[T-U6W3-document-moon-npm-script-wrapping]]'
 tags:
   - monorepo
   - tooling

@@ -2,7 +2,7 @@
 type: milestone
 schema_version: '1'
 id: M-0004
-status: open/planned
+status: open/active
 title: Declarative text constraints — requires / forbids
 created: '2026-06-28'
 related:
@@ -20,6 +20,9 @@ contains:
   - '[[T-TXAP-text-predicate-builders]]'
   - '[[T-TXYL-declarative-requires-forbids]]'
   - '[[T-TXFX-text-constraint-fixtures]]'
+  - '[[T-5LHY-docrule-receives-projected-tree]]'
+  - '[[T-4E9T-yaml-parity-glob-skips-peerless-fixtures]]'
+  - '[[T-VITE-upgrade-vitest]]'
 tags:
   - yaml
   - declarative
