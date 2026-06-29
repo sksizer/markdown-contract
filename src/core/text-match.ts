@@ -51,8 +51,8 @@ export interface TextMatchSpec {
   id?: string;
   /** author rationale, appended to the finding message */
   note?: string;
-  /** finding severity — overrides the registry default */
-  level?: FindingLevel;
+  /** finding severity — overrides the registry default (D-0011: `error` | `warn`) */
+  level?: Extract<FindingLevel, "error" | "warn">;
 }
 
 /** The result of {@link matchText} — the occurrence count and each hit's source position. */
