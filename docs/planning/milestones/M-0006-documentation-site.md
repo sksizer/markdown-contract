@@ -43,3 +43,9 @@ A live, published docs site — the public face of the project — building from
 - An Astro docs site builds as a moon project in the monorepo and is published to a public URL.
 - The site renders the core docs (what it is, install, CLI usage) and is wired for catalog content to land into.
 - Build/deploy runs in CI via moon.
+
+## Notes
+
+- **Builds as a moon `apps/docs` project** (not a standalone site) — its task [[T-7UTE-astro-docs-site]] is aligned to this and depends on the workspace split [[T-WKSP-bun-workspace-split]].
+- **Publishing is currently blocked on GitHub Actions billing** — the site can be built locally / in-PR, but the GitHub Pages deploy won't run until that clears.
+- **Example content is M-0007's job** — this milestone delivers the site *shell*; creating and publishing the example catalog onto it is [[M-0007-example-use-case-catalog]] (T-SITE).
