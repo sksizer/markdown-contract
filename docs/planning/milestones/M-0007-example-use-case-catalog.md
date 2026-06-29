@@ -8,6 +8,10 @@ created: '2026-06-28'
 tasks:
   - '[[T-ROUT-runcorpus-first-match-routing]]'
   - '[[T-SITE-bootstrap-docs-website]]'
+  - '[[T-DRAG-docrule-runcorpus-aggregation]]'
+  - '[[T-DREF-dialect-referential-integrity]]'
+  - '[[T-DANF-dialect-anchor-fragment-edges]]'
+  - '[[T-IOUT-init-out-placement]]'
 tags:
   - docs
   - examples
@@ -19,14 +23,10 @@ related:
   - '[[D-0010-monorepo-tooling]]'
   - '[[D-0012-distribution-single-exec-and-web-ui]]'
   - '[[T-9XB3-test-harness-and-fixtures]]'
-  - '[[B-DRAG-docrule-runcorpus-aggregation]]'
-  - '[[B-DREF-dialect-referential-integrity]]'
-  - '[[B-DANF-dialect-anchor-fragment-edges]]'
-  - '[[B-IOUT-init-out-placement]]'
   - '[[C-0009-declarative-text-constraints]]'
   - '[[D-0011-declarative-text-constraints]]'
 contains: []
-need_human_review: true
+need_human_review: false
 ---
 
 # Example use-case catalog — the categorized basis for the docs and marketing site
@@ -131,7 +131,7 @@ top-to-bottom, each step adding exactly one idea.
 - [x] Follow-up entities exist for the genuine test gaps and the site build, linked from
   the catalog.
 - [x] This milestone validates against `contracts/milestones.contract.yaml`.
-- [ ] Human review of the chosen axis, the category boundaries, and the follow-up split.
+- [x] Human review of the chosen axis, the category boundaries, and the follow-up split (done 2026-06-28).
 
 ## Deliverables
 
@@ -384,7 +384,7 @@ The init surface, still zero-TypeScript: point it at markdown you already have a
 | 5 | **INFERENCE-INIT-05** Tighten with --infer-bounds | --infer-bounds opts the value ladder into pattern/min/max inference for an even tighter generated schema. | maybe | &#10007; none |
 | 6 | **INFERENCE-INIT-06** Move the cut with --depth | --depth N groups contracts at exactly N directories deep, warning about files stranded above a depth-2+ cut. | yes | &#10003; covered — src/declarative/infer.test.ts, tests/fixtures/infer/08-tree-depth2/fixture.ts, tests/fixtures/infer/10-stranded-depth/fixture.ts |
 | 7 | **INFERENCE-INIT-07** Loosen the floor with --relax | --relax generates a permissive contract — order: none, allowUnknown: true, non-strict frontmatter, no enums — for evolving corpora. | yes | &#10003; covered — src/declarative/infer.test.ts, tests/fixtures/infer/11-relax/fixture.ts |
-| 8 | **INFERENCE-INIT-08** Inline vs split, and place with --out/--force | --inline collapses the meta-config to one self-contained file, while --out and --force control where it lands and whether it overwrites. | yes · add &rarr; [[B-IOUT-init-out-placement]] | &#9680; partial — tests/inference.cli.test.ts, src/declarative/infer.test.ts |
+| 8 | **INFERENCE-INIT-08** Inline vs split, and place with --out/--force | --inline collapses the meta-config to one self-contained file, while --out and --force control where it lands and whether it overwrites. | yes · add &rarr; [[T-IOUT-init-out-placement]] | &#9680; partial — tests/inference.cli.test.ts, src/declarative/infer.test.ts |
 | 9 | **INFERENCE-INIT-09** Guard the tree with --check | --check skips inference and verifies the existing scaffold still accepts the tree, exiting 0 when clean — a drift detector for CI. | yes | &#10003; covered — tests/inference.cli.test.ts |
 | 10 | **INFERENCE-INIT-10** Catch drift after a document changes | Mutating a doc so it stops conforming makes the same --check fail with exit 1, closing the scaffold-to-guardrail loop. | yes | &#10003; covered — tests/inference.cli.test.ts |
 
@@ -1358,16 +1358,16 @@ The dialect layered on GitHub-flavored markdown, recognized during the single pa
 | # | Example | Demonstrates | Needs test | Matches existing test? |
 |---|---------|--------------|------------|------------------------|
 | 1 | **DIALECT-01** Anchor a block, resolve it with byAnchor | A caret block-id (^id) terminating a block binds it for doc.byAnchor lookup. | yes | &#10003; covered — tests/fixtures/consumption/07-byanchor-declared-vs-dynamic.ts, src/core/model.test.ts |
-| 2 | **DIALECT-02** Anchor a section, read it from .anchors | A standalone ^id under a heading binds at section level and surfaces via SectionView.anchors (not byAnchor). | yes · add &rarr; [[B-DANF-dialect-anchor-fragment-edges]] | &#9680; partial — src/core/model.test.ts, src/core/projection.test.ts, tests/fixtures/consumption/04-sectionview-content.ts |
+| 2 | **DIALECT-02** Anchor a section, read it from .anchors | A standalone ^id under a heading binds at section level and surfaces via SectionView.anchors (not byAnchor). | yes · add &rarr; [[T-DANF-dialect-anchor-fragment-edges]] | &#9680; partial — src/core/model.test.ts, src/core/projection.test.ts, tests/fixtures/consumption/04-sectionview-content.ts |
 | 3 | **DIALECT-03** Extract a bare wikilink | extractVaultRefs recognizes a bare [[page]] and returns its target. | yes | &#10003; covered — src/core/dialect/wikilinks.test.ts |
 | 4 | **DIALECT-04** Read a wikilink alias | A [[page\|alias]] splits into target plus the display alias. | yes | &#10003; covered — src/core/dialect/wikilinks.test.ts |
-| 5 | **DIALECT-05** Read heading and anchor fragments | A #heading or #^anchor fragment is parsed out as VaultRef.fragment. | yes · add &rarr; [[B-DANF-dialect-anchor-fragment-edges]] | &#9680; partial — src/core/dialect/wikilinks.test.ts, src/core/projection.test.ts |
+| 5 | **DIALECT-05** Read heading and anchor fragments | A #heading or #^anchor fragment is parsed out as VaultRef.fragment. | yes · add &rarr; [[T-DANF-dialect-anchor-fragment-edges]] | &#9680; partial — src/core/dialect/wikilinks.test.ts, src/core/projection.test.ts |
 | 6 | **DIALECT-06** Recognize a transclusion | ![[page]] is recognized as a transclusion via VaultRef.kind. | yes | &#10003; covered — src/core/dialect/wikilinks.test.ts |
 | 7 | **DIALECT-07** Harvest every reference in a document | extractVaultRefs over a document's text returns every wikilink and transclusion in order. | yes | &#10003; covered — src/core/dialect/wikilinks.test.ts, src/core/projection.test.ts |
 | 8 | **DIALECT-08** Build a vault reference inventory | Running extractVaultRefs across a directory yields a from→to link edge list for the whole vault. | no | &#10007; none — src/core/dialect/wikilinks.test.ts |
 | 9 | **DIALECT-09** Require an anchor with a contract | A declared section anchor emits structure/anchor-missing when no matching ^id resolves. | yes | &#10003; covered — tests/fixtures/validation/09b-anchor-missing.ts, tests/fixtures/validation/09b-anchor-missing.contract.yaml |
-| 10 | **DIALECT-10** Flag a dead anchor with a docRule | A docRule pairs extractVaultRefs with byAnchor to flag a #^anchor fragment that resolves nowhere in the same doc. | yes · add &rarr; [[B-DREF-dialect-referential-integrity]] | &#10007; none |
-| 11 | **DIALECT-11** Validate every wikilink across a vault | A cross-document docRule checks each wikilink target against the vault's page set under runCorpus. | yes · add &rarr; [[B-DREF-dialect-referential-integrity]] | &#10007; none |
+| 10 | **DIALECT-10** Flag a dead anchor with a docRule | A docRule pairs extractVaultRefs with byAnchor to flag a #^anchor fragment that resolves nowhere in the same doc. | yes · add &rarr; [[T-DREF-dialect-referential-integrity]] | &#10007; none |
+| 11 | **DIALECT-11** Validate every wikilink across a vault | A cross-document docRule checks each wikilink target against the vault's page set under runCorpus. | yes · add &rarr; [[T-DREF-dialect-referential-integrity]] | &#10007; none |
 
 **Sketches**
 
@@ -1707,8 +1707,8 @@ The capstone where every surface converges on real documents. The applied half t
 | 9 | **REAL-WORLD-SCHEMAS-09** Prompt-library card for AI agents | A prompt card pinning a model enum and a fenced code block holding the system prompt. | yes | &#10003; covered — tests/fixtures/validation/13-code-leaf-lang.ts, tests/fixtures/validation/13a-code-wrong-lang.ts, src/declarative/schema.test.ts |
 | 10 | **REAL-WORLD-SCHEMAS-10** Corpus config: route two types, first match wins | A meta-config mapping path globs to per-type contracts so a tree validates against the right contract. | yes | &#10003; covered — src/declarative/config.test.ts, src/cli/index.test.ts, tests/fixtures/corpus/markdown-contract.config.mjs |
 | 11 | **REAL-WORLD-SCHEMAS-11** Frontmatter governance across the whole tree | A catch-all rule with an exclude that enforces a baseline contract on every remaining document. | yes · add &rarr; [[T-ROUT-runcorpus-first-match-routing]] | &#10007; none — src/declarative/config.test.ts |
-| 12 | **REAL-WORLD-SCHEMAS-12** First cross-document check: dangling depends_on | A docRule that flags a task whose depends_on names an id no task defines. | yes · add &rarr; [[B-DRAG-docrule-runcorpus-aggregation]] | &#9680; partial — tests/fixtures/validation/16-cross-plane-docrule.ts, src/cli/index.test.ts |
-| 13 | **REAL-WORLD-SCHEMAS-13** Referential graph: membership and supersession | docRules asserting a milestone's members all exist and no entity references a superseded id. | maybe · add &rarr; [[B-DRAG-docrule-runcorpus-aggregation]] | &#9680; partial — tests/fixtures/validation/16-cross-plane-docrule.ts, src/core/finding.test.ts, src/cli/format.test.ts |
+| 12 | **REAL-WORLD-SCHEMAS-12** First cross-document check: dangling depends_on | A docRule that flags a task whose depends_on names an id no task defines. | yes · add &rarr; [[T-DRAG-docrule-runcorpus-aggregation]] | &#9680; partial — tests/fixtures/validation/16-cross-plane-docrule.ts, src/cli/index.test.ts |
+| 13 | **REAL-WORLD-SCHEMAS-13** Referential graph: membership and supersession | docRules asserting a milestone's members all exist and no entity references a superseded id. | maybe · add &rarr; [[T-DRAG-docrule-runcorpus-aggregation]] | &#9680; partial — tests/fixtures/validation/16-cross-plane-docrule.ts, src/core/finding.test.ts, src/cli/format.test.ts |
 | 14 | **REAL-WORLD-SCHEMAS-14** Scaffold and drift-check a corpus with init | Inferring a tight contract from existing docs and re-checking the tree for drift. | yes | &#10003; covered — tests/inference.cli.test.ts |
 | 15 | **REAL-WORLD-SCHEMAS-15** Validate the self-hosted SDLC corpus end to end | Running the whole planning tree against its per-type contracts via an auto-discovered config. | yes | &#10003; covered — src/cli/index.test.ts, tests/inference.cli.test.ts |
 | 16 | **REAL-WORLD-SCHEMAS-16** Retire an SDLC invariants.yaml prose linter onto a contract | The SDLC plugin's required/forbidden-phrase, required-section and tool-ref linter becomes one declarative contract. | on impl | &#128679; planned — C-0009 / D-0011 |
@@ -1987,10 +1987,10 @@ Cross-referenced all **99** examples against the fixture corpus (`tests/fixtures
 | Follow-up | Kind | Priority | Covers | What it pins |
 |-----------|------|----------|--------|--------------|
 | [[T-ROUT-runcorpus-first-match-routing]] | task | high | DECLARATIVE-YAML-11, EMBED-AND-CI-03, REAL-WORLD-SCHEMAS-11 | Pin first-match-wins rule precedence and per-rule exclude in runCorpus |
-| [[B-DRAG-docrule-runcorpus-aggregation]] | backlog | medium | REAL-WORLD-SCHEMAS-12, REAL-WORLD-SCHEMAS-13 | Aggregate docRule findings through runCorpus into exitCode (multi-rule, mixed levels) |
-| [[B-DREF-dialect-referential-integrity]] | backlog | medium | DIALECT-10, DIALECT-11 | Dialect referential-integrity docRules: dead in-doc anchors and dangling vault wikilinks |
-| [[B-DANF-dialect-anchor-fragment-edges]] | backlog | low | DIALECT-02, DIALECT-05 | Dialect edge cases: section-id byAnchor negative and #^anchor fragment value |
-| [[B-IOUT-init-out-placement]] | backlog | low | INFERENCE-INIT-08 | init --out placement of the written scaffold |
+| [[T-DRAG-docrule-runcorpus-aggregation]] | task | medium | REAL-WORLD-SCHEMAS-12, REAL-WORLD-SCHEMAS-13 | Aggregate docRule findings through runCorpus into exitCode (multi-rule, mixed levels) |
+| [[T-DREF-dialect-referential-integrity]] | task | medium | DIALECT-10, DIALECT-11 | Dialect referential-integrity docRules: dead in-doc anchors and dangling vault wikilinks |
+| [[T-DANF-dialect-anchor-fragment-edges]] | task | low | DIALECT-02, DIALECT-05 | Dialect edge cases: section-id byAnchor negative and #^anchor fragment value |
+| [[T-IOUT-init-out-placement]] | task | low | INFERENCE-INIT-08 | init --out placement of the written scaffold |
 
 **Corrections to apply before the snippets ship** (flagged by the reviewer; tracked in [[T-SITE-bootstrap-docs-website]]):
 
@@ -2004,9 +2004,9 @@ Cross-referenced all **99** examples against the fixture corpus (`tests/fixtures
 
 - **Building the website.** Tracked by [[T-SITE-bootstrap-docs-website]].
 - **Writing the recommended tests.** Tracked by [[T-ROUT-runcorpus-first-match-routing]]
-  and the backlog notes ([[B-DRAG-docrule-runcorpus-aggregation]],
-  [[B-DREF-dialect-referential-integrity]], [[B-DANF-dialect-anchor-fragment-edges]],
-  [[B-IOUT-init-out-placement]]).
+  and the follow-up tasks ([[T-DRAG-docrule-runcorpus-aggregation]],
+  [[T-DREF-dialect-referential-integrity]], [[T-DANF-dialect-anchor-fragment-edges]],
+  [[T-IOUT-init-out-placement]]).
 - **The `daemon` / local web-UI surface** ([[D-0012-distribution-single-exec-and-web-ui]]) —
   proposed, not shipped; it earns its own examples once built.
 - **The moon adoption / workspace split itself** — [[T-MOON-adopt-moon-monorepo]] and
@@ -2048,9 +2048,9 @@ Cross-referenced all **99** examples against the fixture corpus (`tests/fixtures
 - [[D-0010-monorepo-tooling]] — the moon workspace / monorepo-tooling decision.
 - [[T-MOON-adopt-moon-monorepo]] — adopting moon as the task runner / toolchain manager.
 - Follow-ups: [[T-ROUT-runcorpus-first-match-routing]],
-  [[T-SITE-bootstrap-docs-website]], [[B-DRAG-docrule-runcorpus-aggregation]],
-  [[B-DREF-dialect-referential-integrity]], [[B-DANF-dialect-anchor-fragment-edges]],
-  [[B-IOUT-init-out-placement]].
+  [[T-SITE-bootstrap-docs-website]], [[T-DRAG-docrule-runcorpus-aggregation]],
+  [[T-DREF-dialect-referential-integrity]], [[T-DANF-dialect-anchor-fragment-edges]],
+  [[T-IOUT-init-out-placement]].
 - [[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]] — the
   upcoming `requires` / `forbids` text-constraint vocabulary (PR #50), previewed here as
   &#128679; planned examples.
