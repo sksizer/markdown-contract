@@ -2,8 +2,9 @@
 type: task
 schema_version: '5'
 id: T-AE0J
-status: planning/draft
+status: closed/superseded
 created: '2026-06-28'
+completion_note: 'Superseded by T-MOON, which adopted moon the Bun way per D-0010 (pinned Bun 1.3.14 / Node 20.20.2; cached build/typecheck/test/lint-docs tasks; CI via moon; shipped #61). T-AE0J was a parallel sub-agent draft assuming a Node 20 + npm + package-lock toolchain — the opposite of D-0010 (D1/D2 pin Bun) — so its toolchain approach is not wanted; the published library stays npm/Node-compatible via packages/core''s tsc publish flow regardless. The remaining packages/core + apps/web workspace split is carried by T-WKSP. No code from this task was used.'
 related:
 - '[[M-0005-monorepo-tooling]]'
 tags:

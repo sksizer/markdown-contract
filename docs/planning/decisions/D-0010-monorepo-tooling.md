@@ -2,7 +2,7 @@
 type: decision
 schema_version: '1'
 id: D-0010
-status: open/proposed
+status: open/accepted
 title: Monorepo tooling — a Bun workspace orchestrated by moon
 created: '2026-06-28'
 related:
