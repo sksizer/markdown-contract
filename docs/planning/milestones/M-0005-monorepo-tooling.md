@@ -13,6 +13,7 @@ related:
   - '[[PR-0002-markdown-contract-cli]]'
 contains:
   - '[[T-MOON-adopt-moon-monorepo]]'
+  - '[[T-U6W3-document-moon-npm-script-wrapping]]'
 tags:
   - monorepo
   - tooling
