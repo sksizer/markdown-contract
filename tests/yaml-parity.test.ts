@@ -21,14 +21,18 @@ import type { ConsumptionFixture, ValidationFixture } from "./harness.js";
  */
 const DECLARATIVE_IMPLEMENTED = true;
 
-const valMods = import.meta.glob("./fixtures/validation/*.ts", { eager: true }) as Record<
-  string,
-  { default: ValidationFixture }
->;
-const conMods = import.meta.glob("./fixtures/consumption/*.ts", { eager: true }) as Record<
-  string,
-  { default: ConsumptionFixture }
->;
+// `import.meta.glob` is a Vite/Vitest compile-time macro — it's undefined under other runners
+// (e.g. `bun test`), where evaluating it throws at module load. Vitest sets `process.env.VITEST`,
+// so the ternary short-circuits the call away under any non-Vitest runner (leaving the fixture
+// maps empty → this file registers no tests there, instead of crashing). Vite still statically
+// transforms the literal call under Vitest, where `process.env.VITEST` is truthy. Run the real
+// suite with `npm test` / `bun run test` (→ vitest run), not `bun test`.
+const valMods = (process.env.VITEST
+  ? import.meta.glob("./fixtures/validation/*.ts", { eager: true })
+  : {}) as Record<string, { default: ValidationFixture }>;
+const conMods = (process.env.VITEST
+  ? import.meta.glob("./fixtures/consumption/*.ts", { eager: true })
+  : {}) as Record<string, { default: ConsumptionFixture }>;
 
 interface Entry<T> {
   key: string;
