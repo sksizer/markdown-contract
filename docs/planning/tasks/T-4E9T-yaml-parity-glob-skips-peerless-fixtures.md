@@ -10,7 +10,7 @@ related:
 - T-TXFX-text-constraint-fixtures
 - T-VITE-upgrade-vitest
 depends_on:
-- T-VITE-upgrade-vitest
+- '[[T-VITE-upgrade-vitest]]'
 tags: []
 need_human_review: false
 impact: medium
@@ -91,23 +91,19 @@ placement then gates nothing: twin-less fixtures live beside their peers.
 
 ## Files to touch
 
-| File | Kind | Why |
-| --- | --- | --- |
+| Location | Kind | Change |
+|---|---|---|
 | `tests/yaml-parity.test.ts` | modify | recursive glob, peerless opt-out, `annotate` warning in place of the hard existence assert |
 | `tests/harness.ts` | modify | carry the `peerless` marker on the fixture type if that's where it lives |
-| `tests/fixtures/validation/text/*` | move | relocate fixtures `22`–`25` up to `tests/fixtures/validation/`, mark peerless, remove the subfolder |
+| `tests/fixtures/validation/text/` | delete | remove the glob-skipped subfolder workaround (its fixtures `22`–`25` relocate up one level) |
+| `tests/fixtures/validation/` | modify | fixtures `22`–`25` land here directly, marked `peerless` |
 
 ## Acceptance criteria
 
-- `npm run test` passes with **no fixture parked in a subfolder solely to dodge the
-  existence check**; the `tests/fixtures/validation/text/` subfolder is gone and
-  fixtures `22`–`25` live in `validation/`.
-- A non-peerless fixture missing its twin produces a CI **warning** (visible in the
-  PR checks), not a test failure.
-- A fixture explicitly marked `peerless` is accepted silently — no warning, no
-  failure.
-- The two behavioral parity `describe`s still **fail hard** on a genuine TS⇄YAML
-  mismatch (the softening is scoped to the existence check only).
+- [ ] AC-1: `npm run test` passes with no fixture parked in a subfolder solely to dodge the existence check; the `tests/fixtures/validation/text/` subfolder is gone and fixtures `22`–`25` live in `tests/fixtures/validation/`.
+- [ ] AC-2: A non-peerless fixture missing its twin produces a CI **warning** (visible in the PR checks), not a test failure.
+- [ ] AC-3: A fixture explicitly marked `peerless` is accepted silently — no warning, no failure.
+- [ ] AC-4: The two behavioral parity `describe`s still **fail hard** on a genuine TS⇄YAML mismatch (the softening is scoped to the existence check only).
 
 ## Out of scope
 

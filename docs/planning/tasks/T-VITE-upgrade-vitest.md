@@ -81,8 +81,8 @@ upgrade and confirms the API is present; it does not add any annotation usage.
 |---|---|---|
 | `package.json` | modify | `vitest` devDependency bumped `^2.1.0` → `^4.1.9`. |
 | `package-lock.json` | modify | Regenerated for the Vitest 4.x dependency tree (so `npm ci` installs 4.1.9, no stray 3.x/2.x refs). |
-| `vitest.config.ts` | none | No change required — the minimal `test.include` config is unaffected by the upgrade. |
-| `src/**/*.test.ts`, `tests/**/*.test.ts` | none | No test edits required — all 517 tests pass unchanged on 4.1.9. |
+
+(`vitest.config.ts` and the `src/**`/`tests/**` test files need **no change** — the minimal `test.include` config and all 517 tests pass unchanged on 4.1.9; they're intentionally not listed above.)
 
 ## Acceptance criteria
 
