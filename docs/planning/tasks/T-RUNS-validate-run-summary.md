@@ -14,10 +14,10 @@ tags:
 - runner
 - dx
 - reporting
-need_human_review: true
+need_human_review: false
 impact: medium
 complexity: small
-autonomy: supervised
+autonomy: autonomous/pr
 ---
 # Always print a run summary on `validate` — total files scanned, and per-contract matched counts
 

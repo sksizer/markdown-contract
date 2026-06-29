@@ -2,8 +2,9 @@
 type: task
 schema_version: '5'
 id: T-VITE
-status: open/ready
+status: closed/done
 created: '2026-06-29'
+completion_note: 'Shipped in #77: vitest 2.1.x to 4.1.9 (true latest), zero v3/v4 code changes. 517 passed / 8 skipped, typecheck and moon :test green; Node 20 still a supported floor. context.annotate(message, type) with the warning type confirmed present in 4.x, which unblocks T-4E9T.'
 related:
 - T-4E9T-yaml-parity-glob-skips-peerless-fixtures
 tags: []
