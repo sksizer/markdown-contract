@@ -8,9 +8,15 @@ created: '2026-06-28'
 related:
   - '[[D-0012-distribution-single-exec-and-web-ui]]'
   - '[[D-0010-monorepo-tooling]]'
+  - '[[M-0005-monorepo-tooling]]'
   - '[[C-0010-single-binary-and-vault-dashboard]]'
   - '[[PR-0002-markdown-contract-cli]]'
-contains: []
+contains:
+  - '[[T-BMTX-bun-compile-matrix]]'
+  - '[[T-SPAE-spa-embed-spike]]'
+  - '[[T-RELS-release-channels]]'
+  - '[[T-INST-convenience-installer]]'
+  - '[[T-UNSG-unsigned-install-notes]]'
 tags:
   - distribution
   - packaging
