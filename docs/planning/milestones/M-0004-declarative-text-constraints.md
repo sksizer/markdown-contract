@@ -22,6 +22,7 @@ contains:
   - '[[T-TXFX-text-constraint-fixtures]]'
   - '[[T-5LHY-docrule-receives-projected-tree]]'
   - '[[T-4E9T-yaml-parity-glob-skips-peerless-fixtures]]'
+  - '[[T-VITE-upgrade-vitest]]'
 tags:
   - yaml
   - declarative
