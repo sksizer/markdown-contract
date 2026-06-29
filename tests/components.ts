@@ -53,6 +53,6 @@ export const IMPLEMENTED: Record<Component, boolean> = {
   "infer-meta": true,
   "infer-cli": true,
   // Declarative text constraints (D-0011) — flip order: text-api → text-yaml.
-  "text-api": false,
+  "text-api": true,
   "text-yaml": false,
 };
