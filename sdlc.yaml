@@ -1,5 +1,6 @@
 # Per-project SDLC configuration. See plugin/conventions/sdlc-yaml.md for
 # the full shape.
+lease_authority: origin
 
 quality_checks:
   - npm run test
