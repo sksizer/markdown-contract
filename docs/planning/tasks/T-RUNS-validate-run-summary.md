@@ -31,11 +31,11 @@ A consumer who runs `validate` should always see **evidence the run happened and
 
 | Location | Role today |
 |---|---|
-| `src/runner/corpus.ts` · `runCorpus` (L111–147) | Walks every file (`walkSync`, L130), routes each to the FIRST matching rule (`rules.find`, L136–138), validates it; returns only `{ findings, exitCode }` — no scanned / matched / per-rule counts |
-| `src/runner/corpus.ts` · `CorpusConfig` rule (L25–27) | A rule is `{ include, exclude?, contract: Contract }` — it carries the compiled `Contract` OBJECT, not the contract's name, so no per-contract LABEL is recoverable inside the runner |
-| `src/declarative/config.ts` · `compileRule` / `resolveContract` (L46–91) | Resolves `rule.contract` (the name string `ref`, or a path, or inline) to a `Contract` and **discards the name** — the seam where the label is currently lost |
-| `src/cli/run.ts` · validate path (L170–190) | Builds the `CorpusConfig`, calls `runCorpus`, formats via `formatHuman` / `formatJson` / `formatSarif`; types `result` as `{ findings, exitCode }` and renders findings only — no file counts |
-| `src/cli/format.ts` · `formatHuman` (L24) | Returns `"No findings."` for an empty corpus; otherwise one line per finding plus a `N finding(s): …` count line (L43). No notion of a run summary |
+| `src/runner/corpus.ts#runCorpus` | Walks every file (L111–147) (`walkSync`, L130), routes each to the FIRST matching rule (`rules.find`, L136–138), validates it; returns only `{ findings, exitCode }` — no scanned / matched / per-rule counts |
+| `src/runner/corpus.ts#CorpusConfig` | The rule type (L25–27): a rule is `{ include, exclude?, contract: Contract }` — it carries the compiled `Contract` OBJECT, not the contract's name, so no per-contract LABEL is recoverable inside the runner |
+| `src/declarative/config.ts#compileRule` | `compileRule` / `resolveContract` (L46–91): resolves `rule.contract` (the name string `ref`, or a path, or inline) to a `Contract` and **discards the name** — the seam where the label is currently lost |
+| `src/cli/run.ts#runCli` | The validate path (L170–190): builds the `CorpusConfig`, calls `runCorpus`, formats via `formatHuman` / `formatJson` / `formatSarif`; types `result` as `{ findings, exitCode }` and renders findings only — no file counts |
+| `src/cli/format.ts#formatHuman` | `formatHuman` (L24): returns `"No findings."` for an empty corpus; otherwise one line per finding plus a `N finding(s): …` count line (L43). No notion of a run summary |
 
 Observed (the project is already built into `dist/`):
 
