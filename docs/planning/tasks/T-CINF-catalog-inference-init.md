@@ -1,27 +1,27 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-CINF
-status: in-progress
-created: 2026-06-30
+status: closed/done
+created: '2026-06-30'
 related:
-  - "[[M-0007-example-use-case-catalog]]"
-parent_key: "[[T-CTLG-example-catalog-finalize]]"
+- '[[M-0007-example-use-case-catalog]]'
+parent_key: '[[T-CTLG-example-catalog-finalize]]'
 depends_on: []
 tags:
-  - docs
-  - examples
-  - catalog
-  - inference
-  - init
+- docs
+- examples
+- catalog
+- inference
+- init
 need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-last_reviewed: 2026-06-30
-readiness_verified_at: 2026-06-30T12:51:16Z
+last_reviewed: '2026-06-30'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/107
+- https://github.com/sksizer/markdown-contract/pull/107
+completion_note: 'Shipped via #107.'
 ---
 # Finalize the Scaffold-and-Guard catalog category as verified YAML (`inference-init`)
 
