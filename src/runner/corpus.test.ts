@@ -23,6 +23,7 @@ import {
   type DocTree,
   type Finding,
 } from "../core/index.js";
+import { extractVaultRefs } from "../core/dialect/index.js";
 import { compileMatcher, runCorpus, type CorpusConfig } from "./corpus.js";
 
 /** Lay down a tiny corpus in a fresh temp dir and return its absolute root. */
@@ -235,6 +236,85 @@ describe("runCorpus — docRule findings aggregate across documents into finding
     ]);
     // No error-level finding anywhere ⇒ the exit code stays 0 despite the warns.
     expect(findings.every((f) => f.level === "warn")).toBe(true);
+    expect(exitCode).toBe(0);
+  });
+});
+
+/**
+ * Cross-document referential integrity over a vault (T-DREF / DIALECT-11): a `docRule` that pairs
+ * `extractVaultRefs` (the dialect's wikilink recognizer) with a known-page set to emit a `warn`-level
+ * finding for a wikilink whose TARGET PAGE does not exist anywhere in the vault — a dangling link.
+ *
+ * `runCorpus` validates each document independently, so there is no built-in vault-wide view; the
+ * docRule closes over the set of page stems the test itself lays down (it constructs the vault, so it
+ * knows them). This is the *documented composition* over the existing primitives — NOT first-class
+ * vault-wide validation, which T-DREF leaves out of scope. The contract, as input → output: route a
+ * vault through this rule and a link to a missing page surfaces as one `warn` finding stamped with the
+ * linking document's path, while a link to a real page surfaces nothing — and a warn never bumps the
+ * exit code off 0.
+ */
+describe("runCorpus — a cross-document docRule warns on a wikilink whose target page is missing", () => {
+  /**
+   * The vault's existing pages, by `.md` stem. The docRule closes over this set — the test builds the
+   * vault, so it knows the page names. A wikilink whose `target` is not in here is a dangling link.
+   */
+  const knownPages = new Set(["index", "exists"]);
+
+  function vaultLinkContract(): Contract {
+    return contract({
+      body: sections({ order: "recognized-relative", allowUnknown: true }, [
+        optional(section("Links")),
+      ]),
+      rules: [
+        docRule("vault/wikilink-target-exists", (doc, ctx) => {
+          const body = doc.body as {
+            section(name: string): { text(scope: "all"): string } | undefined;
+            unknown: { text(scope: "all"): string }[];
+          };
+          // The whole doc's flattened section text — the `[[target]]` tokens survive flattening.
+          const text = [
+            body.section("Links")?.text("all") ?? "",
+            ...body.unknown.map((s) => s.text("all")),
+          ].join("\n");
+
+          return extractVaultRefs(text)
+            .filter((ref) => ref.kind === "wikilink" && ref.target !== "") // ignore pure `#`/`#^` in-doc fragments
+            .filter((ref) => !knownPages.has(ref.target)) // the target page is not in the vault
+            .map((ref) =>
+              ctx.finding({
+                id: "vault/wikilink-target-exists",
+                message: `wikilink target [[${ref.target}]] matches no page in the vault`,
+                level: "warn", // a dangling cross-doc link warns; it does not block
+              }),
+            );
+        }),
+      ],
+    });
+  }
+
+  /** One rule routing every `.md` in the vault through the wikilink-existence contract. */
+  const config: CorpusConfig = {
+    rules: [{ include: ["**/*.md"], contract: vaultLinkContract(), name: "vault" }],
+  };
+
+  it("emits exactly one warn finding for the dangling target; the existing target produces none; exitCode stays 0", () => {
+    // `index.md` links to one REAL page (`exists`) and one MISSING page (`ghost`); `exists.md` is
+    // present, there is NO `ghost.md`. All-H2 so the heading-depth scan stays quiet.
+    const root = vault({
+      "index.md": "## Links\n\nSee [[exists]] and also [[ghost]] for more.\n",
+      "exists.md": "## Links\n\nNothing dangling on this page.\n",
+    });
+
+    const { findings, exitCode } = runCorpus(config, { cwd: root });
+
+    // Exact shape: the ONLY finding is the dangling `ghost` link, stamped with the linking doc's path.
+    expect(findings.map((f) => ({ id: f.id, level: f.level, path: f.path }))).toEqual([
+      { id: "vault/wikilink-target-exists", level: "warn", path: "index.md" },
+    ]);
+    // The existing-target link (`[[exists]]`) produced NO finding — it resolves to a real page.
+    expect(findings.filter((f) => f.message.includes("[[exists]]"))).toEqual([]);
+    expect(findings[0]?.message).toContain("[[ghost]]");
+    // A warn-only run never bumps the exit code off 0.
     expect(exitCode).toBe(0);
   });
 });
