@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-0P0U
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0009-local-web-ui-vault-dashboard]]'
@@ -21,6 +21,7 @@ impact: medium
 complexity: medium
 autonomy: supervised
 readiness_verified_at: '2026-06-30T15:27:24Z'
+last_reviewed: '2026-06-30'
 ---
 # Prototype: live-status & SSE UX (watching, loading, errors)
 
@@ -79,3 +80,19 @@ update-landing affordance. **≥2 variants** in Storybook of how an update surfa
 ## Discovery context
 
 - Created in the M-0009 planning session (2026-06-30); live in-memory status pushed over SSE is the D4 "live status" layer of [[D-0012-distribution-single-exec-and-web-ui]].
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
