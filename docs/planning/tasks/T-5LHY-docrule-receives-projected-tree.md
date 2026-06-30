@@ -1,21 +1,23 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-5LHY
 status: in-progress
-created: '2026-06-29'
+created: 2026-06-29
 related:
-- T-TXAP-text-predicate-builders
-- T-TXYL-declarative-requires-forbids
+  - T-TXAP-text-predicate-builders
+  - T-TXYL-declarative-requires-forbids
 depends_on:
-- '[[T-TXAP-text-predicate-builders]]'
+  - "[[T-TXAP-text-predicate-builders]]"
 tags: []
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-06-30T05:43:18Z'
-last_reviewed: '2026-06-30'
+readiness_verified_at: 2026-06-30T05:43:18Z
+last_reviewed: 2026-06-30
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/92
 ---
 # Pass the projected tree to DocRule for line-exact whole-document text scopes
 
