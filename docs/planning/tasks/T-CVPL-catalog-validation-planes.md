@@ -100,6 +100,12 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Friction and automation gaps
 
-- The `docs/example-catalog.md` index table had coverage-path cells truncated mid-string in the source (rows 5, 7, 8) — completing them required grepping the fixtures dir for the intended sibling paths. A catalog lint that flags truncated/`…`-ending `existing_coverage` cells would catch this at authoring time.
-- Two shipped sketches (VP-03, VP-10) stated engine positions that the real engine does not emit (jumper-line vs declared-line; positionless `frontmatter/required`). A catalog-artifact-vs-engine roundtrip check (run each `artifact` through the engine and diff stated findings) would catch sketch drift mechanically instead of by manual cross-read — this is the gap [[T-CART-catalog-artifact-verb-output-roundtrip]] targets.
-- VP-17 (text-constraint `requires`/`forbids`) is framed as planned (C-0009/D-0011) but the builders already ship in `src/core/text-constraints.ts` with fixtures 22–25. Kept `planned` per the explicit AC-4 instruction, but the catalog's planned-vs-shipped framing for this feature is worth a human reclassification pass.
+- The `docs/example-catalog.md` index table had coverage-path cells truncated mid-string in the source (rows 5, 7, 8) — completing them required grepping the fixtures dir for the intended sibling paths. A catalog lint that flags truncated/`…`-ending `existing_coverage` cells would catch this at authoring time. → [[T-922E-lint-truncated-coverage-cells]]
+- Two shipped sketches (VP-03, VP-10) stated engine positions that the real engine does not emit (jumper-line vs declared-line; positionless `frontmatter/required`). A catalog-artifact-vs-engine roundtrip check (run each `artifact` through the engine and diff stated findings) would catch sketch drift mechanically instead of by manual cross-read — this is the gap [[T-CART-catalog-artifact-verb-output-roundtrip]] targets. → [[T-NBXH-catalog-artifact-verb-output-roundtrip]]
+- VP-17 (text-constraint `requires`/`forbids`) is framed as planned (C-0009/D-0011) but the builders already ship in `src/core/text-constraints.ts` with fixtures 22–25. Kept `planned` per the explicit AC-4 instruction, but the catalog's planned-vs-shipped framing for this feature is worth a human reclassification pass. → [[T-QI0Z-reclassify-vp17-text-constraint-shipped]]
+
+### Spawned follow-up tasks
+
+- [[T-922E-lint-truncated-coverage-cells]] (https://github.com/sksizer/markdown-contract/pull/123) — spawned: catalog lint flagging truncated / `…`-ending `existing_coverage` cells at authoring time.
+- [[T-NBXH-catalog-artifact-verb-output-roundtrip]] — linked (existing): the artifact-vs-engine roundtrip check that mechanically catches sketch drift; the bullet already named this meta-task.
+- [[T-QI0Z-reclassify-vp17-text-constraint-shipped]] (https://github.com/sksizer/markdown-contract/pull/124) — spawned: human reclassification pass for VP-17 (planned → shipped); sibling to the in-flight [[T-237L-reconcile-text-constraint-catalog-syntax]] (PR #113) for the declarative-yaml category.
