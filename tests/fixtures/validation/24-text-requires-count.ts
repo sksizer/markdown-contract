@@ -1,6 +1,6 @@
-import { contract, sections, section, requires } from "../../../../src/index.js";
-import type { ValidationFixture } from "../../../harness.js";
-import { loadSource } from "../../../harness.js";
+import { contract, sections, section, requires } from "../../../src/index.js";
+import type { ValidationFixture } from "../../harness.js";
+import { loadSource } from "../../harness.js";
 
 // D-0011 / C-0009 — occurrence count on a `requires` entry: a phrase must appear at least `min`
 // times in the bound scope. Here every checklist step must be marked `DONE` — the section
@@ -35,6 +35,9 @@ const v24: ValidationFixture = {
       findings: [{ id: "text/count", level: "error", line: 1 }],
     },
   ],
+  // No `.contract.yaml` parity peer yet — the declarative text-constraint loader
+  // (T-TXYL) does not exist. T-TXYL adds the twin and drops this flag.
+  peerless: true,
   note: "Expected id is the illustrative `text/count` area id; tightened in T-TXAP.",
 };
 

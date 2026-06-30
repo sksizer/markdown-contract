@@ -71,6 +71,14 @@ export interface ValidationFixture {
   /** lazy contract construction — runs only inside an active test. */
   build: () => Contract;
   cases: ValidationCase[];
+  /**
+   * Intentionally twin-less: this fixture has no `.contract.yaml` parity peer (yet).
+   * Set while a fixture is authored ahead of its declarative loader. The yaml-parity
+   * "peers exist" check accepts a `peerless` fixture silently (no warning), and the
+   * behavioral parity loops skip it (running its YAML twin would throw). See
+   * `tests/yaml-parity.test.ts`.
+   */
+  peerless?: boolean;
   note?: string;
 }
 
@@ -92,6 +100,11 @@ export interface ConsumptionFixture {
   reads?: ModelRead[];
   /** when set, assert `read()` throws `ContractError` instead of running `reads`. */
   throws?: "ContractError";
+  /**
+   * Intentionally twin-less: this fixture has no `.contract.yaml` parity peer (yet).
+   * Honored identically to {@link ValidationFixture.peerless}; see `tests/yaml-parity.test.ts`.
+   */
+  peerless?: boolean;
   note?: string;
 }
 
