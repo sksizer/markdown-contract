@@ -35,11 +35,14 @@ install.
 | Location | Role today |
 |---|---|
 | `package.json` | Declares devDeps + thin pass-through scripts (`build`/`typecheck`/`test`/`coverage`/`lint`/…). No `knip` dep and no `lint:deps` script; no unused-code/dep detector exists. |
-| `knip.json` | Absent — nothing tells knip what the entry points or project files are. |
 | `moon.yml` | Wraps the npm scripts as cached moon tasks (`build`, `typecheck`, `test`, `coverage`, `lint-docs`). No `lint-deps` task. |
 | `.github/workflows/ci.yml` | Runs `npx moon run :build :typecheck :coverage` (the one shared `moon run` task-list line). No dead-code report. |
-| `src/index.ts`, `src/declarative/index.ts`, `src/cli/index.ts` | The three published surfaces — `.` / `./declarative` exports and the `markdown-contract` bin. In `package.json` all three map to `dist/` (build output), so knip's default entry resolution points at `dist/`, not `src/` — without config it finds no entry into the source tree and reports nearly everything as unused. |
-| `src/core/index.ts`, `src/runner/index.ts`, `src/core/dialect/index.ts` | Re-export-only **barrels** (CLAUDE.md → Modules & barrels). Their exports are consumed only through the barrel; the public barrels (`src/index.ts`, `src/declarative/index.ts`) re-export the entire API surface with no in-repo consumer, so a naive run flags every public export as unused. |
+| `src/index.ts` | Published surface — the `.` export (root API). In `package.json` it maps to `dist/` (build output), so knip's default entry resolution points at `dist/`, not `src/` — without config it finds no entry into the source tree and reports nearly everything as unused. |
+| `src/declarative/index.ts` | Published surface — the `./declarative` export. Like the root entry it maps to `dist/` in `package.json`, so knip needs an explicit `entry` to reach it in `src/`; otherwise its re-exported API reads as unused. |
+| `src/cli/index.ts` | Published surface — the `markdown-contract` bin. Also mapped to `dist/` in `package.json`, so it too needs an explicit `src/` entry or knip finds no path into the CLI source. |
+| `src/core/index.ts` | Re-export-only **barrel** (CLAUDE.md → Modules & barrels). Its exports are consumed only through the barrel and are reachable from the published entries; a naive run with no config flags such re-exports as unused. |
+| `src/runner/index.ts` | Re-export-only **barrel**. Same shape — consumed through the barrel, reached from the published entries — so it needs the entry config to avoid every re-export reading as a false positive. |
+| `src/core/dialect/index.ts` | Re-export-only **barrel** (`anchors` + `wikilinks`). Same shape — consumed through the barrel; without the entry config a naive run flags its re-exports as unused. |
 | `src/**/*.test.ts` | Co-located peer unit tests (CLAUDE.md → Tests). Not reachable from the production entries; a naive run flags them as unused files and flags test-only helpers/exports as dead. |
 | `tests/` | The fixture-driven integration corpus — `harness.ts`, `components.ts`, the `*.test.ts` runners, and `fixtures/**` (consumption / infer / validation fixture modules, several loaded dynamically). Not reachable from production entries; a naive run flags the whole tree as unused. |
 

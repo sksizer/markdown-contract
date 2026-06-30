@@ -38,8 +38,8 @@ of code.
 | `.github/workflows/ci.yml` | The only CI workflow — runs build, typecheck, and test+coverage via the single `npx moon run :build :typecheck :coverage` line. Emits no code-metrics report; that `moon run` task list is the milestone's one shared coordination point. |
 | `moon.yml` | Task source of truth (`build` / `typecheck` / `test` / `coverage` / `lint-docs`). No metrics task. |
 | `package.json` | Scripts cover build/typecheck/test/coverage and Biome (`lint` / `format` / `check`). No `metrics` script; scc is **not** an npm package, so it is not (and cannot be) a devDependency. |
-| `vitest.config.ts` (coverage thresholds) | Gates line/branch/function/statement **coverage** (T-79GV) — execution ratios, not LOC totals or cyclomatic complexity. |
-| `biome.json` (cognitive-complexity rule, `warn`) | Per-function **cognitive** complexity warnings applied by T-0MVN — a different metric (cognitive ≠ cyclomatic) and per-function, not a repo-wide aggregate. |
+| `vitest.config.ts` | Its coverage thresholds gate line/branch/function/statement **coverage** (T-79GV) — execution ratios, not LOC totals or cyclomatic complexity. |
+| `biome.json` | The `noExcessiveCognitiveComplexity` rule (at `warn`, applied by T-0MVN) measures per-function **cognitive** complexity — a different metric (cognitive ≠ cyclomatic) and per-function, not a repo-wide aggregate. |
 
 ## Proposed
 
