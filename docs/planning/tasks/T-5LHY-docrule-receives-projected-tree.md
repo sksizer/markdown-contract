@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-5LHY
-status: open/ready
+status: in-progress
 created: '2026-06-29'
 related:
 - T-TXAP-text-predicate-builders
@@ -15,6 +15,7 @@ impact: medium
 complexity: small
 autonomy: supervised
 readiness_verified_at: '2026-06-30T05:43:18Z'
+last_reviewed: '2026-06-30'
 ---
 # Pass the projected tree to DocRule for line-exact whole-document text scopes
 
@@ -118,3 +119,19 @@ that ignores the new argument compiles and behaves identically.
 ## Discovery context
 
 Spawned by /sdlc:spawn-task-pr on 2026-06-28 UTC from [[T-TXAP-text-predicate-builders]] in https://github.com/sksizer/markdown-contract.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
