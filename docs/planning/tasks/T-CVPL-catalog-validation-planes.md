@@ -87,12 +87,19 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `docs/catalog/validation-planes.yaml` parses to 17 entries `VALIDATION-PLANES-01..17` (16 shipped + 1 planned); confirmed by a YAML-parse count.
+- AC-2: auto — programmatic field check reports all 12 schema fields present on every one of the 17 entries (`missing: none`).
+- AC-3: agent-manual + auto — each of the 16 shipped sketches was run against the real engine (throwaway vitest file, since removed) and its finding id/level/message/pos cross-checked against `src/core/structure.ts`, `content.ts`, `validate.ts`, `projection.ts`; full suite green (574 tests via `npm run test`). 14/16 matched exactly; 2 (VP-03, VP-10) had drift and were corrected.
+- AC-4: auto — only VP-17 carries `status: planned` (right after `name:`, CDYL convention) with `needs_test: "on impl"`, `coverage_status: uncovered`, seed `existing_coverage`, and the C-0009 / D-0011 `recommend_test`; entries 01..16 omit `status` and are the only ones counted as shipped.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The deterministic readiness gate + start flow was a clean no-op pass — the spec was already implementation-ready, so the gate added no friction.
+- Sibling catalog YAMLs (`cli.yaml`, `inference-init.yaml`, `consume-as-data.yaml`, `dialect.yaml`) plus the in-flight `declarative-yaml.yaml` gave an unambiguous schema/convention template — both the 12-field shipped shape and the `status: planned` shape were copy-matchable.
+- The existing `tests/fixtures/validation/` corpus encoded the real engine findings, so verifying AC-3 was mostly cross-reading fixtures against a green suite rather than authoring anything new.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The `docs/example-catalog.md` index table had coverage-path cells truncated mid-string in the source (rows 5, 7, 8) — completing them required grepping the fixtures dir for the intended sibling paths. A catalog lint that flags truncated/`…`-ending `existing_coverage` cells would catch this at authoring time.
+- Two shipped sketches (VP-03, VP-10) stated engine positions that the real engine does not emit (jumper-line vs declared-line; positionless `frontmatter/required`). A catalog-artifact-vs-engine roundtrip check (run each `artifact` through the engine and diff stated findings) would catch sketch drift mechanically instead of by manual cross-read — this is the gap [[T-CART-catalog-artifact-verb-output-roundtrip]] targets.
+- VP-17 (text-constraint `requires`/`forbids`) is framed as planned (C-0009/D-0011) but the builders already ship in `src/core/text-constraints.ts` with fixtures 22–25. Kept `planned` per the explicit AC-4 instruction, but the catalog's planned-vs-shipped framing for this feature is worth a human reclassification pass.
