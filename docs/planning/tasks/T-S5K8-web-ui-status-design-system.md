@@ -1,25 +1,27 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-S5K8
 status: in-progress
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0009-local-web-ui-vault-dashboard]]'
-- '[[C-0010-single-binary-and-vault-dashboard]]'
-- '[[D-0012-distribution-single-exec-and-web-ui]]'
+  - "[[M-0009-local-web-ui-vault-dashboard]]"
+  - "[[C-0010-single-binary-and-vault-dashboard]]"
+  - "[[D-0012-distribution-single-exec-and-web-ui]]"
 depends_on:
-- '[[T-ZLND-web-ui-prototype-app]]'
+  - "[[T-ZLND-web-ui-prototype-app]]"
 tags:
-- web-ui
-- prototype
-- design
+  - web-ui
+  - prototype
+  - design
 need_human_review: false
 impact: high
 complexity: medium
 autonomy: supervised
-readiness_verified_at: '2026-06-30T14:02:35Z'
-last_reviewed: '2026-06-30'
+readiness_verified_at: 2026-06-30T14:02:35Z
+last_reviewed: 2026-06-30
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/109
 ---
 # Prototype: status visual language & shared component kit
 
