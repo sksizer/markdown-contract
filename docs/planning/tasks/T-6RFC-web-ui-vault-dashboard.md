@@ -63,10 +63,10 @@ links through to the detail view ([[T-4CUI-web-ui-vault-detail-findings]]).
 
 ## Acceptance criteria
 
-- [ ] AC-1: The dashboard renders all mock vaults with correct status treatment per state.
+- [ ] AC-1: The dashboard renders all mock vaults with the correct status treatment for each of the five status states (`green` / `findings` / `drift` / `running` / `error`).
 - [ ] AC-2: **≥2 layout variants** and the empty/first-run state exist as Storybook stories.
 - [ ] AC-3: Cards link through to vault detail.
-- [ ] AC-4: A refresh-all affordance is present (mock-driven).
+- [ ] AC-4: A `refresh-all` affordance is present (mock-driven) that re-fetches the full mock vault list.
 
 ## Out of scope
 
