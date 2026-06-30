@@ -85,12 +85,17 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — parsed `docs/catalog/embed-and-ci.yaml` with the `yaml` lib; `examples.length === 11`.
+- AC-2: auto — field-parity check confirmed all 12 example-entry fields present on every entry (no missing, no extra) and key-order matches sibling `docs/catalog/consume-as-data.yaml`.
+- AC-3: agent-manual — verified every `artifact` against the real surface: `runCorpus` signature/opts/`{findings, exitCode, stats}` return (`src/runner/corpus.ts`), CLI exit policy 0/1/2 + `--format json|sarif` + `init --check` + `--include` (`src/cli/run.ts`), `formatJson` / `formatSarif` SARIF 2.1.0 `region.startLine` (`src/cli/format.ts`), `FindingLevel = error|warn|report` / `SourcePos {line, col?}` / `Finding` shape (`src/core/types.ts`), and the deterministic line→col→plane sort (`src/core/validate.ts`).
+- AC-4: auto — all 8 distinct `existing_coverage` paths resolve on disk; `EMBED-AND-CI-03.recommend_test === "[[T-ROUT-runcorpus-first-match-routing]]"` and the T-ROUT task file is present.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The runner/CLI library surface matched every catalog sketch verbatim — zero artifact corrections were needed, and the catalog's at-a-glance row 7 (`11 / 8 / 3 / 0 / 1`) already matched the authored YAML's coverage tally, so `docs/example-catalog.md` needed no reconciliation edit.
+- The shipped sibling YAMLs (`consume-as-data.yaml`, `cli.yaml`) gave an exact structural template; key-order parity was a one-shot match with no iteration.
+- The baseline-gated quality run cleanly subtracted the 4 pre-existing findings and reported `OK 3/3` with no new drift introduced.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 3b's permissions probe reported false-positive gaps (`bun`/`npm` missing `Bash(...)`, `Write`/`Edit` missing for the worktree path) that contradicted observed behavior — every `bun`/`npm`/`Write`/`Edit` call in the run succeeded. The probe resolves against the literal settings file and does not account for harness-granted runtime permissions, so it would fire a spurious AskUserQuestion on every supervised run in this environment. Captured as a backlog note (`docs/planning/backlog/B-PFPB-permissions-probe-false-positive.md`) rather than a separate follow-up PR, per the consolidation directive.
