@@ -100,12 +100,38 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `npm run test` (vitest) runs `src/runner/corpus.test.ts` green (14/14).
+- AC-2: auto — `npm run test`; the `runCorpus — first-match precedence` describe asserts a file
+  matching two overlapping rules yields exactly one `rule/A` finding and `matchedByRule === [1, 0]`.
+- AC-3: auto — `npm run test`; the trailing-catch-all describe asserts `A-0001.md → rule/A` and
+  `notes.md → rule/catchall`, proving the catch-all fires only for otherwise-unmatched files.
+- AC-4: auto — `npm run test`; the per-rule-`exclude` describe asserts an excluded file falls
+  through to the next matching rule (`skip-me.md → rule/B`), and is skipped entirely when no later
+  rule matches (`filesUnmatched === 1`).
+- AC-5: agent-manual — reviewed the added source: each new describe opens with a doc-comment in the
+  existing voice, the first new `it` is the minimal "two overlapping rules, one file → exactly this
+  one finding" case, and every assertion is an exact `toEqual`/`toBe` per `CLAUDE.md`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The deterministic readiness gate (`task gap-report` / `parse-touchpoints` / `scan-placeholders` /
+  `check-claims`) passed first try — the spec needed no clarification before implementation.
+- The in-memory `vault()` helper already in the peer test made adding routing cases cheap; no new
+  `tests/fixtures/` tree was needed, keeping the change to a single file.
+- The baseline-gated quality gate (`--diff-against-baseline`) cleanly subtracted the 4 pre-existing
+  findings, so the gate reported `OK 2/2` on this branch's drift alone.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 7's baseline-gated gate, when run from inside the worktree, defaulted to the worktree's
+  `.sdlc/quality-baselines/` and failed `baseline not found` until `--baseline-dir` was repointed at
+  the main repo's `.sdlc/quality-baselines/` (where Step 3a captured it) — task-work should pass
+  `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly at Step 7 (and the Step 7 dogfood),
+  since the worktree's `.sdlc/` is a distinct directory from the main checkout's.
+  → [[T-HHZB-task-work-baseline-dir-main-checkout]]
+
+### Spawned follow-up tasks
+
+- [[T-HHZB-task-work-baseline-dir-main-checkout]] (https://github.com/sksizer/dev/pull/528) —
+  task-work Step 7 should pass `--baseline-dir` pointing at the main checkout's
+  `.sdlc/quality-baselines/`; spawned to the sdlc plugin repo (Upstream-plugin, `sdlc-meta`).
