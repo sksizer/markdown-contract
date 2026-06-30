@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-DREF
-status: open/ready
+status: in-progress
 created: '2026-06-28'
 related:
 - '[[M-0007-example-use-case-catalog]]'
@@ -62,3 +62,19 @@ Author the two docRules as fixtures (in-doc via single-document `validate`; cros
 
 - Builds on `extractVaultRefs`, `byAnchor`, and `runCorpus`. Promoted from the B-DREF backlog note.
 - **Open question (from [[M-0007-example-use-case-catalog]]):** whether vault-wide wikilink validation should become a first-class supported feature rather than only a documented composition. This task assumes "documented composition"; promoting it to a feature is separate, future work.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
