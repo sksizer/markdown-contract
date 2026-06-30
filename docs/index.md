@@ -78,7 +78,7 @@ Milestones are product releases; order is ascending `version`. Source:
 | — | [[M-0006-documentation-site]] | Published documentation site | open/planned |
 | — | [[M-0007-example-use-case-catalog]] | Example use-case catalog — the categorized basis for the docs and marketing site | open/planned |
 | — | [[M-0008-single-exec-distribution]] | Single-binary prototype — one Bun executable: CLI + self-contained web-UI daemon | open/planned |
-| — | [[M-0009-local-web-ui-vault-dashboard]] | Local web UI & vault dashboard — the bundled daemon surface | open/tbd |
+| — | [[M-0009-local-web-ui-vault-dashboard]] | Local web UI & vault dashboard — the bundled daemon surface | open/planned |
 
 ## Features
 

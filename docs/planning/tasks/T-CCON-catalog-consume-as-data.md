@@ -17,8 +17,8 @@ need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-06-30T05:29:43Z'
 last_reviewed: '2026-06-30'
+readiness_verified_at: '2026-06-30T12:06:12Z'
 ---
 # Finalize the Consume-as-Typed-Data catalog category as verified YAML (`consume-as-data`)
 
