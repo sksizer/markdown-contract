@@ -1,7 +1,8 @@
 import { describe, expect, test } from "vitest";
 
 import type { Finding } from "../core/index.js";
-import { formatHuman, formatJson, formatSarif } from "./format.js";
+import type { RunStats } from "../runner/index.js";
+import { formatHuman, formatJson, formatRunSummary, formatSarif } from "./format.js";
 
 // format.ts turns the runner's Finding[] into the three CLI output shapes. Each case shows a
 // small input and the exact string (or parsed structure) it produces.
@@ -35,6 +36,67 @@ describe("formatHuman", () => {
         "",
         "2 finding(s): 1 error, 1 warn, 0 report",
       ].join("\n"),
+    );
+  });
+});
+
+describe("formatRunSummary", () => {
+  // labels[i] is the contract name for stats.matchedByRule[i]. A named rule gets a row;
+  // an unnamed rule (inline --contract) contributes only to the total.
+
+  test("named multi-contract: total line with `across K contracts` + one row per named rule", () => {
+    const stats: RunStats = {
+      filesScanned: 5,
+      filesMatched: 4,
+      filesUnmatched: 1,
+      matchedByRule: [3, 1],
+    };
+    expect(formatRunSummary(stats, ["capability", "task"])).toBe(
+      [
+        "Scanned 5 files; 4 matched across 2 contracts, 1 unmatched",
+        "  capability: 3",
+        "  task: 1",
+      ].join("\n"),
+    );
+  });
+
+  test("inline single contract (no names): total line only, no per-contract rows", () => {
+    const stats: RunStats = {
+      filesScanned: 12,
+      filesMatched: 12,
+      filesUnmatched: 0,
+      matchedByRule: [12],
+    };
+    expect(formatRunSummary(stats, [undefined])).toBe(
+      "Scanned 12 files; 12 matched, 0 unmatched",
+    );
+  });
+
+  test("a named rule that matched 0 still gets a row (evidence it routed nothing)", () => {
+    const stats: RunStats = {
+      filesScanned: 3,
+      filesMatched: 2,
+      filesUnmatched: 1,
+      matchedByRule: [2, 0],
+    };
+    expect(formatRunSummary(stats, ["task", "driver"])).toBe(
+      [
+        "Scanned 3 files; 2 matched across 2 contracts, 1 unmatched",
+        "  task: 2",
+        "  driver: 0",
+      ].join("\n"),
+    );
+  });
+
+  test("singular: `1 file` / `1 contract` when the count is exactly one", () => {
+    const stats: RunStats = {
+      filesScanned: 1,
+      filesMatched: 1,
+      filesUnmatched: 0,
+      matchedByRule: [1],
+    };
+    expect(formatRunSummary(stats, ["task"])).toBe(
+      ["Scanned 1 file; 1 matched across 1 contract, 0 unmatched", "  task: 1"].join("\n"),
     );
   });
 });
