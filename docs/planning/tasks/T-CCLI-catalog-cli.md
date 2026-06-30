@@ -90,12 +90,17 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `yaml.safe_load(docs/catalog/cli.yaml)` confirms 12 entries, ids `CLI-01`..`CLI-12` in order.
+- AC-2: auto — programmatic check confirms every entry carries all 12 example-entry fields in the exact schema order (`id, name, demonstrates, rank, builds_on, artifact_kind, artifact, surfaces, needs_test, coverage_status, existing_coverage, recommend_test`).
+- AC-3: agent-manual — the five finding-bearing artifacts (`CLI-02`..`CLI-06`) were run live against the freshly-built CLI (`node dist/cli/index.js validate <dir> --contract <yaml>` and `--format json|sarif`); finding ids, messages (typographic quotes), the human run-summary line, JSON key order, and SARIF byte-matched, and the embedded JSON/SARIF round-trip-parse.
+- AC-4: auto — `grep -c 'structure/missing-section\|content/enum\|structure/unknown-section'` is `0` in both `docs/catalog/cli.yaml` and `docs/example-catalog.md`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- Capturing real CLI output as a ground-truth reference before authoring caught three silent inaccuracies the prose sketches carried: the human path prepends a `Scanned N files; …` run-summary line, the real `Finding` JSON key order is `id, level, path, message, pos` (the sketch put `pos` before `message`), and messages use typographic quotes `‘ ’`, not straight quotes.
+- The baseline-gated quality gate cleanly separated the 4 pre-existing findings from this branch's zero new drift — `OK 2/2`, no triage needed.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The source catalog sketches showed single-file `validate <file>` invocations, but the real CLI's `--contract` path requires a directory (a file argument errors `ENOTDIR`, exit 2); reconciling to honest output needed a manual judgment call to switch to directory runs — a lint that executes each catalog artifact's command against the CLI would catch un-runnable invocations automatically (likely already tracked by the `catalog-artifact-verb-output-roundtrip` meta-task).
+- `sdlc quality run --diff-against-baseline` invoked from a worktree resolves `--baseline-dir` against the worktree's `.sdlc/`, but Step 3a wrote the baseline under the main checkout's `.sdlc/quality-baselines/`; the gate failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — task-work Step 7's documented `quality run` invocation should resolve the superproject's baseline dir (or pass `--baseline-dir`) when run from a worktree.
