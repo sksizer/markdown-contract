@@ -86,12 +86,18 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `design/tokens.ts` defines the full status set (`green` / `findings` / `drift` / `running` / `error`) plus the three-level severity scale (`error` / `warn` / `report`, with `rank`); typechecked clean by the prototype's `npm run typecheck` (vue-tsc), and rendered end-to-end by the `Kit/StatusBadge` `Gallery` and `Kit/SeverityBadge` `Scale` stories in the successful `npm run build-storybook`.
+- AC-2: auto — `npm run build-storybook` built all nine kit components; each ships ≥3 named, fixture-driven variants (StatusBadge 6, VaultCard 6, FindingRow 5, ContractGroup 4, SeverityBadge 4, AppHeader/EmptyState/LoadingState/ErrorState 3), comfortably above the ≥2 floor in `prototype/web-ui/CONVENTIONS.md`.
+- AC-3: auto — `EmptyState.vue`, `LoadingState.vue`, and `ErrorState.vue` are standalone first-class components, each with its own multi-variant story file; all three built successfully in the same `build-storybook` run.
+- deferred-user: the *final visual direction* (which variant wins) is explicitly out of scope here — it is chosen at the review gate [[T-UTKU-web-ui-prototype-review]]. Reviewers should open Storybook (`npm run storybook`) and compare the `Kit/*` variants side by side.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The T-ZLND scaffold paid off: `CONVENTIONS.md` (the ≥2-variant rule), the mock fixtures (`cleanVault` / `warningVault` / `failingVault`), the `--mc-*` CSS custom properties, and the `@storybook/vue3-vite` config gave the kit a clean, well-documented surface to build against, so the kit slotted in with zero scaffold changes.
+- Keeping the new `drift` / `running` accent colors in `design/tokens.ts` (bound inline in components) rather than adding CSS variables kept the entire diff inside the owned `components/` + `design/` subtree — no contention with the parallel sibling task on `mocks/` + `types/`.
+- The prototype's own `npm run typecheck` + `npm run build-storybook` gave complete local, non-interactive verification of all three ACs, so the run was fully auto-verified with no human spot-check required to confirm the components render.
+- Baseline-gated `quality run` cleanly separated pre-existing root-typecheck drift from this branch's (zero) new drift, so the root gate passed without manual triage.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- none observed
