@@ -14,7 +14,7 @@ related:
   - '[[D-0001-finding-model]]'
   - '[[DR-0005-validate-sdlc-corpus]]'
   - '[[M-0002-declarative-yaml-contracts-v1]]'
-contains:
+tasks:
   - '[[T-TXSC-text-constraint-fixture-scaffold]]'
   - '[[T-TXMC-text-match-core]]'
   - '[[T-TXAP-text-predicate-builders]]'

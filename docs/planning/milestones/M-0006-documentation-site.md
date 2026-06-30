@@ -10,7 +10,7 @@ related:
   - '[[M-0007-example-use-case-catalog]]'
   - '[[PR-0002-markdown-contract-cli]]'
   - '[[PR-0001-markdown-contract]]'
-contains:
+tasks:
   - '[[T-7UTE-astro-docs-site]]'
 tags:
   - docs

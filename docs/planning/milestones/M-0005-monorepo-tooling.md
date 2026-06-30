@@ -11,7 +11,7 @@ related:
   - '[[D-0006-packaging]]'
   - '[[D-0012-distribution-single-exec-and-web-ui]]'
   - '[[PR-0002-markdown-contract-cli]]'
-contains:
+tasks:
   - '[[T-MOON-adopt-moon-monorepo]]'
   - '[[T-WKSP-bun-workspace-split]]'
   - '[[T-AE0J-moon-build-system]]'

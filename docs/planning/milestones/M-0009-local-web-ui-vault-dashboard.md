@@ -9,7 +9,6 @@ related:
   - '[[C-0010-single-binary-and-vault-dashboard]]'
   - '[[D-0012-distribution-single-exec-and-web-ui]]'
   - '[[M-0008-single-exec-distribution]]'
-contains: []
 tags:
   - web-ui
   - dashboard
