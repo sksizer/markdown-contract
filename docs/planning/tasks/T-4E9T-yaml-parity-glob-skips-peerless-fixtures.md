@@ -15,6 +15,7 @@ tags: []
 need_human_review: false
 impact: medium
 complexity: small
+readiness_verified_at: '2026-06-30T04:04:29Z'
 ---
 # Make yaml-parity 'peers exist' glob skip gated/peerless fixtures so subdirectory placement isn't load-bearing
 
