@@ -80,12 +80,16 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `node dist/cli/index.js validate docs/planning` (`npm run lint:docs`) reports `No findings`; the new section-scoped `requires` in `contracts/decision.contract.yaml` validates cleanly against all 12 live `D-*.md` decisions.
+- AC-2: auto — `tests/components.ts` has `IMPLEMENTED["text-api"]` and `["text-yaml"]` both `true`; the harness census reports `validation: 58 active / 0 skipped / 58 total` (zero skipped `text-*` fixtures — v22–v25 and their yaml-parity peers all run).
+- AC-3: auto — `vitest run` is green (561 passed / 0 failed across 29 files) and `validate docs/planning` is clean.
+- AC-4: auto — a negative sanity check (temporarily pointing the regex at a marker no References section contains) produced exactly 12 `text/requires/references/...` findings, then reverting returned `No findings` — proving the invariant is genuine and non-vacuous. `git diff` confirms only `contracts/decision.contract.yaml` changed; the SDLC corpus (`docs/planning/**`) and dummy fixtures (`tests/fixtures/**`) are untouched.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The dogfood loop (author the `requires` → `npm run lint:docs` → read findings) made calibrating the regex trivial, and an empirical projection probe up front confirmed `[[wikilink]]` brackets survive projection intact, so the regex matched on the first real run.
+- The baseline-gated `quality run` cleanly separated the 4 pre-existing `npm run typecheck` findings from this branch's drift (zero), so the gate gave an unambiguous `OK 2/2` without manual triage.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- `sdlc quality run --diff-against-baseline` defaults `--baseline-dir` to the worktree's `.sdlc/quality-baselines/`, but `/sdlc:task-work` Step 3a captures the baseline in the MAIN checkout's `.sdlc/quality-baselines/`; the gate failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — the gate should resolve the baseline dir against the git common dir (main checkout) when invoked from a worktree, rather than cwd.
