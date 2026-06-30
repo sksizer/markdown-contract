@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-CCON
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0007-example-use-case-catalog]]'
@@ -76,3 +76,19 @@ example-entry schema and a sketch reproducing the real read-model behavior.
 ## Dependencies
 
 Child of [[T-CTLG-example-catalog-finalize]]; consumes `docs/example-catalog.md`.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
