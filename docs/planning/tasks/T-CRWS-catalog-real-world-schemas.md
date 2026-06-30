@@ -91,12 +91,19 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — YAML parse confirms `docs/catalog/real-world-schemas.yaml` holds 16 entries (REAL-WORLD-SCHEMAS-01..16; 15 shipped + 1 planned).
+- AC-2: auto — programmatic field check confirms all 12 example-entry fields are present on every entry; `artifact_kind` / `needs_test` / `coverage_status` enum values all valid.
+- AC-3: agent-manual — each shipped YAML contract (01,02,03,06,07,08,09) was loaded via `loadContract` and run through `.validate()` over conforming and violating documents, confirming exact finding ids (`structure/section-missing`, `structure/section-order`, `frontmatter/enum`, `frontmatter/unknown-key`, `frontmatter/type`, `content/table/cell`, `content/table/min-rows`, `content/list/item-kind`, `content/code/lang`); the code artifact (05) was executed against the engine; code artifacts (12,13) and CLI artifacts (04,14,15) were reconciled against the public API exports, `existing_coverage` fixtures, and `src/cli/run.ts` flags / exit codes 0·1·2.
+- AC-4: auto — REAL-WORLD-SCHEMAS-16 carries `status: planned` (immediately after `name`) and `recommend_test: "[[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]]"`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The already-merged sibling catalog files (`validation-planes.yaml`, `declarative-yaml.yaml`) gave an exact schema, field-order, and block-style template — zero ambiguity on the target shape.
+- `loadContract` + `.validate()` made AC-3 mechanical: every shipped YAML artifact was reproducible against the real engine in a throwaway script (conforming → 0 findings; violating → the precise finding id).
+- The baseline-gated `quality run` cleanly separated pre-existing typecheck drift from branch-introduced drift, so the docs-only change gated to `OK 3/3` with no triage.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- `sdlc quality run --diff-against-baseline` invoked from inside the task-work worktree defaulted its baseline-dir to the worktree's own `.sdlc/quality-baselines/`, but Step 3a captured the baseline into the **main repo's** `.sdlc/quality-baselines/` — the gate failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly. Task-work Step 7 should resolve the baseline-dir to the superproject when run from a worktree (or Step 3a should write into the worktree's dir). Captured as a backlog item this run.
+- AC-3's "reproduces the real engine" is agent-manual diligence, not a CI gate — no test consumes `docs/catalog/*.yaml`. Already tracked by [[T-D5QD-catalog-yaml-source-parity-test]] (planning/draft); no new item needed.
+- `preflight_permissions.ts` (Step 3b) reported `bun` / `npm` / `Write` / `Edit` as missing when the harness had in fact granted them (the probe reads static settings files, not the live grant) — best-effort, low-signal; noted, not actioned.
