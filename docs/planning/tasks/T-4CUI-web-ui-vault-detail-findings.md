@@ -88,12 +88,26 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — grouped presentation renders one `ContractGroup` per contract (findings grouped on the first segment of the namespaced rule `id`), with pass/fail per contract surfaced as the group subtitle and a "N pass / N fail" header summary; bound to the `VaultStatus` mock fixtures. Verified by `vue-tsc --noEmit` and `storybook build` (the `Screens/VaultDetail` `GroupedByContract` story indexes off `findingsVaultStatus`). Visual render is a deferred-user spot-check.
+- AC-2: auto — reuses the kit `FindingRow`, which renders SeverityBadge (severity) + rule `id` + `path:line:col` location + message + optional fix. Exercised in both presentations; covered by typecheck + Storybook build.
+- AC-3: auto — two prop-driven presentations (`grouped` default, `flat` severity-sorted via `severityRank`) plus five named Storybook variants including the required `Green` zero-findings state. `storybook build` indexes all five `Screens/VaultDetail` stories. Visual comparison is a deferred-user spot-check.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The merged design-system kit (`FindingRow`, `ContractGroup`, `SeverityBadge`, `StatusBadge`, `EmptyState`, `ErrorState`) and the `VaultStatus` mock fixtures (`findingsVaultStatus`/`greenVaultStatus`/`errorVaultStatus`/`driftVaultStatus`) composed cleanly — the screen is almost entirely composition, no new tokens or API types.
+- The dual-surface guard (prefer `props.vault`, short-circuit before `useRoute()`) let one prop-driven SFC serve both the Nuxt route and Nuxt-free Storybook without a separate screen component.
+- `storybook build` is a real AC-3 gate: it indexes the stories and surfaces compile errors, so "≥2 variants exist and load" is machine-checkable, not just asserted.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The Step 7 baseline gate fails from the worktree unless `--baseline-dir` is passed explicitly — Step 3a captures the baseline into the MAIN repo's `.sdlc/quality-baselines/`, but `quality run --diff-against-baseline` from the worktree defaults to the WORKTREE's `.sdlc/quality-baselines/` and reports "baseline not found". task-work Step 7 should pass the same `--baseline-dir` (main-repo path) it passed at Step 3a capture, or the executor should resolve the baseline dir against the superproject root. → [[T-Z2EO-task-work-resolves-baseline-dir]]
+- `worktree_init: ["npm install"]` installs only the root project's deps; the nested `prototype/web-ui` Nuxt app's deps were absent, so the implementer had to `npm install` inside `prototype/web-ui` before typecheck/Storybook. For web-UI tasks the worktree-init recipe (or a task note) should also install the nested app's deps. → [[T-LI8T-worktree-init-installs-nested-app-deps]]
+- The `preflight_permissions` probe (Step 3b) reported `npm`, `Write`, and `Edit` as ungranted, but all three worked at runtime in this harness — a false-positive that forced a proceed-anyway judgment call. The probe reads static settings files and can't see the harness's effective grants; a note that a failing probe is advisory (and an empirical write/exec smoke-test as a tiebreaker) would reduce the friction. → [[T-OHMA-preflight-permissions-advisory-tiebreaker]]
+- Storybook's `stories` glob covered only `components/**`, so a page-level story under `pages/` required editing the shared `.storybook/main.ts` — a shared-file touch the task's "Files to touch" didn't anticipate. Worth either globbing `pages/**` up front in the prototype scaffold or noting the glob edit in screen-task specs. → [[T-1AEK-storybook-glob-covers-pages]]
+
+### Spawned follow-up tasks
+
+- [[T-Z2EO-task-work-resolves-baseline-dir]] (https://github.com/sksizer/dev/pull/533) — task-work Step 7 resolves the quality baseline against the superproject root; spawned (Upstream-plugin, sdlc-meta).
+- [[T-LI8T-worktree-init-installs-nested-app-deps]] (https://github.com/sksizer/markdown-contract/pull/116) — worktree_init installs the nested prototype/web-ui app deps; spawned (Local).
+- [[T-OHMA-preflight-permissions-advisory-tiebreaker]] (https://github.com/sksizer/dev/pull/534) — preflight_permissions probe made advisory with an empirical write/exec smoke-test tiebreaker; spawned (Upstream-plugin, sdlc-meta).
+- [[T-1AEK-storybook-glob-covers-pages]] (https://github.com/sksizer/markdown-contract/pull/117) — Storybook stories glob covers pages/** in the web-ui prototype scaffold; spawned (Local).
