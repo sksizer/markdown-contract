@@ -1,0 +1,298 @@
+category: consume-as-data
+title: "Consume as Typed Data: Reading the Document as a Model"
+examples:
+  - id: CONSUME-AS-DATA-01
+    name: "Open the read() door for typed frontmatter"
+    demonstrates: "contract.read returns a typed Doc whose frontmatter fields you pull with no separate types file."
+    rank: 1
+    builds_on: null
+    artifact_kind: code
+    artifact: |
+      import { contract, sections, section } from "markdown-contract";
+      import { z } from "zod";
+
+      const c = contract({
+        frontmatter: z.object({ id: z.string(), status: z.string() }).strict(),
+        body: sections({ allowUnknown: true }, [section("Summary")]),
+      });
+
+      const doc = c.read(src, { path: "notes/note.md" }); // Doc, or throws ContractError
+      console.log(doc.frontmatter.id); // typed from the same contract that validated
+    surfaces:
+      - "contract()"
+      - "contract.read(src,{path})"
+      - "Doc.frontmatter typed from the frontmatter Zod schema"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/consumption/01-read-the-model-door.ts
+      - tests/fixtures/consumption/02-validate-doc-and-tree.ts
+      - src/core/validate.test.ts
+    recommend_test: null
+
+  - id: CONSUME-AS-DATA-02
+    name: "Read one section's prose two ways"
+    demonstrates: "The same SectionView is reachable by camelCase key and by the exact .section(name) accessor."
+    rank: 2
+    builds_on: CONSUME-AS-DATA-01
+    artifact_kind: code
+    artifact: |
+      const doc = c.read(src, { path: "notes/note.md" });
+
+      // Dual-key: dotted camelCase field...
+      const a = doc.body.summary.text();
+      // ...and the exact-heading accessor resolve the same SectionView.
+      const b = doc.body.section("Summary").text();
+
+      console.log(a === b); // true — one view, two keys
+    surfaces:
+      - "Doc.body dual-key access (doc.body.summary and doc.body.section(\"Summary\"))"
+      - "SectionView.text(\"prose\")"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/consumption/03-dual-key-section-access.ts
+      - src/core/model.test.ts
+    recommend_test: null
+
+  - id: CONSUME-AS-DATA-03
+    name: "Walk a SectionView's content surface"
+    demonstrates: "A SectionView exposes name, pos, anchors, text(scope), tables/table and lists, with absent optionals reading as undefined."
+    rank: 3
+    builds_on: CONSUME-AS-DATA-02
+    artifact_kind: code
+    artifact: |
+      const s = doc.body.summary;
+      s.name;            // "Summary"
+      s.pos;             // { line: 1, col: 1 } — heading SourcePos
+      s.anchors;         // ["summary"] — its ^block-ids
+      s.text("all");     // prose + block text flattened
+      s.tables;          // TableView[]  (s.table for the sole one)
+      s.lists;           // ListView[]
+      doc.body.why?.text(); // undefined — absent optional section short-circuits
+    surfaces:
+      - "SectionView.name/.pos/.anchors"
+      - ".text(\"prose\"|\"all\")"
+      - ".tables/.table"
+      - ".lists"
+      - "absent-optional reads"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/consumption/04-sectionview-content.ts
+      - src/core/model.test.ts
+    recommend_test: null
+
+  - id: CONSUME-AS-DATA-04
+    name: "Iterate a TableView's typed rows"
+    demonstrates: "A section whose sole content is a table promotes to a TableView you iterate as typed rows."
+    rank: 4
+    builds_on: CONSUME-AS-DATA-03
+    artifact_kind: code
+    artifact: |
+      const c = contract({ body: sections({}, [
+        section("Files", { content: table({
+          columns: ["File", "Kind", "Location"],
+          cells: { Kind: z.enum(["add", "modify", "delete"]) },
+        }) }),
+      ])});
+
+      const files = c.read(src, { path: "task.md" }).body.files; // promoted TableView
+      for (const row of files) console.log(row.File, row.Kind);  // row.Kind is the enum union
+      console.log(files.rowCount, files.columns);
+    surfaces:
+      - "section() content: table()"
+      - "TableView promotion"
+      - "iteration over typed rows"
+      - ".rowCount"
+      - ".columns"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/consumption/05-tableview-typed-rows.ts
+      - src/core/model.test.ts
+    recommend_test: null
+
+  - id: CONSUME-AS-DATA-05
+    name: "Target rows with column / find / rowPos"
+    demonstrates: "TableView offers column(name), find(pred), and rowPos(i) for column slices, predicate lookups, and per-row source positions."
+    rank: 5
+    builds_on: CONSUME-AS-DATA-04
+    artifact_kind: code
+    artifact: |
+      const files = doc.body.files;
+      files.column("File");                       // ["grammar.ts", "leaves.ts", "legacy.ts"]
+      files.find(r => r.Kind === "delete")?.File; // "legacy.ts" — typed predicate
+      files.find((_r, i) => i === 0)?.File;       // "grammar.ts" — index available too
+      files.rowPos(2);                            // { line: 7, col: 1 } — that row's SourcePos
+    surfaces:
+      - "TableView.column(name)"
+      - ".find(pred) with row+index"
+      - ".rowPos(i) returning SourcePos"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/consumption/05-tableview-typed-rows.ts
+      - src/core/model.test.ts
+    recommend_test: null
+
+  - id: CONSUME-AS-DATA-06
+    name: "Name two tables in one section"
+    demonstrates: "A section's content record yields several independently-named TableViews, each its own typed view."
+    rank: 6
+    builds_on: CONSUME-AS-DATA-05
+    artifact_kind: code
+    artifact: |
+      const c = contract({ body: sections({}, [
+        section("Decision", { content: {
+          components: table({ anchor: "components", columns: ["#", "Component", "Resolution"] }),
+          risks: table({ anchor: "risks", columns: ["Risk", "Mitigation"] }),
+        } }),
+      ])});
+
+      const d = c.read(src, { path: "README.md" }).body.decision;
+      d.components.column("Component"); // ["projection", "grammar"]
+      d.risks.find(r => r.Risk.includes("gfm"))?.Mitigation; // "pin in spike S6"
+    surfaces:
+      - "section() content record of named table() leaves"
+      - "per-field TableView access"
+      - ".column/.find"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/consumption/06-named-tables-content-record.ts
+    recommend_test: null
+
+  - id: CONSUME-AS-DATA-07
+    name: "Look blocks up by anchor"
+    demonstrates: "doc.byAnchor(id) and section-scoped byAnchor resolve any ^anchor to a kind-discriminated BlockView, declared or not."
+    rank: 7
+    builds_on: CONSUME-AS-DATA-06
+    artifact_kind: code
+    artifact: |
+      const doc = c.read(src, { path: "README.md" });
+
+      const extra = doc.byAnchor("extra");      // doc-wide; an UNdeclared ^extra table
+      if (extra?.kind === "table") extra.rows[1].Option; // narrow on .kind, then read
+
+      doc.byAnchor("components")?.kind;          // "table" — declared anchors resolve too
+      doc.body.decision.byAnchor("missing");     // undefined — scoped to one section
+    surfaces:
+      - "doc.byAnchor(id) doc-wide"
+      - "SectionView.byAnchor(id) scoped"
+      - "BlockView .kind discriminant + narrowing"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/consumption/07-byanchor-declared-vs-dynamic.ts
+      - src/core/model.test.ts
+    recommend_test: null
+
+  - id: CONSUME-AS-DATA-08
+    name: "Traverse nested subsections"
+    demonstrates: "SectionView.sections is itself a dual-key group of the nested H3 subsections."
+    rank: 8
+    builds_on: CONSUME-AS-DATA-03
+    artifact_kind: code
+    artifact: |
+      const c = contract({ body: sections({ allowUnknown: true }, [
+        optional(section("Post-mortem", { children: sections({ order: "strict" }, [
+          section("Acceptance criteria coverage"),
+          section("What worked"),
+        ]) })),
+      ])});
+
+      const pm = c.read(src, { path: "T-AB12.md" }).body.postMortem;
+      pm.sections.whatWorked.text();              // camelCase key
+      pm.sections.section("What worked").text();  // exact-heading accessor — same view
+    surfaces:
+      - "section() children: sections()"
+      - "nested SectionView.sections dual-key group"
+      - "optional()"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/consumption/08-nested-subsections.ts
+      - src/core/model.test.ts
+    recommend_test: null
+
+  - id: CONSUME-AS-DATA-09
+    name: "Collect tolerated extra sections"
+    demonstrates: "Sections outside the contract (via gap()/allowUnknown) partition into doc.body.unknown as a positional SectionView[]."
+    rank: 9
+    builds_on: CONSUME-AS-DATA-02
+    artifact_kind: code
+    artifact: |
+      const c = contract({ body: sections({ order: "strict" }, [
+        section("Title"), section("Overview"), section("Status"), gap(),
+      ])});
+
+      const doc = c.read(src, { path: "status.md" });
+      doc.body.status.text();                    // declared section, typed key
+      doc.body.unknown.length;                   // 1 — e.g. an un-modeled "## Risks"
+      doc.body.unknown.map(s => s.name);         // ["Risks"] — heading is the handle
+    surfaces:
+      - "gap()"
+      - "sections order:\"strict\""
+      - "doc.body.unknown SectionView[] read by index/iteration/.name"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/consumption/09-unknown-sections.ts
+      - src/core/model.test.ts
+    recommend_test: null
+
+  - id: CONSUME-AS-DATA-10
+    name: "Contrast validate() with read()"
+    demonstrates: "validate() returns {findings, doc, tree} and never throws, while read() hands back a typed Doc or throws ContractError on error-level findings."
+    rank: 10
+    builds_on: CONSUME-AS-DATA-01
+    artifact_kind: code
+    artifact: |
+      // Collect everything, never throw:
+      const { findings, doc, tree } = c.validate(src, { path: "decision.md" });
+      findings.forEach(f => console.log(f.level, f.path, f.message));
+      if (doc) doc.frontmatter.id; // doc present only when valid
+
+      // Or take the typed door and let errors stop you:
+      try { const d = c.read(src, { path: "decision.md" }); }
+      catch (e) { /* ContractError carries the error-level findings */ }
+    surfaces:
+      - "contract.validate(src,{path}) → {findings, doc, tree}"
+      - "Finding.level/.path/.message"
+      - "contract.read + ContractError"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/core/validate.test.ts
+      - tests/fixtures/consumption/02-validate-doc-and-tree.ts
+      - tests/fixtures/consumption/10-contracterror-door.ts
+    recommend_test: null
+
+  - id: CONSUME-AS-DATA-11
+    name: "Read a real task into typed data"
+    demonstrates: "One contract reads a live Task end-to-end — frontmatter, a TableView, a list, and absent optionals — then does work with the typed result."
+    rank: 11
+    builds_on: CONSUME-AS-DATA-10
+    artifact_kind: code
+    artifact: |
+      const doc = TaskContract.read(src, { path: "docs/planning/tasks/T-AB12.md" });
+
+      const { id, status } = doc.frontmatter;          // typed
+      const changed = [...doc.body.filesToTouch]        // promoted TableView
+        .filter(r => r.Kind !== "delete").map(r => r.Location);
+      const acs = doc.body.acceptanceCriteria.lists[0].items.length;
+      const worked = doc.body.postMortem !== undefined; // absent on an open task
+
+      console.log(`${id} [${status}] touches ${changed.length} files, ${acs} ACs, worked=${worked}`);
+    surfaces:
+      - "contract.read end-to-end"
+      - "Doc.frontmatter"
+      - "promoted TableView iteration"
+      - "SectionView.lists"
+      - "absent-optional postMortem"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/consumption/11-real-task-consumed.ts
+    recommend_test: null

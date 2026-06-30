@@ -85,12 +85,24 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — parsed `docs/catalog/consume-as-data.yaml`; exactly 11 entries (`CONSUME-AS-DATA-01`..`11`).
+- AC-2: auto — every entry carries all 12 schema fields in canonical order (programmatic key-order check against `dialect.yaml`'s order, plus `npm run typecheck`).
+- AC-3: agent-manual — each `artifact` cross-checked against its peer runnable fixture under `tests/fixtures/consumption/01..11` and `src/core/model.ts`/`src/core/types.ts`; the fixtures assert the same values (`rowPos(2)` → `{line:7,col:1}`, `column("File")` → `["grammar.ts","leaves.ts","legacy.ts"]`, etc.), and `npm run test` keeps them green.
+- AC-4: auto — all 13 distinct `existing_coverage` paths resolve on disk (`fs.existsSync` over every entry).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The sibling `docs/catalog/dialect.yaml` gave an exact format template; mirroring it made the schema unambiguous and field-order verification mechanical.
+- The consumption fixtures (`tests/fixtures/consumption/01..11`) are runnable, asserted ground truth for the sketches, so AC-3 was a deterministic cross-check rather than a judgment call.
+- Baseline-gated quality run cleanly separated the 4 pre-existing findings from this branch's zero new drift.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- `quality run --diff-against-baseline` resolved `--baseline-dir` relative to the worktree cwd, not the main repo, so the first gate invocation failed `baseline not found` — task-work Step 7's documented invocation (no `--baseline-dir`, relying on the `<project-root>/.sdlc/quality-baselines/` default) fails inside a worktree because Step 3a captured the baseline in the MAIN repo's `.sdlc/`; Step 7 should pass the absolute main-repo baseline-dir when running inside a worktree. → already tracked upstream in `sksizer/dev` (sdlc plugin): in-flight PRs https://github.com/sksizer/dev/pull/509 (near-verbatim) and https://github.com/sksizer/dev/pull/514; successor task `T-44OO-plugin-scripts-self-discover-project-root` (supersedes closed `T-5X6Y-task-work-step7-explicit-baseline-dir`). Not re-spawned.
+- `preflight_permissions.ts` reported false-positive gaps (`npm`, `Write`, `Edit`) by inspecting settings files that did not reflect the runner's actual tool capabilities — npm and Write both worked when tested directly — so the probe parked an autonomous run that should have proceeded; the probe could cross-check actual capability before flagging in non-interactive dispatches. → already fixed upstream in `sksizer/dev` (sdlc plugin): merged PR https://github.com/sksizer/dev/pull/495 (probe honors runtime acceptEdits/bypassPermissions / touch-tests before flagging Write/Edit gaps) and merged PR https://github.com/sksizer/dev/pull/423 (key package-manager signal off project verbs, not blanket npm). The behavior observed here was the pre-fix probe on a stale plugin install. Not re-spawned.
+
+### Spawned follow-up tasks
+
+- none spawned — both `Upstream-plugin` friction bullets were de-duplicated against the upstream `sksizer/dev` (sdlc plugin) backlog rather than re-spawned as new PRs. The spawn-from-post-mortem dedup search scans only the local task corpus, which missed these foreign-repo matches; resolving the upstream target surfaced them:
+  - Step 7 baseline-dir-in-worktree → linked to in-flight upstream PRs https://github.com/sksizer/dev/pull/509 and https://github.com/sksizer/dev/pull/514, plus successor task `T-44OO-plugin-scripts-self-discover-project-root`.
+  - preflight false-positive capability gaps → already merged upstream: PR https://github.com/sksizer/dev/pull/495 (Write/Edit runtime grant) and PR https://github.com/sksizer/dev/pull/423 (package-manager/npm).
