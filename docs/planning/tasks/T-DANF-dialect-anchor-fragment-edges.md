@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-DANF
-status: open/ready
+status: in-progress
 created: '2026-06-28'
 related:
 - '[[M-0007-example-use-case-catalog]]'
@@ -60,3 +60,19 @@ Extend `src/core/dialect/*.test.ts` and `src/core/projection.test.ts` with the t
 ## Dependencies
 
 - None. Pins behavior already shipped under the dialect/projection engine. Promoted from the B-DANF backlog note.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
