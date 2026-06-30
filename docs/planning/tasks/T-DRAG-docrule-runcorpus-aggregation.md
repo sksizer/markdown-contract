@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-DRAG
-status: open/ready
+status: in-progress
 created: '2026-06-28'
 related:
 - '[[M-0007-example-use-case-catalog]]'
@@ -59,3 +59,19 @@ Extend `src/runner/corpus.test.ts` (or add cases beside it) with a small multi-d
 ## Dependencies
 
 - None blocking. Builds on `runCorpus` and the docRule plane. Promoted from the B-DRAG backlog note.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
