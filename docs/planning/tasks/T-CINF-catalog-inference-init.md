@@ -105,5 +105,10 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Friction and automation gaps
 
-- `preflight_permissions.ts` flagged `Bash(npm:*)`, `Write`, and `Edit` as missing-permission gaps that were false positives (npm ran fine; Write/Edit are native tools) — the probe reads declared `settings.json` and can't see the autonomous harness's actual runtime grants, costing a manual empirical-verification detour. The probe should reconcile against runtime capability (or downgrade these to a soft signal under autonomous dispatch) so it stops surfacing non-actionable gaps each run.
-- The prose `inference-init` sketches in `example-catalog.md` had drifted from real `init` output in four places (INFERENCE-INIT-01 stdout, 02 invented frontmatter, 06 group names + stranded warning, 07 `--relax` annotation); the YAML-ization caught and fixed each. A CI round-trip that diffs every catalog `artifact` block against the real verb output would prevent the prose and YAML re-drifting after merge.
+- `preflight_permissions.ts` flagged `Bash(npm:*)`, `Write`, and `Edit` as missing-permission gaps that were false positives (npm ran fine; Write/Edit are native tools) — the probe reads declared `settings.json` and can't see the autonomous harness's actual runtime grants, costing a manual empirical-verification detour. The probe should reconcile against runtime capability (or downgrade these to a soft signal under autonomous dispatch) so it stops surfacing non-actionable gaps each run. → [[T-XERZ-preflight-permissions-runtime-reconcile]]
+- The prose `inference-init` sketches in `example-catalog.md` had drifted from real `init` output in four places (INFERENCE-INIT-01 stdout, 02 invented frontmatter, 06 group names + stranded warning, 07 `--relax` annotation); the YAML-ization caught and fixed each. A CI round-trip that diffs every catalog `artifact` block against the real verb output would prevent the prose and YAML re-drifting after merge. → [[T-NBXH-catalog-artifact-verb-output-roundtrip]]
+
+### Spawned follow-up tasks
+
+- [[T-XERZ-preflight-permissions-runtime-reconcile]] (https://github.com/sksizer/dev/pull/527) — reconcile the preflight permission probe against runtime grants under autonomous dispatch; spawned (Upstream-plugin / `sdlc-meta`).
+- [[T-NBXH-catalog-artifact-verb-output-roundtrip]] (https://github.com/sksizer/markdown-contract/pull/106) — CI round-trip diffing each catalog `artifact` block against real verb output; spawned (Local).
