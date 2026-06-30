@@ -20,7 +20,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
  * `@storybook-vue/nuxt` if a real apps/web later needs Nuxt auto-imports in stories.
  */
 const config: StorybookConfig = {
-  stories: ["../components/**/*.stories.@(ts|js)"],
+  stories: ["../components/**/*.stories.@(ts|js)", "../pages/**/*.stories.@(ts|js)"],
   addons: ["@storybook/addon-essentials"],
   framework: {
     name: "@storybook/vue3-vite",
