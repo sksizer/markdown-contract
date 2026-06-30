@@ -97,12 +97,17 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `npm run generate` (Nuxt `ssr:false`) produced `.output/public/` SPA mounting at `#__nuxt`; `vue-tsc` typecheck clean; `git grep` confirms no import of `src/` (engine output shape is mirrored as local `mocks/types.ts`, never imported); absent from `moon.yml` and root `package.json` workspaces. The interactive `npm run dev` live feel is inherently a deferred-user spot-check.
+- AC-2: auto — `npm run build-storybook` static `index.json` lists 4 components / 11 stories, each component carrying ≥2 named variants (FindingsList 3, VaultStatusCard 3, RunSummary 2, VaultDashboard 4), all rendered off `mocks/` fixtures via a preview decorator. Live Storybook UX is deferred-user.
+- AC-3: auto — `CONVENTIONS.md` documents the ≥2-named-variant rule, the state-naming convention, and a per-component checklist; a README summary table mirrors it; every shipped component already conforms.
+- AC-4: auto — README "Boundary" section explicitly states mock-data-only, imports-nothing-from-`src/`, not-the-single-binary, decoupled from [[M-0008-single-exec-distribution]] / [[T-SPAE-spa-embed-spike]], deferred behind the [[T-UTKU-web-ui-prototype-review]] gate.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The root quality gate stayed green with zero root-config edits. Because the prototype lives entirely under `prototype/web-ui/` — outside the root `tsconfig.json` `include: ["src","tests"]` and outside the root `vitest.config.ts` globs — `npm run test` (566 tests) and `npm run typecheck` pass unchanged, and the prototype carries its own self-contained `tsconfig.json`/`node_modules`. The decoupling the task asked for is exactly what kept the existing checks isolated.
+- The baseline-gated quality run (`--diff-against-baseline`) cleanly separated origin/main's pre-existing `tests/yaml-parity.test.ts` typecheck drift from this branch's (zero) new drift, so the gate verdict was unambiguous (`OK 2/2`, no `new-drift:`).
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Storybook-for-Nuxt framework + version compatibility was unspecified — the spec said "Storybook (Nuxt/Vue 3 integration)" but `@storybook-vue/nuxt` is fragile for non-interactive (CI/build) verification, so the implementer fell back to `@storybook/vue3-vite` 8.6, which under the resolved Vite 7 additionally needed a manual `@vitejs/plugin-vue` injection in `viteFinal`, a `nuxt prepare` pre-script, and a scoped `.npmrc` `legacy-peer-deps=true`. A web-UI scaffold task template (for the M-0009 surface tasks that build on this) should pin the Storybook framework + a Vite/plugin-vue compatibility note so each surface task doesn't rediscover the same toolchain wiring.
+- Step 5a/5b `--commit-on main` landed the verify/start lifecycle commits on the task branch rather than advancing local `refs/heads/main` — local `main` was ahead of `origin/main` with parallel sessions' start-commits, and the verify/start commits ended up only reachable from `task/T-ZLND-web-ui-prototype-app` (confirmed via `git reflog main` and `merge-base --is-ancestor`). During the in-flight window `main` still reported the task `open/ready` while the lease was `working` — the exact limbo the `--commit-on main` design targets. Step 9's contamination rebase folds the commits into the PR so the eventual merge is correct, but it is worth confirming whether the commit-worktree path reliably advances `refs/heads/main` when local main is ahead of origin with concurrent parallel sessions.
