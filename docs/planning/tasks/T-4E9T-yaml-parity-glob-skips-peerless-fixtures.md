@@ -1,22 +1,24 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-4E9T
 status: in-progress
-created: '2026-06-28'
+created: 2026-06-28
 related:
-- T-TXSC-text-constraint-fixture-scaffold
-- T-TXYL-declarative-requires-forbids
-- T-TXFX-text-constraint-fixtures
-- T-VITE-upgrade-vitest
+  - T-TXSC-text-constraint-fixture-scaffold
+  - T-TXYL-declarative-requires-forbids
+  - T-TXFX-text-constraint-fixtures
+  - T-VITE-upgrade-vitest
 depends_on:
-- '[[T-VITE-upgrade-vitest]]'
+  - "[[T-VITE-upgrade-vitest]]"
 tags: []
 need_human_review: false
 impact: medium
 complexity: small
-readiness_verified_at: '2026-06-30T04:04:29Z'
-last_reviewed: '2026-06-30'
+readiness_verified_at: 2026-06-30T04:04:29Z
+last_reviewed: 2026-06-30
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/83
 ---
 # Make yaml-parity 'peers exist' glob skip gated/peerless fixtures so subdirectory placement isn't load-bearing
 
