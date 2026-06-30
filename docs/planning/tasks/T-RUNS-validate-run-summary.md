@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-RUNS
-status: open/ready
+status: in-progress
 created: '2026-06-27'
 related:
 - '[[C-0003-corpus-cli]]'
@@ -19,6 +19,7 @@ impact: medium
 complexity: small
 autonomy: autonomous/pr
 readiness_verified_at: '2026-06-30T04:04:53Z'
+last_reviewed: '2026-06-30'
 ---
 # Always print a run summary on `validate` — total files scanned, and per-contract matched counts
 
@@ -138,3 +139,19 @@ No findings.
 ## Dependencies
 
 - None blocking. Builds on the corpus runner and CLI from `[[C-0003-corpus-cli]]` (the `runCorpus` return shape and the `validate` path) and the finding-rendering model in `[[D-0001-finding-model]]` (the human report this summary sits beside). A peer test `src/runner/corpus.test.ts` may already exist on another branch — add cases to it rather than replacing it.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
