@@ -1,24 +1,26 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-CRWS
 status: in-progress
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0007-example-use-case-catalog]]'
-parent_key: '[[T-CTLG-example-catalog-finalize]]'
+  - "[[M-0007-example-use-case-catalog]]"
+parent_key: "[[T-CTLG-example-catalog-finalize]]"
 depends_on: []
 tags:
-- docs
-- examples
-- catalog
-- real-world
+  - docs
+  - examples
+  - catalog
+  - real-world
 need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-last_reviewed: '2026-06-30'
-readiness_verified_at: '2026-06-30T17:38:43Z'
+last_reviewed: 2026-06-30
+readiness_verified_at: 2026-06-30T17:38:43Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/128
 ---
 # Finalize the Real-World-Schemas catalog category as verified YAML (`real-world-schemas`)
 
