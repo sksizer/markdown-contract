@@ -95,12 +95,23 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — YAML-parse count confirms 20 entries (`DECLARATIVE-YAML-01..13` shipped + `14..20` planned).
+- AC-2: auto — YAML-parse field-presence check across all 20 entries; 0 missing-field failures across the 12-field schema.
+- AC-3: auto (agent-driven) — every shipped `artifact` (01–11, 13's YAML half) compiled against the real loader (`loadContract`/`loadConfigFile` from `src/declarative/`); fragments wrapped in a minimal `mcVersion: 1` / `kind: contract` envelope, configs materialized their referenced contract files; spot-checked findings (01 `frontmatter/required`, 05 `frontmatter/unknown-key`, 13 `frontmatter/type`+`frontmatter/enum`). 12 is CLI/bash (covered by the CLI suite). No corrections needed; throwaway verifier deleted.
+- AC-4: auto — all 7 planned entries carry `status: planned`, `coverage_status: uncovered`; entry 14 keeps the seed fixture `tests/fixtures/validation/17-node-level-custom-rule.ts`, 15–20 carry `existing_coverage: []`; each `recommend_test` links both `[[C-0009-declarative-text-constraints]]` and `[[D-0011-declarative-text-constraints]]`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The four already-merged catalog files (`dialect.yaml` et al.) gave an unambiguous schema/format model — field order, literal-block `artifact`, bare-string `builds_on` — so the new file dropped in consistently with zero schema guesswork.
+- Compiling each shipped sketch through the real `src/declarative` loader caught nothing broken (all 13 clean), which is the strongest possible signal that the catalog's `artifact` bodies are faithful and not aspirational.
+- The baseline-gated quality gate (`OK 2/2`) cleanly separated this branch's drift (none) from the 4 pre-existing findings.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 7's documented `sdlc quality run --diff-against-baseline` invocation omits `--baseline-dir`, so from a worktree it defaults to the worktree's own `.sdlc/quality-baselines/` and fails with `baseline not found` (the baseline was captured into the *main repo's* `.sdlc/`, which is gitignored and absent in the worktree) — task-work Step 7 (and 9) should pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly, or the executor should fall back to the superproject's baseline dir when run inside a worktree. → [[T-VJYX-quality-run-resolves-superproject-baseline-dir]]
+- Content observation (not an automation gap, flag for a possible follow-up): the text-constraint loader (`src/declarative/text.ts` + fixtures `22..25`) is in fact already implemented, even though `DECLARATIVE-YAML-14..20` are framed as PLANNED in `example-catalog.md`. They were correctly kept `status: planned` here because the *sketched* syntax still diverges from the shipped engine (e.g. entry 18's `requires: [{max: 0}]` "forbids dual" is explicitly rejected by `text.ts`, which routes absence to `forbids`); a future task may want to reconcile the sketched syntax against the shipped text-constraint surface. → [[T-237L-reconcile-text-constraint-catalog-syntax]]
+
+### Spawned follow-up tasks
+
+- [[T-VJYX-quality-run-resolves-superproject-baseline-dir]] (https://github.com/sksizer/dev/pull/531) — Upstream-plugin (sdlc): resolve the quality-baseline dir from the superproject when `sdlc quality run` runs inside a worktree; spawned.
+- [[T-237L-reconcile-text-constraint-catalog-syntax]] (https://github.com/sksizer/markdown-contract/pull/113) — Local: reconcile the planned DECLARATIVE-YAML-14..20 text-constraint sketches against the shipped `text.ts` engine; spawned.
