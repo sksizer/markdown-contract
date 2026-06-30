@@ -73,30 +73,32 @@ that ignores the new argument compiles and behaves identically.
 4. In `textRule` (`src/core/text-constraints.ts`), use the tree to position a
    whole-document `forbids` hit at the offending source line. (The match logic
    itself is T-TXAP/T-TXYL's; this task makes the line-exact `pos` reachable.)
-5. Re-pin the affected fixture — `tests/fixtures/validation/text/23-text-forbids-body-root`
+5. Re-pin the affected fixture — `tests/fixtures/validation/23-text-forbids-body-root`
    (the body-root `forbids` case) — so its expected `pos.line` is the exact
    offending line rather than the coarsened post-heading line.
 
 ## Files to touch
 
-| File | Kind | Why |
+| Location | Kind | Change |
 | --- | --- | --- |
 | `src/core/types.ts` | modify | widen `DocRule.run` to `run(doc, ctx, tree)` |
 | `src/core/grammar.ts` | modify | `docRule(id, fn)` factory forwards the tree |
 | `src/core/validate.ts` | modify | `runDocRules` passes the in-scope `tree` (≈ line 100) |
 | `src/core/text-constraints.ts` | modify | `textRule` uses the tree for line-exact whole-doc `forbids` positions |
-| `tests/fixtures/validation/text/23-text-forbids-body-root.*` | modify | re-pin expected `pos.line` to the exact offending line |
+| `tests/fixtures/validation/23-text-forbids-body-root.*` | modify | re-pin expected `pos.line` to the exact offending line |
 
 ## Acceptance criteria
 
-- A whole-document (`textRule`) `forbids` hit in prose anchors at the **exact
-  offending source line**, not the section heading or the coarsened post-heading
-  line; fixture `23-text-forbids-body-root` asserts that line and `npm run test`
-  is green.
-- `DocRule.run` receives the projected `DocTree`; the per-node `Rule.run(node, ctx)`
-  signature is **unchanged** (this widening is scoped to doc rules only).
-- The new argument is additive — existing doc rules that ignore it compile and
-  emit identical findings (no behavior change for rules that don't read the tree).
+- [ ] AC-1: A whole-document (`textRule`) `forbids` hit in prose anchors at the
+  **exact offending source line**, not the section heading or the coarsened
+  post-heading line; fixture `23-text-forbids-body-root` asserts that line and
+  `npm run test` is green.
+- [ ] AC-2: `DocRule.run` receives the projected `DocTree`; the per-node
+  `Rule.run(node, ctx)` signature is **unchanged** (this widening is scoped to
+  doc rules only).
+- [ ] AC-3: The new argument is additive — existing doc rules that ignore it
+  compile and emit identical findings (no behavior change for rules that don't
+  read the tree).
 
 ## Out of scope
 
