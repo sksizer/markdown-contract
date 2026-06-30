@@ -1,23 +1,27 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-RUNS
-status: open/ready
+status: in-progress
 created: '2026-06-27'
 related:
-- '[[C-0003-corpus-cli]]'
-- '[[D-0001-finding-model]]'
-- '[[M-0003-config-inference]]'
+  - "[[C-0003-corpus-cli]]"
+  - "[[D-0001-finding-model]]"
+  - "[[M-0003-config-inference]]"
 depends_on: []
 tags:
-- cli
-- runner
-- dx
-- reporting
+  - cli
+  - runner
+  - dx
+  - reporting
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: autonomous/pr
+readiness_verified_at: '2026-06-30T04:04:53Z'
+last_reviewed: '2026-06-30'
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/82
 ---
 # Always print a run summary on `validate` — total files scanned, and per-contract matched counts
 
@@ -31,11 +35,11 @@ A consumer who runs `validate` should always see **evidence the run happened and
 
 | Location | Role today |
 |---|---|
-| `src/runner/corpus.ts` · `runCorpus` (L111–147) | Walks every file (`walkSync`, L130), routes each to the FIRST matching rule (`rules.find`, L136–138), validates it; returns only `{ findings, exitCode }` — no scanned / matched / per-rule counts |
-| `src/runner/corpus.ts` · `CorpusConfig` rule (L25–27) | A rule is `{ include, exclude?, contract: Contract }` — it carries the compiled `Contract` OBJECT, not the contract's name, so no per-contract LABEL is recoverable inside the runner |
-| `src/declarative/config.ts` · `compileRule` / `resolveContract` (L46–91) | Resolves `rule.contract` (the name string `ref`, or a path, or inline) to a `Contract` and **discards the name** — the seam where the label is currently lost |
-| `src/cli/run.ts` · validate path (L170–190) | Builds the `CorpusConfig`, calls `runCorpus`, formats via `formatHuman` / `formatJson` / `formatSarif`; types `result` as `{ findings, exitCode }` and renders findings only — no file counts |
-| `src/cli/format.ts` · `formatHuman` (L24) | Returns `"No findings."` for an empty corpus; otherwise one line per finding plus a `N finding(s): …` count line (L43). No notion of a run summary |
+| `src/runner/corpus.ts#runCorpus` | Walks every file (L111–147) (`walkSync`, L130), routes each to the FIRST matching rule (`rules.find`, L136–138), validates it; returns only `{ findings, exitCode }` — no scanned / matched / per-rule counts |
+| `src/runner/corpus.ts#CorpusConfig` | The rule type (L25–27): a rule is `{ include, exclude?, contract: Contract }` — it carries the compiled `Contract` OBJECT, not the contract's name, so no per-contract LABEL is recoverable inside the runner |
+| `src/declarative/config.ts#compileRule` | `compileRule` / `resolveContract` (L46–91): resolves `rule.contract` (the name string `ref`, or a path, or inline) to a `Contract` and **discards the name** — the seam where the label is currently lost |
+| `src/cli/run.ts#runCli` | The validate path (L170–190): builds the `CorpusConfig`, calls `runCorpus`, formats via `formatHuman` / `formatJson` / `formatSarif`; types `result` as `{ findings, exitCode }` and renders findings only — no file counts |
+| `src/cli/format.ts#formatHuman` | `formatHuman` (L24): returns `"No findings."` for an empty corpus; otherwise one line per finding plus a `N finding(s): …` count line (L43). No notion of a run summary |
 
 Observed (the project is already built into `dist/`):
 
@@ -137,3 +141,19 @@ No findings.
 ## Dependencies
 
 - None blocking. Builds on the corpus runner and CLI from `[[C-0003-corpus-cli]]` (the `runCorpus` return shape and the `validate` path) and the finding-rendering model in `[[D-0001-finding-model]]` (the human report this summary sits beside). A peer test `src/runner/corpus.test.ts` may already exist on another branch — add cases to it rather than replacing it.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._

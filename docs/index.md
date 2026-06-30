@@ -65,6 +65,7 @@ Milestones are product releases; order is ascending `version`. Source:
 | --- | --- | --- |
 | — | [[M-0003-config-inference]] | Config inference & `init` scaffolding |
 | — | [[M-0004-declarative-text-constraints]] | Declarative text constraints — requires / forbids |
+| — | [[M-0005-monorepo-tooling]] | Monorepo tooling — a Bun workspace orchestrated by moon |
 
 **Deferred / emerging / obsoleted** — milestones not in effect today
 (planned, draft, or closed), rendered as a table:
@@ -73,7 +74,6 @@ Milestones are product releases; order is ascending `version`. Source:
 | --- | --- | --- | --- |
 | `0.1.0` | [[M-0001-initial-contract-engine-and-cli]] | Initial release — the two-plane contract engine and CLI | closed/done |
 | — | [[M-0002-declarative-yaml-contracts-v1]] | Declarative YAML contracts — v1 loader, DSL, and meta-config | closed/done |
-| — | [[M-0005-monorepo-tooling]] | Monorepo tooling — a Bun workspace orchestrated by moon | open/planned |
 | — | [[M-0006-documentation-site]] | Published documentation site | open/planned |
 | — | [[M-0007-example-use-case-catalog]] | Example use-case catalog — the categorized basis for the docs and marketing site | open/planned |
 | — | [[M-0008-single-exec-distribution]] | Single-executable distribution — the cross-platform CLI binary | open/planned |
@@ -132,13 +132,13 @@ link inline; single-file ADRs transclude their `^summary`.
 | [[D-0007-engine-scope-and-fidelity]] | ![[D-0007-engine-scope-and-fidelity#^summary]] |
 | [[D-0008-declarative-contract-dsl]] | ![[D-0008-declarative-contract-dsl#^summary]] |
 | [[D-0009-config-inference]] | ![[D-0009-config-inference#^summary]] |
+| [[D-0010-monorepo-tooling]] | ![[D-0010-monorepo-tooling#^summary]] |
 | [[D-0011-declarative-text-constraints]] | ![[D-0011-declarative-text-constraints#^summary]] |
 
 **Emerging / obsoleted:**
 
 | Decision | Summary | Status |
 | --- | --- | --- |
-| [[D-0010-monorepo-tooling]] | ![[D-0010-monorepo-tooling#^summary]] | open/proposed |
 | [[D-0012-distribution-single-exec-and-web-ui]] | ![[D-0012-distribution-single-exec-and-web-ui#^summary]] | open/proposed |
 
 ## Technical capabilities
