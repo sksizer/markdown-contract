@@ -1,26 +1,26 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-CCON
-status: in-progress
-created: 2026-06-30
+status: closed/done
+created: '2026-06-30'
 related:
-  - "[[M-0007-example-use-case-catalog]]"
-parent_key: "[[T-CTLG-example-catalog-finalize]]"
+- '[[M-0007-example-use-case-catalog]]'
+parent_key: '[[T-CTLG-example-catalog-finalize]]'
 depends_on: []
 tags:
-  - docs
-  - examples
-  - catalog
-  - consumption
+- docs
+- examples
+- catalog
+- consumption
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-last_reviewed: 2026-06-30
-readiness_verified_at: 2026-06-30T12:06:12Z
+last_reviewed: '2026-06-30'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/99
+- https://github.com/sksizer/markdown-contract/pull/99
+completion_note: 'Shipped via #99.'
 ---
 # Finalize the Consume-as-Typed-Data catalog category as verified YAML (`consume-as-data`)
 
