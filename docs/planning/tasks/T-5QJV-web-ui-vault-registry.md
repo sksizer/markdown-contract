@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-5QJV
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0009-local-web-ui-vault-dashboard]]'
@@ -21,6 +21,7 @@ impact: medium
 complexity: medium
 autonomy: supervised
 readiness_verified_at: '2026-06-30T15:27:51Z'
+last_reviewed: '2026-06-30'
 ---
 # Prototype: register / manage vault flow
 
@@ -77,3 +78,19 @@ dashboard ([[T-6RFC-web-ui-vault-dashboard]]).
 ## Discovery context
 
 - Created in the M-0009 planning session (2026-06-30); the registry of managed vaults is the durable-intent layer in [[D-0012-distribution-single-exec-and-web-ui]] §D4.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
