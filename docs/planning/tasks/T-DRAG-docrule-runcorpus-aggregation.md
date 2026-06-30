@@ -16,8 +16,8 @@ need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-06-30T05:29:43Z'
 last_reviewed: '2026-06-30'
+readiness_verified_at: '2026-06-30T06:59:27Z'
 ---
 # Aggregate `docRule` findings through `runCorpus` into `exitCode` (multi-rule, mixed levels)
 
