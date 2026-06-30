@@ -106,4 +106,8 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Friction and automation gaps
 
-- Step 7's `quality run --diff-against-baseline` defaulted its `--baseline-dir` to the worktree's `.sdlc/quality-baselines/`, but Step 3a captured the baseline in the **main repo's** `.sdlc/quality-baselines/`; the first gate invocation failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — task-work Step 7 (and Step 9.6) should pass `--baseline-dir` pointing at the main checkout whenever it runs the gate from inside a worktree, since a worktree carries its own `.sdlc/`.
+- Step 7's `quality run --diff-against-baseline` defaulted its `--baseline-dir` to the worktree's `.sdlc/quality-baselines/`, but Step 3a captured the baseline in the **main repo's** `.sdlc/quality-baselines/`; the first gate invocation failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — task-work Step 7 (and Step 9.6) should pass `--baseline-dir` pointing at the main checkout whenever it runs the gate from inside a worktree, since a worktree carries its own `.sdlc/`. → [[T-5HX8-task-work-threads-main-baseline-dir]]
+
+### Spawned follow-up tasks
+
+- [[T-5HX8-task-work-threads-main-baseline-dir]] (https://github.com/sksizer/dev/pull/509) — Upstream-plugin (`sdlc-meta`); pre-existing upstream PR matched by slug, so the `/sdlc:spawn-task-pr` idempotency check returned `SPAWN-TASK-PR-EXISTING` (linked, not newly spawned). The same gap was first spawned from sibling task [[T-TXMC-text-match-core]]'s post-mortem; PRs #514 (`quality-gate-resolves-superproject-baseline`) and #513 (`surface-failing-baseline-at-pickup`) are closely related upstream follow-ups on the same theme.
