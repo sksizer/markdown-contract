@@ -1,29 +1,29 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-5QJV
-status: in-progress
-created: 2026-06-30
+status: closed/done
+created: '2026-06-30'
 related:
-  - "[[M-0009-local-web-ui-vault-dashboard]]"
-  - "[[C-0010-single-binary-and-vault-dashboard]]"
-  - "[[D-0012-distribution-single-exec-and-web-ui]]"
+- '[[M-0009-local-web-ui-vault-dashboard]]'
+- '[[C-0010-single-binary-and-vault-dashboard]]'
+- '[[D-0012-distribution-single-exec-and-web-ui]]'
 depends_on:
-  - "[[T-ZLND-web-ui-prototype-app]]"
-  - "[[T-D7X1-web-ui-mock-api-shapes]]"
-  - "[[T-S5K8-web-ui-status-design-system]]"
+- '[[T-ZLND-web-ui-prototype-app]]'
+- '[[T-D7X1-web-ui-mock-api-shapes]]'
+- '[[T-S5K8-web-ui-status-design-system]]'
 tags:
-  - web-ui
-  - prototype
-  - registry
+- web-ui
+- prototype
+- registry
 need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-readiness_verified_at: 2026-06-30T15:27:51Z
-last_reviewed: 2026-06-30
+last_reviewed: '2026-06-30'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/118
+- https://github.com/sksizer/markdown-contract/pull/118
+completion_note: 'Shipped via #118.'
 ---
 # Prototype: register / manage vault flow
 
