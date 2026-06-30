@@ -30,6 +30,12 @@ describe("extractVaultRefs — recognize [[wikilink]] and ![[transclusion]]", ()
     ]);
   });
 
+  test("`target#^block` keeps the leading `^` in the fragment value", () => {
+    expect(extractVaultRefs("[[Note#^block-id]]")).toEqual([
+      { kind: "wikilink", target: "Note", fragment: "^block-id", raw: "[[Note#^block-id]]" },
+    ]);
+  });
+
   test("multiple refs in one string are all recognized, in order", () => {
     expect(extractVaultRefs("[[A]] and then ![[B]]").map((r) => `${r.kind}:${r.target}`)).toEqual([
       "wikilink:A",

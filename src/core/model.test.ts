@@ -165,6 +165,20 @@ describe("byAnchor — declared vs undeclared", () => {
   });
 });
 
+describe("byAnchor — section-level anchor is NOT a block-level hit", () => {
+  // A `^section-id` standing alone, with no preceding block, is a *section-level* anchor: it
+  // lands on `node.anchors` (surfacing on `SectionView.anchors`) but binds to no block, so the
+  // block-level `byAnchor` index does not reach it.
+  const src = ["## Notes", "", "^section-id"].join("\n");
+  const build = () => contract({ body: sections({}, [section("Notes")]) });
+
+  test("the section id surfaces on SectionView.anchors but byAnchor returns undefined", () => {
+    const doc = build().read(src, PATH);
+    expect((doc.body as any).notes.anchors).toContain("section-id");
+    expect((doc.body as any).notes.byAnchor("section-id")).toBeUndefined();
+  });
+});
+
 describe("nested sections recursion", () => {
   test("SectionView.sections is the same dual-key shape, partitioned by the children grammar", () => {
     const c = contract({
