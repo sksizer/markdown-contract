@@ -17,7 +17,7 @@ need_human_review: false
 impact: high
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-06-30T11:57:16Z'
+readiness_verified_at: '2026-06-30T14:06:02Z'
 ---
 # Prototype: mock vault & findings JSON payload shapes (the UI data seam)
 
