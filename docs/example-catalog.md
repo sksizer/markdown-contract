@@ -105,15 +105,13 @@ _A file that breaks its contract prints one human-formatted finding with id, lev
 
 ```bash
 $ markdown-contract validate docs/planning/decisions/D-0008.md
-docs/planning/decisions/D-0008.md:7 error structure/missing-section — required section "Decision" not found
+docs/planning/decisions/D-0008.md:7 error structure/section-missing — required section ‘Decision’ is missing
 
 1 finding(s): 1 error, 0 warn, 0 report
 $ echo $?
 1
 ```
 `surfaces:` formatHuman per-finding line (path:line level id — message); Finding {id,level,path,pos}; exit code 1 (error-level findings)
-
-> &#9888; **Review note:** Illustrative finding id 'structure/missing-section' does not exist; the real id is 'structure/section-missing'.
 
 **CLI-03 — Switch to JSON output** · _builds on CLI-02_  
 _--format json emits the raw Finding[] array for machine parsing._
@@ -122,17 +120,15 @@ _--format json emits the raw Finding[] array for machine parsing._
 $ markdown-contract validate docs/planning/decisions/D-0008.md --format json
 [
   {
-    "id": "structure/missing-section",
+    "id": "structure/section-missing",
     "level": "error",
     "path": "docs/planning/decisions/D-0008.md",
-    "pos": { "line": 7, "col": 1 },
-    "message": "required section \"Decision\" not found"
+    "message": "required section ‘Decision’ is missing",
+    "pos": { "line": 7, "col": 1 }
   }
 ]
 ```
 `surfaces:` --format json; formatJson (Finding[] verbatim, JSON.parse round-trips)
-
-> &#9888; **Review note:** Illustrative finding id 'structure/missing-section' does not exist; real id is 'structure/section-missing'.
 
 **CLI-04 — Emit SARIF for code scanning** · _builds on CLI-03_  
 _--format sarif produces a SARIF 2.1.0 log ready to upload to GitHub code scanning._
@@ -150,27 +146,23 @@ _Passing a directory validates every markdown file the discovered config routes,
 
 ```bash
 $ markdown-contract validate docs/planning
-docs/planning/tasks/T-0042.md:3 error content/enum — status not in {open/ready,...}
-docs/planning/milestones/L0.md:12 warn structure/unknown-section — unexpected section "Notes"
+docs/planning/tasks/T-0042.md:3 error frontmatter/enum — frontmatter field ‘status’ must be one of ‘planning/draft’, ‘planning/proposed’, ‘planning/needs-definition’, ‘planning/backlog’, ‘open/ready’, ‘in-progress’, ‘in-progress/blocked’, ‘closed/done’, ‘closed/superseded’, ‘closed/partially-superseded’, ‘closed/obsoleted’, ‘closed/relocated’, ‘closed/no-repro’, ‘closed/wontdo’
+docs/planning/milestones/L0.md:3 error frontmatter/unknown-key — unknown frontmatter key ‘reviewer’
 
-2 finding(s): 1 error, 1 warn, 0 report
+2 finding(s): 2 error, 0 warn, 0 report
 ```
 `surfaces:` validate <dir>; runner aggregates findings across files; findings deterministically ordered by path then line
-
-> &#9888; **Review note:** Illustrative ids 'content/enum' and 'structure/unknown-section' do not exist (real: 'frontmatter/enum', 'frontmatter/unknown-key').
 
 **CLI-06 — Narrow the run with --include** · _builds on CLI-05_  
 _--include scopes a directory run to a glob, validating only the matching subset._
 
 ```bash
 $ markdown-contract validate docs/planning --include 'tasks/**/*.md'
-docs/planning/tasks/T-0042.md:3 error content/enum — status not in {open/ready,...}
+docs/planning/tasks/T-0042.md:3 error frontmatter/enum — frontmatter field ‘status’ must be one of ‘planning/draft’, ‘planning/proposed’, ‘planning/needs-definition’, ‘planning/backlog’, ‘open/ready’, ‘in-progress’, ‘in-progress/blocked’, ‘closed/done’, ‘closed/superseded’, ‘closed/partially-superseded’, ‘closed/obsoleted’, ‘closed/relocated’, ‘closed/no-repro’, ‘closed/wontdo’
 
 1 finding(s): 1 error, 0 warn, 0 report
 ```
 `surfaces:` --include glob (run-root-relative; --glob is its alias); runner include filter
-
-> &#9888; **Review note:** Illustrative id 'content/enum' does not exist (real: 'frontmatter/enum').
 
 **CLI-07 — Carve out files with --exclude** · _builds on CLI-06_  
 _--exclude drops matching files from the run, here skipping archived entities._
@@ -1873,8 +1865,6 @@ Cross-referenced all **99** examples against the fixture corpus (`tests/fixtures
 
 **Corrections to apply before the snippets ship** (flagged by the reviewer; tracked in [[T-SITE-bootstrap-docs-website]]):
 
-- `CLI-02`, `CLI-03` use `structure/missing-section`; the real id is `structure/section-missing`.
-- `CLI-05`, `CLI-06` use `content/enum` / `structure/unknown-section`; the real ids are `frontmatter/enum` / `frontmatter/unknown-key`.
 - `INFERENCE-INIT-05` (`--infer-bounds`): the flag is parsed but **not yet read** in `src/declarative/infer.ts` (min/max/pattern inference is a future phase) — document it as a no-op / planned, not as working behavior.
 
 **Planned features (C-0009 / D-0011).** 9 examples are marked &#128679; *planned* (declarative text constraints — in the Declarative-YAML, in-code, and real-world-schema categories) and are **excluded from the counts above**. Each compiles to the engine's existing `rule` / `docRule` machinery, with `tests/fixtures/validation/17-node-level-custom-rule.ts` as the hand-written seed; when the feature lands ([[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]]) these examples become its fixtures.
