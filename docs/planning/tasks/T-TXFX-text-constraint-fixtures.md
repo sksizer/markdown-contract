@@ -92,4 +92,8 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Friction and automation gaps
 
-- `sdlc quality run --diff-against-baseline` defaults `--baseline-dir` to the worktree's `.sdlc/quality-baselines/`, but `/sdlc:task-work` Step 3a captures the baseline in the MAIN checkout's `.sdlc/quality-baselines/`; the gate failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — the gate should resolve the baseline dir against the git common dir (main checkout) when invoked from a worktree, rather than cwd.
+- `sdlc quality run --diff-against-baseline` defaults `--baseline-dir` to the worktree's `.sdlc/quality-baselines/`, but `/sdlc:task-work` Step 3a captures the baseline in the MAIN checkout's `.sdlc/quality-baselines/`; the gate failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — the gate should resolve the baseline dir against the git common dir (main checkout) when invoked from a worktree, rather than cwd. → [[T-A1SR-quality-gate-resolves-superproject-baseline]]
+
+### Spawned follow-up tasks
+
+- [[T-A1SR-quality-gate-resolves-superproject-baseline]] (https://github.com/sksizer/dev/pull/514) — **linked to existing upstream PR** (Upstream-plugin, `sdlc-meta`). De-duplicated against the already-open `sksizer/dev#514`, which was spawned from [[T-RUNS-validate-run-summary]]'s post-mortem on 2026-06-30 for the identical gap (the worktree quality gate resolving its baseline dir against the main checkout / git common dir). Not re-spawned, to avoid fragmenting the upstream backlog. The complementary task-work-side fix — passing `--baseline-dir` at the Step 7 gate run — is in flight as `sksizer/dev#509` (`task-work-threads-main-baseline-dir`).
