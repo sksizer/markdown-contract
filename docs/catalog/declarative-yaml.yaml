@@ -1,0 +1,500 @@
+category: declarative-yaml
+title: "Declarative YAML: Contracts and Corpus Config, No Code"
+examples:
+  - id: DECLARATIVE-YAML-01
+    name: "Validate one required frontmatter field by type"
+    demonstrates: "A minimal contract document (mcVersion 1, kind contract) that requires a single typed frontmatter field."
+    rank: 1
+    builds_on: null
+    artifact_kind: yaml
+    artifact: |
+      mcVersion: 1
+      kind: contract
+      frontmatter:
+        fields:
+          title:
+            type: string
+    surfaces:
+      - "loadContract / loadContractFile"
+      - "compileFrontmatter -> compileObjectSchema"
+      - "type: string -> z.string()"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/load.test.ts
+      - src/declarative/schema.test.ts
+      - tests/fixtures/validation/07-frontmatter-only-zod.contract.yaml
+    recommend_test: null
+
+  - id: DECLARATIVE-YAML-02
+    name: "Constrain with enum and const"
+    demonstrates: "Pinning a field to a fixed literal (const) or a closed set of allowed values (enum)."
+    rank: 2
+    builds_on: DECLARATIVE-YAML-01
+    artifact_kind: yaml
+    artifact: |
+      frontmatter:
+        fields:
+          type:
+            const: decision
+          status:
+            enum: [open/ready, in-progress/active, closed/done]
+    surfaces:
+      - "schema.ts base(): const -> z.literal()"
+      - "enum -> z.enum()"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/schema.test.ts
+    recommend_test: null
+
+  - id: DECLARATIVE-YAML-03
+    name: "Bound and shape strings with min/max, pattern, format"
+    demonstrates: "Adding numeric bounds, a regex pattern, and a named string format to a typed field."
+    rank: 3
+    builds_on: DECLARATIVE-YAML-02
+    artifact_kind: yaml
+    artifact: |
+      frontmatter:
+        fields:
+          id:       { type: string, pattern: '^D-\d{4}$' }
+          title:    { type: string, min: 1, max: 80 }
+          created:  { type: string, format: date }
+          contact:  { type: string, format: email }
+          weight:   { type: number, int: true, min: 0, max: 5 }
+    surfaces:
+      - "schema.ts typed(): .min/.max"
+      - ".regex(pattern)"
+      - "STRING_FORMATS (date/email -> z.iso.date()/z.email())"
+      - "int -> z.int()"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/schema.test.ts
+    recommend_test: null
+
+  - id: DECLARATIVE-YAML-04
+    name: "Make fields optional, defaulted, or nullable"
+    demonstrates: "The three field wrappers — optional, default, nullable — applied over a base schema."
+    rank: 4
+    builds_on: DECLARATIVE-YAML-03
+    artifact_kind: yaml
+    artifact: |
+      frontmatter:
+        fields:
+          last_reviewed: { type: string, format: date, optional: true }
+          priority:      { type: number, default: 3 }
+          archived_at:   { type: string, format: date, nullable: true }
+    surfaces:
+      - "compileSchema() wrappers: .optional()"
+      - ".default(value)"
+      - ".nullable()"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/schema.test.ts
+    recommend_test: null
+
+  - id: DECLARATIVE-YAML-05
+    name: "Toggle strict vs open frontmatter"
+    demonstrates: "Whether unlisted frontmatter keys are rejected (strict) or passed through (open)."
+    rank: 5
+    builds_on: DECLARATIVE-YAML-04
+    artifact_kind: yaml
+    artifact: |
+      frontmatter:
+        strict: true        # unknown keys become a finding (z.strictObject)
+        fields:
+          type:   { const: task }
+          id:     { type: string }
+          status: { enum: [open/ready, closed/done] }
+    surfaces:
+      - "compileFrontmatter(): strict -> z.strictObject vs z.object"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/schema.test.ts
+      - src/declarative/load.test.ts
+      - tests/fixtures/validation/07a-frontmatter-enum-and-unknown-key.contract.yaml
+    recommend_test: null
+
+  - id: DECLARATIVE-YAML-06
+    name: "Declare array and nested object fields"
+    demonstrates: "Composite frontmatter — an array with an element schema (of) and a nested object with its own fields."
+    rank: 6
+    builds_on: DECLARATIVE-YAML-05
+    artifact_kind: yaml
+    artifact: |
+      frontmatter:
+        fields:
+          tags:
+            type: array
+            of: { type: string }
+            min: 1
+          owner:
+            type: object
+            strict: true
+            fields:
+              name:  { type: string }
+              email: { type: string, format: email }
+    surfaces:
+      - "typed() array -> z.array(compileSchema(of)) with .min"
+      - "object -> compileObjectSchema(fields, strict)"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/schema.test.ts
+    recommend_test: null
+
+  - id: DECLARATIVE-YAML-07
+    name: "Declare required body sections"
+    demonstrates: "Moving to the body plane: a sections grammar listing the H2 headings a document must contain, with ordering and unknown-section policy."
+    rank: 7
+    builds_on: DECLARATIVE-YAML-06
+    artifact_kind: yaml
+    artifact: |
+      body:
+        order: strict          # none | recognized-relative | strict
+        allowUnknown: false
+        sections:
+          - section: Summary
+          - section: Context
+          - section: Decision
+          - section: References
+    surfaces:
+      - "compileBody -> sections(opts, specs)"
+      - "order/allowUnknown LevelOpts"
+      - "section()"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/body.test.ts
+      - tests/fixtures/validation/04-recognized-relative-order.contract.yaml
+      - tests/fixtures/validation/05-strict-prefix-gap-tail.contract.yaml
+    recommend_test: null
+
+  - id: DECLARATIVE-YAML-08
+    name: "Optional, alias, oneOf and gap section nodes"
+    demonstrates: "The remaining body-node vocabulary — optional sections, heading aliases, a oneOf choice, and a gap allowance."
+    rank: 8
+    builds_on: DECLARATIVE-YAML-07
+    artifact_kind: yaml
+    artifact: |
+      body:
+        order: recognized-relative
+        sections:
+          - section: Summary
+            aliases: [Overview, TL;DR]
+          - oneOf: [Decision, Proposal]
+          - section: Out of scope
+            optional: true
+          - gap: { min: 0, max: 2 }
+    surfaces:
+      - "compileNode: section(names with aliases)"
+      - "oneOf()"
+      - "optional(spec)"
+      - "gap({min,max})"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/body.test.ts
+      - tests/fixtures/validation/03-optional-sections.contract.yaml
+      - tests/fixtures/validation/05b-gap-bounds.contract.yaml
+    recommend_test: null
+
+  - id: DECLARATIVE-YAML-09
+    name: "Declare required block kinds inside a section"
+    demonstrates: "Content leaves — requiring a typed table, a checkbox list, fenced code, or a word cap within a section."
+    rank: 9
+    builds_on: DECLARATIVE-YAML-08
+    artifact_kind: yaml
+    artifact: |
+      body:
+        sections:
+          - section: Summary
+            anchor: summary
+            content: { maxWords: 120 }
+          - section: Files to touch
+            content:
+              table:
+                columns: [Location, Kind, Change]
+                cells: { Kind: { enum: [new, modify, delete] } }
+          - section: Acceptance criteria
+            content: { list: { everyItem: checkbox } }
+    surfaces:
+      - "compileContent/compileLeaf: maxWords()"
+      - "table({columns,cells})"
+      - "list({everyItem})"
+      - "cells reuse compileSchema"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/body.test.ts
+      - tests/fixtures/validation/13-code-leaf-lang.contract.yaml
+    recommend_test: null
+
+  - id: DECLARATIVE-YAML-10
+    name: "Map one glob to one contract (corpus config)"
+    demonstrates: "The config plane: a kind config document whose single rule routes a glob to a contract file."
+    rank: 10
+    builds_on: DECLARATIVE-YAML-09
+    artifact_kind: yaml
+    artifact: |
+      mcVersion: 1
+      kind: config
+      rules:
+        - include: ["docs/planning/decisions/**/*.md"]
+          contract: ./contracts/decision.contract.yaml
+    surfaces:
+      - "loadConfig/loadConfigFile -> CorpusConfig"
+      - "compileRule include + contract path resolution"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/config.test.ts
+    recommend_test: null
+
+  - id: DECLARATIVE-YAML-11
+    name: "Route several globs first-match-wins, with named contracts and exclude"
+    demonstrates: "A multi-rule config with a named contracts map, per-rule exclude, and first-match-wins precedence."
+    rank: 11
+    builds_on: DECLARATIVE-YAML-10
+    artifact_kind: yaml
+    artifact: |
+      mcVersion: 1
+      kind: config
+      contracts:
+        task: ./contracts/task.contract.yaml
+        decision: ./contracts/decision.contract.yaml
+      rules:
+        - include: ["**/tasks/**/*.md"]
+          exclude: ["**/_archive/**"]
+          contract: task          # earliest matching rule wins
+        - include: ["**/decisions/**/*.md"]
+          contract: decision
+    surfaces:
+      - "compileConfig: contracts name map"
+      - "compileRule exclude"
+      - "first-match-wins rule order in runCorpus"
+    needs_test: "yes"
+    coverage_status: partial
+    existing_coverage:
+      - src/declarative/config.test.ts
+    recommend_test: "[[T-ROUT-runcorpus-first-match-routing]]"
+
+  - id: DECLARATIVE-YAML-12
+    name: "Run a YAML config from the CLI"
+    demonstrates: "Feeding a declarative config into the validate command, which auto-discovers markdown-contract.yaml or takes an explicit --config."
+    rank: 12
+    builds_on: DECLARATIVE-YAML-11
+    artifact_kind: cli
+    artifact: |
+      # auto-discovers markdown-contract.yaml in the working dir:
+      markdown-contract validate docs/planning
+
+      # or point at one explicitly, JSON findings, exit 1 on errors:
+      markdown-contract validate docs/planning --config markdown-contract.yaml --format json
+    surfaces:
+      - "CLI validate <path> --config --format"
+      - "loadConfigFile -> runCorpus"
+      - "exit 0 clean / 1 errors / 2 usage"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/cli/index.test.ts
+      - tests/inference.cli.test.ts
+    recommend_test: null
+
+  - id: DECLARATIVE-YAML-13
+    name: "YAML contract and its TypeScript equivalent, identical findings"
+    demonstrates: "That a YAML-authored contract compiles to the same Contract as the combinator API, producing identical findings."
+    rank: 13
+    builds_on: DECLARATIVE-YAML-12
+    artifact_kind: mixed
+    artifact: |
+      # YAML
+      frontmatter:
+        strict: true
+        fields:
+          id:     { type: string, pattern: '^T-[0-9A-Z]{4}$' }
+          status: { enum: [open/ready, closed/done] }
+
+      // TypeScript — same contract, same findings
+      contract({ frontmatter: z.object({
+        id: z.string().regex(/^T-[0-9A-Z]{4}$/),
+        status: z.enum(["open/ready", "closed/done"]),
+      }).strict() })
+    surfaces:
+      - "loadContract vs contract({frontmatter})"
+      - "both yield a Contract whose validate() emits the same frontmatter/* findings"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/yaml-parity.test.ts
+      - src/declarative/body.test.ts
+      - src/declarative/load.test.ts
+    recommend_test: null
+
+  - id: DECLARATIVE-YAML-14
+    name: "Require a phrase in a section"
+    status: planned
+    demonstrates: "A section node carries requires: so its prose must contain a literal phrase (compiles to a node-local rule)."
+    rank: 14
+    builds_on: DECLARATIVE-YAML-13
+    artifact_kind: yaml
+    artifact: |
+      mcVersion: 1
+      kind: contract
+      body:
+        sections:
+          - section: Output contract
+            requires:
+              - pattern: "DONE pr="          # this section's text must contain it
+                note: "primary success signal"
+    surfaces:
+      - "requires: on a section node -> a node-local rule"
+      - "text/requires finding at the section heading"
+    needs_test: "on impl"
+    coverage_status: uncovered
+    existing_coverage:
+      - tests/fixtures/validation/17-node-level-custom-rule.ts
+    recommend_test: "[[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]]"
+
+  - id: DECLARATIVE-YAML-15
+    name: "Forbid a phrase document-wide"
+    status: planned
+    demonstrates: "forbids: on the body root asserts a phrase appears nowhere in the document (compiles to a docRule)."
+    rank: 15
+    builds_on: DECLARATIVE-YAML-14
+    artifact_kind: yaml
+    artifact: |
+      mcVersion: 1
+      kind: contract
+      body:
+        forbids:
+          - pattern: "}scripts/"     # must appear nowhere in the document
+            normalize: false         # exact bytes, no whitespace folding
+            note: "route through the op substrate"
+        sections:
+          - section: Notes
+    surfaces:
+      - "forbids: on the body root -> a whole-document docRule"
+      - "text/forbids finding at the offending line"
+    needs_test: "on impl"
+    coverage_status: uncovered
+    existing_coverage: []
+    recommend_test: "[[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]]"
+
+  - id: DECLARATIVE-YAML-16
+    name: "Match by regex instead of a literal"
+    status: planned
+    demonstrates: "A regex: entry matches a pattern (here either of two markers) rather than a fixed substring."
+    rank: 16
+    builds_on: DECLARATIVE-YAML-14
+    artifact_kind: yaml
+    artifact: |
+      body:
+        sections:
+          - section: Output contract
+            requires:
+              - regex: "LEASE-(CONFLICT|MISSING) ref="   # matches either marker
+                note: "lease failure markers"
+    surfaces:
+      - "regex: entry (the alternative to pattern:) in a match spec"
+    needs_test: "on impl"
+    coverage_status: uncovered
+    existing_coverage: []
+    recommend_test: "[[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]]"
+
+  - id: DECLARATIVE-YAML-17
+    name: "Tune the match: normalize and ignoreCase"
+    status: planned
+    demonstrates: "normalize folds whitespace (tolerating prose line-wrapping) and ignoreCase makes the match case-insensitive."
+    rank: 17
+    builds_on: DECLARATIVE-YAML-14
+    artifact_kind: yaml
+    artifact: |
+      body:
+        requires:
+          - pattern: "sdlc task close-commit"
+            normalize: true     # collapse whitespace runs; tolerate line-wrapping (default)
+            ignoreCase: true    # case-insensitive (default false)
+    surfaces:
+      - "normalize (default true) and ignoreCase (default false) on a match spec"
+    needs_test: "on impl"
+    coverage_status: uncovered
+    existing_coverage: []
+    recommend_test: "[[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]]"
+
+  - id: DECLARATIVE-YAML-18
+    name: "Bound occurrences with min / max"
+    status: planned
+    demonstrates: "min and max constrain how many times a phrase may occur; max: 0 is the in-section forbids dual."
+    rank: 18
+    builds_on: DECLARATIVE-YAML-15
+    artifact_kind: yaml
+    artifact: |
+      body:
+        sections:
+          - section: Output contract
+            requires:
+              - pattern: "DONE pr="
+                min: 1            # present at least once (the default)
+              - pattern: "WARNING"
+                max: 0            # must NOT appear in this section (forbids dual)
+    surfaces:
+      - "min/max occurrence count"
+      - "forbids == requires{max:0}"
+      - "text/count finding"
+    needs_test: "on impl"
+    coverage_status: uncovered
+    existing_coverage: []
+    recommend_test: "[[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]]"
+
+  - id: DECLARATIVE-YAML-19
+    name: "Annotate and downgrade: note + level"
+    status: planned
+    demonstrates: "Each entry can carry an author note (appended to the message) and a level to warn instead of error."
+    rank: 19
+    builds_on: DECLARATIVE-YAML-15
+    artifact_kind: yaml
+    artifact: |
+      body:
+        forbids:
+          - pattern: "TODO"
+            level: warn          # downgrade from the default error
+            note: "ship without TODOs (warning only)"
+    surfaces:
+      - "per-entry level (error|warn) and note appended to the finding message"
+    needs_test: "on impl"
+    coverage_status: uncovered
+    existing_coverage: []
+    recommend_test: "[[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]]"
+
+  - id: DECLARATIVE-YAML-20
+    name: "Retire an invariants list across both scopes"
+    status: planned
+    demonstrates: "Independent entries on the body root (whole-doc) and on a section node together replace an invariants.yaml linter."
+    rank: 20
+    builds_on: DECLARATIVE-YAML-18
+    artifact_kind: yaml
+    artifact: |
+      mcVersion: 1
+      kind: contract
+      body:
+        forbids:
+          - { pattern: "}validators/", normalize: false }    # forbidden_phrases
+        requires:
+          - { pattern: "conventions/commit-messages.md" }    # required tool-ref, anywhere
+        sections:
+          - section: Output contract
+            requires:
+              - { pattern: "ALREADY-CLOSED" }                # required phrase, this section
+              - { pattern: "STALE-PR pr=" }
+    surfaces:
+      - "multiple independent entries across two scopes (section subtree + whole doc)"
+      - "1:1 map from invariants.yaml"
+    needs_test: "on impl"
+    coverage_status: uncovered
+    existing_coverage: []
+    recommend_test: "[[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]]"
