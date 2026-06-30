@@ -10,7 +10,7 @@ related:
 - T-TXFX-text-constraint-fixtures
 - T-VITE-upgrade-vitest
 depends_on:
-- T-VITE-upgrade-vitest
+- '[[T-VITE-upgrade-vitest]]'
 tags: []
 need_human_review: false
 impact: medium
