@@ -87,12 +87,29 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `vue-tsc --noEmit` typechecks the registry-mutation logic (add via `mockApi.registerVault`, edit via map-in, remove via filter) and `build-storybook` renders `InlinePanel` / `Modal` / `EmptyRegistry` off the `mockVaultStatuses` fixtures. Live click-through of add/edit/remove in the running Storybook is a deferred-user spot-check.
+- AC-2: auto — the `MissingPathError` and `InvalidConfigError` stories compile and build; the error elements render with `role="alert"` and `data-test="vf-error-path"` / `vf-error-config`, accent colored inline from `statusTokens.error.color`.
+- AC-3: auto — five named, args-driven stories under title `Vaults/VaultForm` (`InlinePanel`, `Modal`, `EmptyRegistry`, `MissingPathError`, `InvalidConfigError`) compiled into the Storybook build; the two flow variants are inline panel vs modal dialog.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The merged foundation made this a pure compose: the design-system kit (`StatusBadge`, `statusTokens`) and the mock API seam (`mockApi.registerVault`, the `VaultStatus` / `RegisterVaultRequest` shapes) dropped in with zero new infrastructure — exactly the reuse the task asked for.
+- Baseline-gated quality (`--diff-against-baseline`) cleanly isolated the two pre-existing `tests/yaml-parity.test.ts` typecheck errors from this branch, so the gate reported `OK 2/2` with zero new drift without any manual triage.
+- `prototype/web-ui/**` is fully isolated from the root `tsconfig`/`vitest` scope, so the new files could not regress the root quality gate.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- `preflight_permissions.ts` reported false-positive gaps (`npm`, `Write`, `Edit`) because it reads the static `settings.json` allow-list, not the harness's actual runtime grants — had to empirically run `npm --version` to confirm the tool worked before proceeding past Step 3b. → the probe (or task-work's Step 3b dispatch) should recognize broad-grant harness modes, or treat an empirically-runnable verb as overriding the static finding. → Already tracked upstream as `T-0AM0-preflight-probe-honors-runtime-edit-grant` (sksizer/dev, planning/draft) — linked to existing, no new PR.
+- The Step 3a quality baseline is written to the MAIN repo's gitignored `.sdlc/quality-baselines/<sha>.json`, but Step 7 runs inside the worktree where `--diff-against-baseline` defaults `--baseline-dir` to the worktree's own `.sdlc/`, which lacks the baseline — the implementer had to copy the baseline file into the worktree to run the gate. → task-work should point `--baseline-dir` at the superproject's `.sdlc/quality-baselines/`, or seed it during `worktree_init`. → Already tracked upstream as `T-5X6Y-task-work-step7-explicit-baseline-dir` (sksizer/dev, closed/superseded by `T-44OO-plugin-scripts-self-discover-project-root`) — linked to existing, no new PR.
+
+### Spawned follow-up tasks
+
+Both friction bullets classify as `Upstream-plugin` (sdlc). Neither was
+spawned: each gap is already tracked by a near-verbatim existing task in the
+upstream `sksizer/dev` repo, so spawning would duplicate the upstream backlog
+(the harm `spawn-from-post-mortem` Step 2a exists to prevent). The local dedup
+search returned `SPAWNED` (no match in this repo's corpus); both were overridden
+to link-existing-upstream after confirming the upstream matches by reading them.
+
+- `T-0AM0-preflight-probe-honors-runtime-edit-grant` (sksizer/dev, planning/draft) — linked, preflight false-positive Write/Edit/runtime-grant gap. Created 2026-06-28; its embedded quote restates this bullet almost verbatim.
+- `T-5X6Y-task-work-step7-explicit-baseline-dir` (sksizer/dev, closed/superseded → `T-44OO-plugin-scripts-self-discover-project-root`, planning/needs-definition) — linked, Step 3a/Step 7 baseline-dir worktree mismatch. Already carries four prior cross-repo dedup links from other consumer projects.
