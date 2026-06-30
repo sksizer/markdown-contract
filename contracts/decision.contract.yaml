@@ -20,3 +20,6 @@ body:
     - section: Why
     - section: Consequences
     - section: References
+      requires:
+        - regex: '\[\[[^\]]+\]\]'
+          note: "every decision's References section must cite at least one related entity as a [[wikilink]]"
