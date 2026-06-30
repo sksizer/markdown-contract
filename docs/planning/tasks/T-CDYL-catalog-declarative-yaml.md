@@ -1,26 +1,28 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-CDYL
 status: in-progress
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0007-example-use-case-catalog]]'
-- '[[C-0009-declarative-text-constraints]]'
-parent_key: '[[T-CTLG-example-catalog-finalize]]'
+  - "[[M-0007-example-use-case-catalog]]"
+  - "[[C-0009-declarative-text-constraints]]"
+parent_key: "[[T-CTLG-example-catalog-finalize]]"
 depends_on: []
 tags:
-- docs
-- examples
-- catalog
-- declarative
-- yaml
+  - docs
+  - examples
+  - catalog
+  - declarative
+  - yaml
 need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-last_reviewed: '2026-06-30'
-readiness_verified_at: '2026-06-30T15:15:03Z'
+last_reviewed: 2026-06-30
+readiness_verified_at: 2026-06-30T15:15:03Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/114
 ---
 # Finalize the Declarative-YAML catalog category as verified YAML (`declarative-yaml`)
 
