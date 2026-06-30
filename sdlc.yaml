@@ -3,10 +3,11 @@
 lease_authority: origin
 
 quality_checks:
+  - npm run build
   - npm run test
   - npm run typecheck
 worktree_init:
-  - npm install
+  - bun install
 
 # worktree_init:
 #   - mise trust

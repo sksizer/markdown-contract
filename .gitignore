@@ -26,3 +26,11 @@ coverage/
 # moon
 .moon/cache
 .moon/docker
+
+# Obsidian local vault config (docs/ is opened as a personal vault)
+docs/.obsidian/
+# Obsidian "Bases" view definitions (personal, generated locally)
+*.base
+
+# bun lockfile — repo is npm-primary (package-lock.json); see M-0005
+bun.lock
