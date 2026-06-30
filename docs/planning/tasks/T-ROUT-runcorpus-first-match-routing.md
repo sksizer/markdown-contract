@@ -1,24 +1,26 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-ROUT
 status: in-progress
-created: '2026-06-28'
-last_reviewed: '2026-06-30'
+created: 2026-06-28
+last_reviewed: 2026-06-30
 related:
-- '[[M-0007-example-use-case-catalog]]'
-- '[[T-J9TZ-cli-and-corpus-runner]]'
+  - "[[M-0007-example-use-case-catalog]]"
+  - "[[T-J9TZ-cli-and-corpus-runner]]"
 depends_on: []
 tags:
-- test
-- runner
-- corpus
-- routing
+  - test
+  - runner
+  - corpus
+  - routing
 need_human_review: false
 impact: high
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-06-30T13:51:51Z'
+readiness_verified_at: 2026-06-30T13:51:51Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/108
 ---
 # Pin first-match-wins rule precedence and per-rule exclude in runCorpus
 
