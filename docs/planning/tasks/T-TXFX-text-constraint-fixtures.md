@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-TXFX
-status: open/ready
+status: in-progress
 created: '2026-06-28'
 related:
 - '[[M-0004-declarative-text-constraints]]'
@@ -20,6 +20,7 @@ impact: medium
 complexity: small
 autonomy: supervised
 readiness_verified_at: '2026-06-30T06:25:26Z'
+last_reviewed: '2026-06-30'
 ---
 # Text-constraint dogfood + final closeout
 
@@ -70,3 +71,19 @@ At least one contract under `contracts/` gains a `requires` / `forbids` block ex
 ## Dependencies
 
 - Hard: needs the full feature live — `[[T-TXYL-declarative-requires-forbids]]` (and transitively the builders, matcher, and scaffold) — since the dogfood exercises a real `.contract.yaml`.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
