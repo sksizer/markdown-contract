@@ -24,7 +24,7 @@ need_human_review: true
 ## Summary
 
 - The local, embedded **web UI / vault dashboard**: a daemon mode that serves a Nuxt SPA (bundled into the same binary) showing the live status of the several managed markdown vaults on a host. Per the capability [[C-0010-single-binary-and-vault-dashboard]] and the web-UI half of [[D-0012-distribution-single-exec-and-web-ui]]. ^summary
-- **Later / tbd** — scope, sequencing, and design are not yet settled. This is the second face of the single binary ([[M-0008-single-exec-distribution]] ships the CLI-only binary and validates the SPA-embed approach first).
+- **Later / tbd** — scope, sequencing, and design are not yet settled. This is the **production** build-out of the daemon/UI that [[M-0008-single-exec-distribution]] first proves as a working prototype: M-0008 ships one binary whose `daemon` mode serves a minimal embedded Nuxt SPA over a thin JSON API; this milestone turns that proven slice into the real dashboard — the flat-file vault registry, live in-memory status over SSE, optional persisted history, and the polished multi-vault UI (and the `Bun.serve`→Nitro productionization).
 
 ## Outcome
 
