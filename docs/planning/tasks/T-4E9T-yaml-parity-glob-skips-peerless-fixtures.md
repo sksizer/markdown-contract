@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-4E9T
-status: open/ready
+status: in-progress
 created: '2026-06-28'
 related:
 - T-TXSC-text-constraint-fixture-scaffold
@@ -16,6 +16,7 @@ need_human_review: false
 impact: medium
 complexity: small
 readiness_verified_at: '2026-06-30T04:04:29Z'
+last_reviewed: '2026-06-30'
 ---
 # Make yaml-parity 'peers exist' glob skip gated/peerless fixtures so subdirectory placement isn't load-bearing
 
@@ -122,3 +123,19 @@ placement then gates nothing: twin-less fixtures live beside their peers.
 ## Discovery context
 
 Spawned by /sdlc:spawn-task-pr on 2026-06-28 UTC from [[T-TXSC-text-constraint-fixture-scaffold]] in git@github.com:sksizer/markdown-contract.git.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
