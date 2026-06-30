@@ -37,7 +37,8 @@ prototyping and comparing multiple variants of components and screens.
 |---|---|
 | `src/runner/corpus.ts` | `runCorpus` — the engine call the *real* UI will later route through; the prototype only mirrors its output shape, never imports it |
 | `moon.yml` | root moon config; the binary build lives here — the prototype stays out of it |
-| `prototype/` | does not exist yet — this task creates it |
+
+The `prototype/` tree does not exist yet — this task creates it (see Files to touch).
 
 ## Proposed
 
@@ -66,10 +67,8 @@ graft into the real `apps/web` SPA later (per [[D-0012-distribution-single-exec-
 
 | Location | Kind | Change |
 |---|---|---|
-| `prototype/web-ui/` | new | standalone Nuxt SPA prototype package |
-| `prototype/web-ui/package.json` | new | prototype deps; `dev` + `storybook` scripts |
+| `prototype/web-ui/` | new | standalone Nuxt SPA prototype package — its package.json (prototype deps; `dev` + `storybook` scripts) and a README (run commands + the standalone/decoupled boundary) live at the package root |
 | `prototype/web-ui/.storybook/` | new | Storybook config (the harness) |
-| `prototype/web-ui/README.md` | new | run commands + the standalone/decoupled boundary |
 
 ## Acceptance criteria
 
