@@ -45,9 +45,6 @@ const v23: ValidationFixture = {
       findings: [{ id: "text/forbids/doc/o9pijh", level: "error", line: 2 }],
     },
   ],
-  // No `.contract.yaml` parity peer yet — the declarative text-constraint loader
-  // (T-TXYL) does not exist. T-TXYL adds the twin and drops this flag.
-  peerless: true,
   note: "Synthesized id `text/forbids/doc/<hash>`; line is 2 (model anchors prose at heading+1), not the source's 3.",
 };
 

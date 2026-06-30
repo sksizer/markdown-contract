@@ -91,12 +91,23 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — yaml-parity describes `22-text-requires-section` (section-scoped node-local rule) and `23-text-forbids-body-root` (body-root `docRule`) pass; the loader compiles to `requires(...)`/`forbids(...)` on the section's `rules` and `textRule(...)` on `def.rules`.
+- AC-2: auto — `src/declarative/text.test.ts` rejection cases (unknown key, missing needle, both needles, wrong-typed value) each `toThrow(DeclarativeError)`.
+- AC-3: auto — `text.test.ts` duplicate case: two identical normalized specs in one list at one scope throw `DeclarativeError`.
+- AC-4: auto — `text.test.ts` contradiction case (literal `requires` vs `forbids` at one scope) and `max < min` single-entry case throw `DeclarativeError`; regex-vs-regex left unanalyzed.
+- AC-5: auto — the four yaml-parity describes assert YAML findings equal the TS builder findings (filtered to v1 planes incl `text/*`); synthesized ids matched byte-for-byte (`1tc7itx`, `o9pijh`, `9ms6i7`, `17j7bdw`).
+- AC-6: auto — `text.test.ts` green (leads with a worked `requires` and `forbids` example before the rejections).
+- AC-7: auto — the 4 `.contract.yaml` peers added, `peerless` dropped, `IMPLEMENTED["text-yaml"]` → true, `isV1Plane` extended with `text/`; verbose run confirms all four `2x-text-*` parity describes execute (not skipped).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The pre-implementation read of the matcher (`text-match.ts`), builders (`text-constraints.ts`), and the section/`docRule` wiring let the brief pin the exact compile targets up front; the sub-agent's replicated id hash matched all four fixture ids on the first run, so the YAML peers mirrored the TS specs with no id churn.
+- The baseline-gated quality gate cleanly separated the branch's work from the 4 pre-existing origin/main findings — the gate read `OK 2/2` with zero new drift.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 7's `quality run --diff-against-baseline` defaulted its `--baseline-dir` to the worktree's `.sdlc/quality-baselines/`, but Step 3a captured the baseline in the **main repo's** `.sdlc/quality-baselines/`; the first gate invocation failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — task-work Step 7 (and Step 9.6) should pass `--baseline-dir` pointing at the main checkout whenever it runs the gate from inside a worktree, since a worktree carries its own `.sdlc/`. → [[T-5HX8-task-work-threads-main-baseline-dir]]
+
+### Spawned follow-up tasks
+
+- [[T-5HX8-task-work-threads-main-baseline-dir]] (https://github.com/sksizer/dev/pull/509) — Upstream-plugin (`sdlc-meta`); pre-existing upstream PR matched by slug, so the `/sdlc:spawn-task-pr` idempotency check returned `SPAWN-TASK-PR-EXISTING` (linked, not newly spawned). The same gap was first spawned from sibling task [[T-TXMC-text-match-core]]'s post-mortem; PRs #514 (`quality-gate-resolves-superproject-baseline`) and #513 (`surface-failing-baseline-at-pickup`) are closely related upstream follow-ups on the same theme.

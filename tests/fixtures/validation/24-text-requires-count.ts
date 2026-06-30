@@ -36,9 +36,6 @@ const v24: ValidationFixture = {
       findings: [{ id: "text/count/checklist/9ms6i7", level: "error", line: 1 }],
     },
   ],
-  // No `.contract.yaml` parity peer yet — the declarative text-constraint loader
-  // (T-TXYL) does not exist. T-TXYL adds the twin and drops this flag.
-  peerless: true,
   note: "Synthesized id `text/count/checklist/<hash>`; a below-min count pins at the heading.",
 };
 

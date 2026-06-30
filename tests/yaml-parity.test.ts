@@ -67,6 +67,7 @@ const hasPeer = (key: string): boolean => {
 const isV1Plane = (f: Finding): boolean =>
   f.id.startsWith("structure/") ||
   f.id.startsWith("content/") ||
+  f.id.startsWith("text/") ||
   (f.id.startsWith("frontmatter/") && f.id !== "frontmatter/refine");
 
 /** Compare on the fields a YAML contract must reproduce; order-independent. */

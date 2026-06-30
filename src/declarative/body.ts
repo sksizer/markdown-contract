@@ -13,6 +13,7 @@ import { code, list, maxWords, table } from "../core/leaves.js";
 import type { LeafSpec, LevelOpts, SectionOpts, SectionSeq, Spec, ZodType } from "../core/types.js";
 import { DeclarativeError } from "./errors.js";
 import { compileSchema } from "./schema.js";
+import { compileSectionTextRules, hasTextKeys } from "./text.js";
 
 const LEAF_KEYS = new Set(["table", "list", "code", "maxWords"]);
 
@@ -97,6 +98,16 @@ function sectionOpts(node: Record<string, unknown>, path: string): SectionOpts |
   if ("children" in node) {
     opts.children = compileLevel(node.children, `${path}.children`);
     any = true;
+  }
+  // `requires:` / `forbids:` on a section node → node-local rules over that section's subtree
+  // (D-0011 § Match scope). Compiled (and consistency-checked) even when a list is empty.
+  if (hasTextKeys(node)) {
+    const label = typeof node.section === "string" ? node.section : path;
+    const rules = compileSectionTextRules(node, path, label);
+    if (rules.length > 0) {
+      opts.rules = rules;
+      any = true;
+    }
   }
   return any ? opts : undefined;
 }

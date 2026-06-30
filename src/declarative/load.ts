@@ -17,6 +17,7 @@ import { compileBody } from "./body.js";
 import { DeclarativeError } from "./errors.js";
 import { parseDeclarativeDoc } from "./parse.js";
 import { compileObjectSchema } from "./schema.js";
+import { compileBodyTextRule } from "./text.js";
 
 /** Compile a declarative YAML contract (text) into a runtime `Contract`. */
 export function loadContract(yamlText: string): Contract {
@@ -42,6 +43,14 @@ export function compileContractObject(raw: Record<string, unknown>): Contract {
 
   if (raw.body !== undefined) {
     def.body = compileBody(raw.body) as unknown as ContractDef["body"];
+    // `requires:` / `forbids:` on the body root (sibling of `sections:`) → one document-scoped
+    // `textRule` docRule. The body grammar (`SectionSeq` / `LevelOpts`) cannot carry it, so it
+    // attaches at the contract level (D-0011 § Match scope — body root). `compileBody` has already
+    // verified `raw.body` is a mapping.
+    if (raw.body !== null && typeof raw.body === "object" && !Array.isArray(raw.body)) {
+      const docRule = compileBodyTextRule(raw.body as Record<string, unknown>);
+      if (docRule) (def.rules ??= []).push(docRule);
+    }
   }
 
   return contract(def);
