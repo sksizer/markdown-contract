@@ -126,12 +126,17 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1 (whole-document `forbids` anchors at the exact offending line): auto — `npm run test`. Fixture `tests/fixtures/validation/23-text-forbids-body-root` now asserts `line: 3` (the `}scripts/` prose line) and its unit twin `src/core/text-constraints.test.ts` asserts `f.pos?.line === 3`; the suite is green.
+- AC-2 (`DocRule.run` receives the projected `DocTree`; per-node `Rule.run(node, ctx)` unchanged): auto — `npm run typecheck`. `DocRule.run(doc, ctx, tree)` compiles across the call site and the `docRule`/`textRule` factories; `Rule.run` in `types.ts` was left untouched.
+- AC-3 (additive — doc rules that ignore the new arg compile and emit identical findings): auto — `npm run typecheck` + `npm run test`. The third arg is positional; no doc rule other than `textRule` was modified, and the `textRule requires` document-level-miss test still expects `pos` undefined, confirming no behavior change for rules that don't read the tree.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The widening was genuinely additive: the single `fn as DocRule["run"]` cast in `docRule` absorbed the arity change, so no caller that ignores the tree needed touching — typecheck stayed green with only `textRule` reading the new arg.
+- Collapsing the model-based whole-document reconstruction onto the existing line-faithful `sectionScopeText(tree.root)` deleted ~85 lines of helper code (`isSectionView` / `collectSectionViews` / `placeSectionView`) while making positions exact — the line-accuracy win and a simplification landed together.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 3b's sandbox permission probe flagged `npm` / `node` / `Write` / `Edit` as missing by matching settings `allow:` globs, yet all four worked — false positives an autonomous run can't resolve via AskUserQuestion (no interactive user). Gap: the probe should test effective sandbox capability (or detect `acceptEdits` / `bypassPermissions` mode) rather than only string-matching settings allow-lists, so autonomous task-work isn't forced to judgement-call past generic node/npm findings.
+- The peer unit test `src/core/text-constraints.test.ts` pinned the same whole-document `forbids` position and had to be re-pinned (`toBe(2)` → `toBe(3)`), but `## Files to touch` listed only the integration fixture. Gap: a behavior-changing AC should prompt the spec author (or ensure-ready) to enumerate the co-located peer-test twin alongside the fixture, since this repo's convention pins the same contract in both places.
+- Step 7's baseline lives in the main checkout's `.sdlc/quality-baselines/`, but `sdlc quality run` resolves `--baseline-dir`'s default relative to the worktree, so `--diff-against-baseline` errored `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly. Gap: when run from a worktree, the quality runner could resolve the baseline-dir against the git common-dir (main checkout) by default.
