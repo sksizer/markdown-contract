@@ -1,26 +1,28 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-TXYL
 status: in-progress
-created: '2026-06-28'
+created: 2026-06-28
 related:
-- '[[M-0004-declarative-text-constraints]]'
-- '[[D-0011-declarative-text-constraints]]'
-- '[[C-0009-declarative-text-constraints]]'
-- '[[D-0008-declarative-contract-dsl]]'
+  - "[[M-0004-declarative-text-constraints]]"
+  - "[[D-0011-declarative-text-constraints]]"
+  - "[[C-0009-declarative-text-constraints]]"
+  - "[[D-0008-declarative-contract-dsl]]"
 depends_on:
-- '[[T-TXAP-text-predicate-builders]]'
+  - "[[T-TXAP-text-predicate-builders]]"
 tags:
-- text-match
-- declarative
-- yaml
+  - text-match
+  - declarative
+  - yaml
 need_human_review: true
 impact: high
 complexity: medium
 autonomy: supervised
-readiness_verified_at: '2026-06-30T05:19:11Z'
-last_reviewed: '2026-06-30'
+readiness_verified_at: 2026-06-30T05:19:11Z
+last_reviewed: 2026-06-30
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/87
 ---
 # Declarative front-end — `requires` / `forbids` in YAML
 
