@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-HHLC
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0009-local-web-ui-vault-dashboard]]'
@@ -21,6 +21,7 @@ impact: medium
 complexity: small
 autonomy: supervised
 readiness_verified_at: '2026-06-30T15:26:39Z'
+last_reviewed: '2026-06-30'
 ---
 # Prototype: config drift view (init --check surface)
 
@@ -76,3 +77,19 @@ card/detail, linking here.
 ## Discovery context
 
 - Created in the M-0009 planning session (2026-06-30); drift is the third status dimension (green / findings / drift) in [[C-0010-single-binary-and-vault-dashboard]].
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
