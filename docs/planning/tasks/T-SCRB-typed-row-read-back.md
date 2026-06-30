@@ -5,7 +5,7 @@ id: T-SCRB
 status: planning/proposed
 created: '2026-06-30'
 related:
-- '[[M-0010-structured-cells]]'
+- '[[M-0011-structured-cells]]'
 - '[[D-0015-structured-cells]]'
 - '[[D-0005-consumption-oom]]'
 - '[[C-0002-typed-consumption]]'

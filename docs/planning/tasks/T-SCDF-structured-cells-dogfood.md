@@ -5,7 +5,7 @@ id: T-SCDF
 status: planning/proposed
 created: '2026-06-30'
 related:
-- '[[M-0010-structured-cells]]'
+- '[[M-0011-structured-cells]]'
 - '[[D-0015-structured-cells]]'
 - '[[DR-0002-typed-consumption]]'
 depends_on:
@@ -27,7 +27,7 @@ last_reviewed: '2026-06-30'
 
 ## Goal
 
-Prove the assembled feature end-to-end on a realistic worked contract — the task "Files to touch" table from [[D-0015-structured-cells]] use case 1 (`Location | Kind | Change`, where `Location` transforms its backticked `path#symbol` grammar) plus a transforming list — and close [[M-0010-structured-cells]]: zero structured-cells fixtures left skipped, no existing golden moved, imports one-way. Because Zod `.transform()` is a TS-API feature (the declarative YAML front-end has a closed vocabulary and no code escape hatch — deferred by D-0011), the dogfood is a realistic **TS** contract in the corpus, not one of the YAML `contracts/*`.
+Prove the assembled feature end-to-end on a realistic worked contract — the task "Files to touch" table from [[D-0015-structured-cells]] use case 1 (`Location | Kind | Change`, where `Location` transforms its backticked `path#symbol` grammar) plus a transforming list — and close [[M-0011-structured-cells]]: zero structured-cells fixtures left skipped, no existing golden moved, imports one-way. Because Zod `.transform()` is a TS-API feature (the declarative YAML front-end has a closed vocabulary and no code escape hatch — deferred by D-0011), the dogfood is a realistic **TS** contract in the corpus, not one of the YAML `contracts/*`.
 
 ## Today
 

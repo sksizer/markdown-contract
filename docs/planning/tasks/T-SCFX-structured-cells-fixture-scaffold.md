@@ -5,7 +5,7 @@ id: T-SCFX
 status: planning/proposed
 created: '2026-06-30'
 related:
-- '[[M-0010-structured-cells]]'
+- '[[M-0011-structured-cells]]'
 - '[[D-0015-structured-cells]]'
 depends_on: []
 tags:
@@ -23,7 +23,7 @@ last_reviewed: '2026-06-30'
 
 ## Goal
 
-Stand up the gated fixture corpus and the public typed-surface stubs for structured cells **before** any engine change, so every implementation task in [[M-0010-structured-cells]] has a concrete, skipped-green target to flip on. Mirrors the `T-TXSC` / `infer-*` pattern: author the fixtures up front, gate them off in `IMPLEMENTED`, and green slice-by-slice as each component lands.
+Stand up the gated fixture corpus and the public typed-surface stubs for structured cells **before** any engine change, so every implementation task in [[M-0011-structured-cells]] has a concrete, skipped-green target to flip on. Mirrors the `T-TXSC` / `infer-*` pattern: author the fixtures up front, gate them off in `IMPLEMENTED`, and green slice-by-slice as each component lands.
 
 ## Today
 

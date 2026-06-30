@@ -5,7 +5,7 @@ id: T-SCLI
 status: planning/proposed
 created: '2026-06-30'
 related:
-- '[[M-0010-structured-cells]]'
+- '[[M-0011-structured-cells]]'
 - '[[D-0015-structured-cells]]'
 - '[[D-0005-consumption-oom]]'
 depends_on:
