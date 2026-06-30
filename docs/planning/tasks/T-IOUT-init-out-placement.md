@@ -74,4 +74,9 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Friction and automation gaps
 
-- Step 7's baseline-gated quality run failed first with `baseline not found` — Step 3a captures the baseline under the **main repo's** `.sdlc/quality-baselines/`, but `quality run` invoked from the **worktree** defaults its `--baseline-dir` to the *worktree's* `.sdlc/`, so the SHA-keyed baseline is missing until `--baseline-dir <main-repo>/.sdlc/quality-baselines` is passed explicitly — task-work Step 7 should pass `--baseline-dir` pointing at the main checkout (or resolve it from the worktree's superproject) so the gate finds the baseline without operator intervention.
+- Step 7's baseline-gated quality run failed first with `baseline not found` — Step 3a captures the baseline under the **main repo's** `.sdlc/quality-baselines/`, but `quality run` invoked from the **worktree** defaults its `--baseline-dir` to the *worktree's* `.sdlc/`, so the SHA-keyed baseline is missing until `--baseline-dir <main-repo>/.sdlc/quality-baselines` is passed explicitly — task-work Step 7 should pass `--baseline-dir` pointing at the main checkout (or resolve it from the worktree's superproject) so the gate finds the baseline without operator intervention. → [[T-5HX8-task-work-threads-main-baseline-dir]]
+
+### Spawned follow-up tasks
+
+- [[T-5HX8-task-work-threads-main-baseline-dir]] (https://github.com/sksizer/dev/pull/509) — linked, existing upstream `sdlc-meta` PR ("task-work: pass the main-repo `--baseline-dir` at the Step 7 gate run so the Step 3a baseline is found"). This bullet duplicates an already-open follow-up on the `sdlc` plugin repo, so no new PR was spawned.
+- Sibling: [[T-A1SR-quality-gate-resolves-superproject-baseline]] (https://github.com/sksizer/dev/pull/514) — the resolve-`--baseline-dir`-from-superproject angle this bullet also names; same gap, also already open upstream.
