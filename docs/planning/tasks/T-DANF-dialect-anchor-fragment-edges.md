@@ -1,22 +1,24 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-DANF
 status: in-progress
-created: '2026-06-28'
+created: 2026-06-28
 related:
-- '[[M-0007-example-use-case-catalog]]'
+  - "[[M-0007-example-use-case-catalog]]"
 depends_on: []
 tags:
-- test
-- dialect
-- anchors
+  - test
+  - dialect
+  - anchors
 need_human_review: false
 impact: low
 complexity: small
 autonomy: supervised
-last_reviewed: '2026-06-30'
-readiness_verified_at: '2026-06-30T06:22:46Z'
+last_reviewed: 2026-06-30
+readiness_verified_at: 2026-06-30T06:22:46Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/94
 ---
 # Dialect edge cases: section-id `byAnchor` negative and `#^anchor` fragment value
 
