@@ -7,12 +7,12 @@
  * plain functions (no reactivity needed for static fixtures), which keeps them
  * usable from Storybook stories and decorators too, not just inside a Nuxt setup.
  */
-import { mockVaults } from "./fixtures";
+import { mockApi } from "./loader";
 import type { RunResult, VaultSummary } from "./types";
 
 /** All managed vaults and their latest validation status. */
 export function useMockVaults(): VaultSummary[] {
-  return mockVaults;
+  return mockApi.vaultSummaries();
 }
 
 /**
@@ -20,6 +20,7 @@ export function useMockVaults(): VaultSummary[] {
  * Mirrors what a future `useCorpus(vaultId)` would return from the engine.
  */
 export function useMockCorpus(vaultId?: string): RunResult | undefined {
-  const vault = vaultId ? mockVaults.find((v) => v.id === vaultId) : mockVaults[0];
+  const vaults = mockApi.vaultSummaries();
+  const vault = vaultId ? vaults.find((v) => v.id === vaultId) : vaults[0];
   return vault?.result;
 }
