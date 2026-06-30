@@ -19,6 +19,7 @@ need_human_review: true
 impact: medium
 complexity: small
 autonomy: supervised
+readiness_verified_at: '2026-06-30T06:25:26Z'
 ---
 # Text-constraint dogfood + final closeout
 
