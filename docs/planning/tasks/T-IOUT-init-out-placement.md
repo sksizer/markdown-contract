@@ -63,12 +63,15 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — new test `--out <dir> writes the scaffold under <dir>, leaving cwd untouched` in `tests/inference.cli.test.ts` runs `init --meta --out <outDir>` and asserts `markdown-contract.yaml` + `contracts/*.contract.yaml` land under `<outDir>`; verified by `npm test`.
+- AC-2: auto — same test asserts `readdirSync(cwd).length === 0` and no `markdown-contract.yaml`/`contracts` appear in cwd (a fresh temp dir distinct from both the source vault and the write target).
+- AC-3: auto — `npm run typecheck` + `npm test` green; baseline-gated quality run reported `OK 2/2` with no new drift.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The existing `tests/inference.cli.test.ts` conventions (`stageVault`, `runCli([...], { cwd })`, already-imported fs helpers) made the new case a near-mechanical addition — no new imports or helpers needed.
+- Three-distinct-temp-dirs design (source vault / write target / cwd) made the "writes under `<dir>`, not cwd" contract assertable crisply with `readdirSync(cwd).length === 0`.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 7's baseline-gated quality run failed first with `baseline not found` — Step 3a captures the baseline under the **main repo's** `.sdlc/quality-baselines/`, but `quality run` invoked from the **worktree** defaults its `--baseline-dir` to the *worktree's* `.sdlc/`, so the SHA-keyed baseline is missing until `--baseline-dir <main-repo>/.sdlc/quality-baselines` is passed explicitly — task-work Step 7 should pass `--baseline-dir` pointing at the main checkout (or resolve it from the worktree's superproject) so the gate finds the baseline without operator intervention.
