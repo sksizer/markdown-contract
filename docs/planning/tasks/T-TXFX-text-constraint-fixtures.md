@@ -1,26 +1,28 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-TXFX
 status: in-progress
-created: '2026-06-28'
+created: 2026-06-28
 related:
-- '[[M-0004-declarative-text-constraints]]'
-- '[[D-0011-declarative-text-constraints]]'
-- '[[C-0009-declarative-text-constraints]]'
-- '[[DR-0005-validate-sdlc-corpus]]'
+  - "[[M-0004-declarative-text-constraints]]"
+  - "[[D-0011-declarative-text-constraints]]"
+  - "[[C-0009-declarative-text-constraints]]"
+  - "[[DR-0005-validate-sdlc-corpus]]"
 depends_on:
-- '[[T-TXYL-declarative-requires-forbids]]'
+  - "[[T-TXYL-declarative-requires-forbids]]"
 tags:
-- text-match
-- fixtures
-- tests
+  - text-match
+  - fixtures
+  - tests
 need_human_review: true
 impact: medium
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-06-30T06:25:26Z'
-last_reviewed: '2026-06-30'
+readiness_verified_at: 2026-06-30T06:25:26Z
+last_reviewed: 2026-06-30
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/95
 ---
 # Text-constraint dogfood + final closeout
 
