@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-ZLND
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0009-local-web-ui-vault-dashboard]]'
@@ -19,6 +19,7 @@ impact: high
 complexity: medium
 autonomy: supervised
 readiness_verified_at: '2026-06-30T12:34:35Z'
+last_reviewed: '2026-06-30'
 ---
 # Prototype: standalone web-UI app + Storybook harness on mock data
 
@@ -89,3 +90,19 @@ graft into the real `apps/web` SPA later (per [[D-0012-distribution-single-exec-
 ## Discovery context
 
 - Created in the M-0009 planning session (2026-06-30) per [[D-0012-distribution-single-exec-and-web-ui]]; the prototype-as-separate-app and Storybook-as-harness decisions came from that session.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
