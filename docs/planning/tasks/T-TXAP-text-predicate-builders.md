@@ -1,29 +1,29 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-TXAP
-status: in-progress
-created: 2026-06-28
+status: closed/done
+created: '2026-06-28'
 related:
-  - "[[M-0004-declarative-text-constraints]]"
-  - "[[D-0011-declarative-text-constraints]]"
-  - "[[C-0009-declarative-text-constraints]]"
-  - "[[C-0005-two-plane-contract-engine]]"
+- '[[M-0004-declarative-text-constraints]]'
+- '[[D-0011-declarative-text-constraints]]'
+- '[[C-0009-declarative-text-constraints]]'
+- '[[C-0005-two-plane-contract-engine]]'
 depends_on:
-  - "[[T-TXMC-text-match-core]]"
-  - "[[T-TXSC-text-constraint-fixture-scaffold]]"
+- '[[T-TXMC-text-match-core]]'
+- '[[T-TXSC-text-constraint-fixture-scaffold]]'
 tags:
-  - text-match
-  - combinators
-  - core-api
+- text-match
+- combinators
+- core-api
 need_human_review: true
 impact: high
 complexity: medium
 autonomy: supervised
-readiness_verified_at: 2026-06-28T23:50:17Z
-last_reviewed: 2026-06-28
+last_reviewed: '2026-06-30'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/71
+- https://github.com/sksizer/markdown-contract/pull/71
+completion_note: 'Shipped via #71.'
 ---
 # TS-API predicate builders — `requires` / `forbids` / `textRule`
 
