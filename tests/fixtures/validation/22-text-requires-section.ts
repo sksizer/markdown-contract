@@ -35,9 +35,6 @@ const v22: ValidationFixture = {
       findings: [{ id: "text/requires/summary/1tc7itx", level: "error", line: 1 }],
     },
   ],
-  // No `.contract.yaml` parity peer yet — the declarative text-constraint loader
-  // (T-TXYL) does not exist. T-TXYL adds the twin and drops this flag.
-  peerless: true,
   note: "Synthesized per-entry id `text/requires/summary/<hash>`; the miss pins at the heading.",
 };
 
