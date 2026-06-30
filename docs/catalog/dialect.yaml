@@ -1,0 +1,259 @@
+category: dialect
+title: "Dialect: Anchors, Wikilinks, and Vault References"
+examples:
+  - id: DIALECT-01
+    name: "Anchor a block, resolve it with byAnchor"
+    demonstrates: "A caret block-id (^id) terminating a block binds it for doc.byAnchor lookup."
+    rank: 1
+    builds_on: null
+    artifact_kind: mixed
+    artifact: |
+      <!-- db.md -->
+      ## Decision
+      | Choice | Owner |
+      | ------ | ----- |
+      | SQLite | Sam   |
+      ^db-choice
+
+      // consume
+      const doc = c.read(src, { path: "db.md" });
+      doc.byAnchor("db-choice")?.kind;   // "table"
+    surfaces:
+      - "^block-id dialect (anchors.ts)"
+      - "Doc.byAnchor"
+      - "BlockView.kind"
+      - "contract.read"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/consumption/07-byanchor-declared-vs-dynamic.ts
+      - src/core/model.test.ts
+    recommend_test: null
+
+  - id: DIALECT-02
+    name: "Anchor a section, read it from .anchors"
+    demonstrates: "A standalone ^id under a heading binds at section level and surfaces via SectionView.anchors (not byAnchor)."
+    rank: 2
+    builds_on: DIALECT-01
+    artifact_kind: mixed
+    artifact: |
+      <!-- release.md -->
+      ## Overview
+      ^v2-overview
+
+      Ships the parser rewrite.
+
+      // consume
+      doc.body.section("Overview").anchors;  // ["v2-overview"]
+      doc.byAnchor("v2-overview");            // undefined — section ids live on .anchors
+    surfaces:
+      - "SectionNode.anchors"
+      - "SectionView.anchors"
+      - "Doc.byAnchor (block-scoped)"
+    needs_test: "yes"
+    coverage_status: partial
+    existing_coverage:
+      - src/core/model.test.ts
+      - src/core/projection.test.ts
+      - tests/fixtures/consumption/04-sectionview-content.ts
+    recommend_test: "[[T-DANF-dialect-anchor-fragment-edges]]"
+
+  - id: DIALECT-03
+    name: "Extract a bare wikilink"
+    demonstrates: "extractVaultRefs recognizes a bare [[page]] and returns its target."
+    rank: 3
+    builds_on: DIALECT-01
+    artifact_kind: code
+    artifact: |
+      import { extractVaultRefs } from "markdown-contract";
+
+      extractVaultRefs("See [[Project Atlas]] for context.");
+      // → [{ kind: "wikilink", target: "Project Atlas",
+      //      raw: "[[Project Atlas]]" }]
+    surfaces:
+      - "extractVaultRefs"
+      - "VaultRef.kind/target/raw (wikilinks.ts)"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/core/dialect/wikilinks.test.ts
+    recommend_test: null
+
+  - id: DIALECT-04
+    name: "Read a wikilink alias"
+    demonstrates: "A [[page|alias]] splits into target plus the display alias."
+    rank: 4
+    builds_on: DIALECT-03
+    artifact_kind: code
+    artifact: |
+      extractVaultRefs("Owned by [[People/Sam Rivera|Sam]].");
+      // → [{ kind: "wikilink", target: "People/Sam Rivera",
+      //      alias: "Sam", raw: "[[People/Sam Rivera|Sam]]" }]
+    surfaces:
+      - "extractVaultRefs"
+      - "VaultRef.alias"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/core/dialect/wikilinks.test.ts
+    recommend_test: null
+
+  - id: DIALECT-05
+    name: "Read heading and anchor fragments"
+    demonstrates: "A #heading or #^anchor fragment is parsed out as VaultRef.fragment."
+    rank: 5
+    builds_on: DIALECT-03
+    artifact_kind: code
+    artifact: |
+      extractVaultRefs("[[Spec#Goals]] then [[Spec#^db-choice]]");
+      // → [{ target: "Spec", fragment: "Goals",  kind: "wikilink" },
+      //    { target: "Spec", fragment: "^db-choice", kind: "wikilink" }]
+    surfaces:
+      - "extractVaultRefs"
+      - "VaultRef.fragment (heading and ^anchor forms)"
+    needs_test: "yes"
+    coverage_status: partial
+    existing_coverage:
+      - src/core/dialect/wikilinks.test.ts
+      - src/core/projection.test.ts
+    recommend_test: "[[T-DANF-dialect-anchor-fragment-edges]]"
+
+  - id: DIALECT-06
+    name: "Recognize a transclusion"
+    demonstrates: "![[page]] is recognized as a transclusion via VaultRef.kind."
+    rank: 6
+    builds_on: DIALECT-03
+    artifact_kind: code
+    artifact: |
+      extractVaultRefs("![[Daily/2026-06-28]]");
+      // → [{ kind: "transclusion", target: "Daily/2026-06-28",
+      //      raw: "![[Daily/2026-06-28]]" }]
+    surfaces:
+      - "extractVaultRefs"
+      - "VaultRef.kind === \"transclusion\""
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/core/dialect/wikilinks.test.ts
+    recommend_test: null
+
+  - id: DIALECT-07
+    name: "Harvest every reference in a document"
+    demonstrates: "extractVaultRefs over a document's text returns every wikilink and transclusion in order."
+    rank: 7
+    builds_on: DIALECT-06
+    artifact_kind: code
+    artifact: |
+      import { extractVaultRefs } from "markdown-contract";
+
+      const refs = extractVaultRefs(src);                 // all [[…]] / ![[…]]
+      const outgoing = [...new Set(refs.map(r => r.target))];
+      // outgoing = distinct pages this note links to
+    surfaces:
+      - "extractVaultRefs (whole-document harvest)"
+      - "VaultRef[]"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/core/dialect/wikilinks.test.ts
+      - src/core/projection.test.ts
+    recommend_test: null
+
+  - id: DIALECT-08
+    name: "Build a vault reference inventory"
+    demonstrates: "Running extractVaultRefs across a directory yields a from→to link edge list for the whole vault."
+    rank: 8
+    builds_on: DIALECT-07
+    artifact_kind: code
+    artifact: |
+      import { readFileSync, globSync } from "node:fs";
+      import { extractVaultRefs } from "markdown-contract";
+
+      const edges = globSync("vault/**/*.md").flatMap(p =>
+        extractVaultRefs(readFileSync(p, "utf8"))
+          .map(r => ({ from: p, to: r.target }))
+      );
+    surfaces:
+      - "extractVaultRefs across files"
+      - "link-graph edge list"
+    needs_test: "no"
+    coverage_status: uncovered
+    existing_coverage: []
+    recommend_test: null
+
+  - id: DIALECT-09
+    name: "Require an anchor with a contract"
+    demonstrates: "A declared section anchor emits structure/anchor-missing when no matching ^id resolves."
+    rank: 9
+    builds_on: DIALECT-02
+    artifact_kind: mixed
+    artifact: |
+      # summary.contract.yaml
+      mcVersion: 1
+      kind: contract
+      body:
+        sections:
+          - section: Summary
+            anchor: summary      # a ^summary must resolve in this section
+
+      $ markdown-contract validate --contract summary.contract.yaml --path notes
+      # error  structure/anchor-missing  section 'Summary' is missing required block-id ^summary
+    surfaces:
+      - "declarative contract section.anchor"
+      - "structure/anchor-missing rule"
+      - "validate CLI --contract/--path"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/validation/09b-anchor-missing.ts
+      - tests/fixtures/validation/09b-anchor-missing.contract.yaml
+    recommend_test: null
+
+  - id: DIALECT-10
+    name: "Flag a dead anchor with a docRule"
+    demonstrates: "A docRule pairs extractVaultRefs with byAnchor to flag a #^anchor fragment that resolves nowhere in the same doc."
+    rank: 10
+    builds_on: DIALECT-09
+    artifact_kind: code
+    artifact: |
+      import { contract, docRule, sections, section, extractVaultRefs } from "markdown-contract";
+
+      const deadAnchor = docRule("dialect/dead-anchor", (doc, ctx) =>
+        extractVaultRefs(doc.body.section("Notes").text("all"))
+          .filter(r => r.fragment?.startsWith("^") && !doc.byAnchor(r.fragment.slice(1)))
+          .map(r => ctx.finding({ id: "dialect/dead-anchor", message: `no block ${r.fragment}` })));
+
+      const c = contract({ body: sections({}, [section("Notes", {})]), rules: [deadAnchor] });
+    surfaces:
+      - "docRule"
+      - "Ctx.finding"
+      - "extractVaultRefs + Doc.byAnchor referential integrity"
+    needs_test: "yes"
+    coverage_status: uncovered
+    existing_coverage: []
+    recommend_test: "[[T-DREF-dialect-referential-integrity]]"
+
+  - id: DIALECT-11
+    name: "Validate every wikilink across a vault"
+    demonstrates: "A cross-document docRule checks each wikilink target against the vault's page set under runCorpus."
+    rank: 11
+    builds_on: DIALECT-10
+    artifact_kind: code
+    artifact: |
+      const pages = new Set(globSync("vault/**/*.md").map(p => basename(p, ".md")));
+      const missingPage = docRule("dialect/missing-page", (doc, ctx) =>
+        extractVaultRefs(doc.body.section("Notes").text("all"))
+          .filter(r => !pages.has(r.target.split("/").pop()!))
+          .map(r => ctx.finding({ id: "dialect/missing-page", level: "warn", message: `dangling → ${r.target}` })));
+
+      const cfg = defineConfig({ rules: [{ include: ["**/*.md"], contract: vaultContract }] });
+      const { findings, exitCode } = runCorpus(cfg, { cwd: "vault" });
+    surfaces:
+      - "docRule (cross-document)"
+      - "extractVaultRefs"
+      - "defineConfig/runCorpus over a vault"
+      - "aggregated findings"
+    needs_test: "yes"
+    coverage_status: uncovered
+    existing_coverage: []
+    recommend_test: "[[T-DREF-dialect-referential-integrity]]"
