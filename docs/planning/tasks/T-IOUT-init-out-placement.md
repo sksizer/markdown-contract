@@ -16,8 +16,8 @@ need_human_review: false
 impact: low
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-06-30T05:29:43Z'
 last_reviewed: '2026-06-30'
+readiness_verified_at: '2026-06-30T06:22:42Z'
 ---
 # `init --out` placement of the written scaffold
 
