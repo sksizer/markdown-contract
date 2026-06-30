@@ -78,4 +78,8 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Friction and automation gaps
 
-- The task's `## Files to touch` named `src/core/projection.test.ts` for the `byAnchor` negative, but `byAnchor` and `SectionView.anchors` are model-layer members built via `read()` and are not reachable from `projection.test.ts`'s `parse()` tree — the assertion landed in `src/core/model.test.ts` instead. The readiness gate only checks that cited paths *exist*, not that the asserted symbol is reachable from that file's layer — a layer-mismatch check (does the cited test file import/reach the symbol the AC names?) would have caught the projection-vs-model confusion at definition time rather than implementation time.
+- The task's `## Files to touch` named `src/core/projection.test.ts` for the `byAnchor` negative, but `byAnchor` and `SectionView.anchors` are model-layer members built via `read()` and are not reachable from `projection.test.ts`'s `parse()` tree — the assertion landed in `src/core/model.test.ts` instead. The readiness gate only checks that cited paths *exist*, not that the asserted symbol is reachable from that file's layer — a layer-mismatch check (does the cited test file import/reach the symbol the AC names?) would have caught the projection-vs-model confusion at definition time rather than implementation time. → [[T-OZ6A-readiness-gate-checks-symbol-reachability]]
+
+### Spawned follow-up tasks
+
+- [[T-OZ6A-readiness-gate-checks-symbol-reachability]] (https://github.com/sksizer/dev/pull/517) — readiness gate gains a layer-mismatch check so a cited test file must reach the symbol its AC names; spawned (Upstream-plugin / sdlc-meta).
