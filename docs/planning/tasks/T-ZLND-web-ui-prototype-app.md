@@ -1,27 +1,27 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-ZLND
-status: in-progress
-created: 2026-06-30
+status: closed/done
+created: '2026-06-30'
 related:
-  - "[[M-0009-local-web-ui-vault-dashboard]]"
-  - "[[C-0010-single-binary-and-vault-dashboard]]"
-  - "[[D-0012-distribution-single-exec-and-web-ui]]"
+- '[[M-0009-local-web-ui-vault-dashboard]]'
+- '[[C-0010-single-binary-and-vault-dashboard]]'
+- '[[D-0012-distribution-single-exec-and-web-ui]]'
 depends_on: []
 tags:
-  - web-ui
-  - prototype
-  - nuxt
-  - storybook
+- web-ui
+- prototype
+- nuxt
+- storybook
 need_human_review: false
 impact: high
 complexity: medium
 autonomy: supervised
-readiness_verified_at: 2026-06-30T12:34:35Z
-last_reviewed: 2026-06-30
+last_reviewed: '2026-06-30'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/105
+- https://github.com/sksizer/markdown-contract/pull/105
+completion_note: 'Shipped via #105.'
 ---
 # Prototype: standalone web-UI app + Storybook harness on mock data
 
