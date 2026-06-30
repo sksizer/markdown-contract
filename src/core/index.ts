@@ -31,7 +31,9 @@ export {
 } from "./grammar.js";
 // Content leaves:
 export { code, list, maxWords, table } from "./leaves.js";
-// Declarative text-constraint builders (D-0011; stub until T-TXAP):
+// Declarative text-constraint builders (D-0011). `TextMatchSpec` is the matcher's spec type
+// (re-exported by text-constraints.ts as the authoring surface, and sourced once below from
+// text-match.js to keep the barrel free of a duplicate export):
 export { forbids, requires, textRule } from "./text-constraints.js";
 export type { TextRuleSpec } from "./text-constraints.js";
 // Engine entry points (the doors `contract()` delegates to):

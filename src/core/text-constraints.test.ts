@@ -1,64 +1,211 @@
 /**
- * Peer test for the text-constraint builders.
+ * Peer test for the text-constraint builders (T-TXAP).
  *
- * STUB CONTRACT (T-TXSC): `requires` / `forbids` return a node-local `Rule` and `textRule`
- * returns a cross-plane `DocRule`, each well-formed and branded but emitting NO findings yet —
- * so the gated `text-api` fixtures type-check and run green-by-skip until T-TXAP lands the real
- * matcher. These cases pin that no-op contract; T-TXAP replaces them with the real pass/fail
- * matcher behaviour when it flips `IMPLEMENTED["text-api"]`.
+ * `requires` / `forbids` build a section-scoped node-local `Rule` over the bound section's
+ * subtree text; `textRule` builds a whole-document `DocRule`. Each runs the text-match core
+ * (`text-match.ts`) and mints `text/*` findings. These cases read first as documentation —
+ * lead with a section `requires` pass/fail and a document `forbids` pass/fail (the unit twins
+ * of fixtures 22 / 23) — then cover counts, regex, normalize/ignoreCase, note/level flow-through,
+ * the synthesized per-entry id, and the `requires` absence-form purity guard.
  */
 import { describe, expect, it } from "vitest";
 
+import { contract, section, sections } from "../index.js";
+import { ContractBuildError } from "./grammar.js";
+import { defaultRegistry, makeCtx } from "./registry.js";
 import { forbids, requires, textRule } from "./text-constraints.js";
-import type { Ctx, SectionNode } from "./types.js";
+import type { BlockNode, Ctx, SectionNode } from "./types.js";
 
-const node: SectionNode = {
-  name: "Summary",
-  depth: 2,
-  pos: { line: 1 },
-  sections: [],
-  blocks: [],
-  anchors: [],
-};
+const ctx: Ctx = makeCtx("fixture.md", defaultRegistry());
 
-const ctx: Ctx = {
-  path: "fixture.md",
-  finding: (f) => ({ id: f.id, level: f.level ?? "error", path: "fixture.md", message: f.message }),
-};
+/** A heading-direct paragraph block at a given source line. */
+function para(line: number, text: string): BlockNode {
+  return { kind: "paragraph", text, pos: { line, col: 1 } };
+}
 
-describe("requires (stub)", () => {
-  it("returns a branded node-local Rule", () => {
-    const r = requires([{ pattern: "outcome" }]);
-    expect(r.__brand).toBe("Rule");
-    expect(r.id).toBe("text/requires");
+/** A minimal projected `SectionNode` for direct-run unit cases. */
+function sectionNode(name: string, line: number, blocks: BlockNode[], sub: SectionNode[] = []): SectionNode {
+  return { name, depth: 2, pos: { line, col: 1 }, sections: sub, blocks, anchors: [] };
+}
+
+// ── Documentation-leading cases: section `requires`, document `forbids` ──────────────────
+
+describe("requires — a section must CONTAIN a phrase", () => {
+  const c = contract({
+    body: sections({ order: "recognized-relative", allowUnknown: true }, [
+      section("Summary", { rules: [requires([{ pattern: "outcome" }])] }),
+    ]),
   });
 
-  it("emits no findings — the matcher lands in T-TXAP", () => {
-    expect(requires([{ pattern: "outcome" }]).run(node, ctx)).toEqual([]);
+  it("passes when the phrase is present in the section", () => {
+    const { findings } = c.validate("## Summary\n\nThe chosen outcome is X.\n", { path: "d.md" });
+    expect(findings).toEqual([]);
+  });
+
+  it("fails at the heading, with a synthesized per-entry id, when the phrase is absent", () => {
+    const { findings } = c.validate("## Summary\n\nThe chosen direction is X.\n", { path: "d.md" });
+    expect(findings).toEqual([
+      {
+        id: "text/requires/summary/1tc7itx",
+        level: "error",
+        path: "d.md",
+        message: 'required phrase "outcome" not found in Summary',
+        pos: { line: 1, col: 1 },
+      },
+    ]);
   });
 });
 
-describe("forbids (stub)", () => {
-  it("returns a branded node-local Rule", () => {
-    const r = forbids([{ pattern: "TODO", normalize: false }]);
-    expect(r.__brand).toBe("Rule");
-    expect(r.id).toBe("text/forbids");
+describe("textRule — a document must NOT contain a phrase (forbids)", () => {
+  const c = contract({
+    body: sections({ order: "recognized-relative", allowUnknown: true }, [section("Summary")]),
+    rules: [textRule({ forbids: [{ pattern: "TODO" }] })],
   });
 
-  it("emits no findings — the matcher lands in T-TXAP", () => {
+  it("passes when the phrase appears nowhere", () => {
+    const { findings } = c.validate("## Summary\n\nAll steps are complete.\n", { path: "d.md" });
+    expect(findings).toEqual([]);
+  });
+
+  it("fails at the offending line when the phrase appears", () => {
+    const { findings } = c.validate("## Summary\n\nThere is a TODO left here.\n", { path: "d.md" });
+    expect(findings).toHaveLength(1);
+    const f = findings[0]!;
+    expect(f.id).toBe("text/forbids/doc/mf4oln");
+    expect(f.level).toBe("error");
+    expect(f.message).toBe('forbidden phrase "TODO" present');
+    // The typed Doc exposes no per-paragraph source line, so prose anchors at heading+1 (line 2),
+    // one line before the source's line 3. See the builder's doc-scope limitation note.
+    expect(f.pos?.line).toBe(2);
+  });
+});
+
+// ── forbids on a section reports the real source line (AC-2) ─────────────────────────────
+
+describe("forbids — a section must NOT contain a phrase, reported at the source line", () => {
+  it("emits one text/forbids per hit at the offending line", () => {
+    const node = sectionNode("Notes", 1, [para(3, "ok"), para(5, "a TODO and another TODO")]);
+    const out = forbids([{ pattern: "TODO" }]).run(node, ctx);
+    expect(out).toHaveLength(2);
+    expect(out.every((f) => f.id === "text/forbids/notes/mf4oln")).toBe(true);
+    expect(out.map((f) => f.pos?.line)).toEqual([5, 5]);
+    expect(out[0]!.message).toBe('forbidden phrase "TODO" present');
+  });
+
+  it("emits nothing when the phrase is absent", () => {
+    const node = sectionNode("Notes", 1, [para(3, "all clear")]);
     expect(forbids([{ pattern: "TODO" }]).run(node, ctx)).toEqual([]);
   });
 });
 
-describe("textRule (stub)", () => {
-  it("returns a branded cross-plane DocRule", () => {
-    const r = textRule({ requires: [{ pattern: "DONE pr=" }], forbids: [{ pattern: "}scripts/" }] });
-    expect(r.__brand).toBe("DocRule");
-    expect(r.id).toBe("text/doc");
+// ── AC-3: counts, regex, normalize, ignoreCase, note, level ──────────────────────────────
+
+describe("count bounds (AC-3)", () => {
+  it("a below-min count is a text/count finding at the heading", () => {
+    const node = sectionNode("Summary", 1, [para(3, "na once")]);
+    const out = requires([{ pattern: "na", min: 2 }]).run(node, ctx);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.id).toBe("text/count/summary/1jqz098");
+    expect(out[0]!.message).toBe('"na" found 1 times, expected at least 2');
+    expect(out[0]!.pos?.line).toBe(1);
   });
 
-  it("emits no findings — the matcher lands in T-TXAP", () => {
-    const doc = { frontmatter: {}, body: {}, byAnchor: () => undefined };
-    expect(textRule({ forbids: [{ pattern: "}scripts/" }] }).run(doc, ctx)).toEqual([]);
+  it("a satisfied minimum emits nothing — DONE markers counted across list items", () => {
+    const node = sectionNode("Checklist", 1, [
+      { kind: "list", ordered: false, pos: { line: 3, col: 1 }, items: [
+        { text: "Step one DONE", pos: { line: 3, col: 3 } },
+        { text: "Step two DONE", pos: { line: 4, col: 3 } },
+      ] },
+    ]);
+    expect(requires([{ pattern: "DONE", min: 2 }]).run(node, ctx)).toEqual([]);
+  });
+});
+
+describe("regex / normalize / ignoreCase (AC-3)", () => {
+  it("a regex entry expresses an OR-of-literals", () => {
+    const present = sectionNode("Failure modes", 1, [para(3, "emits LEASE-CONFLICT ref=abc")]);
+    const absent = sectionNode("Failure modes", 1, [para(3, "just a generic warning")]);
+    const spec = { regex: "LEASE-(CONFLICT|MISSING) ref=" };
+    expect(requires([spec]).run(present, ctx)).toEqual([]);
+    expect(requires([spec]).run(absent, ctx)).toHaveLength(1);
+  });
+
+  it("normalize (default) tolerates a phrase wrapped across a soft line break", () => {
+    const wrapped = sectionNode("Summary", 1, [para(3, "the widget\nprotocol here")]);
+    expect(requires([{ pattern: "widget protocol" }]).run(wrapped, ctx)).toEqual([]);
+    expect(requires([{ pattern: "widget protocol", normalize: false }]).run(wrapped, ctx)).toHaveLength(1);
+  });
+
+  it("ignoreCase folds case", () => {
+    const node = sectionNode("Summary", 1, [para(3, "the WIDGET")]);
+    expect(requires([{ pattern: "widget", ignoreCase: true }]).run(node, ctx)).toEqual([]);
+    expect(requires([{ pattern: "widget" }]).run(node, ctx)).toHaveLength(1);
+  });
+});
+
+describe("note and level flow onto the finding (AC-3)", () => {
+  it("appends the note and rides the spec's level", () => {
+    const node = sectionNode("Summary", 1, [para(3, "no mention")]);
+    const out = requires([{ pattern: "outcome", note: "name the decision outcome", level: "warn" }]).run(node, ctx);
+    expect(out[0]!.level).toBe("warn");
+    expect(out[0]!.message).toBe('required phrase "outcome" not found in Summary — name the decision outcome');
+  });
+});
+
+// ── AC-4: stable per-entry id; distinct entries are distinct findings ─────────────────────
+
+describe("per-entry id (AC-4)", () => {
+  it("two distinct requirements on one section are two distinct findings", () => {
+    const node = sectionNode("Summary", 1, [para(3, "neither token here")]);
+    const out = requires([{ pattern: "alpha" }, { pattern: "beta" }]).run(node, ctx);
+    expect(out.map((f) => f.id)).toEqual([
+      "text/requires/summary/1nxahr1",
+      "text/requires/summary/wfa6k9",
+    ]);
+  });
+
+  it("an explicit id on the spec pins the finding id", () => {
+    const node = sectionNode("Summary", 1, [para(3, "nope")]);
+    const out = requires([{ pattern: "outcome", id: "decision/names-outcome" }]).run(node, ctx);
+    expect(out[0]!.id).toBe("decision/names-outcome");
+  });
+});
+
+// ── AC-5: requires purity — the absence form is forbids ───────────────────────────────────
+
+describe("requires purity (AC-5)", () => {
+  it("rejects max:0 at construction (use forbids)", () => {
+    expect(() => requires([{ pattern: "x", max: 0 }])).toThrow(ContractBuildError);
+    expect(() => requires([{ pattern: "x", max: 0 }])).toThrow(/absence/);
+  });
+
+  it("rejects max < min at construction", () => {
+    expect(() => requires([{ pattern: "x", min: 2, max: 1 }])).toThrow(ContractBuildError);
+  });
+
+  it("rejects an absence-form entry in textRule's requires arm", () => {
+    expect(() => textRule({ requires: [{ pattern: "x", max: 0 }] })).toThrow(ContractBuildError);
+  });
+
+  it("forbids IS the absence form — max:0 is fine", () => {
+    expect(() => forbids([{ pattern: "x", max: 0 }])).not.toThrow();
+    expect(() => forbids([{ pattern: "x" }])).not.toThrow();
+  });
+});
+
+// ── document-level requires miss has no position ──────────────────────────────────────────
+
+describe("textRule requires — a document-level miss has no position", () => {
+  it("a missing required phrase reports document-level (no pos), scope 'document'", () => {
+    const c = contract({
+      body: sections({ order: "recognized-relative", allowUnknown: true }, [section("Summary")]),
+      rules: [textRule({ requires: [{ pattern: "sdlc task close" }] })],
+    });
+    const { findings } = c.validate("## Summary\n\nunrelated prose.\n", { path: "d.md" });
+    expect(findings).toHaveLength(1);
+    const f = findings[0]!;
+    expect(f.id).toBe("text/requires/doc/p2ase8");
+    expect(f.message).toBe('required phrase "sdlc task close" not found in document');
+    expect(f.pos).toBeUndefined();
   });
 });

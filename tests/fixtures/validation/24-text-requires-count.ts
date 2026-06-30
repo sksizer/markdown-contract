@@ -7,9 +7,10 @@ import { loadSource } from "../../harness.js";
 // requires the `DONE` marker at least twice. A below-`min` document is a count violation,
 // reported under the `text/count` area (distinct from a plain presence `text/requires` miss).
 //
-// GATED on `text-api` (skipped-green until T-TXAP lands the matcher + builders). The expected
-// finding id is the illustrative `text/count` area id; T-TXAP tightens it to the synthesized
-// per-entry id when it flips the flag.
+// Greened by T-TXAP (the matcher + builders are live). The expected finding id is the
+// synthesized per-entry id `text/count/checklist/<patternHash>` (a `min`/`max` violation keeps
+// the `count` finding kind); the count violation pins at the section heading (line 1). Note the
+// `DONE` markers live in list items — the section scope text includes every block, not just prose.
 const v24: ValidationFixture = {
   id: "v24",
   title: "Occurrence count — phrase must appear at least min times",
@@ -32,13 +33,13 @@ const v24: ValidationFixture = {
     {
       label: "fail — 'DONE' appears once, below min:2; the count fires at the heading",
       source: loadSource(import.meta.url, "./24-text-requires-count.fail.md"),
-      findings: [{ id: "text/count", level: "error", line: 1 }],
+      findings: [{ id: "text/count/checklist/9ms6i7", level: "error", line: 1 }],
     },
   ],
   // No `.contract.yaml` parity peer yet — the declarative text-constraint loader
   // (T-TXYL) does not exist. T-TXYL adds the twin and drops this flag.
   peerless: true,
-  note: "Expected id is the illustrative `text/count` area id; tightened in T-TXAP.",
+  note: "Synthesized id `text/count/checklist/<hash>`; a below-min count pins at the heading.",
 };
 
 export default v24;

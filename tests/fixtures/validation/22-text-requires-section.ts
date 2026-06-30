@@ -7,9 +7,9 @@ import { loadSource } from "../../harness.js";
 // rule over the section's text — the declarative twin of fixture 17's hand-written
 // `summary/mentions-outcome` predicate ("the Summary section must mention the decision outcome").
 //
-// GATED on `text-api` (skipped-green until T-TXAP lands the matcher + builders). The expected
-// finding id is the illustrative `text/requires` area id; T-TXAP tightens it to the synthesized
-// per-entry id (`text/requires/<scopeKey>/<patternHash>`) when it flips the flag.
+// Greened by T-TXAP (the matcher + builders are live). The expected finding id is the
+// synthesized per-entry id `text/requires/<scopeKey>/<patternHash>` (scopeKey = the section's
+// generated camel key `summary`); the require miss pins at the section heading (line 1).
 const v22: ValidationFixture = {
   id: "v22",
   title: "Section-scoped requires — phrase must be present",
@@ -32,13 +32,13 @@ const v22: ValidationFixture = {
     {
       label: "fail — Summary never says 'outcome'; the require fires at the heading",
       source: loadSource(import.meta.url, "./22-text-requires-section.fail.md"),
-      findings: [{ id: "text/requires", level: "error", line: 1 }],
+      findings: [{ id: "text/requires/summary/1tc7itx", level: "error", line: 1 }],
     },
   ],
   // No `.contract.yaml` parity peer yet — the declarative text-constraint loader
   // (T-TXYL) does not exist. T-TXYL adds the twin and drops this flag.
   peerless: true,
-  note: "Expected id is the illustrative `text/requires` area id; tightened in T-TXAP.",
+  note: "Synthesized per-entry id `text/requires/summary/<hash>`; the miss pins at the heading.",
 };
 
 export default v22;
