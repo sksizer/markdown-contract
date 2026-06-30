@@ -77,6 +77,27 @@ suite("markdown-contract init (CLI)", () => {
     expect(existsSync(join(dir, "contracts"))).toBe(false);
   });
 
+  test("--out <dir> writes the scaffold under <dir>, leaving cwd untouched", async () => {
+    // Three distinct dirs: the source vault to infer from, the write target, and an
+    // unrelated cwd. --out must steer every written file to <dir>, never to cwd.
+    const vault = stageVault("07-tree-depth1");
+    const outDir = mkdtempSync(join(tmpdir(), "mc-out-"));
+    const cwd = mkdtempSync(join(tmpdir(), "mc-cwd-"));
+
+    const r = await runCli(["init", vault, "--meta", "--out", outDir], { cwd });
+    expect(r.code).toBe(0);
+
+    // The scaffold (config + per-contract files) lands under the --out target.
+    expect(existsSync(join(outDir, "markdown-contract.yaml"))).toBe(true);
+    expect(existsSync(join(outDir, "contracts"))).toBe(true);
+    expect(readdirSync(join(outDir, "contracts")).some((f) => f.endsWith(".contract.yaml"))).toBe(true);
+
+    // cwd is left completely untouched by the run.
+    expect(existsSync(join(cwd, "markdown-contract.yaml"))).toBe(false);
+    expect(existsSync(join(cwd, "contracts"))).toBe(false);
+    expect(readdirSync(cwd)).toHaveLength(0);
+  });
+
   test("--check exits 0 when the config still accepts, 1 after a doc drifts", async () => {
     const dir = stageVault("01-flat-uniform");
     const init = await runCli(["init", dir], { cwd: dir });
