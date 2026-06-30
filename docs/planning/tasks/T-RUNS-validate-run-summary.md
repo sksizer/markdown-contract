@@ -18,6 +18,7 @@ need_human_review: false
 impact: medium
 complexity: small
 autonomy: autonomous/pr
+readiness_verified_at: '2026-06-30T04:04:53Z'
 ---
 # Always print a run summary on `validate` — total files scanned, and per-contract matched counts
 
