@@ -70,7 +70,7 @@ A `src/runner/corpus.test.ts` peer test (per the repo's peer-test convention) as
 | Location | Kind | Change |
 |---|---|---|
 | `src/runner/corpus.test.ts` | modify | add cases: overlapping globs (first-match), trailing catch-all, per-rule exclude |
-| `tests/fixtures/` | maybe | a minimal multi-file tree if no existing one fits |
+| `tests/fixtures/` | modify | a minimal multi-file tree if no existing one fits |
 
 ## Acceptance criteria
 
