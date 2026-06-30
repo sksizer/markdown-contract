@@ -808,7 +808,8 @@ const c = contract({ body: sections({ order: "strict" }, [
   section("Details"),
 ]) });
 c.validate("## Details\n\n## Summary\n", { path: "doc.md" }).findings;
-// [{ id: "structure/section-order", level: "error", pos: { line: 3 }, ... }]
+// [{ id: "structure/section-order", level: "error", pos: { line: 1 }, ... }]
+// (the finding pins at the out-of-order ‘Details’ heading on line 1)
 ```
 `surfaces:` sections() LevelOpts.order; structure/section-order; Finding.pos
 
@@ -909,8 +910,8 @@ const c = contract({
   frontmatter: z.object({ id: z.string() }),
   body: sections({}, [section("Summary")]),
 });
-// frontmatter missing `id` → frontmatter/required,
-//   pos line resolved via tree.lineForPath(["id"])
+// frontmatter missing `id` → frontmatter/required (document-level: an absent key
+//   has no line; lineForPath pins a *present* key's issue to its source line)
 ```
 `surfaces:` ContractDef.frontmatter (Zod); frontmatter/required; DocTree.lineForPath
 
