@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-CDYL
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0007-example-use-case-catalog]]'
@@ -86,3 +86,19 @@ entries, each with the full example-entry schema. Planned entries carry
 
 Child of [[T-CTLG-example-catalog-finalize]]; consumes `docs/example-catalog.md`.
 Planned examples preview [[C-0009-declarative-text-constraints]].
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-06-30. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
