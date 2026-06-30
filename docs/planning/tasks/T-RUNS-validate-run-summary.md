@@ -1,27 +1,27 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-RUNS
-status: in-progress
+status: closed/done
 created: '2026-06-27'
 related:
-  - "[[C-0003-corpus-cli]]"
-  - "[[D-0001-finding-model]]"
-  - "[[M-0003-config-inference]]"
+- '[[C-0003-corpus-cli]]'
+- '[[D-0001-finding-model]]'
+- '[[M-0003-config-inference]]'
 depends_on: []
 tags:
-  - cli
-  - runner
-  - dx
-  - reporting
+- cli
+- runner
+- dx
+- reporting
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: autonomous/pr
-readiness_verified_at: '2026-06-30T04:04:53Z'
 last_reviewed: '2026-06-30'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/82
+- https://github.com/sksizer/markdown-contract/pull/82
+completion_note: 'Shipped via #82.'
 ---
 # Always print a run summary on `validate` — total files scanned, and per-contract matched counts
 
