@@ -7,9 +7,15 @@
  * - `json`   — the findings array as-is (machine-parseable, stable shape).
  * - `sarif`  — a valid SARIF 2.1.0 log for code-scanning surfaces (GitHub, etc.).
  *
- * Imports flow one way: cli → core (types only). Nothing here imports the runner.
+ * Plus `formatRunSummary` — the additive, human-only run summary the `validate` path
+ * prepends to the findings report (total files scanned/matched/unmatched, and a
+ * per-contract breakdown when named rules exist). Also pure.
+ *
+ * Imports flow one way: cli → runner/core (types only). The only runner dependency is
+ * the `RunStats` shape `formatRunSummary` renders.
  */
 import type { Finding, FindingLevel } from "../core/index.js";
+import type { RunStats } from "../runner/index.js";
 
 const SARIF_SCHEMA =
   "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json";
@@ -43,6 +49,41 @@ export function formatHuman(findings: Finding[]): string {
   const summary = `${findings.length} finding(s): ${counts.error} error, ${counts.warn} warn, ${counts.report} report`;
   lines.push("", summary);
   return lines.join("\n");
+}
+
+/** `n word` with a plural `s` unless `n === 1` — e.g. `1 file`, `39 files`, `6 contracts`. */
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
+/**
+ * The human run summary — additive evidence that the run happened and how it routed,
+ * prepended to the findings report on the `validate` path (so it shows even on a clean,
+ * `No findings.` run). Pure: no IO, no `process`.
+ *
+ * `labels[i]` is the contract name for `stats.matchedByRule[i]` (parallel to `config.rules`),
+ * or `undefined` for an unnamed rule (an inline `--contract` run). The total line always prints:
+ *
+ *   Scanned 12 files; 12 matched, 0 unmatched
+ *
+ * When ANY rule is named (the `--config` form), the total line gains an `across K contracts`
+ * clause (K = number of named rules) and one indented `  <name>: <count>` row per named rule,
+ * in rule order — including a named rule that matched 0 (evidence it routed nothing):
+ *
+ *   Scanned 39 files; 38 matched across 6 contracts, 1 unmatched
+ *     capability: 8
+ *     …
+ */
+export function formatRunSummary(stats: RunStats, labels: Array<string | undefined>): string {
+  const namedCount = labels.filter((l) => l !== undefined).length;
+  const across = namedCount > 0 ? ` across ${plural(namedCount, "contract")}` : "";
+  const total = `Scanned ${plural(stats.filesScanned, "file")}; ${stats.filesMatched} matched${across}, ${stats.filesUnmatched} unmatched`;
+  if (namedCount === 0) return total;
+
+  const rows = labels.flatMap((label, i) =>
+    label === undefined ? [] : [`  ${label}: ${stats.matchedByRule[i] ?? 0}`],
+  );
+  return [total, ...rows].join("\n");
 }
 
 /**

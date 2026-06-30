@@ -12,7 +12,7 @@
  * `init` verb yet). The implementation phase that lands the verb flips the flag and these
  * activate.
  */
-import { cpSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -132,6 +132,39 @@ suite("markdown-contract init (CLI)", () => {
   test("reads at least one fixture so the temp-stage helper type-checks", () => {
     const dir = stageVault("01-flat-uniform");
     expect(readFileSync(join(dir, "alpha.md"), "utf8")).toContain("## Summary");
+  });
+});
+
+suite("markdown-contract validate — run summary (T-RUNS)", () => {
+  test("a clean --config run prints the run summary ABOVE 'No findings.' and still exits 0", async () => {
+    const dir = stageVault("01-flat-uniform");
+    // Scaffold a named-rule config so the summary has per-contract rows to render.
+    const init = await runCli(["init", dir], { cwd: dir });
+    expect(init.code).toBe(0);
+
+    const r = await runCli(["validate", dir], { cwd: dir });
+    expect(r.code).toBe(0); // accept-by-construction — a clean run
+
+    // The run summary shows even on a clean run, and precedes the findings report.
+    expect(r.stdout).toMatch(/^Scanned \d+ files?; \d+ matched across \d+ contracts?, \d+ unmatched/);
+    expect(r.stdout).toContain("No findings.");
+    expect(r.stdout.indexOf("Scanned")).toBeLessThan(r.stdout.indexOf("No findings."));
+  });
+
+  test("an inline --contract run prints the total WITHOUT per-contract rows (unnamed rule)", async () => {
+    const dir = stageVault("01-flat-uniform");
+    // Write the scaffold, then drive validate via the inline --contract form against that contract file.
+    const init = await runCli(["init", dir], { cwd: dir });
+    expect(init.code).toBe(0);
+    const contractFile = readdirSync(dir).find((f) => f.endsWith(".contract.yaml"));
+    expect(contractFile).toBeDefined();
+
+    const r = await runCli(["validate", dir, "--contract", join(dir, contractFile!)], { cwd: dir });
+    expect(r.code).toBe(0);
+    // Total line present, but no `across K contracts` clause and no indented rows (the rule is unnamed).
+    expect(r.stdout).toMatch(/^Scanned \d+ files?; \d+ matched, \d+ unmatched/);
+    expect(r.stdout).not.toContain("across");
+    expect(r.stdout).toContain("No findings.");
   });
 });
 

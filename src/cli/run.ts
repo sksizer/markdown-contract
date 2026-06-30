@@ -25,7 +25,7 @@ import {
   type InferResult,
 } from "../declarative/index.js";
 import { runCorpus, type CorpusConfig } from "../runner/index.js";
-import { formatHuman, formatJson, formatSarif } from "./format.js";
+import { formatHuman, formatJson, formatRunSummary, formatSarif } from "./format.js";
 
 const USAGE = [
   "usage: markdown-contract validate <path> [--format human|json|sarif]",
@@ -167,7 +167,7 @@ export async function runCli(
   const include = [...(values.glob ?? []), ...(values.include ?? [])];
   const exclude = values.exclude ?? [];
 
-  let result: { findings: ReturnType<typeof runCorpus>["findings"]; exitCode: number };
+  let result: ReturnType<typeof runCorpus>;
   try {
     result = runCorpus(config, {
       cwd: runRoot,
@@ -180,12 +180,14 @@ export async function runCli(
     return { code: 2, stdout: "", stderr: `markdown-contract: ${(err as Error).message}` };
   }
 
+  // The human format gains an additive run summary (total + per-contract counts) above the
+  // findings report; json/sarif are byte-for-byte the bare finding outputs (summary is human-only).
   const stdout =
     format === "json"
       ? formatJson(result.findings)
       : format === "sarif"
         ? formatSarif(result.findings)
-        : formatHuman(result.findings);
+        : `${formatRunSummary(result.stats, config.rules.map((r) => r.name))}\n\n${formatHuman(result.findings)}`;
 
   return { code: result.exitCode, stdout, stderr: "" };
 }
