@@ -101,5 +101,10 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Friction and automation gaps
 
-- The dialect sketches `import { extractVaultRefs } from "markdown-contract"` (DIALECT-03/07/08/10/11) reference a real, correct-behaving function that has no importable public path — it is re-exported only by `src/core/dialect/index.ts`, not the public barrel `src/index.ts`, and `package.json` exposes only the `.` and `./declarative` subpaths — export `extractVaultRefs` and the `VaultRef` type from the package root so the dialect sketches become literally copy-pasteable.
-- Nothing keeps a `docs/catalog/*.yaml` artifact in sync with its `docs/example-catalog.md` source; byte-equality was verified here with a throwaway script — add a corpus parity test that asserts each catalog YAML `artifact` matches its example-catalog.md sketch, once more categories land.
+- The dialect sketches `import { extractVaultRefs } from "markdown-contract"` (DIALECT-03/07/08/10/11) reference a real, correct-behaving function that has no importable public path — it is re-exported only by `src/core/dialect/index.ts`, not the public barrel `src/index.ts`, and `package.json` exposes only the `.` and `./declarative` subpaths — export `extractVaultRefs` and the `VaultRef` type from the package root so the dialect sketches become literally copy-pasteable. → [[T-E698-export-extractvaultrefs-from-package-root]]
+- Nothing keeps a `docs/catalog/*.yaml` artifact in sync with its `docs/example-catalog.md` source; byte-equality was verified here with a throwaway script — add a corpus parity test that asserts each catalog YAML `artifact` matches its example-catalog.md sketch, once more categories land. → [[T-D5QD-catalog-yaml-source-parity-test]]
+
+### Spawned follow-up tasks
+
+- [[T-E698-export-extractvaultrefs-from-package-root]] — spawned (Local); committed on this feature branch at status `planning/draft`. Surfaces `extractVaultRefs` + `VaultRef` from the package root barrel so the dialect sketches compile verbatim.
+- [[T-D5QD-catalog-yaml-source-parity-test]] — spawned (Local); committed on this feature branch at status `planning/draft`. Standing corpus parity test asserting each `docs/catalog/*.yaml` `artifact` matches its `example-catalog.md` sketch byte-for-byte.
