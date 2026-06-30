@@ -2,20 +2,22 @@
 type: task
 schema_version: '5'
 id: T-IOUT
-status: planning/draft
+status: open/ready
 created: '2026-06-28'
 related:
-  - '[[M-0007-example-use-case-catalog]]'
-  - '[[B-OUTD-init-out-defaults-to-cwd-not-inferred-root]]'
+- '[[M-0007-example-use-case-catalog]]'
+- '[[B-OUTD-init-out-defaults-to-cwd-not-inferred-root]]'
 depends_on: []
 tags:
-  - test
-  - cli
-  - init
-need_human_review: true
+- test
+- cli
+- init
+need_human_review: false
 impact: low
 complexity: small
 autonomy: supervised
+readiness_verified_at: '2026-06-30T05:29:43Z'
+last_reviewed: '2026-06-30'
 ---
 # `init --out` placement of the written scaffold
 
@@ -37,7 +39,9 @@ Add a case to `tests/inference.cli.test.ts` (and/or `src/declarative/infer.test.
 
 ## Files to touch
 
-- `tests/inference.cli.test.ts`
+| Location | Kind | Change |
+|---|---|---|
+| `tests/inference.cli.test.ts` | modify | add a case asserting `init --meta --out <dir>` writes `markdown-contract.yaml` + `contracts/*.contract.yaml` under `<dir>`, cwd untouched |
 
 ## Acceptance criteria
 

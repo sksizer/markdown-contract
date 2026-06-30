@@ -2,9 +2,9 @@
 type: task
 schema_version: '5'
 id: T-ROUT
-status: planning/draft
+status: open/ready
 created: '2026-06-28'
-last_reviewed: '2026-06-28'
+last_reviewed: '2026-06-30'
 related:
 - '[[M-0007-example-use-case-catalog]]'
 - '[[T-J9TZ-cli-and-corpus-runner]]'
@@ -14,25 +14,31 @@ tags:
 - runner
 - corpus
 - routing
-need_human_review: true
+need_human_review: false
 impact: high
 complexity: small
 autonomy: supervised
+readiness_verified_at: '2026-06-30T05:29:43Z'
 ---
 # Pin first-match-wins rule precedence and per-rule exclude in runCorpus
 
 ## Goal
 
-Add the missing peer test for the corpus runner's routing semantics. `src/runner/corpus.ts`
-is the first-match router at the heart of every multi-contract run, and it has **no peer
-test**. Pin its core promise: among overlapping `include` globs the **earliest matching
+Add the missing routing-precedence cases to the corpus runner's peer test.
+`src/runner/corpus.ts` is the first-match router at the heart of every
+multi-contract run; its peer test (`src/runner/corpus.test.ts`) covers the glob
+matcher and run-stats but **does not pin routing precedence**. Pin its core
+promise: among overlapping `include` globs the **earliest matching
 rule wins** (and a file is reported exactly once), a trailing catch-all rule fires only for
 files no earlier rule matched, and a **per-rule** (in-config) `exclude` removes a file from
 that rule.
 
 ## Today
 
-`src/runner/corpus.ts` has no `corpus.test.ts`. `src/declarative/config.test.ts` covers a
+`src/runner/corpus.test.ts` exists but only covers the glob matcher and
+`runCorpus` run-stats (scanned/matched/unmatched, per-rule counts, the *global*
+`--exclude` pre-filter) — it asserts nothing about routing **precedence**.
+`src/declarative/config.test.ts` covers a
 named `contracts` map and a *global* `runCorpus` exclude pre-filter, and
 `tests/fixtures/corpus/markdown-contract.config.mjs` wires multiple rules — but those rules
 use **disjoint** globs (`D-*` vs `T-*`), so nothing asserts precedence when globs
@@ -63,7 +69,7 @@ A `src/runner/corpus.test.ts` peer test (per the repo's peer-test convention) as
 
 | Location | Kind | Change |
 |---|---|---|
-| `src/runner/corpus.test.ts` | new | peer test: overlapping globs (first-match), catch-all, per-rule exclude |
+| `src/runner/corpus.test.ts` | modify | add cases: overlapping globs (first-match), trailing catch-all, per-rule exclude |
 | `tests/fixtures/` | maybe | a minimal multi-file tree if no existing one fits |
 
 ## Acceptance criteria
@@ -71,7 +77,7 @@ A `src/runner/corpus.test.ts` peer test (per the repo's peer-test convention) as
 - [ ] AC-1: `src/runner/corpus.test.ts` exists and runs under vitest.
 - [ ] AC-2: A two-overlapping-rule config proves first-match precedence — the file is
   validated against the earliest matching rule only, exactly once.
-- [ ] AC-3: A trailing catch-all rule is shown to fire only for files no earlier rule matched.
+- [ ] AC-3: A trailing fallback `**/*.md` rule is shown to fire only for files no earlier rule matched.
 - [ ] AC-4: A per-rule `exclude` is shown to drop a file from that rule.
 - [ ] AC-5: The test reads as documentation (leads with a plain input→output case) per
   `CLAUDE.md`.
