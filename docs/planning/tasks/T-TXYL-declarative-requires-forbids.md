@@ -19,6 +19,7 @@ need_human_review: true
 impact: high
 complexity: medium
 autonomy: supervised
+readiness_verified_at: '2026-06-30T05:19:11Z'
 ---
 # Declarative front-end — `requires` / `forbids` in YAML
 
