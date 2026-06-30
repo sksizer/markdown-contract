@@ -318,3 +318,168 @@ describe("runCorpus — a cross-document docRule warns on a wikilink whose targe
     expect(exitCode).toBe(0);
   });
 });
+
+/**
+ * Routing precedence — the runner's core promise (T-ROUT). `runCorpus` is a FIRST-match
+ * router: for each file it picks the FIRST rule whose `include` matches and whose per-rule
+ * `exclude` does not, validates the file against THAT rule's contract only, and moves on.
+ *
+ * The three describes below pin that promise as input → exact output. Each uses a
+ * `tagContract(tag)` whose single `docRule` UNCONDITIONALLY emits exactly one finding with
+ * the contract-unique id `rule/<tag>` — so *which contract validated a file* is observable
+ * from the finding's id, and *how many times* it was validated is observable from the finding
+ * count. (No `pos` ⇒ a whole-document finding, which the engine stamps with `ctx.path`, the
+ * POSIX-relative file path — so each finding also names the file it came from.) The bodies are
+ * all-H2 and `allowUnknown`, so the only finding any document can produce is its rule's tag —
+ * which keeps every `toEqual` below exact.
+ */
+
+/**
+ * A trivially-distinguishable contract: its lone `docRule` always fires, emitting one
+ * `rule/<tag>` finding for every document routed to it. The `tag` is the only signal — route a
+ * file here and you get exactly one finding whose id names this contract.
+ */
+function tagContract(tag: string): Contract {
+  return contract({
+    body: sections({ order: "recognized-relative", allowUnknown: true }, [
+      optional(section("Body")),
+    ]),
+    rules: [
+      docRule(`rule/${tag}`, (_doc, ctx) => [
+        ctx.finding({ id: `rule/${tag}`, message: `validated by contract ${tag}` }),
+      ]),
+    ],
+  });
+}
+
+describe("runCorpus — first-match precedence: among overlapping rules the earliest wins", () => {
+  it("routes a file matching BOTH rules to the FIRST rule's contract — exactly once", () => {
+    // Two rules whose `include` globs OVERLAP on `A-0001.md`: rule 0 matches `A-*.md`, rule 1
+    // is a `**/*.md` catch-all that ALSO matches it. The file is validated by rule 0's contract
+    // only — given these two overlapping rules and this one file, you get exactly this one finding.
+    const root = vault({ "A-0001.md": "## Body\n\nrouted content\n" });
+    const config: CorpusConfig = {
+      rules: [
+        { include: ["**/A-*.md"], contract: tagContract("A"), name: "specific" },
+        { include: ["**/*.md"], contract: tagContract("B"), name: "catch-all" },
+      ],
+    };
+
+    const { findings } = runCorpus(config, { cwd: root });
+
+    // The ONLY finding is from rule 0's contract (`rule/A`) — rule 1's `rule/B` never ran.
+    expect(findings.map((f) => ({ id: f.id, path: f.path }))).toEqual([
+      { id: "rule/A", path: "A-0001.md" },
+    ]);
+  });
+
+  it("attributes the match to rule index 0 (not 1) and reports the file exactly once", () => {
+    // Same overlap, asserted through the stats: the earlier rule claims the file, so the file is
+    // counted under index 0; the later overlapping rule sees nothing, and there is no double-report.
+    const root = vault({ "A-0001.md": "## Body\n\nrouted content\n" });
+    const config: CorpusConfig = {
+      rules: [
+        { include: ["**/A-*.md"], contract: tagContract("A"), name: "specific" },
+        { include: ["**/*.md"], contract: tagContract("B"), name: "catch-all" },
+      ],
+    };
+
+    const { findings, stats } = runCorpus(config, { cwd: root });
+
+    expect(stats.matchedByRule).toEqual([1, 0]); // index 0 claimed it; index 1 got nothing
+    expect(stats.filesMatched).toBe(1);
+    expect(findings.length).toBe(1); // validated once, not once per matching rule
+  });
+});
+
+describe("runCorpus — a trailing catch-all rule fires only for files no earlier rule matched", () => {
+  it("routes `A-*.md` to the specific rule and everything else to the trailing catch-all", () => {
+    // Rule 0 is specific (`A-*.md`); rule 1 is a trailing `**/*.md` catch-all. `A-0001.md` matches
+    // both but is claimed by rule 0; `notes.md` matches ONLY the catch-all. The walk is sorted
+    // ascending, so `A-0001.md` (0x41) precedes `notes.md` (0x6e).
+    const root = vault({
+      "A-0001.md": "## Body\n\na task\n",
+      "notes.md": "## Body\n\nloose notes\n",
+    });
+    const config: CorpusConfig = {
+      rules: [
+        { include: ["**/A-*.md"], contract: tagContract("A"), name: "specific" },
+        { include: ["**/*.md"], contract: tagContract("catchall"), name: "catch-all" },
+      ],
+    };
+
+    const { findings, stats } = runCorpus(config, { cwd: root });
+
+    // The catch-all fired ONLY for `notes.md`; `A-0001.md` went to the earlier specific rule.
+    expect(findings.map((f) => ({ id: f.id, path: f.path }))).toEqual([
+      { id: "rule/A", path: "A-0001.md" },
+      { id: "rule/catchall", path: "notes.md" },
+    ]);
+    expect(stats.matchedByRule).toEqual([1, 1]); // one to specific, one to catch-all
+    expect(stats.filesMatched).toBe(2);
+    expect(stats.filesUnmatched).toBe(0);
+  });
+});
+
+describe("runCorpus — a per-rule `exclude` drops a file from that rule", () => {
+  it("falls a per-rule-excluded file THROUGH to the next matching rule", () => {
+    // Rule 0 includes every `.md` but EXCLUDES `skip-*.md`; rule 1 is a plain `**/*.md` catch-all.
+    // `keep.md` matches rule 0 (not excluded) → rule 0. `skip-me.md` matches rule 0's include but
+    // is removed by its per-rule exclude, so it falls through to rule 1. Walk order: `keep.md`
+    // (0x6b) precedes `skip-me.md` (0x73).
+    const root = vault({
+      "keep.md": "## Body\n\nkept by rule 0\n",
+      "skip-me.md": "## Body\n\nexcluded from rule 0\n",
+    });
+    const config: CorpusConfig = {
+      rules: [
+        {
+          include: ["**/*.md"],
+          exclude: ["**/skip-*.md"],
+          contract: tagContract("A"),
+          name: "primary",
+        },
+        { include: ["**/*.md"], contract: tagContract("B"), name: "fallback" },
+      ],
+    };
+
+    const { findings, stats } = runCorpus(config, { cwd: root });
+
+    // `keep.md` → rule 0's contract; `skip-me.md`, dropped from rule 0 by its exclude, → rule 1's.
+    expect(findings.map((f) => ({ id: f.id, path: f.path }))).toEqual([
+      { id: "rule/A", path: "keep.md" },
+      { id: "rule/B", path: "skip-me.md" },
+    ]);
+    expect(stats.matchedByRule).toEqual([1, 1]);
+    expect(stats.filesMatched).toBe(2);
+  });
+
+  it("skips a per-rule-excluded file entirely when no later rule matches it", () => {
+    // Only one rule, which excludes `skip-*.md`. `skip-me.md` is dropped from rule 0 and there is
+    // no later rule to catch it, so it routes to nothing — scanned but unmatched, no finding.
+    const root = vault({
+      "keep.md": "## Body\n\nkept by rule 0\n",
+      "skip-me.md": "## Body\n\nexcluded, with no fallback\n",
+    });
+    const config: CorpusConfig = {
+      rules: [
+        {
+          include: ["**/*.md"],
+          exclude: ["**/skip-*.md"],
+          contract: tagContract("A"),
+          name: "primary",
+        },
+      ],
+    };
+
+    const { findings, stats } = runCorpus(config, { cwd: root });
+
+    expect(findings.map((f) => ({ id: f.id, path: f.path }))).toEqual([
+      { id: "rule/A", path: "keep.md" },
+    ]);
+    expect(stats.filesScanned).toBe(2); // both walked
+    expect(stats.filesMatched).toBe(1); // only `keep.md` routed
+    expect(stats.filesUnmatched).toBe(1); // `skip-me.md` dropped by the per-rule exclude, no fallback
+    expect(stats.matchedByRule).toEqual([1]);
+  });
+});
