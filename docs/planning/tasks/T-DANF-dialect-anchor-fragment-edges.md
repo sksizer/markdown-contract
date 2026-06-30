@@ -67,12 +67,15 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1 (section-level id absent from `byAnchor`, present on `SectionView.anchors`): auto — new `model.test.ts` case builds a doc via `read()` with a section-level `^section-id` and asserts `notes.byAnchor("section-id")` is `undefined` while `notes.anchors` contains it. Verified by `npx vitest run src/core/model.test.ts`.
+- AC-2 (`#^anchor` wikilink → `VaultRef.fragment === '^id'`): auto — new `wikilinks.test.ts` case asserts `extractVaultRefs("[[Note#^block-id]]")` yields `fragment: "^block-id"` (caret retained). Verified by `npx vitest run src/core/dialect/wikilinks.test.ts`.
+- AC-3 (`npm run typecheck` and `npm run test` stay green): auto — `sdlc quality run` reported `OK 2/2` (baseline-gated, no new drift).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The deterministic readiness gate (`gap-report`) confirmed 0 gaps up front, so Step 5 was a clean pass-then-flip with no spec back-and-forth.
+- The baseline-gated quality gate cleanly separated this branch's coverage from the parallel in-flight engine churn — `OK 2/2` with no triage of pre-existing findings.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The task's `## Files to touch` named `src/core/projection.test.ts` for the `byAnchor` negative, but `byAnchor` and `SectionView.anchors` are model-layer members built via `read()` and are not reachable from `projection.test.ts`'s `parse()` tree — the assertion landed in `src/core/model.test.ts` instead. The readiness gate only checks that cited paths *exist*, not that the asserted symbol is reachable from that file's layer — a layer-mismatch check (does the cited test file import/reach the symbol the AC names?) would have caught the projection-vs-model confusion at definition time rather than implementation time.
