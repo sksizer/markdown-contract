@@ -71,12 +71,19 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1 (in-doc dead-anchor docRule flags an unresolved `#^anchor`): auto — validation fixture `v26` (`tests/fixtures/validation/26-in-doc-dead-anchor.ts`), whose fail case asserts the `dialect/in-doc-anchor-resolves` finding when `byAnchor` resolves nothing for the wikilink fragment. Verified active (not skipped) via `npx vitest run tests/validation.test.ts -t v26` → 2 passed.
+- AC-2 (cross-document docRule emits a `warn`-level finding for a dangling wikilink target): auto — new `describe` block in `src/runner/corpus.test.ts` routing `**/*.md` through a `vault/wikilink-target-exists` docRule that closes over the vault's known-page set; asserts one `{ id: "vault/wikilink-target-exists", level: "warn", path: "index.md" }` finding and `exitCode === 0`. Verified via `npx vitest run src/runner/corpus.test.ts -t wikilink` → 1 passed.
+- AC-3 (`npm run typecheck` and `npm test` stay green): auto — `sdlc quality run` (baseline-gated) → `OK 2/2`; full suite 29 files / 569 tests passed, typecheck clean, zero new drift over the origin/main baseline.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The existing fixtures were near-exact templates: `16`/`16a` modeled the docRule validation fixture (id+level-only assertion for whole-document findings) and `corpus.test.ts`'s `vault()` helper + warn-level aggregate block modeled the cross-document case. Both compositions dropped in with no engine/`src` production changes — exactly the "documented composition over existing primitives" the task scoped.
+- The baseline-gated gate cleanly subtracted the 4 pre-existing `origin/main` typecheck findings, so the gate verdict reflected only this branch's (zero) new drift.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 7's quality gate defaulted `--baseline-dir` to the *worktree's* `.sdlc/quality-baselines/`, but Step 3a wrote the baseline to the *main repo's* `.sdlc/quality-baselines/`; the first gate run failed `baseline not found` until I passed `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly — task-work Step 7 should resolve the superproject's `.sdlc/` (via `git rev-parse --git-common-dir`) when run from a worktree, or pass the main-repo baseline-dir explicitly, so the gate finds the baseline Step 3a captured. → [[T-A1SR-quality-gate-resolves-superproject-baseline]]
+
+### Spawned follow-up tasks
+
+- [[T-A1SR-quality-gate-resolves-superproject-baseline]] (https://github.com/sksizer/dev/pull/514) — task-work Step 7's quality gate should resolve the superproject's `.sdlc/` baseline-dir (via `git rev-parse --git-common-dir`) when run from a worktree. Classification Upstream-plugin (`sdlc-meta`), spawned to the `sksizer/dev` plugin repo; the dispatch reused the already-open PR #514 (same `meta-task/quality-gate-resolves-superproject-baseline` branch, originally spawned from [[T-RUNS-validate-run-summary]]'s post-mortem covering the identical gap).

@@ -12,5 +12,15 @@ import v22 from "./22-text-requires-section.js";
 import v23 from "./23-text-forbids-body-root.js";
 import v24 from "./24-text-requires-count.js";
 import v25 from "./25-text-regex.js";
+import v26 from "./26-in-doc-dead-anchor.js";
 
-export const validationFixtures: ValidationFixture[] = [v01, ...partA, ...partB, v22, v23, v24, v25];
+export const validationFixtures: ValidationFixture[] = [
+  v01,
+  ...partA,
+  ...partB,
+  v22,
+  v23,
+  v24,
+  v25,
+  v26,
+];
