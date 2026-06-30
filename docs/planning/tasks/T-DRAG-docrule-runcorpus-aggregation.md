@@ -66,12 +66,17 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `src/runner/corpus.test.ts` case 1 routes a `docRule`-bearing contract through `runCorpus` over `doc-a.md` + `doc-b.md` and asserts the findings carry both documents' paths (the distinct-paths set), i.e. cross-document findings aggregate into the run `findings`.
+- AC-2: auto — case 1 asserts both `doc/needs-summary` and `doc/has-owner` contribute (distinct-ids set, plus the exact ordered 4-finding shape = 2 rules × 2 docs).
+- AC-3: auto — case 1's error-level rule drives `exitCode === 1`; case 2 (every doc carries a `## Summary`, so only the warn rule fires) asserts a warn-only run leaves `exitCode === 0`.
+- AC-4: auto — `sdlc quality run` reports `OK 2/2` (`npm run test` and `npm run typecheck` both green); baseline-gated, no new drift.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The peer test's existing `vault()` temp-dir + `runCorpus({ cwd })` pattern dropped in cleanly — the new cases needed no engine or runner change, only a real `docRule` contract, so the work is pure behavior-pinning coverage as scoped.
+- Fixture 16's `doc.body as { section(name): unknown }` cast let the `docRule` bodies check section presence without fighting the generic `Doc<F>` body type; `pos`-less findings auto-stamp `ctx.path`, which is exactly what makes per-document aggregation observable.
+- The Step 7 baseline-gated gate cleanly subtracted the pre-existing `tests/yaml-parity.test.ts` typecheck findings, so the gate reported only this branch's (clean) status.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- none observed
