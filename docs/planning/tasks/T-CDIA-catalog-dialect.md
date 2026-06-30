@@ -88,12 +88,18 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `docs/catalog/dialect.yaml` parsed: `examples` length 11, ids exactly `DIALECT-01`..`DIALECT-11`, top-level `category: dialect`.
+- AC-2: auto — every entry carries all 12 example-entry fields (`id`, `name`, `demonstrates`, `rank`, `builds_on`, `artifact_kind`, `artifact`, `surfaces`, `needs_test`, `coverage_status`, `existing_coverage`, `recommend_test`); checked programmatically over the parsed YAML.
+- AC-3: agent-manual — a scratch script importing `extractVaultRefs` from `src/core/dialect/wikilinks.ts` reproduced the catalog `→` outputs exactly for DIALECT-03..06 (target/alias/fragment-with-leading-`^`/raw all verbatim); DIALECT-01/02 (`byAnchor`/`SectionView.anchors`) and DIALECT-09 (`structure/anchor-missing`) confirmed against `tests/fixtures/consumption/07-byanchor-declared-vs-dynamic.ts`, `tests/fixtures/consumption/04-sectionview-content.ts`, and `tests/fixtures/validation/09b-anchor-missing.ts`; DIALECT-10/11 docRule API names confirmed as real exports/methods. A second scratch check confirmed each `artifact` matches its `example-catalog.md` fenced block byte-for-byte.
+- AC-4: auto — coverage counts are 6 covered / 2 partial / 3 uncovered (covered {01,03,04,06,07,09}, partial {02,05}, uncovered {08,10,11}); `recommend_test` → `[[T-DANF-dialect-anchor-fragment-edges]]` on 02/05 and `[[T-DREF-dialect-referential-integrity]]` on 10/11, `null` elsewhere; all cited `existing_coverage` paths confirmed present on disk.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The scratch-script verification reproduced `extractVaultRefs` outputs byte-for-byte, so AC-3 was machine-checkable rather than eyeballed.
+- The existing test corpus already covered the anchor / `byAnchor` / `anchor-missing` behaviors, so no new fixtures were needed; `npm run test` + `npm run typecheck` stayed `OK 2/2` — a docs-only YAML add had zero effect on the suite.
+- No `docs/`-globbing parity test exists in vitest (it only globs `src/**/*.test.ts` and `tests/**/*.test.ts`), so the new file slotted in cleanly.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The dialect sketches `import { extractVaultRefs } from "markdown-contract"` (DIALECT-03/07/08/10/11) reference a real, correct-behaving function that has no importable public path — it is re-exported only by `src/core/dialect/index.ts`, not the public barrel `src/index.ts`, and `package.json` exposes only the `.` and `./declarative` subpaths — export `extractVaultRefs` and the `VaultRef` type from the package root so the dialect sketches become literally copy-pasteable.
+- Nothing keeps a `docs/catalog/*.yaml` artifact in sync with its `docs/example-catalog.md` source; byte-equality was verified here with a throwaway script — add a corpus parity test that asserts each catalog YAML `artifact` matches its example-catalog.md sketch, once more categories land.
