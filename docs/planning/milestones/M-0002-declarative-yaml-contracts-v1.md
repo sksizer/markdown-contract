@@ -12,7 +12,6 @@ related:
   - '[[C-0003-corpus-cli]]'
   - '[[C-0005-two-plane-contract-engine]]'
   - '[[PR-0002-markdown-contract-cli]]'
-contains: []
 tags:
   - yaml
   - declarative

@@ -11,7 +11,7 @@ related:
   - '[[M-0005-monorepo-tooling]]'
   - '[[C-0010-single-binary-and-vault-dashboard]]'
   - '[[PR-0002-markdown-contract-cli]]'
-contains:
+tasks:
   - '[[T-BMTX-bun-compile-matrix]]'
   - '[[T-SPAE-spa-embed-spike]]'
   - '[[T-RELS-release-channels]]'

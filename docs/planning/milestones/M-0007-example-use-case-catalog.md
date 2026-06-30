@@ -25,7 +25,6 @@ related:
   - '[[T-9XB3-test-harness-and-fixtures]]'
   - '[[C-0009-declarative-text-constraints]]'
   - '[[D-0011-declarative-text-constraints]]'
-contains: []
 need_human_review: false
 ---
 
