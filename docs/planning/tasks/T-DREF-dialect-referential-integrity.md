@@ -2,20 +2,22 @@
 type: task
 schema_version: '5'
 id: T-DREF
-status: planning/draft
+status: open/ready
 created: '2026-06-28'
 related:
-  - '[[M-0007-example-use-case-catalog]]'
+- '[[M-0007-example-use-case-catalog]]'
 depends_on: []
 tags:
-  - test
-  - dialect
-  - docrule
-  - wikilinks
-need_human_review: true
+- test
+- dialect
+- docrule
+- wikilinks
+need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
+readiness_verified_at: '2026-06-30T05:29:43Z'
+last_reviewed: '2026-06-30'
 ---
 # Dialect referential-integrity docRules: dead in-doc anchors and dangling vault wikilinks
 
@@ -40,8 +42,11 @@ Author the two docRules as fixtures (in-doc via single-document `validate`; cros
 
 ## Files to touch
 
-- `tests/fixtures/validation/` (a dead-anchor docRule fixture)
-- `tests/fixtures/` + `src/runner/corpus.test.ts` (a cross-document wikilink-integrity case)
+| Location | Kind | Change |
+|---|---|---|
+| `tests/fixtures/validation/` | modify | add an in-doc dead-anchor docRule fixture (`extractVaultRefs` + `byAnchor`) |
+| `src/runner/corpus.test.ts` | modify | add a cross-document wikilink-existence case (warn-level) over a small vault |
+| `tests/fixtures/` | modify | a small vault fixture for the cross-document case |
 
 ## Acceptance criteria
 

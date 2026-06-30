@@ -2,19 +2,21 @@
 type: task
 schema_version: '5'
 id: T-DANF
-status: planning/draft
+status: open/ready
 created: '2026-06-28'
 related:
-  - '[[M-0007-example-use-case-catalog]]'
+- '[[M-0007-example-use-case-catalog]]'
 depends_on: []
 tags:
-  - test
-  - dialect
-  - anchors
-need_human_review: true
+- test
+- dialect
+- anchors
+need_human_review: false
 impact: low
 complexity: small
 autonomy: supervised
+readiness_verified_at: '2026-06-30T05:29:43Z'
+last_reviewed: '2026-06-30'
 ---
 # Dialect edge cases: section-id `byAnchor` negative and `#^anchor` fragment value
 
@@ -39,8 +41,10 @@ Extend `src/core/dialect/*.test.ts` and `src/core/projection.test.ts` with the t
 
 ## Files to touch
 
-- `src/core/dialect/wikilinks.test.ts` and/or `src/core/dialect/anchors.test.ts`
-- `src/core/projection.test.ts`
+| Location | Kind | Change |
+|---|---|---|
+| `src/core/dialect/wikilinks.test.ts` | modify | assert a `#^anchor` wikilink parses to `VaultRef.fragment === '^id'` |
+| `src/core/projection.test.ts` | modify | assert a section-level id is absent from `byAnchor` (present on `SectionView.anchors`) |
 
 ## Acceptance criteria
 

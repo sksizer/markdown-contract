@@ -2,20 +2,22 @@
 type: task
 schema_version: '5'
 id: T-DRAG
-status: planning/draft
+status: open/ready
 created: '2026-06-28'
 related:
-  - '[[M-0007-example-use-case-catalog]]'
+- '[[M-0007-example-use-case-catalog]]'
 depends_on: []
 tags:
-  - test
-  - runner
-  - docrule
-  - corpus
-need_human_review: true
+- test
+- runner
+- docrule
+- corpus
+need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
+readiness_verified_at: '2026-06-30T05:29:43Z'
+last_reviewed: '2026-06-30'
 ---
 # Aggregate `docRule` findings through `runCorpus` into `exitCode` (multi-rule, mixed levels)
 
@@ -37,8 +39,10 @@ Extend `src/runner/corpus.test.ts` (or add cases beside it) with a small multi-d
 
 ## Files to touch
 
-- `src/runner/corpus.test.ts`
-- a small multi-document fixture under `tests/fixtures/` if needed
+| Location | Kind | Change |
+|---|---|---|
+| `src/runner/corpus.test.ts` | modify | add docRule-through-`runCorpus` aggregation cases (multiple docRules fire; warn-level does not bump the exit code) |
+| `tests/fixtures/` | modify | a small multi-document fixture + docRule-bearing contract, if no existing tree fits |
 
 ## Acceptance criteria
 
