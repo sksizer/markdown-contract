@@ -1,6 +1,6 @@
-import { contract, sections, section, requires } from "../../../../src/index.js";
-import type { ValidationFixture } from "../../../harness.js";
-import { loadSource } from "../../../harness.js";
+import { contract, sections, section, requires } from "../../../src/index.js";
+import type { ValidationFixture } from "../../harness.js";
+import { loadSource } from "../../harness.js";
 
 // D-0011 / C-0009 — `regex` match spec: a single regex entry expresses an OR-of-literals (the
 // v1 disjunction escape). The `Failure modes` section must document at least one lease failure
@@ -35,6 +35,9 @@ const v25: ValidationFixture = {
       findings: [{ id: "text/requires", level: "error", line: 1 }],
     },
   ],
+  // No `.contract.yaml` parity peer yet — the declarative text-constraint loader
+  // (T-TXYL) does not exist. T-TXYL adds the twin and drops this flag.
+  peerless: true,
   note: "Expected id is the illustrative `text/requires` area id; tightened in T-TXAP.",
 };
 

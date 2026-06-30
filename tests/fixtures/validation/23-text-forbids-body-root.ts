@@ -1,6 +1,6 @@
-import { contract, sections, section, textRule } from "../../../../src/index.js";
-import type { ValidationFixture } from "../../../harness.js";
-import { loadSource } from "../../../harness.js";
+import { contract, sections, section, textRule } from "../../../src/index.js";
+import type { ValidationFixture } from "../../harness.js";
+import { loadSource } from "../../harness.js";
 
 // D-0011 / C-0009 — body-root `forbids`: a phrase must be ABSENT from the WHOLE document.
 // `textRule({ forbids: [...] })` attaches to the contract's `rules` slot and compiles to a
@@ -42,6 +42,9 @@ const v23: ValidationFixture = {
       findings: [{ id: "text/forbids", level: "error", line: 3 }],
     },
   ],
+  // No `.contract.yaml` parity peer yet — the declarative text-constraint loader
+  // (T-TXYL) does not exist. T-TXYL adds the twin and drops this flag.
+  peerless: true,
   note: "Expected id is the illustrative `text/forbids` area id; tightened in T-TXAP.",
 };
 
