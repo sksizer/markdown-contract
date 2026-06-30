@@ -6,7 +6,15 @@
  * internally consistent (e.g. `filesUnmatched === filesScanned - filesMatched`,
  * `exitCode` reflects whether any error-level finding is present).
  */
-import type { Finding, FindingLevel, RunResult, RunStats, VaultSummary } from "./types";
+import type {
+  Finding,
+  FindingLevel,
+  RunResult,
+  RunStats,
+  VaultStatus,
+  VaultStatusState,
+  VaultSummary,
+} from "./types";
 
 let _seq = 0;
 
@@ -62,4 +70,44 @@ export function makeVault(
   result: RunResult,
 ): VaultSummary {
   return { id, name, path, result };
+}
+
+/** A fixed ISO timestamp so VaultStatus fixtures stay deterministic across runs. */
+const DEFAULT_UPDATED_AT = "2026-06-30T12:00:00.000Z";
+
+/** Derive the coarse state from the parts present, the way the daemon would. */
+function deriveState(partial: Partial<VaultStatus>): VaultStatusState {
+  if (partial.error) return "error";
+  if (partial.drift?.drifted) return "drift";
+  if (partial.result) {
+    return partial.result.exitCode !== 0 || partial.result.findings.length > 0
+      ? "findings"
+      : "green";
+  }
+  return "running";
+}
+
+/**
+ * Assemble a `VaultStatus` (the status-bearing registry entry the API returns),
+ * defaulting the noisy fields so a caller states only what matters:
+ *  - `configPath` defaults to `<path>/markdown-contract.yaml`,
+ *  - `updatedAt` defaults to a fixed ISO string (deterministic fixtures),
+ *  - `state` is derived from whichever of `error` / `drift` / `result` is present.
+ * The optional `result` / `drift` / `error` are only included when supplied, so
+ * the result matches the per-state presence rules documented on `VaultStatus`.
+ */
+export function makeVaultStatus(
+  partial: Partial<VaultStatus> & Pick<VaultStatus, "id" | "name" | "path">,
+): VaultStatus {
+  return {
+    id: partial.id,
+    name: partial.name,
+    path: partial.path,
+    configPath: partial.configPath ?? `${partial.path}/markdown-contract.yaml`,
+    state: partial.state ?? deriveState(partial),
+    updatedAt: partial.updatedAt ?? DEFAULT_UPDATED_AT,
+    ...(partial.result !== undefined ? { result: partial.result } : {}),
+    ...(partial.drift !== undefined ? { drift: partial.drift } : {}),
+    ...(partial.error !== undefined ? { error: partial.error } : {}),
+  };
 }
