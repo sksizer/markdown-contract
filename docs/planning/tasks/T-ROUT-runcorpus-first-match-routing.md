@@ -126,3 +126,10 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
   the main repo's `.sdlc/quality-baselines/` (where Step 3a captured it) — task-work should pass
   `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly at Step 7 (and the Step 7 dogfood),
   since the worktree's `.sdlc/` is a distinct directory from the main checkout's.
+  → [[T-HHZB-task-work-baseline-dir-main-checkout]]
+
+### Spawned follow-up tasks
+
+- [[T-HHZB-task-work-baseline-dir-main-checkout]] (https://github.com/sksizer/dev/pull/528) —
+  task-work Step 7 should pass `--baseline-dir` pointing at the main checkout's
+  `.sdlc/quality-baselines/`; spawned to the sdlc plugin repo (Upstream-plugin, `sdlc-meta`).
