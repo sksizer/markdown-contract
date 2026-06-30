@@ -43,25 +43,29 @@ The root `package.json` gains a `workspaces` (Bun) declaration; moon's `projects
 ## Approach
 
 1. Add a root `package.json` `workspaces: ["packages/*", "apps/*"]` (Bun workspace) and move the library into `packages/core/` (git mv `src`, `tests`, `tsconfig*.json`, `vitest.config.ts`, and the publishable `package.json`).
-2. Re-resolve the lockfile with `bun install` so `bun.lock` reflects the workspace; commit it (it is currently untracked).
+2. Make **Bun the canonical package manager**: re-resolve with `bun install` so `bun.lock` reflects the workspace and commit it (currently untracked), and **delete `package-lock.json`**. D-0006's npm-canonical rule governs the *published artifact*, not the dev PM (see the D1 clarification in [[D-0010-monorepo-tooling]]).
 3. Update `.moon/workspace.yml` `projects` to `core: 'packages/core'` (and `web: 'apps/web'`), and move/retarget `moon.yml` task definitions so `inputs`/`outputs` are relative to `packages/core`.
-4. Scaffold a minimal `apps/web` (placeholder `package.json` + README) so the workspace resolves; no UI code yet.
-5. Keep the npm publish flow intact — `packages/core` publishes exactly as today; verify `moon run core:build`/`:test` and a dry-run `npm pack` from `packages/core`.
+4. **Flip task execution to Bun, except the test gate:** run `build`/`typecheck` via the moon `bun` toolchain (`bun run …`) for speed; pin the `test` task to the **node** toolchain so `vitest` executes under Node — that run is the Node-compatibility gate. Add a guard that `packages/core` imports no Bun-only APIs (`Bun.*`, `bun:*`). (This supersedes T-MOON's "wrap npm scripts" convention — see [[T-U6W3-document-moon-npm-script-wrapping]].)
+5. Rework CI bootstrap from `setup-node` + `npm ci` to `setup-bun` + `bun install`; the suite still runs via `moon` (build/typecheck on Bun, test on Node).
+6. Scaffold a minimal `apps/web` (placeholder `package.json` + README) so the workspace resolves; no UI code yet.
+7. Keep the npm publish flow intact — `packages/core` publishes exactly as today; verify `moon run core:build`/`:test`, and that a dry-run `npm pack` from `packages/core` emits the same `dist/` + bin with **no `workspace:*` refs**.
 
 ## Files to touch
 
-- root `package.json` (add `workspaces`), `bun.lock` (commit), `.gitignore`.
-- `.moon/workspace.yml`, `moon.yml` (project map + task `inputs`/`outputs` paths).
+- root `package.json` (add `workspaces`), `bun.lock` (commit), **`package-lock.json` (delete)**, `.gitignore`.
+- `.moon/workspace.yml`, `.moon/toolchains.yml` (Bun primary; `test` pinned to node), `moon.yml` (project map + task `inputs`/`outputs` paths + per-task `toolchain`).
 - move into `packages/core/`: `src/`, `tests/`, `tsconfig.json`, `tsconfig.build.json`, `vitest.config.ts`, the publishable `package.json`.
 - new `apps/web/` placeholder.
-- `.github/workflows/ci.yml` if task paths change.
+- `.github/workflows/ci.yml` (`setup-node` + `npm ci` → `setup-bun` + `bun install`; task paths).
 
 ## Acceptance criteria
 
-- [ ] `packages/core` builds, typechecks, and tests via moon (`moon run core:check` or equivalent) with caching intact; `bun install` resolves the workspace from one `bun.lock`.
-- [ ] The npm artifact is unchanged: `npm pack` (or publish dry-run) from `packages/core` produces the same `dist/` + bin as today; consumers see no difference.
+- [ ] `packages/core` builds, typechecks, and tests via moon with caching intact; `bun install` resolves the workspace from **one `bun.lock`**, and `package-lock.json` is removed.
+- [ ] Build/typecheck run on the moon **bun** toolchain; the `test` task runs **vitest under pinned Node** and passes — this is the Node-compatibility gate.
+- [ ] `packages/core` imports no Bun-only APIs (`Bun.*`, `bun:*`) — verified so a dev-time Bun dependency cannot leak into the published library.
+- [ ] The npm artifact is unchanged: `npm pack` (or publish dry-run) from `packages/core` produces the same `dist/` + bin as today, with no `workspace:*` refs; consumers see no difference.
 - [ ] `apps/web` exists as a resolvable workspace member (placeholder), so a future UI app is an add, not a retool.
-- [ ] CI (`moon ci`) is green against the new project layout; `sdlc.yaml` quality checks still pass.
+- [ ] CI bootstraps with Bun (`setup-bun` + `bun install`) and is green via `moon` against the new layout; `sdlc.yaml` quality checks still pass.
 
 ## Out of scope
 
