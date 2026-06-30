@@ -14,6 +14,7 @@ need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
+readiness_verified_at: '2026-06-30T05:43:18Z'
 ---
 # Pass the projected tree to DocRule for line-exact whole-document text scopes
 
