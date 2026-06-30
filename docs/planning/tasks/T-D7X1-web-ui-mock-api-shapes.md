@@ -101,5 +101,10 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Friction and automation gaps
 
-- Root quality (`npm run test` / `npm run typecheck`) does not cover `prototype/web-ui/` (root `tsconfig.json` includes only `src`/`tests`), so the prototype's TS is ungated by the formal gate — verification needed an ad-hoc isolated `tsconfig`. A prototype-scoped quality verb (a `vue-tsc`/`nuxt prepare` moon task wired into `sdlc.yaml`) would gate the prototype automatically next time.
-- The Step-3a quality baseline is written under the MAIN repo's `.sdlc/quality-baselines/`, but Step 7's gate defaults to the WORKTREE's `.sdlc/` and errored `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — task-work Step 7 should default the baseline dir to the main repo (or capture should write into the worktree the gate runs from).
+- Root quality (`npm run test` / `npm run typecheck`) does not cover `prototype/web-ui/` (root `tsconfig.json` includes only `src`/`tests`), so the prototype's TS is ungated by the formal gate — verification needed an ad-hoc isolated `tsconfig`. A prototype-scoped quality verb (a `vue-tsc`/`nuxt prepare` moon task wired into `sdlc.yaml`) would gate the prototype automatically next time. → [[T-ENNF-prototype-web-ui-quality-gate]]
+- The Step-3a quality baseline is written under the MAIN repo's `.sdlc/quality-baselines/`, but Step 7's gate defaults to the WORKTREE's `.sdlc/` and errored `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — task-work Step 7 should default the baseline dir to the main repo (or capture should write into the worktree the gate runs from). → [[T-OIUU-task-work-default-baseline-dir]]
+
+### Spawned follow-up tasks
+
+- [[T-ENNF-prototype-web-ui-quality-gate]] (https://github.com/sksizer/markdown-contract/pull/110) — Local: gate `prototype/web-ui/` with a `vue-tsc`/`nuxt prepare` moon typecheck verb wired into `sdlc.yaml`; spawned.
+- [[T-OIUU-task-work-default-baseline-dir]] (https://github.com/sksizer/dev/pull/529) — Upstream-plugin (sdlc): default task-work Step 7's quality baseline dir to the main repo so the gate finds the Step-3a baseline without `--baseline-dir`; spawned.
