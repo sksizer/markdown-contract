@@ -259,7 +259,7 @@ The init surface, still zero-TypeScript: point it at markdown you already have a
 | 2 | **INFERENCE-INIT-02** Read the inferred contract | The generated YAML is a plain declarative contract — required vs optional sections, strict frontmatter, and value-ladder field types you can hand-tune. | yes | &#10003; covered — src/declarative/infer.test.ts, tests/fixtures/infer/01-flat-uniform/fixture.ts, tests/fixtures/infer/02-optional-sections/fixture. |
 | 3 | **INFERENCE-INIT-03** Preview without writing using --dry-run | --dry-run prints every would-be file to stdout and writes nothing, so you can inspect the scaffold before committing it. | yes | &#10003; covered — tests/inference.cli.test.ts |
 | 4 | **INFERENCE-INIT-04** Emit a corpus meta-config with --meta | --meta cuts the tree into one contract per top-level directory plus a glob-routed markdown-contract.yaml corpus config. | yes | &#10003; covered — tests/inference.cli.test.ts, src/declarative/infer.test.ts, tests/fixtures/infer/07-tree-depth1/fixture.ts |
-| 5 | **INFERENCE-INIT-05** Tighten with --infer-bounds | --infer-bounds opts the value ladder into pattern/min/max inference for an even tighter generated schema. | maybe | &#10007; none |
+| 5 | **INFERENCE-INIT-05** Tighten with --infer-bounds | --infer-bounds is the (planned) opt-in for pattern/min/max bound inference — currently a no-op (parsed but not yet read). | maybe | &#10007; none |
 | 6 | **INFERENCE-INIT-06** Move the cut with --depth | --depth N groups contracts at exactly N directories deep, warning about files stranded above a depth-2+ cut. | yes | &#10003; covered — src/declarative/infer.test.ts, tests/fixtures/infer/08-tree-depth2/fixture.ts, tests/fixtures/infer/10-stranded-depth/fixture.ts |
 | 7 | **INFERENCE-INIT-07** Loosen the floor with --relax | --relax generates a permissive contract — order: none, allowUnknown: true, non-strict frontmatter, no enums — for evolving corpora. | yes | &#10003; covered — src/declarative/infer.test.ts, tests/fixtures/infer/11-relax/fixture.ts |
 | 8 | **INFERENCE-INIT-08** Inline vs split, and place with --out/--force | --inline collapses the meta-config to one self-contained file, while --out and --force control where it lands and whether it overwrites. | yes · add &rarr; [[T-IOUT-init-out-placement]] | &#9680; partial — tests/inference.cli.test.ts, src/declarative/infer.test.ts |
@@ -332,16 +332,17 @@ markdown-contract init ./docs --meta
 `surfaces:` inferConfig meta mode (inferMeta), depth-1 directory cut, emitMetaFiles split output, contracts registry + rules (first match wins)
 
 **INFERENCE-INIT-05 — Tighten with --infer-bounds** · _builds on INFERENCE-INIT-02_  
-_--infer-bounds opts the value ladder into pattern/min/max inference for an even tighter generated schema._
+_--infer-bounds is the (planned) opt-in for pattern/min/max bound inference — currently a no-op: the flag is parsed but not yet read (see the review note below)._
 
 ```bash
 markdown-contract init ./notes --infer-bounds
-# beyond the default const/format/enum/type ladder, opts into
-# inferring numeric min/max and string pattern bounds where the
-# corpus supports them — still accept-by-construction (never tighter
-# than the observed data), verified by the post-write self-check
+# PLANNED / NO-OP today. --infer-bounds is meant to opt the value ladder beyond the
+# default const/format/enum/type rungs into numeric min/max and string pattern bounds
+# (still accept-by-construction, never tighter than the observed data). It is parsed
+# but NOT yet read in src/declarative/infer.ts, so it currently changes nothing —
+# output is byte-identical to a plain `init ./notes`.
 ```
-`surfaces:` InferOptions.inferBounds, value ladder (inferFieldSchema) bound inference, accept-by-construction self-check
+`surfaces:` InferOptions.inferBounds (parsed, not yet read), value ladder (inferFieldSchema) — planned bound inference, accept-by-construction self-check
 
 > &#9888; **Review note:** --infer-bounds is accepted as a flag (parsed in src/cli/run.ts, surfaced as InferOptions.inferBounds) but is NEVER read in src/declarative/infer.ts; the code comment states min/max/pattern inference is 'a future phase'. The demonstrated bound-inference behavior does not exist yet, so the flag is currently a no-op.
 
