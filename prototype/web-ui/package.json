@@ -1,0 +1,35 @@
+{
+  "name": "@markdown-contract/web-ui-prototype",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone Nuxt 3 SPA + Storybook prototype for the markdown-contract local vault dashboard. Mock-data only; imports nothing from the engine (src/).",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "prestorybook": "nuxt prepare",
+    "storybook": "storybook dev -p 6006",
+    "prebuild-storybook": "nuxt prepare",
+    "build-storybook": "storybook build",
+    "typecheck": "nuxt prepare && vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "nuxt": "^3.15.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@storybook/addon-essentials": "^8.5.0",
+    "@storybook/vue3": "^8.5.0",
+    "@storybook/vue3-vite": "^8.5.0",
+    "@types/node": "^20.14.0",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "storybook": "^8.5.0",
+    "typescript": "^5.7.0",
+    "vue-tsc": "^2.2.0"
+  }
+}

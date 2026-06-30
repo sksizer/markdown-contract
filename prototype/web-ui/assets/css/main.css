@@ -1,0 +1,62 @@
+/*
+ * Global base + design tokens for the prototype.
+ *
+ * Only base/reset + CSS custom properties live here; every component styles
+ * itself with `<style scoped>` and references these tokens, so the components
+ * stay portable (they can graft into a future apps/web without dragging a global
+ * stylesheet of component classes along). Storybook imports this file in
+ * `.storybook/preview.ts` so stories get the same tokens.
+ */
+:root {
+  --mc-font:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mc-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --mc-bg: #f6f7f9;
+  --mc-surface: #ffffff;
+  --mc-border: #e2e5ea;
+  --mc-text: #1f2430;
+  --mc-text-muted: #6b7280;
+
+  /* finding-level + status accents */
+  --mc-error: #d1242f;
+  --mc-error-bg: #ffeef0;
+  --mc-warn: #9a6700;
+  --mc-warn-bg: #fff8e6;
+  --mc-report: #0a66c2;
+  --mc-report-bg: #eaf3ff;
+  --mc-pass: #1a7f37;
+  --mc-pass-bg: #e8f5ec;
+  --mc-fail: #d1242f;
+  --mc-fail-bg: #ffeef0;
+
+  --mc-radius: 8px;
+  --mc-gap: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--mc-font);
+  color: var(--mc-text);
+  background: var(--mc-bg);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--mc-report);
+}
+
+code {
+  font-family: var(--mc-mono);
+  font-size: 0.92em;
+}

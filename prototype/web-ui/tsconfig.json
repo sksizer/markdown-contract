@@ -1,0 +1,6 @@
+{
+  // Self-contained: extends ONLY the Nuxt-generated tsconfig (written by
+  // `nuxt prepare` into ./.nuxt). It deliberately does NOT extend or reference the
+  // repo-root tsconfig and never includes ../../src — the prototype is isolated.
+  "extends": "./.nuxt/tsconfig.json"
+}
