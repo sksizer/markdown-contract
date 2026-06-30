@@ -130,12 +130,18 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `npm run test` passes; `tests/fixtures/validation/text/` is gone and fixtures 22–25 live directly under `tests/fixtures/validation/` (confirmed via `git status` rename entries and `ls`).
+- AC-2: agent-manual — temporarily dropped `peerless: true` from fixture 22 (which has no `.contract.yaml` twin); `npm run test` stayed green and the "peers exist › validation" test emitted `annotate(..., "warning")` rather than failing. Reverted.
+- AC-3: auto — in the committed tree fixtures 22–25 carry `peerless: true` and produce no annotation and no failure; the green gate confirms.
+- AC-4: agent-manual — temporarily diverged `01-single-required-section.contract.yaml` from its TS fixture; the "YAML ⇄ TS validation parity" describe failed hard (exit 1). Reverted.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The vitest 3.2+ Test Annotations API (`context.annotate(msg, "warning")`) landed cleanly via the [[T-VITE-upgrade-vitest]] upgrade — the warning tier was available exactly as the task assumed.
+- `import.meta.glob` accepted the recursive `**/*.ts` switch with no other change; the existing `fixtures()` stem filter (`index` / `_`-prefixed) already excluded barrels and part-files under nested keys.
+- The baseline-gated quality gate reported `OK 2/2` with zero new drift, so no pre-existing-drift triage was needed.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The task's literal Approach (filter the behavioral parity describes by `!peerless` only) was subtly insufficient: a non-peerless twin-less fixture would still make `peerText()` throw and hard-fail the behavioral loop, contradicting AC-2. The implementer correctly tightened the filter to "has a twin" (`!peerless && hasPeer`). A spec that derives the exclusion predicate from the failure mode (peerText throws on any twin-less fixture) rather than from the marker would have avoided the mid-flight correction.
+- Step 7's baseline-gated `quality run` failed first with `baseline not found` because the gate ran from the worktree (whose `.sdlc/` is separate and gitignored) while Step 3a captured the baseline under the main repo's `.sdlc/quality-baselines/`. Passing `--baseline-dir <main-repo>/.sdlc/quality-baselines` resolved it — task-work's Step 7 invocation could default `--baseline-dir` to the main repo's path so worktree runs find the captured baseline without an explicit override.
