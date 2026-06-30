@@ -97,5 +97,17 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Friction and automation gaps
 
-- `preflight_permissions.ts` reported false-positive gaps (`npm`, `Write`, `Edit`) because it reads the static `settings.json` allow-list, not the harness's actual runtime grants — had to empirically run `npm --version` to confirm the tool worked before proceeding past Step 3b. → the probe (or task-work's Step 3b dispatch) should recognize broad-grant harness modes, or treat an empirically-runnable verb as overriding the static finding.
-- The Step 3a quality baseline is written to the MAIN repo's gitignored `.sdlc/quality-baselines/<sha>.json`, but Step 7 runs inside the worktree where `--diff-against-baseline` defaults `--baseline-dir` to the worktree's own `.sdlc/`, which lacks the baseline — the implementer had to copy the baseline file into the worktree to run the gate. → task-work should point `--baseline-dir` at the superproject's `.sdlc/quality-baselines/`, or seed it during `worktree_init`.
+- `preflight_permissions.ts` reported false-positive gaps (`npm`, `Write`, `Edit`) because it reads the static `settings.json` allow-list, not the harness's actual runtime grants — had to empirically run `npm --version` to confirm the tool worked before proceeding past Step 3b. → the probe (or task-work's Step 3b dispatch) should recognize broad-grant harness modes, or treat an empirically-runnable verb as overriding the static finding. → Already tracked upstream as `T-0AM0-preflight-probe-honors-runtime-edit-grant` (sksizer/dev, planning/draft) — linked to existing, no new PR.
+- The Step 3a quality baseline is written to the MAIN repo's gitignored `.sdlc/quality-baselines/<sha>.json`, but Step 7 runs inside the worktree where `--diff-against-baseline` defaults `--baseline-dir` to the worktree's own `.sdlc/`, which lacks the baseline — the implementer had to copy the baseline file into the worktree to run the gate. → task-work should point `--baseline-dir` at the superproject's `.sdlc/quality-baselines/`, or seed it during `worktree_init`. → Already tracked upstream as `T-5X6Y-task-work-step7-explicit-baseline-dir` (sksizer/dev, closed/superseded by `T-44OO-plugin-scripts-self-discover-project-root`) — linked to existing, no new PR.
+
+### Spawned follow-up tasks
+
+Both friction bullets classify as `Upstream-plugin` (sdlc). Neither was
+spawned: each gap is already tracked by a near-verbatim existing task in the
+upstream `sksizer/dev` repo, so spawning would duplicate the upstream backlog
+(the harm `spawn-from-post-mortem` Step 2a exists to prevent). The local dedup
+search returned `SPAWNED` (no match in this repo's corpus); both were overridden
+to link-existing-upstream after confirming the upstream matches by reading them.
+
+- `T-0AM0-preflight-probe-honors-runtime-edit-grant` (sksizer/dev, planning/draft) — linked, preflight false-positive Write/Edit/runtime-grant gap. Created 2026-06-28; its embedded quote restates this bullet almost verbatim.
+- `T-5X6Y-task-work-step7-explicit-baseline-dir` (sksizer/dev, closed/superseded → `T-44OO-plugin-scripts-self-discover-project-root`, planning/needs-definition) — linked, Step 3a/Step 7 baseline-dir worktree mismatch. Already carries four prior cross-repo dedup links from other consumer projects.
