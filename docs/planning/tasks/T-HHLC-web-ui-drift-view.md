@@ -84,12 +84,19 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `prototype/web-ui` `npm run typecheck` (`vue-tsc --noEmit`) + `npm run build-storybook`; `DriftView` classifies each `DriftEntry` via `KIND_GROUP` into added/removed/changed and renders them from `sampleDrift` (the `Drifted` and `SideBySide` stories).
+- AC-2: auto — both states build and render: `cleanDrift` drives the in-sync panel (`kit/EmptyState`, `data-test="drift-in-sync"`), `sampleDrift` drives the entry list. Exposed as `InSync`/`SideBySideInSync` vs `Drifted`/`SideBySide`.
+- AC-3: auto — two presentation variants (`variant="unified"` single list, `variant="split"` side-by-side Added/Removed/Changed), exposed across four named stories under `title: "Drift/DriftView"`.
+- (deferred-user) Visual feel of the unified vs split layouts in the Storybook browser — please spot-check; the structural/data contract above is auto-verified but the look is not.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The foundation tasks paid off cleanly: the drift fixtures (`sampleDrift` / `cleanDrift` in `mocks/api-fixtures.ts`) and the kit (`StatusBadge`, `EmptyState`) already existed, so the component was pure composition — no new fixtures, no token edits, no shared-file churn.
+- Disjoint-file scoping held: only `DriftView.vue` + `DriftView.stories.ts` were created, so the three sibling surface tasks and the catalog task ran in parallel with zero contention.
+- Baseline-gated `sdlc quality run` plus the prototype's own `vue-tsc` + `storybook build` auto-verified every AC without a human in the loop; root `vitest`/`tsc` stayed green because `prototype/` is outside their scope.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 7's `quality run --diff-against-baseline` defaulted `--baseline-dir` to the *worktree's* `.sdlc/quality-baselines/`, but Step 3a captured the baseline in the *main repo's* `.sdlc/quality-baselines/`; the first gate invocation failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — task-work Step 7 should resolve the baseline dir to the worktree's superproject (main checkout) automatically, or pass it explicitly the way Step 3a does.
+- The Step 3b permissions probe flagged `npm`, `Write`, and `Edit` as missing grants even though `npm` demonstrably runs in this repo (sibling web-ui worktrees built and `npm install` succeeded), forcing a judgment call in an autonomous run where no human is present to answer the AskUserQuestion — the probe could treat a tool family already declared in `sdlc.yaml` `quality_checks:`/`worktree_init:` as implicitly granted to avoid the false-positive gap.
+- Under heavy parallel `/sdlc:task-work` sessions the shared `commitToMainViaWorktree` path left local `main` lagging origin/main: an intermediate read showed the lease still `claimed` and a foreign task's start-commit as the branch tip, even though the start-commit and `working` transition had in fact landed on origin (the authority) — required a manual `git fetch origin` + reset to confirm true state. A post-commit `git fetch origin main` (or a note that the authority, not local main, is the source of truth) inside the helper would cut the operator confusion.
