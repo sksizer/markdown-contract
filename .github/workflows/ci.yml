@@ -41,5 +41,16 @@ jobs:
       # lint-docs is a moon task too, but it's run locally rather than gated in CI
       # because it validates in-flight planning docs (which are mid-edit on any
       # task branch); see moon.yml.
-      - name: Run build, typecheck, and test via moon
-        run: npx moon run :build :typecheck :test
+      # :coverage runs the full suite under v8 coverage and enforces the
+      # thresholds in vitest.config.ts — it subsumes :test, so the coverage gate
+      # rides the normal run rather than doubling it.
+      - name: Run build, typecheck, and test+coverage via moon
+        run: npx moon run :build :typecheck :coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore

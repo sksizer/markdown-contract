@@ -57,6 +57,26 @@ tasks:
     options:
       cache: true
 
+  # Wraps `npm run coverage` (= `vitest run --coverage`) — runs the full suite
+  # under the v8 coverage provider and enforces the thresholds in
+  # vitest.config.ts (a dip below a floor exits non-zero). CI runs this instead
+  # of `:test`, so the coverage gate rides the normal test run rather than
+  # doubling it. Output is `coverage/` (declared so re-runs hydrate from cache).
+  coverage:
+    command: 'npm run coverage'
+    toolchain: 'node'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'contracts/**/*'
+      - 'vitest.config.ts'
+      - 'tsconfig.json'
+      - 'package.json'
+    outputs:
+      - 'coverage'
+    options:
+      cache: true
+
   # `lint:docs` was `npm run build && node dist/cli/index.js validate
   # docs/planning`. The build half is modeled as a dep, so this task only runs
   # the validate step; moon ensures `build` (and thus dist/) is fresh first.

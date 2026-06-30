@@ -34,15 +34,22 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "check": "biome check .",
     "cli": "node dist/cli/index.js",
     "lint:docs": "npm run build && node dist/cli/index.js validate docs/planning",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
     "@moonrepo/cli": "2.3.5",
     "@types/mdast": "^4.0.4",
     "@types/node": "^20.14.0",
     "@types/picomatch": "^4.0.3",
+    "@vitest/coverage-v8": "^4.1.9",
     "remark-stringify": "^11.0.0",
     "typescript": "^5.7.2",
     "vitest": "^4.1.9"
