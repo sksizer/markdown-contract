@@ -146,12 +146,21 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — dogfood `node dist/cli/index.js validate docs/planning` prints the total line + indented per-contract breakdown above `No findings.` and exits 0.
+- AC-2: auto — `runCorpus` returns `{ findings, exitCode, stats }` with `filesScanned`/`filesMatched`/`filesUnmatched`/`matchedByRule`; the CLI reads `stats` and never re-walks.
+- AC-3: auto — `src/runner/corpus.test.ts` pins the four invariants plus an unmatched-file case and a `--exclude`-pre-filtered case (both counted unmatched).
+- AC-4: auto — `formatRunSummary` unit test + e2e inline `--contract` case assert the total prints with no per-contract rows and no `across` clause for the unnamed `buildInlineConfig` rule.
+- AC-5: auto — e2e clean-run case asserts the summary precedes `No findings.`; `formatHuman` (ids, ordering, `N finding(s)` line) is unmodified.
+- AC-6: auto — verified `--format json` emits the bare `[]` array (round-trips through `JSON.parse`) and `--format sarif` emits the unchanged 2.1.0 object; `formatJson`/`formatSarif` untouched.
+- AC-7: auto — exit code stays `result.exitCode`; e2e cases assert exit 0; the `2` usage/config paths are unchanged.
+- AC-8: auto — peer tests added in `src/runner/corpus.test.ts`, `src/cli/format.test.ts`, and `tests/inference.cli.test.ts`; `npm run typecheck` and `npm test` green (`OK 2/2`, baseline-gated with zero new drift).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The spec was fully implementation-ready: the chosen seam (`name?` on the `CorpusConfig` rule type, counts returned by index as `matchedByRule`) mapped one-to-one onto the Approach steps, so the implementation needed no design judgement.
+- The additive contract held cleanly — the two `init` call sites already used `ReturnType<typeof runCorpus>`/`.findings`, so widening the return with `stats` required no changes there.
+- The baseline-gated quality gate ran green with zero new drift and no pre-existing findings to triage.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 7's baseline-gated quality gate failed on first invocation with `baseline not found` because `--baseline-dir` defaulted to the *worktree's* `.sdlc/quality-baselines/`, while Step 3a captured the baseline in the *main repo's* `.sdlc/quality-baselines/`. The gate only passed after re-running with an explicit `--baseline-dir <main-repo>/.sdlc/quality-baselines`. — task-work Step 7 (and the dogfood sub-step) should pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly when running from a worktree, or the `quality run` executor should resolve the superproject's baseline directory (via `git rev-parse --git-common-dir`) so a baseline captured at Step 3a is found from inside the worktree without operator intervention.
