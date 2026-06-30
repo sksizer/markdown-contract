@@ -1,23 +1,25 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-DRAG
 status: in-progress
-created: '2026-06-28'
+created: 2026-06-28
 related:
-- '[[M-0007-example-use-case-catalog]]'
+  - "[[M-0007-example-use-case-catalog]]"
 depends_on: []
 tags:
-- test
-- runner
-- docrule
-- corpus
+  - test
+  - runner
+  - docrule
+  - corpus
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-last_reviewed: '2026-06-30'
-readiness_verified_at: '2026-06-30T06:59:27Z'
+last_reviewed: 2026-06-30
+readiness_verified_at: 2026-06-30T06:59:27Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/97
 ---
 # Aggregate `docRule` findings through `runCorpus` into `exitCode` (multi-rule, mixed levels)
 
