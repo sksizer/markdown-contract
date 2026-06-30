@@ -1,0 +1,414 @@
+category: real-world-schemas
+title: "Real-World Schemas: Document Templates and Cross-Document Governance"
+examples:
+  - id: REAL-WORLD-SCHEMAS-01
+    name: "ADR: require the four sections in order"
+    demonstrates: "A single document type whose body grammar pins required H2 sections in strict order."
+    rank: 1
+    builds_on: null
+    artifact_kind: yaml
+    artifact: |
+      mcVersion: 1
+      kind: contract
+      body:
+        order: strict
+        allowUnknown: false
+        sections:
+          - section: Status
+          - section: Context
+          - section: Decision
+          - section: Consequences
+    surfaces:
+      - "declarative YAML contract (kind: contract); body.order: strict; allowUnknown: false"
+      - "the structure plane over sections: structure/section-missing, structure/section-order"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/validation/05-strict-prefix-gap-tail.ts
+      - tests/fixtures/validation/02-multiple-required-sequence.ts
+    recommend_test: null
+
+  - id: REAL-WORLD-SCHEMAS-02
+    name: "Type the ADR frontmatter"
+    demonstrates: "Layering frontmatter typing onto the ADR: an enum status and a format-checked required date."
+    rank: 2
+    builds_on: REAL-WORLD-SCHEMAS-01
+    artifact_kind: yaml
+    artifact: |
+      frontmatter:
+        strict: true
+        fields:
+          status:
+            enum: [proposed, accepted, superseded, deprecated]
+          date:
+            type: string
+            format: date
+      # (body: the strict Status/Context/Decision/Consequences sections from 01)
+    surfaces:
+      - "declarative frontmatter.fields: enum -> frontmatter/enum; format: date -> frontmatter/type"
+      - "strict: true rejects unknown keys -> frontmatter/unknown-key (z.strictObject under the hood)"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/validation/07a-frontmatter-enum-and-unknown-key.ts
+      - src/declarative/schema.test.ts
+    recommend_test: null
+
+  - id: REAL-WORLD-SCHEMAS-03
+    name: "Typed table inside Consequences"
+    demonstrates: "A content leaf: a typed table with an enum cell required inside a named section."
+    rank: 3
+    builds_on: REAL-WORLD-SCHEMAS-02
+    artifact_kind: yaml
+    artifact: |
+      - section: Consequences
+        content:
+          table:
+            columns: [Effect, Kind]
+            minRows: 1
+            cells:
+              Kind:
+                enum: [positive, negative, neutral]
+    surfaces:
+      - "content plane: table leaf with columns / minRows / per-cell enum schema"
+      - "a cell outside the enum -> content/table/cell; too few rows -> content/table/min-rows"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/validation/11-typed-cells-enum-pattern.ts
+      - tests/fixtures/validation/11a-cell-enum-violation.ts
+    recommend_test: null
+
+  - id: REAL-WORLD-SCHEMAS-04
+    name: "Validate one ADR from the CLI"
+    demonstrates: "Running a single contract over one document and reading the exit code."
+    rank: 4
+    builds_on: REAL-WORLD-SCHEMAS-03
+    artifact_kind: cli
+    artifact: |
+      markdown-contract validate docs/adr/0007-use-postgres.md \
+        --contract contracts/adr.contract.yaml --format human
+      # exit 0 = clean · 1 = error-level findings · 2 = usage/config error
+      # findings are deterministically ordered by line, then col, then plane
+    surfaces:
+      - "CLI validate <path> --contract (config-less binding) --format human"
+      - "exit 0 clean / 1 error-level findings / 2 usage/config"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/cli/index.test.ts
+      - src/declarative/config.test.ts
+      - src/cli/format.test.ts
+    recommend_test: null
+
+  - id: REAL-WORLD-SCHEMAS-05
+    name: "Custom rule: Decision must cite an alternative"
+    demonstrates: "A node-local rule() emitting a finding when a section's prose lacks a required reference."
+    rank: 5
+    builds_on: REAL-WORLD-SCHEMAS-03
+    artifact_kind: code
+    artifact: |
+      import { contract, sections, section, rule } from "markdown-contract";
+      const adr = contract({ body: sections({ order: "strict" }, [
+        section("Decision", { rules: [ rule("adr/cites-alternative", (node, ctx) =>
+          /alternativ/i.test(node.blocks.map(b => b.kind === "paragraph" ? b.text : "").join(" "))
+            ? []
+            : [ctx.finding({ id: "adr/cites-alternative", level: "error",
+                message: "Decision must reference an alternative" })]) ] }),
+      ]) });
+    surfaces:
+      - "programmatic contract(); section opts.rules"
+      - "rule(id, fn) reading node.blocks + ctx.finding (the rules plane)"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/validation/17-node-level-custom-rule.ts
+      - tests/fixtures/validation/17a-node-rule-violation-with-pos.ts
+    recommend_test: null
+
+  - id: REAL-WORLD-SCHEMAS-06
+    name: "RFC with a rejected-alternatives section"
+    demonstrates: "A richer single type using recognized-relative order and a mandatory Rejected alternatives section."
+    rank: 6
+    builds_on: REAL-WORLD-SCHEMAS-02
+    artifact_kind: yaml
+    artifact: |
+      frontmatter:
+        fields:
+          status: { enum: [draft, review, final] }
+      body:
+        order: recognized-relative
+        allowUnknown: true
+        sections:
+          - section: Summary
+          - section: Motivation
+          - section: Detailed design
+          - section: Rejected alternatives
+          - section: Open questions
+            optional: true
+    surfaces:
+      - "body.order: recognized-relative; allowUnknown: true; an optional section; enum frontmatter"
+      - "an absent required section -> structure/section-missing"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/validation/04-recognized-relative-order.ts
+      - tests/fixtures/validation/03-optional-sections.ts
+    recommend_test: null
+
+  - id: REAL-WORLD-SCHEMAS-07
+    name: "Runbook with an oncall owner and a rollback checklist"
+    demonstrates: "An operational template binding a required owner field to a required Rollback checklist leaf."
+    rank: 7
+    builds_on: REAL-WORLD-SCHEMAS-06
+    artifact_kind: yaml
+    artifact: |
+      frontmatter:
+        fields:
+          oncall: { type: string }
+          severity: { enum: [sev1, sev2, sev3] }
+      body:
+        sections:
+          - section: Detection
+          - section: Mitigation
+          - section: Rollback
+            content:
+              list: { everyItem: checkbox, minItems: 1 }
+    surfaces:
+      - "list content leaf: everyItem: checkbox + minItems -> content/list/item-kind, content/list/min-items"
+      - "required-field frontmatter; the structure and content planes together"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/validation/12-list-leaf-checkbox-minitems.ts
+    recommend_test: null
+
+  - id: REAL-WORLD-SCHEMAS-08
+    name: "Postmortem: timeline table plus action items"
+    demonstrates: "Two content leaves in one document: a required timeline table and an action-items checklist."
+    rank: 8
+    builds_on: REAL-WORLD-SCHEMAS-07
+    artifact_kind: yaml
+    artifact: |
+      body:
+        sections:
+          - section: Summary
+          - section: Timeline
+            content:
+              table:
+                columns: [Time, Event]
+                minRows: 1
+          - section: Action items
+            content:
+              list: { everyItem: checkbox, minItems: 1 }
+    surfaces:
+      - "table leaf (columns/minRows -> content/table/min-rows) + list leaf (checkbox) in one body"
+      - "the content plane over multiple blocks"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/validation/10-table-leaf-columns-minrows.ts
+      - tests/fixtures/validation/12-list-leaf-checkbox-minitems.ts
+    recommend_test: null
+
+  - id: REAL-WORLD-SCHEMAS-09
+    name: "Prompt-library card for AI agents"
+    demonstrates: "A prompt card pinning a model enum and a fenced code block holding the system prompt."
+    rank: 9
+    builds_on: REAL-WORLD-SCHEMAS-08
+    artifact_kind: yaml
+    artifact: |
+      frontmatter:
+        fields:
+          model: { enum: [opus, sonnet, haiku] }
+          temperature: { type: number, min: 0, max: 2 }
+      body:
+        sections:
+          - section: System prompt
+            content:
+              code: { lang: md }
+          - section: Example output
+    surfaces:
+      - "code content leaf pinned to lang -> content/code/lang"
+      - "number frontmatter with min/max -> frontmatter/type; an enum field"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/fixtures/validation/13-code-leaf-lang.ts
+      - tests/fixtures/validation/13a-code-wrong-lang.ts
+      - src/declarative/schema.test.ts
+    recommend_test: null
+
+  - id: REAL-WORLD-SCHEMAS-10
+    name: "Corpus config: route two types, first match wins"
+    demonstrates: "A meta-config mapping path globs to per-type contracts so a tree validates against the right contract."
+    rank: 10
+    builds_on: REAL-WORLD-SCHEMAS-06
+    artifact_kind: yaml
+    artifact: |
+      mcVersion: 1
+      kind: config
+      contracts:
+        adr: ./contracts/adr.contract.yaml
+        rfc: ./contracts/rfc.contract.yaml
+      rules:
+        - include: ["docs/adr/**/*.md"]
+          contract: adr
+        - include: ["docs/rfc/**/*.md"]
+          contract: rfc
+    surfaces:
+      - "declarative kind: config; contracts name map; rules include globs"
+      - "first-match-wins routing in the corpus runner (runCorpus)"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/config.test.ts
+      - src/cli/index.test.ts
+      - tests/fixtures/corpus/markdown-contract.config.mjs
+    recommend_test: null
+
+  - id: REAL-WORLD-SCHEMAS-11
+    name: "Frontmatter governance across the whole tree"
+    demonstrates: "A catch-all rule with an exclude that enforces a baseline contract on every remaining document."
+    rank: 11
+    builds_on: REAL-WORLD-SCHEMAS-10
+    artifact_kind: yaml
+    artifact: |
+      rules:
+        - include: ["docs/adr/**/*.md"]
+          contract: adr
+        - include: ["**/*.md"]
+          exclude: ["**/README.md", "**/node_modules/**"]
+          contract: ./contracts/has-frontmatter.contract.yaml
+    surfaces:
+      - "config rule exclude globs; first-match ordering (specific before catch-all)"
+      - "a baseline frontmatter contract applied across the tree"
+    needs_test: "yes"
+    coverage_status: uncovered
+    existing_coverage:
+      - src/declarative/config.test.ts
+    recommend_test: "[[T-ROUT-runcorpus-first-match-routing]]"
+
+  - id: REAL-WORLD-SCHEMAS-12
+    name: "First cross-document check: dangling depends_on"
+    demonstrates: "A docRule that flags a task whose depends_on names an id no task defines."
+    rank: 12
+    builds_on: REAL-WORLD-SCHEMAS-10
+    artifact_kind: code
+    artifact: |
+      import { contract, sections, section, docRule, runCorpus } from "markdown-contract";
+      const task = contract({
+        frontmatter: z.object({ id: z.string(), depends_on: z.array(z.string()).default([]) }).strict(),
+        body: sections({ allowUnknown: true }, [section("Goal")]),
+        rules: [ docRule("task/depends-resolve", (doc, ctx) =>
+          doc.frontmatter.depends_on.filter(d => !KNOWN_IDS.has(d)).map(d =>
+            ctx.finding({ id: "task/depends-resolve", level: "error", message: `unknown dependency ${d}` }))) ],
+      });
+      await runCorpus({ rules: [{ include: ["docs/planning/tasks/**/*.md"], contract: task }] }, { cwd: "." });
+    surfaces:
+      - "contract({ rules }); docRule(id, (doc, ctx)) reading typed doc.frontmatter"
+      - "runCorpus aggregating findings + exitCode (aggregation not yet fully tested — T-DRAG)"
+    needs_test: "yes"
+    coverage_status: partial
+    existing_coverage:
+      - tests/fixtures/validation/16-cross-plane-docrule.ts
+      - src/cli/index.test.ts
+    recommend_test: "[[T-DRAG-docrule-runcorpus-aggregation]]"
+
+  - id: REAL-WORLD-SCHEMAS-13
+    name: "Referential graph: membership and supersession"
+    demonstrates: "docRules asserting a milestone's members all exist and no entity references a superseded id."
+    rank: 13
+    builds_on: REAL-WORLD-SCHEMAS-12
+    artifact_kind: code
+    artifact: |
+      const milestone = contract({
+        frontmatter: z.object({ id: z.string(), members: z.array(z.string()) }).strict(),
+        rules: [
+          docRule("milestone/members-exist", (doc, ctx) =>
+            doc.frontmatter.members.filter(m => !TASK_IDS.has(m)).map(m =>
+              ctx.finding({ id: "milestone/members-exist", level: "error", message: `member ${m} has no task` }))),
+          docRule("decision/no-superseded-ref", (doc, ctx) =>
+            doc.frontmatter.related.filter(r => SUPERSEDED.has(r)).map(r =>
+              ctx.finding({ id: "decision/no-superseded-ref", level: "warn", message: `references superseded ${r}` }))),
+        ],
+      });
+    surfaces:
+      - "multiple docRule()s per contract; cross-document referential invariants"
+      - "mixed error/warn finding levels"
+    needs_test: "maybe"
+    coverage_status: partial
+    existing_coverage:
+      - tests/fixtures/validation/16-cross-plane-docrule.ts
+      - src/core/finding.test.ts
+      - src/cli/format.test.ts
+    recommend_test: "[[T-DRAG-docrule-runcorpus-aggregation]]"
+
+  - id: REAL-WORLD-SCHEMAS-14
+    name: "Scaffold and drift-check a corpus with init"
+    demonstrates: "Inferring a tight contract from existing docs and re-checking the tree for drift."
+    rank: 14
+    builds_on: REAL-WORLD-SCHEMAS-10
+    artifact_kind: cli
+    artifact: |
+      markdown-contract init docs/adr --out contracts --dry-run   # preview the inferred contract, write nothing
+      markdown-contract init docs/adr --out contracts             # write the scaffold + a markdown-contract.yaml router
+      markdown-contract init docs/adr --check                     # drift detection: nonzero exit if a doc diverged
+    surfaces:
+      - "CLI init --dry-run --out --check (self-check / drift)"
+      - "auto-written router config (markdown-contract.yaml)"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/inference.cli.test.ts
+    recommend_test: null
+
+  - id: REAL-WORLD-SCHEMAS-15
+    name: "Validate the self-hosted SDLC corpus end to end"
+    demonstrates: "Running the whole planning tree against its per-type contracts via an auto-discovered config."
+    rank: 15
+    builds_on: REAL-WORLD-SCHEMAS-13
+    artifact_kind: cli
+    artifact: |
+      # markdown-contract.yaml routes docs/planning globs to contracts/*.contract.yaml
+      markdown-contract validate docs/planning --format sarif > findings.sarif
+      # auto-discovers markdown-contract.yaml; exit 1 if any task's depends_on dangles,
+      # any milestone member is missing, or any decision references a superseded one
+    surfaces:
+      - "CLI validate over a tree; auto-discovered markdown-contract.yaml; --format sarif"
+      - "the full structure + content + rules planes from one parse"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/cli/index.test.ts
+      - tests/inference.cli.test.ts
+    recommend_test: null
+
+  - id: REAL-WORLD-SCHEMAS-16
+    name: "Retire an SDLC invariants.yaml prose linter onto a contract"
+    status: planned
+    demonstrates: "The SDLC plugin's required/forbidden-phrase, required-section and tool-ref linter becomes one declarative contract."
+    rank: 16
+    builds_on: REAL-WORLD-SCHEMAS-15
+    artifact_kind: yaml
+    artifact: |
+      # invariants.yaml (a bespoke SKILL.md linter)  ->  skill.contract.yaml
+      mcVersion: 1
+      kind: contract
+      body:
+        forbids:
+          - { pattern: "}scripts/", normalize: false }     # forbidden_phrases
+        requires:
+          - { pattern: "sdlc task close-commit" }          # required_tool_refs (anywhere)
+        sections:
+          - section: Output contract
+            requires:
+              - { pattern: "DONE pr=" }                    # required_phrases (section-scoped)
+          - section: Notes                                 # required_h2_sections
+    surfaces:
+      - "requires: / forbids: on the body root and on section nodes (planned declarative text constraints)"
+      - "the SDLC invariants.yaml linter retired onto one contract (DR-0005): required/forbidden phrases + required sections + tool-refs"
+    needs_test: "on impl"
+    coverage_status: uncovered
+    existing_coverage: []
+    recommend_test: "[[C-0009-declarative-text-constraints]] / [[D-0011-declarative-text-constraints]]"
