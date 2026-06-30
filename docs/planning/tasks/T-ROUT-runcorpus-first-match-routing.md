@@ -18,7 +18,7 @@ need_human_review: false
 impact: high
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-06-30T05:29:43Z'
+readiness_verified_at: '2026-06-30T13:51:51Z'
 ---
 # Pin first-match-wins rule precedence and per-rule exclude in runCorpus
 
