@@ -1,26 +1,27 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-CDIA
-status: in-progress
-created: 2026-06-30
+status: closed/done
+created: '2026-06-30'
 related:
-  - "[[M-0007-example-use-case-catalog]]"
-parent_key: "[[T-CTLG-example-catalog-finalize]]"
+- '[[M-0007-example-use-case-catalog]]'
+parent_key: '[[T-CTLG-example-catalog-finalize]]'
 depends_on: []
 tags:
-  - docs
-  - examples
-  - catalog
-  - dialect
+- docs
+- examples
+- catalog
+- dialect
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-last_reviewed: 2026-06-30
-readiness_verified_at: 2026-06-30T06:23:42Z
+last_reviewed: '2026-06-30'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/96
+- https://github.com/sksizer/markdown-contract/pull/96
+completion_note: 'Shipped via #96. Authored docs/catalog/dialect.yaml with 11 verified
+  DIALECT entries (6 covered / 2 partial / 3 uncovered).'
 ---
 # Finalize the Dialect catalog category as verified YAML (`dialect`)
 
