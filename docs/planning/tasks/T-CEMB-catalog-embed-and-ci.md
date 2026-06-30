@@ -18,8 +18,8 @@ need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-readiness_verified_at: '2026-06-30T05:29:43Z'
 last_reviewed: '2026-06-30'
+readiness_verified_at: '2026-06-30T18:04:56Z'
 ---
 # Finalize the Embed-and-Automate catalog category as verified YAML (`embed-and-ci`)
 
