@@ -80,4 +80,8 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Friction and automation gaps
 
-- Step 7's quality gate defaulted `--baseline-dir` to the *worktree's* `.sdlc/quality-baselines/`, but Step 3a wrote the baseline to the *main repo's* `.sdlc/quality-baselines/`; the first gate run failed `baseline not found` until I passed `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly — task-work Step 7 should resolve the superproject's `.sdlc/` (via `git rev-parse --git-common-dir`) when run from a worktree, or pass the main-repo baseline-dir explicitly, so the gate finds the baseline Step 3a captured.
+- Step 7's quality gate defaulted `--baseline-dir` to the *worktree's* `.sdlc/quality-baselines/`, but Step 3a wrote the baseline to the *main repo's* `.sdlc/quality-baselines/`; the first gate run failed `baseline not found` until I passed `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly — task-work Step 7 should resolve the superproject's `.sdlc/` (via `git rev-parse --git-common-dir`) when run from a worktree, or pass the main-repo baseline-dir explicitly, so the gate finds the baseline Step 3a captured. → [[T-A1SR-quality-gate-resolves-superproject-baseline]]
+
+### Spawned follow-up tasks
+
+- [[T-A1SR-quality-gate-resolves-superproject-baseline]] (https://github.com/sksizer/dev/pull/514) — task-work Step 7's quality gate should resolve the superproject's `.sdlc/` baseline-dir (via `git rev-parse --git-common-dir`) when run from a worktree. Classification Upstream-plugin (`sdlc-meta`), spawned to the `sksizer/dev` plugin repo; the dispatch reused the already-open PR #514 (same `meta-task/quality-gate-resolves-superproject-baseline` branch, originally spawned from [[T-RUNS-validate-run-summary]]'s post-mortem covering the identical gap).
