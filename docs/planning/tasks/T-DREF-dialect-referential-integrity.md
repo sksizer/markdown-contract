@@ -1,23 +1,25 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-DREF
 status: in-progress
-created: '2026-06-28'
+created: 2026-06-28
 related:
-- '[[M-0007-example-use-case-catalog]]'
+  - "[[M-0007-example-use-case-catalog]]"
 depends_on: []
 tags:
-- test
-- dialect
-- docrule
-- wikilinks
+  - test
+  - dialect
+  - docrule
+  - wikilinks
 need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-last_reviewed: '2026-06-30'
-readiness_verified_at: '2026-06-30T12:09:05Z'
+last_reviewed: 2026-06-30
+readiness_verified_at: 2026-06-30T12:09:05Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/102
 ---
 # Dialect referential-integrity docRules: dead in-doc anchors and dangling vault wikilinks
 
