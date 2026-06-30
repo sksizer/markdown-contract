@@ -15,10 +15,10 @@
  *     section's generated lowerCamelCase key; a `requires` miss / count violation pins at the
  *     section heading.
  *   - `textRule({ requires?, forbids? })` → a cross-plane `DocRule` over the WHOLE document.
- *     The `DocRule` sees only the typed `Doc`, whose `SectionView`s expose list / table
- *     positions but NOT per-paragraph source lines, so the whole-document text is reconstructed
- *     as line-faithfully as the typed model allows (see {@link placeSectionView}). The
- *     `scopeKey` is the literal `"doc"`; a `requires` miss is document-level (no position).
+ *     The `DocRule` now also receives the projected `DocTree`, so the whole-document text is
+ *     reconstructed line-faithfully from the projected tree (`tree.root`) — a whole-document
+ *     `forbids` hit therefore anchors at the exact offending source line. The `scopeKey` is the
+ *     literal `"doc"`; a `requires` miss is document-level (no position).
  *
  * Purity (D-0011): a `requires` entry whose bound expresses ABSENCE (`max: 0`, or `max < min`)
  * is a constructor-time error — the absence form is `forbids`. The check fires when `requires(...)`
@@ -33,11 +33,10 @@ import type {
   Ctx,
   Doc,
   DocRule,
+  DocTree,
   Finding,
   Rule,
-  SectionGroup,
   SectionNode,
-  SectionView,
 } from "./types.js";
 
 /**
@@ -148,73 +147,9 @@ function sectionScopeText(node: SectionNode): string {
   return buf.render();
 }
 
-/** Is `v` a `SectionView` (vs a promoted `TableView`) — discriminated on `SectionView`'s `text` member. */
-function isSectionView(v: unknown): v is SectionView {
-  return (
-    typeof v === "object" &&
-    v !== null &&
-    typeof (v as Partial<SectionView>).text === "function" &&
-    typeof (v as Partial<SectionView>).byAnchor === "function"
-  );
-}
-
-/**
- * Every `SectionView` in a dual-key `SectionGroup`, de-duplicated. A group keys each declared
- * section under both its exact heading and its camel alias (and a "heading is the table" section
- * binds a `TableView` instead) — so views are gathered through the exact-name `.section()`
- * accessor and the non-enumerable `unknown` list, with a `Set` collapsing the aliases.
- */
-function collectSectionViews(group: SectionGroup): SectionView[] {
-  const seen = new Set<SectionView>();
-  const out: SectionView[] = [];
-  const add = (v: SectionView | undefined): void => {
-    if (v && !seen.has(v)) {
-      seen.add(v);
-      out.push(v);
-    }
-  };
-  for (const v of group.unknown) add(v);
-  for (const key of Object.keys(group)) {
-    const viaExact = group.section(key);
-    if (viaExact) {
-      add(viaExact);
-      continue;
-    }
-    const val = group[key];
-    if (isSectionView(val)) add(val);
-  }
-  return out;
-}
-
-/**
- * Place one `SectionView`'s text into the whole-document buffer. Lists and tables carry exact
- * source positions and are placed faithfully; the typed model does NOT expose per-paragraph
- * source lines, so a section's prose is anchored just after its heading (`pos.line + 1`) — the
- * best the typed `Doc` allows. (LIMITATION: a paragraph separated from its heading by a blank
- * line therefore reports one line early; a fully line-exact whole-document scope would need the
- * `DocRule` to see the projected tree, not just the model.) Recurses into nested sections.
- */
-function placeSectionView(buf: LineBuffer, view: SectionView): void {
-  const prose = view.text("prose");
-  if (prose !== "") buf.place(view.pos.line + 1, prose);
-  for (const list of view.lists) {
-    for (const item of list.items) buf.place(item.pos.line, item.text);
-  }
-  for (const table of view.tables) {
-    buf.place(table.pos.line, table.columns.join(" "));
-    table.rows.forEach((row, i) =>
-      buf.place(table.rowPos(i).line, table.columns.map((c) => row[c] ?? "").join(" ")),
-    );
-  }
-  for (const child of collectSectionViews(view.sections)) placeSectionView(buf, child);
-}
-
-/** The whole-document scope text, reconstructed as line-faithfully as the typed `Doc` allows. */
-function docScopeText(doc: Doc): string {
-  const buf = new LineBuffer();
-  const body = doc.body as unknown as SectionGroup;
-  for (const view of collectSectionViews(body)) placeSectionView(buf, view);
-  return buf.render();
+/** The whole-document scope text, reconstructed line-faithfully from the projected tree. */
+function docScopeText(tree: DocTree): string {
+  return sectionScopeText(tree.root);
 }
 
 // ── The builders ───────────────────────────────────────────────────────────────────────
@@ -300,8 +235,8 @@ export function textRule(spec: TextRuleSpec): DocRule {
   return {
     __brand: "DocRule",
     id: "text/doc",
-    run(doc: Doc, ctx: Ctx): Finding[] {
-      const text = docScopeText(doc);
+    run(doc: Doc, ctx: Ctx, tree: DocTree): Finding[] {
+      const text = docScopeText(tree);
       const out: Finding[] = [];
       for (const s of requiresSpecs) {
         out.push(
