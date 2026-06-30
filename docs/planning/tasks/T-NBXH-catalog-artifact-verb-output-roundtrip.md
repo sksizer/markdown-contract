@@ -7,6 +7,7 @@ created: '2026-06-30'
 related:
 - T-CINF-catalog-inference-init
 - T-CCLI-catalog-cli
+- T-CVPL-catalog-validation-planes
 tags: []
 need_human_review: false
 impact: medium
@@ -79,3 +80,17 @@ Top candidates (score / status / headline):
   - 3 / closed/done / T-TXAP-text-predicate-builders — TS-API predicate builders — `requires` / `forbids` / `textRule`
 Decision: LINKED-EXISTING T-NBXH-catalog-artifact-verb-output-roundtrip
 Rationale: Override of the script's keyword-ranked top match (T-LCA7-dependency-updates-audit, an "audit/CI step" boilerplate false positive). The bullet explicitly names the `catalog-artifact-verb-output-roundtrip` meta-task, and this task (T-NBXH, "Add a CI round-trip diffing each catalog artifact block against real verb output") covers the same idea — running each catalog artifact's verb against the real CLI is exactly what would catch the un-runnable invocations this bullet describes. The hyphenated token `catalog-artifact-verb-output-roundtrip` is scored as a single token, so T-NBXH's prose (which spells the words separately) never matched it and fell out of the top-5; linking here de-duplicates rather than spawning a near-identical follow-up.
+
+### Dedup search (spawn-from-post-mortem)
+
+Bullet: Two shipped sketches (VP-03, VP-10) stated engine positions that the real engine does not emit (jumper-line vs declared-line; positionless `frontmatter/required`). A catalog-artifact-vs-engine roundtrip check (run each `artifact` through the engine and diff stated findings) would catch sketch drift mechanically instead of by manual cross-read — this is the gap [[T-CART-catalog-artifact-verb-output-roundtrip]] targets.
+Keywords searched: t-cart-catalog-artifact-verb-output-roundtrip, catalog-artifact-vs-engine, declared-line, positionless, mechanically, jumper-line, frontmatter, cross-read
+Excluded: T-CVPL-catalog-validation-planes
+Top candidates (score / status / headline):
+  - 32 / closed/done / T-1ME8-field-qualified-frontmatter-messages — Field-qualified frontmatter finding messages — name the offending key (and its expected value) in every `frontmatter/*` message
+  - 7 / closed/done / T-NULL-nullable-field-inference — Infer a `nullable` schema for `null` frontmatter values — `init --meta` must accept its own corpus
+  - 6 / closed/done / T-3NC8-validate-and-finding-assembly — Assemble the one-pass validator — frontmatter + structure + content + rules into one sorted Finding[], with read()/ContractError
+  - 5 / closed/done / T-2HF6-projection-engine — Implement the projection — one parse into a positioned DocTree, GFM + invariants, and the resolved Obsidian dialect
+  - 4 / closed/done / T-3MCE-min-examples-before-const — Minimum example-count before `const` — don't pin a frontmatter field as `const` until it's been seen in enough documents (`init --meta` value ladder)
+Decision: LINKED-EXISTING T-NBXH-catalog-artifact-verb-output-roundtrip
+Rationale: Override of the script's keyword-ranked SPAWNED decision — its top match T-1ME8-field-qualified-frontmatter-messages is a closed implementation task that ranked only on shared `frontmatter` vocabulary, semantically unrelated to catalog drift-checking. The bullet explicitly names the catalog-artifact-vs-engine roundtrip meta-task, and T-NBXH ("Add a CI round-trip diffing each catalog artifact block against real verb output") is exactly that gap: run each catalog `artifact` through the real engine and diff stated vs emitted findings. The hyphenated token t-cart-catalog-artifact-verb-output-roundtrip scores as a single token, so T-NBXH (which spells the words separately) never matched and fell out of the candidate list; linking here de-duplicates instead of spawning a near-identical follow-up.
