@@ -48,14 +48,17 @@ function compileRule(
   path: string,
   contracts: Record<string, unknown>,
   baseDir: string,
-): { include: string[]; exclude?: string[]; contract: Contract } {
+): { include: string[]; exclude?: string[]; contract: Contract; name?: string } {
   if (!isMap(rule)) throw new DeclarativeError(`${path}: a rule must be a mapping`);
   if (!Array.isArray(rule.include) || rule.include.length === 0 || !rule.include.every((g) => typeof g === "string")) {
     throw new DeclarativeError(`${path}.include must be a non-empty list of globs`);
   }
-  const out: { include: string[]; exclude?: string[]; contract: Contract } = {
+  const out: { include: string[]; exclude?: string[]; contract: Contract; name?: string } = {
     include: rule.include as string[],
     contract: resolveContract(rule.contract, `${path}.contract`, contracts, baseDir),
+    // A string contract ref IS the human contract name (e.g. `capability`, `task`) — carry it as the
+    // rule's label for the CLI run summary. Inline contract objects have no name, so leave it unset.
+    name: typeof rule.contract === "string" ? rule.contract : undefined,
   };
   if ("exclude" in rule) {
     if (!Array.isArray(rule.exclude) || !rule.exclude.every((g) => typeof g === "string")) {

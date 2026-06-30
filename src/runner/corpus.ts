@@ -21,9 +21,33 @@ import type { Contract, Finding } from "../core/index.js";
  * `include` glob set (minus an optional `exclude` set) to the `contract` that
  * governs the matched files. Rule order is significant — a file is validated
  * against the FIRST rule it matches (see `runCorpus`).
+ *
+ * `name` is an OPTIONAL human label for the rule's contract (e.g. `capability`,
+ * `task`), carried purely for the CLI's run summary to render per-contract counts.
+ * The runner never routes on it — routing is by glob, and `runCorpus` returns
+ * matched counts by index (`RunStats.matchedByRule`). The declarative front-end
+ * populates it from a string contract ref; inline contracts leave it unset.
  */
 export interface CorpusConfig {
-  rules: Array<{ include: string[]; exclude?: string[]; contract: Contract }>;
+  rules: Array<{ include: string[]; exclude?: string[]; contract: Contract; name?: string }>;
+}
+
+/**
+ * Per-run counts `runCorpus` returns alongside the findings, for the CLI's run summary.
+ * The counts are tallied inside the single walk (no second pass), so they always satisfy:
+ * `filesScanned === walkSync(root).length`, `filesMatched === sum(matchedByRule)`,
+ * `filesUnmatched === filesScanned − filesMatched`, and `matchedByRule.length === config.rules.length`.
+ * A file removed by the global `include`/`exclude` pre-filter, or matching no rule, counts as UNMATCHED.
+ */
+export interface RunStats {
+  /** every file `walkSync` visited under the run root. */
+  filesScanned: number;
+  /** files routed to a rule (read + validated). */
+  filesMatched: number;
+  /** `filesScanned − filesMatched` — scanned but not routed (pre-filtered out or matching no rule). */
+  filesUnmatched: number;
+  /** matched count per rule, parallel to `config.rules` by index. */
+  matchedByRule: number[];
 }
 
 /**
@@ -127,7 +151,7 @@ export function runCorpus(
     include?: string[];
     exclude?: string[];
   },
-): { findings: Finding[]; exitCode: number } {
+): { findings: Finding[]; exitCode: number; stats: RunStats } {
   const root = resolve(opts?.cwd ?? process.cwd());
   const rules = compile(config);
 
@@ -140,19 +164,34 @@ export function runCorpus(
   const findings: Finding[] = [];
   const files = walkSync(root);
 
+  // Run counts, tallied inside the single walk (no second pass). `matchedByRule` is
+  // parallel to `config.rules` by index; the matched rule is found by INDEX so its
+  // count can be attributed back to the rule the CLI labels.
+  const matchedByRule = new Array<number>(config.rules.length).fill(0);
+  let filesMatched = 0;
+
   for (const rel of files) {
     const posixRel = toPosix(rel);
     if (exclude && exclude(posixRel)) continue;
     if (include && !include(posixRel)) continue;
-    const match = rules.find(
+    const idx = rules.findIndex(
       (r) => r.include(posixRel) && !(r.exclude && r.exclude(posixRel)),
     );
-    if (!match) continue;
+    if (idx === -1) continue;
+    matchedByRule[idx] = (matchedByRule[idx] ?? 0) + 1;
+    filesMatched += 1;
     const source = readFileSync(resolve(root, rel), "utf8");
-    const result = match.contract.validate(source, { path: posixRel });
+    const result = rules[idx]!.contract.validate(source, { path: posixRel });
     findings.push(...result.findings);
   }
 
+  const stats: RunStats = {
+    filesScanned: files.length,
+    filesMatched,
+    filesUnmatched: files.length - filesMatched,
+    matchedByRule,
+  };
+
   const hasError = findings.some((f) => f.level === "error");
-  return { findings, exitCode: hasError ? 1 : 0 };
+  return { findings, exitCode: hasError ? 1 : 0, stats };
 }
