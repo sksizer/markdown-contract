@@ -1,25 +1,25 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-IOUT
-status: in-progress
+status: closed/done
 created: '2026-06-28'
 related:
-  - "[[M-0007-example-use-case-catalog]]"
-  - "[[B-OUTD-init-out-defaults-to-cwd-not-inferred-root]]"
+- '[[M-0007-example-use-case-catalog]]'
+- '[[B-OUTD-init-out-defaults-to-cwd-not-inferred-root]]'
 depends_on: []
 tags:
-  - test
-  - cli
-  - init
+- test
+- cli
+- init
 need_human_review: false
 impact: low
 complexity: small
 autonomy: supervised
 last_reviewed: '2026-06-30'
-readiness_verified_at: '2026-06-30T06:22:42Z'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/93
+- https://github.com/sksizer/markdown-contract/pull/93
+completion_note: 'Shipped via #93.'
 ---
 # `init --out` placement of the written scaffold
 
