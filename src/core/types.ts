@@ -216,11 +216,15 @@ export interface Rule {
   run(node: SectionNode, ctx: Ctx): Finding[];
 }
 
-/** A cross-plane / cross-file named rule — the opaque output of `docRule(id, fn)`. Sees the whole typed doc. */
+/**
+ * A cross-plane / cross-file named rule — the opaque output of `docRule(id, fn)`. Sees the whole
+ * typed doc, and also receives the projected `DocTree` so a whole-document scope can pin a finding
+ * at the exact offending source line (the typed model alone does not expose per-paragraph lines).
+ */
 export interface DocRule {
   readonly __brand: "DocRule";
   readonly id: string;
-  run(doc: Doc, ctx: Ctx): Finding[];
+  run(doc: Doc, ctx: Ctx, tree: DocTree): Finding[];
 }
 
 /** The unit an author passes to `contract()` — frontmatter schema, body grammar, cross-plane rules. */

@@ -74,9 +74,9 @@ describe("textRule — a document must NOT contain a phrase (forbids)", () => {
     expect(f.id).toBe("text/forbids/doc/mf4oln");
     expect(f.level).toBe("error");
     expect(f.message).toBe('forbidden phrase "TODO" present');
-    // The typed Doc exposes no per-paragraph source line, so prose anchors at heading+1 (line 2),
-    // one line before the source's line 3. See the builder's doc-scope limitation note.
-    expect(f.pos?.line).toBe(2);
+    // The whole-document scope now uses the projected tree (T-5LHY), reconstructing text from
+    // `tree.root` at real source lines, so the forbid pins at the exact offending line (line 3).
+    expect(f.pos?.line).toBe(3);
   });
 });
 

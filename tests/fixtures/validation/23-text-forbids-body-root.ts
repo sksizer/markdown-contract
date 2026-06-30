@@ -8,11 +8,12 @@ import { loadSource } from "../../harness.js";
 // a retired path class that must appear nowhere (D-0011's worked `}scripts/` example).
 //
 // Greened by T-TXAP (the matcher + builders are live). The expected finding id is the
-// synthesized per-entry id `text/forbids/doc/<patternHash>`. The forbid pins at the offending
-// line: the `DocRule` sees only the typed `Doc`, which does not expose per-paragraph source
-// lines, so the whole-document scope text anchors a section's prose just after its heading
-// (heading line 1 + 1 = line 2) — one line early vs the source's line 3 (the document's blank
-// line between heading and prose is invisible to the typed model). See the T-TXAP builder.
+// synthesized per-entry id `text/forbids/doc/<patternHash>`. The forbid pins at the exact
+// offending line: the `DocRule` now also receives the projected tree (T-5LHY), so the
+// whole-document scope text is reconstructed from `tree.root` at real source lines. The
+// forbidden `}scripts/` sits on source line 3 (line 1 `## Summary`, line 2 blank, line 3 the
+// prose), so the finding anchors at line 3 — not the coarsened post-heading line 2 the typed
+// model alone could see. See the T-TXAP builder.
 const v23: ValidationFixture = {
   id: "v23",
   title: "Body-root forbids — phrase must appear nowhere in the document",
@@ -42,10 +43,10 @@ const v23: ValidationFixture = {
     {
       label: "fail — the document still reaches into }scripts/; the forbid fires at the line",
       source: loadSource(import.meta.url, "./23-text-forbids-body-root.fail.md"),
-      findings: [{ id: "text/forbids/doc/o9pijh", level: "error", line: 2 }],
+      findings: [{ id: "text/forbids/doc/o9pijh", level: "error", line: 3 }],
     },
   ],
-  note: "Synthesized id `text/forbids/doc/<hash>`; line is 2 (model anchors prose at heading+1), not the source's 3.",
+  note: "Synthesized id `text/forbids/doc/<hash>`; the whole-document scope uses the projected tree (T-5LHY), so the forbid pins at the exact offending source line (3).",
 };
 
 export default v23;

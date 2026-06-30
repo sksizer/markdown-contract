@@ -88,16 +88,17 @@ function sortFindings(findings: Finding[]): Finding[] {
 
 /**
  * Run the cross-plane `docRule(...)` rules over the built model, collecting their findings.
- * Each rule's `fn(doc, ctx)` sees the whole typed doc (both planes) and mints `rule/*`
- * findings through `ctx.finding(...)`, which stamps `path` and the registry default level.
- * The model is built once here only when the contract declares rules (so a rule-free
+ * Each rule's `fn(doc, ctx, tree)` sees the whole typed doc (both planes) and also the projected
+ * `tree` — so a whole-document scope can pin a finding at the exact offending source line — and
+ * mints `rule/*` findings through `ctx.finding(...)`, which stamps `path` and the registry default
+ * level. The model is built once here only when the contract declares rules (so a rule-free
  * validation never forces model construction).
  */
 function runDocRules<F, B>(def: ContractDef<F, B>, tree: DocTree, ctx: Ctx, out: Finding[]): void {
   if (!def.rules || def.rules.length === 0) return;
   const doc = buildModel(tree, def, { path: ctx.path });
   for (const r of def.rules) {
-    out.push(...r.run(doc as Doc, ctx));
+    out.push(...r.run(doc as Doc, ctx, tree));
   }
 }
 
