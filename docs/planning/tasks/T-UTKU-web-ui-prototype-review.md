@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-UTKU
-status: planning/draft
+status: open/ready
 created: '2026-06-30'
 related:
 - '[[M-0009-local-web-ui-vault-dashboard]]'
@@ -22,6 +22,7 @@ need_human_review: false
 impact: high
 complexity: small
 autonomy: supervised
+readiness_verified_at: '2026-06-30T11:57:16Z'
 ---
 # Prototype review & decide-after gate
 
