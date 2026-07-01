@@ -1,0 +1,260 @@
+category: embed-and-ci
+title: "Embed and Automate: the Runner Library and CI Gates"
+examples:
+  - id: EMBED-AND-CI-01
+    name: "Run the corpus in-process"
+    demonstrates: "Calling runCorpus once with a defineConfig config and reading back {findings, exitCode}."
+    rank: 1
+    builds_on: null
+    artifact_kind: code
+    artifact: |
+      import { contract, sections, defineConfig, runCorpus } from "markdown-contract";
+
+      const config = defineConfig({
+        rules: [{ include: ["**/*.md"], contract: contract({ body: sections() }) }],
+      });
+
+      const { findings, exitCode } = runCorpus(config, { cwd: "docs" });
+      console.log(`${findings.length} finding(s); exit ${exitCode}`);
+    surfaces:
+      - "runner: defineConfig, runCorpus"
+      - "core: contract, sections"
+      - "the {findings, exitCode} return"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/cli/index.test.ts
+      - src/declarative/config.test.ts
+      - src/index.test.ts
+    recommend_test: null
+
+  - id: EMBED-AND-CI-02
+    name: "Scope a subtree with cwd and globs"
+    demonstrates: "Narrowing a run to part of the tree with runCorpus's cwd plus programmatic include/exclude."
+    rank: 2
+    builds_on: EMBED-AND-CI-01
+    artifact_kind: code
+    artifact: |
+      const { findings, exitCode } = runCorpus(config, {
+        cwd: "docs/planning",
+        include: ["tasks/**/*.md"],
+        exclude: ["**/_archive/**"],
+      });
+      // include/exclude pre-filter relative to cwd, AND-narrowed before rule matching
+    surfaces:
+      - "runCorpus opts: cwd, include, exclude (the global pre-filter)"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/config.test.ts
+    recommend_test: null
+
+  - id: EMBED-AND-CI-03
+    name: "Route subtrees with first-match rules"
+    demonstrates: "Mapping different globs to different contracts in one config where the first matching rule wins."
+    rank: 3
+    builds_on: EMBED-AND-CI-01
+    artifact_kind: code
+    artifact: |
+      const config = defineConfig({
+        rules: [
+          { include: ["tasks/**/*.md"], contract: taskContract },
+          { include: ["decisions/**/*.md"], contract: decisionContract },
+          { include: ["**/*.md"], contract: fallbackContract }, // catch-all, last
+        ],
+      });
+      const { findings } = runCorpus(config, { cwd: "docs/planning" });
+    surfaces:
+      - "CorpusConfig.rules ordering"
+      - "first-match routing across multiple contracts"
+    needs_test: "yes"
+    coverage_status: partial
+    existing_coverage:
+      - tests/fixtures/corpus/markdown-contract.config.mjs
+      - src/cli/index.test.ts
+    recommend_test: "[[T-ROUT-runcorpus-first-match-routing]]"
+
+  - id: EMBED-AND-CI-04
+    name: "Gate a vitest suite on findings"
+    demonstrates: "Asserting on runCorpus's findings inside a test so corpus drift fails the test run."
+    rank: 4
+    builds_on: EMBED-AND-CI-01
+    artifact_kind: code
+    artifact: |
+      import { expect, test } from "vitest";
+      import { runCorpus } from "markdown-contract";
+      import config from "./markdown-contract.config.js";
+
+      test("planning corpus has no error findings", () => {
+        const { findings, exitCode } = runCorpus(config, { cwd: "docs/planning" });
+        expect(findings.filter((f) => f.level === "error")).toEqual([]);
+        expect(exitCode).toBe(0);
+      });
+    surfaces:
+      - "runCorpus inside a test"
+      - "Finding.level filtering"
+      - "exitCode assertion"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/cli/index.test.ts
+      - src/declarative/config.test.ts
+    recommend_test: null
+
+  - id: EMBED-AND-CI-05
+    name: "Fail CI on the exit code"
+    demonstrates: "Letting the CLI's nonzero exit on error-level findings fail a CI job with no parsing."
+    rank: 5
+    builds_on: null
+    artifact_kind: yaml
+    artifact: |
+      - name: Validate planning corpus
+        run: npx markdown-contract validate docs/planning
+        # exit 0 clean, 1 on any error-level finding (fails the step), 2 usage/config error
+    surfaces:
+      - "CLI validate"
+      - "exit-code policy (0/1/2)"
+      - "auto-discovered markdown-contract.yaml"
+    needs_test: "yes"
+    coverage_status: partial
+    existing_coverage:
+      - src/cli/index.test.ts
+      - src/declarative/config.test.ts
+    recommend_test: null
+
+  - id: EMBED-AND-CI-06
+    name: "Pre-commit gate on staged docs"
+    demonstrates: "Scoping a validate run to staged markdown in a git hook so commits with errors are blocked."
+    rank: 6
+    builds_on: EMBED-AND-CI-05
+    artifact_kind: cli
+    artifact: |
+      #!/bin/sh
+      # .git/hooks/pre-commit
+      changed=$(git diff --cached --name-only --diff-filter=ACM -- '*.md')
+      [ -z "$changed" ] && exit 0
+      npx markdown-contract validate docs --include $(echo "$changed" | sed 's|^docs/||')
+      # nonzero exit aborts the commit
+    surfaces:
+      - "CLI validate --include"
+      - "exit code as the hook gate"
+    needs_test: "no"
+    coverage_status: covered
+    existing_coverage:
+      - src/declarative/config.test.ts
+    recommend_test: null
+
+  - id: EMBED-AND-CI-07
+    name: "Parse JSON findings in a script"
+    demonstrates: "Emitting --format json and processing the stable Finding[] shape downstream."
+    rank: 7
+    builds_on: EMBED-AND-CI-05
+    artifact_kind: cli
+    artifact: |
+      npx markdown-contract validate docs/planning --format json \
+        | jq -r '.[] | select(.level=="error") | "\(.path):\(.pos.line) \(.id)"'
+      # each element is a Finding: { id, level, path, pos:{line,col}, message, fix? }
+    surfaces:
+      - "CLI --format json"
+      - "formatJson"
+      - "Finding shape (id, level, path, pos, message)"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/cli/format.test.ts
+      - src/cli/index.test.ts
+    recommend_test: null
+
+  - id: EMBED-AND-CI-08
+    name: "Surface findings as code scanning"
+    demonstrates: "Producing --format sarif and uploading it so findings annotate the exact line on a PR."
+    rank: 8
+    builds_on: EMBED-AND-CI-07
+    artifact_kind: yaml
+    artifact: |
+      - name: Validate to SARIF
+        run: npx markdown-contract validate docs --format sarif > mc.sarif || true
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: mc.sarif
+      # `|| true` keeps the upload running even when findings set exit 1
+    surfaces:
+      - "CLI --format sarif"
+      - "formatSarif (SARIF 2.1.0, region.startLine from Finding.pos)"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - src/cli/format.test.ts
+      - src/cli/index.test.ts
+    recommend_test: null
+
+  - id: EMBED-AND-CI-09
+    name: "Drift-gate with init --check"
+    demonstrates: "Using init --check to verify a tree still conforms to its inferred config as a pre-merge gate."
+    rank: 9
+    builds_on: EMBED-AND-CI-05
+    artifact_kind: cli
+    artifact: |
+      # in CI, after checkout:
+      npx markdown-contract init docs/planning --check
+      # exit 0: tree still conforms to markdown-contract.yaml
+      # exit 1: a doc drifted from the inferred shape
+      # exit 2: no config present to check against
+    surfaces:
+      - "CLI init --check (drift detection)"
+      - "runCorpus over the existing config"
+      - "exit 0/1/2"
+    needs_test: "yes"
+    coverage_status: covered
+    existing_coverage:
+      - tests/inference.cli.test.ts
+    recommend_test: null
+
+  - id: EMBED-AND-CI-10
+    name: "Map findings to editor diagnostics"
+    demonstrates: "Translating positioned Findings into editor diagnostics via Finding.pos and level."
+    rank: 10
+    builds_on: EMBED-AND-CI-02
+    artifact_kind: code
+    artifact: |
+      const { findings } = runCorpus(config, { cwd: workspaceRoot });
+      const diagnostics = findings.map((f) => ({
+        uri: f.path,
+        line: (f.pos?.line ?? 1) - 1, // editors are 0-based; whole-doc findings have no pos
+        col: (f.pos?.col ?? 1) - 1,
+        severity: f.level, // "error" | "warn" | "report"
+        source: f.id,
+        message: f.message,
+      }));
+    surfaces:
+      - "runCorpus findings"
+      - "Finding.pos {line, col}"
+      - "level/id/path/message for diagnostics"
+    needs_test: "no"
+    coverage_status: covered
+    existing_coverage:
+      - src/cli/format.test.ts
+      - src/core/finding.test.ts
+      - src/core/validate.test.ts
+    recommend_test: null
+
+  - id: EMBED-AND-CI-11
+    name: "Snapshot a stable baseline"
+    demonstrates: "Relying on the deterministic (line, col, plane) finding order to snapshot a baseline that diffs cleanly."
+    rank: 11
+    builds_on: EMBED-AND-CI-04
+    artifact_kind: code
+    artifact: |
+      const { findings } = runCorpus(config, { cwd: "docs/planning" });
+      const baseline = findings.map((f) => `${f.path}:${f.pos?.line ?? 0} ${f.id}`);
+      // order is deterministic (sorted line, then col, then plane), so a committed
+      // baseline.json only changes when the findings actually change
+      expect(baseline).toMatchSnapshot();
+    surfaces:
+      - "deterministic finding order (line, col, plane)"
+      - "stable baseline/diff over Finding[]"
+    needs_test: "yes"
+    coverage_status: partial
+    existing_coverage:
+      - src/core/validate.test.ts
+    recommend_test: null
