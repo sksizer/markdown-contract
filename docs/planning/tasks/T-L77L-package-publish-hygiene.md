@@ -11,6 +11,7 @@ tags:
 need_human_review: false
 impact: medium
 complexity: small
+readiness_verified_at: '2026-07-01T19:28:36Z'
 ---
 # Validate published-package hygiene with publint and are-the-types-wrong
 
