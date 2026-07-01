@@ -27,6 +27,9 @@ need_human_review: true
 - The enabling primitive is a per-node source **`range`** (start/end offset). `raw` is a
   lazy slice of the retained source; the `mdast` segment is a retained reference. Ranges
   are cheap; the two derived views cost nothing until read.
+- The typed OOM **composes over** mdast (a precisely-typed segment accessor), never extends
+  it; `raw` / `mdast` / typed views are **lazy readonly accessor functions** with `range` the
+  only serializable datum; nodes are **immutable** to start.
 - This is the **convergent design of serious source-tooling stacks** — lossless /
   full-fidelity syntax trees with a typed overlay (tree-sitter, Roslyn,
   rust-analyzer/rowan, LibCST, PostCSS). markdown-contract already sits on unist/mdast,
@@ -132,12 +135,13 @@ Adopt a per-node **three-view** model, additive over the current projection.
 
 1. Every projection node carries a source **`range`** (`{ start, end }`, offsets and/or
    `SourcePos`). This is the primitive — the one thing that must be stored and serialized.
-2. **`raw: string`** — a lazy slice of the retained source for the node's range. The
+2. **`raw()`** — a lazy accessor returning the verbatim source for the node's range. The
    document, a section, a table cell, a list item, an inline span each answer "give me my
    exact bytes."
-3. **`mdast` segment** — a reference to the node's layer-0 subtree, so a consumer can
-   analyse constructs the typed model does not cover (links, images, nested emphasis)
-   **locally**, without re-walking from the root.
+3. **`mdast()`** — a lazy accessor returning the node's layer-0 subtree as a precisely-typed,
+   readonly segment, so a consumer can analyse constructs the typed model does not cover
+   (links, images, nested emphasis) **locally**, without re-walking from the root — by
+   composition, not by extending the mdast interface.
 4. The existing **typed fields** (`name`/`depth`, `columns`/`rows`, `value`, …) —
    unchanged; still primary.
 
@@ -161,6 +165,52 @@ phrasing to a single string, so surfacing spans means keeping their positions an
 `SourcePos` with `end` (already anticipated in the D-0002 type comment). It may land as an
 on-demand `spans()` accessor on paragraph/cell rather than promoting every inline node, to
 keep the always-on surface small.
+
+### How the views attach — composition, accessor functions, immutable
+
+- **Composition, not inheritance.** The typed OOM node does **not** `extends` the mdast
+  interface; it *references* the mdast segment through a precisely-typed accessor (e.g.
+  `TableBlock.mdast(): Mdast.Table`, `CodeBlock.mdast(): Mdast.Code`). Extending mdast fights
+  the OOM's nature — sections are synthetic (no mdast peer), tables/paragraphs are
+  deliberately reshaped (`rows: string[][]`, `text: string`) not supersets, and the field
+  vocabularies clash (`kind` / `pos` vs mdast's `type` / `position` / `children`). It would
+  also pin the public type surface to `@types/mdast`. The typed overlays this decision cites
+  (rowan's AST over `GreenNode`, Roslyn's `SemanticModel` over the syntax tree) all *wrap*
+  the tree; composition gives the same mdast types by typing the reference, without the
+  coupling.
+- **Access via functions; `range` is the only serializable datum.** `raw()`, `mdast()`, and
+  the heavier typed views are **lazy accessor functions**, not eager fields — computed on
+  demand (less work) and returning controlled, `readonly` views (less exposure of internal
+  structures). The one plain, serializable primitive is `range` (offsets) plus the typed
+  scalars; methods drop out of `JSON.stringify` naturally, so the daemon / web-UI wire shape
+  is just data and a client re-derives accessors from `range` + source. This matches the
+  existing function-accessors `rowPos(i)` and `lineForPath(path)`.
+- **Immutable to start.** Nodes are read-only (consistent with D-0007): `readonly` types and
+  `ReadonlyArray` first — cheap and sufficient — with runtime `Object.freeze` optional and
+  later. Immutability also closes the `mdast()` mutation-leak: an accessor handing back a
+  `readonly` view keeps a consumer from corrupting the shared tree.
+- **Typed shapes are contract-inferred, a separate layer.** The typed-model view's types come
+  from the contract (`z.infer` / `Doc<C>` / `z.output<cells>`), which mdast cannot express — a
+  second reason the OOM is not an mdast extension. Typed values flow through the model
+  (`read()` / `validate().doc`), not the raw `tree`, preserving the [[D-0005-consumption-oom]]
+  `doc` vs `tree` boundary.
+
+### In-flight embodiment — structured cells (M-0011 / PR #100)
+
+The structured-cells milestone (M-0011, PR #100, implementing the D-0015 structured-cells
+decision) is the **cell- and inline-depth instance of this decision — already in flight and
+already aligned**:
+
+- It does **not** extend mdast. Each transforming cell's parsed output is kept as a sparse
+  `typed(row, col)` overlay **beside** the retained raw `rows: string[][]`, and
+  `z.output<cells>` typed rows flow through `read()` / `validate().doc` — the typed value
+  through the model, the raw tree keeps strings.
+- Its position work **is** this decision at cell/inline depth: an additive `cellPos(row, col)`
+  (with `col`) and an `inlineSpans` overlay of per-cell / per-paragraph inline-code byte
+  ranges, computed in the `flattenInline` replacement — the concrete form of a per-node
+  `range`, answering #518 (verbatim cells) and #519 (inline offsets).
+- Additive, opt-in, `mcVersion: 1` backward-compatible, exposed via accessor functions — the
+  composition + accessor + overlay-beside-raw shape this decision generalizes.
 
 **Consistency with [[D-0007-engine-scope-and-fidelity]].** This is read-only and
 retain-don't-rewrite — it exposes *more* of what the parser already saw; it never mutates
@@ -198,16 +248,20 @@ existing changes; every point is an addition.
   already-partial coupling (D-0002 / D-0007 expose `tree.mdast`).
 - **Memory stays O(nodes)** for ranges + one retained source; per-node eager `raw` copies
   are explicitly rejected.
-- **The typed-cell / structured-cell design becomes a special case** of this: typed cells
-  are the *typed-model* view of a positioned cell whose *raw* view is the verbatim cell;
-  the two should share the cell's `range`.
+- **The structured-cell work (M-0011 / PR #100) is the cell/inline instance** of this
+  decision, already in flight and aligned (see the Decision) — its `typed(row,col)`,
+  `cellPos`, and `inlineSpans` should converge on this decision's per-node `range`.
 
 ## Open questions
 
-- **`raw` as a lazy getter vs an explicit helper** (`raw()` / `sliceOf(source, range)`).
-  Getters do not survive serialization; a helper keeps the serialized shape clean.
-- **Inline shape:** promote inline spans to first-class positioned nodes, or expose an
-  on-demand `spans()` on paragraph/cell? (always-on surface vs granularity.)
+- **Accessor mechanics (mostly settled):** access is via lazy functions with `range` as the
+  only serializable datum (decided above); the residual is method-on-node (`node.raw()`) vs a
+  free helper (`sliceOf(source, range)`) that keeps nodes pure serializable data.
+- **Inline shape:** M-0011's `inlineSpans` overlay is the emerging answer at cell / paragraph
+  depth; settle whether it generalizes to first-class positioned inline spans or stays a
+  cell-local overlay.
+- **Convergence with M-0011:** re-express `cellPos` + `inlineSpans` as the cell/inline
+  projection of a single per-node `range`, so the depth ladder shares one positional model?
 - **`SourcePos.end`:** add it globally now (D-0002 anticipated it) or carry a per-node
   `range` only?
 - **Offsets vs line/col in `range`:** offsets slice directly; line/col are what findings
@@ -220,5 +274,6 @@ existing changes; every point is an addition.
 - [[D-0007-engine-scope-and-fidelity]] — the read-only / retain-fidelity posture this extends from root-only to per-node.
 - [[D-0002-projection-and-dialect]] — the projection and `SourcePos` this adds `range` to.
 - [[D-0005-consumption-oom]] — the typed object model = the third view.
-- `provenance/d0014/` — the framework shape; the typed-cell / structured-cell design is the cell-level special case of this decision.
+- `provenance/d0014/` — the framework shape.
+- Structured cells — **M-0011** (PR #100), implementing the **D-0015** structured-cells decision (`provenance/d0015/`, PR #49): the cell/inline-depth embodiment of this decision (`typed(row,col)`, `cellPos`, `inlineSpans`).
 - Prior art: tree-sitter — <https://tree-sitter.github.io/tree-sitter/using-parsers/2-basic-parsing.html>; Roslyn red-green trees — <https://github.com/dotnet/roslyn/blob/main/docs/compilers/Design/Red-Green%20Trees.md>; rust-analyzer/rowan — <https://github.com/rust-analyzer/rowan>; LibCST — <https://libcst.readthedocs.io/en/latest/why_libcst.html>; PostCSS syntax — <https://github.com/postcss/postcss/blob/main/docs/syntax.md>; unist positions — <https://github.com/syntax-tree/unist>.
