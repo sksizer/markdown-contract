@@ -89,12 +89,45 @@ _Captured by /sdlc:task-work on 2026-07-01. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — authored `prototype/web-ui/REVIEW.md` §1 (chosen-variant
+  table + per-surface rationale) and §2 (end-to-end IA verdict); presence
+  grep-verified. The variant judgments themselves are deferred-user.
+- AC-2: agent-manual — `REVIEW.md` §3 gap list with an explicit "Deferred
+  surfaces" subsection naming history/trends and settings, plus not-wired,
+  API-seam, and tech-debt gaps.
+- AC-3: agent-manual — `REVIEW.md` §5 go/no-go recommendation + the M-0009
+  "Review verdict (decide-after gate)" section linking `REVIEW.md` and recording
+  the recommendation; the review-gate success-criterion box is checked. The
+  go/no-go decision is deferred-user to ratify.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- Three parallel `Explore` agents mapped the 18-story-file / 78-variant
+  prototype concretely and fast, which made the variant selection well-grounded
+  rather than impressionistic.
+- The baseline-gated quality gate cleanly subtracted the pre-existing typecheck
+  drift, so the doc-only change gated green (`OK 3/3`) without manual triage.
+- The prototype's own decoupling and explicit disclaimers (README "Boundary",
+  the `types/api.ts` seam header mirroring D-0012 §D3) made the API-seam
+  requirements straightforward to state.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+All friction hit this run was **already tracked** — no new follow-up docs were
+spawned (honoring the consolidation directive to avoid PR-queue sprawl):
+
+- Step 7's quality gate defaulted `--baseline-dir` to the worktree's
+  `.sdlc/quality-baselines/` while Step 3a captured the baseline into the main
+  repo's — the gate aborted "baseline not found" until `--baseline-dir
+  <main-repo>/.sdlc/quality-baselines` was passed manually. Already captured as
+  [[B-HVL1-worktree-quality-baseline-dir-resolution]].
+- Step 3b's permissions probe reported false-positive gaps
+  (`bun`/`npm`/`Write`/`Edit`) despite all four working in this harness. Already
+  captured as [[B-PFPB-permissions-probe-false-positive]].
+- The review reconfirms the two-data-model tech debt (retire the `VaultSummary`
+  generation: `VaultDashboard`/`VaultStatusCard`/`RunSummary`/`FindingsList`),
+  already captured as [[B-8ZKX-retire-legacy-vaultdashboard-component]].
+- Pre-existing root `npm run typecheck` failure (`tests/yaml-parity.test.ts`
+  `context.annotate` TS2339 ×2) is owned by in-flight
+  [[T-4E9T-yaml-parity-glob-skips-peerless-fixtures]]; the baseline correctly
+  subtracted it, so it never gated this doc-only change.
