@@ -11,6 +11,7 @@ tags:
 need_human_review: false
 impact: medium
 complexity: small
+readiness_verified_at: '2026-07-01T16:55:40Z'
 ---
 # Add Dependabot updates and a dependency-audit CI step
 
