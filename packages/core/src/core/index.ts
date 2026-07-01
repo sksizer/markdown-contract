@@ -49,3 +49,22 @@ export type {
   TextMatchResult,
   TextMatchSpec,
 } from "./text-match.js";
+
+// ── Consumer utilities — additive standalone helpers over the exported types. ────
+// Section navigation over the projected tree:
+export { blocksOfKind, findSection, sectionForLine, sectionSpans, sectionsAt } from "./navigate.js";
+export type { SectionSpan } from "./navigate.js";
+// Positioned block enumeration (fenced-code + table-row source lines):
+export { codeBlockLines, tableRowLines } from "./block-lines.js";
+// Source-faithful table cells:
+export { rawTableRow, rawTableRows } from "./table-source.js";
+// Finding formatting + filtering:
+export {
+  countByLevel,
+  filterFindings,
+  findingLocation,
+  formatFinding,
+  hasErrors,
+} from "./finding-view.js";
+// Contract-authoring presets + shorthands:
+export { LENIENT, STRICT, lenientBody, optionalSection, strictBody } from "./presets.js";

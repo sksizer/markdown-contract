@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 1,
   "workspaces": {
     "": {
       "name": "markdown-contract-workspace",
@@ -35,6 +34,7 @@
         "@vitest/coverage-v8": "^4.1.9",
         "remark-stringify": "^11.0.0",
         "typescript": "^5.7.2",
+        "vite": "^8.1.2",
         "vitest": "^4.1.9",
       },
     },

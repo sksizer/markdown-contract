@@ -44,6 +44,32 @@ export {
   textRule,
 } from "./core/index.js";
 
+// Consumer utilities — additive standalone helpers over the exported types
+// (navigation over the projected tree, source-faithful table cells, finding
+// formatting/filtering, contract-authoring presets). Sourced from `./core`;
+// `SectionSpan` and other supporting types bubble via `export type *` above.
+export {
+  blocksOfKind,
+  codeBlockLines,
+  countByLevel,
+  filterFindings,
+  findSection,
+  findingLocation,
+  formatFinding,
+  hasErrors,
+  LENIENT,
+  lenientBody,
+  optionalSection,
+  rawTableRow,
+  rawTableRows,
+  sectionForLine,
+  sectionsAt,
+  sectionSpans,
+  STRICT,
+  strictBody,
+  tableRowLines,
+} from "./core/index.js";
+
 // The corpus runner is library API, surfaced at the package root:
 export { defineConfig, runCorpus } from "./runner/index.js";
 export type { CorpusConfig } from "./runner/index.js";
