@@ -16,8 +16,8 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly"
+    open-pull-requests-limit: 3
     groups:
       # Development dependencies: batch minor + patch bumps into one PR.
       dev-dependencies:
