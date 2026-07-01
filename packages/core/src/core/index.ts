@@ -18,6 +18,9 @@ export type * from "./types.js";
 export { ContractError, finding, notImplemented } from "./finding.js";
 // Projection:
 export { parse } from "./projection.js";
+// Pure frontmatter/body split (used internally by parse(); also standalone):
+export { splitFrontmatter } from "./frontmatter.js";
+export type { FrontmatterSplit } from "./frontmatter.js";
 // Contract combinators + named-rule factories:
 export {
   contract,
