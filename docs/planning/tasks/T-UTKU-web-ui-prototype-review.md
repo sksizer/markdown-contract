@@ -1,29 +1,31 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-UTKU
 status: in-progress
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0009-local-web-ui-vault-dashboard]]'
-- '[[C-0010-single-binary-and-vault-dashboard]]'
-- '[[D-0012-distribution-single-exec-and-web-ui]]'
+  - "[[M-0009-local-web-ui-vault-dashboard]]"
+  - "[[C-0010-single-binary-and-vault-dashboard]]"
+  - "[[D-0012-distribution-single-exec-and-web-ui]]"
 depends_on:
-- '[[T-6RFC-web-ui-vault-dashboard]]'
-- '[[T-4CUI-web-ui-vault-detail-findings]]'
-- '[[T-5QJV-web-ui-vault-registry]]'
-- '[[T-HHLC-web-ui-drift-view]]'
-- '[[T-0P0U-web-ui-live-status-sse]]'
+  - "[[T-6RFC-web-ui-vault-dashboard]]"
+  - "[[T-4CUI-web-ui-vault-detail-findings]]"
+  - "[[T-5QJV-web-ui-vault-registry]]"
+  - "[[T-HHLC-web-ui-drift-view]]"
+  - "[[T-0P0U-web-ui-live-status-sse]]"
 tags:
-- web-ui
-- prototype
-- review
+  - web-ui
+  - prototype
+  - review
 need_human_review: false
 impact: high
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-07-01T05:08:08Z'
-last_reviewed: '2026-07-01'
+readiness_verified_at: 2026-07-01T05:08:08Z
+last_reviewed: 2026-07-01
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/134
 ---
 # Prototype review & decide-after gate
 
