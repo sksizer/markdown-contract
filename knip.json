@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [],
+      "project": []
+    },
+    "packages/core": {
+      "entry": [
+        "src/index.ts",
+        "src/declarative/index.ts",
+        "src/cli/index.ts",
+        "vitest.config.ts",
+        "src/**/*.test.ts",
+        "tests/**/*.test.ts",
+        "tests/harness.ts",
+        "tests/components.ts",
+        "tests/fixtures/**/*.ts"
+      ],
+      "project": ["src/**/*.ts"]
+    }
+  },
+  "ignoreDependencies": [],
+  "ignoreBinaries": []
+}
