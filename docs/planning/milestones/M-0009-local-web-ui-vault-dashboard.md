@@ -114,12 +114,48 @@ The surfaces the prototype must cover (the "all UI aspects" this milestone hamme
 - [ ] **Storybook is the harness**, and every component/screen ships **≥2 named variants** for comparison.
 - [ ] Every surface in the inventory above is prototyped (dashboard, vault detail + findings, register/manage, drift, live-status/SSE), across all status states (`green` / `findings` / `drift` / `running` / `error`) and the empty/first-run state.
 - [ ] The mock payload shapes match the [[D-0012-distribution-single-exec-and-web-ui]] §D3 route sketch and stand as the proposed stable API seam.
-- [ ] The review gate records the chosen variant per surface, an IA verdict, a gap list (incl. deferred history/settings surfaces), and a go/no-go recommendation on extending M-0009 — linked back into this milestone.
+- [x] The review gate records the chosen variant per surface, an IA verdict, a gap list (incl. deferred history/settings surfaces), and a go/no-go recommendation on extending M-0009 — linked back into this milestone. → `prototype/web-ui/REVIEW.md` ([[T-UTKU-web-ui-prototype-review]]); verdict below.
 - [ ] Human review of the prototype direction and the decide-after recommendation.
+
+## Review verdict (decide-after gate)
+
+The decide-after gate ([[T-UTKU-web-ui-prototype-review]]) is complete. The full
+review — chosen variant per surface, the end-to-end IA verdict, the gap list
+(including the deferred history/trends and settings surfaces), and the API-seam
+requirements for a real daemon — lives at **`prototype/web-ui/REVIEW.md`**.
+
+**Chosen variants:** routed `pages/index.vue` dashboard (Grid default, Table as
+a density toggle; the legacy `VaultDashboard` is rejected); vault-detail
+grouped-by-contract (flat-severity as a toggle); `VaultForm` inline panel as the
+primary registry surface (modal for dashboard quick-add); unified drift
+change-list (split as a secondary); `WatchIndicator` with the row-highlight
+update-landing cue (silent-flip fallback, toast reserved for error transitions).
+The design kit (T-S5K8), foundation (T-ZLND), and `VaultStatus` API seam (T-D7X1)
+are adopted wholesale; the older `VaultSummary` component generation is retired.
+
+**IA verdict:** sound and coherent — the prototype validates the UX. The
+dashboard → vault-detail spine is a real routed flow; registry, drift-detail,
+and live-status are built but Storybook-only (not route-mounted), which is
+expected for a harness-first prototype. Biggest structural item: two coexisting
+data-model generations (`VaultStatus` vs `VaultSummary`) to unify before
+grafting forward.
+
+**Go/no-go:** **GO on building the real daemon-backed UI, but in a NEW follow-up
+milestone — do NOT extend M-0009.** M-0009 is cleanly scoped to
+prototype + decide-after; the daemon / Nitro JSON API / `runner` wiring / SSE
+server + file-watcher / single-binary embedding are large, distinct workstreams
+that depend on the single-exec track ([[M-0008-single-exec-distribution]] /
+[[T-SPAE-spa-embed-spike]]). Recommend closing M-0009 at the prototype boundary
+(after the human-review success criterion) and opening a
+**"daemon-backed vault dashboard (make it real)"** milestone, seeded with this
+review's chosen variants and gap list. The API seam must additionally expose
+`PUT`/`DELETE /api/vaults/:id` (registry edit/remove) and explicit contract
+identity on findings before the registry and detail surfaces are real. See
+`prototype/web-ui/REVIEW.md` §5.
 
 ## Risks / open questions
 
-- **Extend or split?** Whether the real daemon-backed UI ships in this milestone or a follow-up — answered by [[T-UTKU-web-ui-prototype-review]], not now.
+- **Extend or split?** ✓ Answered by [[T-UTKU-web-ui-prototype-review]] (see the review verdict above): build the real daemon-backed UI in a **new follow-up milestone**, not by extending M-0009.
 - **Nuxt-Storybook integration depth** — the prototype commits to Vue/Nuxt + Storybook; the exact integration module and whether a thin app shell sits alongside the harness is settled in [[T-ZLND-web-ui-prototype-app]].
 - **Component portability** — keeping prototype components close enough to the eventual `apps/web` conventions that they graft forward (per [[D-0012-distribution-single-exec-and-web-ui]]) rather than being pure throwaway.
 
