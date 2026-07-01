@@ -46,9 +46,14 @@ captured separately as [[B-FM20-frontmatter-2-0-api]]; they are out of scope her
 
 | Location | Role today |
 |---|---|
-| `src/core/projection.ts:417` (`parse`) | Splits frontmatter from body via `remark-frontmatter`, builds `frontmatter` (`buildFrontmatter`, `:332`) + the section projection, then returns `DocTree` — **discarding the body slice it just computed** |
-| `src/core/types.ts:58` (`DocTree`) | Exposes `frontmatter {raw,data,pos,lineForPath} \| null` + `root: SectionNode` + `mdast` — **no verbatim `body` string**; the body is only available structurally |
-| consumers (`sksizer/dev`) | `@lib/util/frontmatter` hand-rolls a `---`-fence regex for exactly this split; `markdown_extract.sectionBody` slices verbatim source by hand for the same "the projection flattens, I need the bytes" reason |
+| `packages/core/src/core/projection.ts#parse` | Splits frontmatter from body via `remark-frontmatter`, builds `frontmatter` (`buildFrontmatter`) + the section projection, then returns `DocTree` — **discarding the body slice it just computed** |
+| `packages/core/src/core/types.ts#DocTree` | Exposes `frontmatter {raw,data,pos,lineForPath} \| null` + `root: SectionNode` + `mdast` — **no verbatim `body` string**; the body is only available structurally |
+
+Downstream consumers motivating this live in an **external** repo (`sksizer/dev`),
+not this codebase, so they are not local touchpoints: `@lib/util/frontmatter`
+hand-rolls a `---`-fence regex for exactly this split, and
+`markdown_extract.sectionBody` slices verbatim source by hand for the same "the
+projection flattens, I need the bytes" reason (see Discovery context).
 
 ## Proposed
 
@@ -92,7 +97,7 @@ doc ends at the closing fence). `body` is byte-exact (no trim / re-serialize).
 
 ## Approach
 
-1. Add `splitFrontmatter(md) => { raw, body }` in `src/core/frontmatter.ts`,
+1. Add `splitFrontmatter(md) => { raw, body }` in `packages/core/src/core/frontmatter.ts`,
    recognizing the block with `micromark-extension-frontmatter`. `raw` =
    fences-stripped inter-fence text (or null); `body` = the verbatim source after
    the closing fence's line terminator (or the whole input when no frontmatter).
@@ -101,7 +106,7 @@ doc ends at the closing fence). `body` is byte-exact (no trim / re-serialize).
    `lineForPath` on the existing parse path.
 3. Export `splitFrontmatter` from the core barrel and the package-root `index.ts`;
    add `body: string` to the `DocTree` type.
-4. Peer unit tests (`src/core/frontmatter.test.ts`): no frontmatter, normal doc,
+4. Peer unit tests (`packages/core/src/core/frontmatter.test.ts`): no frontmatter, normal doc,
    empty frontmatter block, body byte-preservation (CRLF; a body that itself
    contains `---`); plus a `parse()` test asserting `parse(md).body ===
    splitFrontmatter(md).body` and `(parse(md).frontmatter?.raw ?? null) ===
@@ -111,12 +116,12 @@ doc ends at the closing fence). `body` is byte-exact (no trim / re-serialize).
 
 | Location | Kind | Change |
 |---|---|---|
-| `src/core/frontmatter.ts` | new | the pure `splitFrontmatter` splitter (`{ raw, body }`) |
-| `src/core/frontmatter.test.ts` | new | peer unit test — input→output + body byte-preservation |
-| `src/core/projection.ts` | modify | `parse()` calls `splitFrontmatter` and sets `DocTree.body` |
-| `src/core/types.ts` | modify | add `body: string` to `DocTree` |
-| `src/core/index.ts` | modify | re-export `splitFrontmatter` from the core barrel |
-| `src/index.ts` | modify | add `splitFrontmatter` to the package-root named re-export list |
+| `packages/core/src/core/frontmatter.ts` | new | the pure `splitFrontmatter` splitter (`{ raw, body }`) |
+| `packages/core/src/core/frontmatter.test.ts` | new | peer unit test — input→output + body byte-preservation |
+| `packages/core/src/core/projection.ts` | modify | `parse()` calls `splitFrontmatter` and sets `DocTree.body` |
+| `packages/core/src/core/types.ts` | modify | add `body: string` to `DocTree` |
+| `packages/core/src/core/index.ts` | modify | re-export `splitFrontmatter` from the core barrel |
+| `packages/core/src/index.ts` | modify | add `splitFrontmatter` to the package-root named re-export list |
 
 ## Acceptance criteria
 
