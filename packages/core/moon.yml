@@ -82,6 +82,33 @@ tasks:
     options:
       cache: true
 
+  # `npm run lint:deps` (= knip) — the dead-code / unused-dependency detector.
+  # The `lint:deps` script and knip.json both live at the WORKSPACE ROOT (knip
+  # scans the whole workspace and is scoped to packages/core in knip.json), so
+  # the command reaches the root script and the root-relative inputs are
+  # workspace-relative ('/knip.json', '/package.json'). NODE-pinned like
+  # :test/:coverage — npm is the runner because moon's runtime-only node
+  # toolchain does not put node_modules/.bin on PATH (npm does), so the `knip`
+  # bin resolves. runInCI: false — the report-only knip gate rides its own
+  # workflow (.github/workflows/knip.yml), like lint-docs; it is deliberately NOT
+  # part of the shared CI moon run list. No outputs, so caching keys purely on
+  # inputs. Run with `moon run core:lint-deps`.
+  lint-deps:
+    command: 'npm run lint:deps'
+    toolchain: 'node'
+    options:
+      runFromWorkspaceRoot: true
+      runInCI: false
+      cache: true
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'vitest.config.ts'
+      - 'tsconfig.json'
+      - 'package.json'
+      - '/knip.json'
+      - '/package.json'
+
   # `lint:docs` validates the repo's OWN in-flight planning docs with the built
   # CLI. docs/planning lives at the workspace root (not under packages/core), so
   # the command reaches up two levels and the input is workspace-relative
