@@ -146,12 +146,21 @@ _Captured by /sdlc:task-work on 2026-07-01. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `.github/dependabot.yml` parses as valid YAML (via the `yaml` package); two `updates` entries — `package-ecosystem: npm` and `package-ecosystem: github-actions`, both `directory: "/"` with `schedule.interval: "weekly"`.
+- AC-2: auto — the npm entry's `groups` map has a `dev-dependencies` group (`development`, minor+patch) and a `production-minor-patch` group (`production`, minor+patch); majors stay ungrouped. `open-pull-requests-limit: 5`.
+- AC-3: agent-manual — `bun audit --audit-level=high` empirically exits `1` on a high/critical advisory (tested `ms@0.7.0` high + `minimist@0.0.8` critical in a throwaway tree) and `0` on the clean tree; the workflow runs `bun install --frozen-lockfile` + `bun run audit`. These are the Bun-workspace equivalents of the spec's npm-era `npm ci` / `npm audit --audit-level=high` — there is no `package-lock.json` post workspace-split (the committed lockfile is `bun.lock`).
+- AC-4: auto — the HIGH threshold and block decision are documented in `audit.yml`'s header comment; the additive `audit` script (`bun audit --audit-level=high`) reproduces the gate locally (`bun run audit` exits 0 on the clean tree).
+- AC-5: agent-manual — verified the exit-code semantics directly: a deliberately-vulnerable tree (`ms` high + `minimist` critical) turns `bun audit --audit-level=high` red (exit 1); the clean tree exits 0. Notably, bare `bun audit` (no `--audit-level`) exits 0 even with critical vulns, so the `--audit-level=high` flag is load-bearing — documented in the workflow.
+- AC-6: auto — `git show --stat` on the two implementation commits confirms only `.github/dependabot.yml`, `.github/workflows/audit.yml`, and `package.json` (additive `scripts.audit`) changed; `.github/workflows/ci.yml` and every `moon.yml` are untouched.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The task-work "IMPORTANT LAYOUT" note steered the npm→bun adaptation cleanly, and the existing Bun-workspace `ci.yml` (`oven-sh/setup-bun@v2`, `bun install --frozen-lockfile`, pin `1.3.14`) was an exact template for `audit.yml` to mirror.
+- `bun audit --audit-level=high` maps 1:1 onto the intended "block high/critical, tolerate low/moderate" gate; verifying the exit-code semantics empirically *before* implementation meant the workflow was correct on the first pass.
+- Baseline-gated quality (`OK 3/3`, no new drift) confirmed the CI/config additions did not perturb the `packages/core` build/typecheck/test.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The task doc's Proposed/Approach/Files-to-touch/AC sections still literally prescribe `npm ci` / `npm audit` / `package-lock.json` / `actions/setup-node`, but `package-lock.json` was deleted in the Bun-workspace split — the shipped gate correctly uses `bun audit` / `bun.lock` / `setup-bun`. The readiness gate (`task gap-report` → `has_gaps: false`) and the relevance check are structural (they confirm sections are present, not that referenced tooling/files still exist), so the npm↔bun drift went unflagged — a relevance/readiness heuristic that cross-checks task-referenced lockfiles and package-manager verbs against the actual repo layout would have surfaced it. (Backlog doc committed on this branch.)
+- Step 7's `quality run --diff-against-baseline` defaults `--baseline-dir` to the *worktree's* `.sdlc/quality-baselines/`, but Step 3a captured the baseline into the *main repo's* `.sdlc/` (each worktree has its own `.sdlc/`). The gate errored `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — task-work should point Step 7's `--baseline-dir` at the main repo by default (or capture the baseline into a worktree-visible location). (Backlog doc committed on this branch.)
+- The Step 3b permission preflight probe false-positived on this Bun-canonical repo: it reported `bun` / `node` / `Write` / `Edit` as "missing" despite the session granting them, and warned on `npm` (present only in the task's npm-era prose). On a Bun-canonical repo the `npm` mention is a red herring — proceeded past the probe as designed. (Minor; noted here, not spawned.)
