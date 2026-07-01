@@ -156,12 +156,22 @@ _Captured by /sdlc:task-work on 2026-07-01. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `bun run lint:deps` reports **0 unused files** and none of the three published barrels' public exports, no co-located `*.test.ts`, and no `tests/fixtures/**` file; zero conventional false positives confirmed.
+- AC-2: auto — `bun run lint:deps` runs `knip`, reports unused files / exports / dependencies, and exits `1` only when findings exist.
+- AC-3: auto — `bunx moon task core:lint-deps` shows the registered task (command `npm run lint:deps`, node toolchain, `runInCI: false`); `bunx moon run core:lint-deps` executes knip.
+- AC-4: auto — `git diff main -- .github/workflows/ci.yml` is empty (the shared `moon run :build :typecheck :coverage` line is untouched); `knip.yml` runs on `pull_request` + `push: main` with the knip step `continue-on-error: true`.
+- AC-5: agent-manual — final knip baseline captured (0 files, 9 exports, 4 exported types, 0 deps, 0 devDeps = 13 genuine findings) and recorded in the PR description.
+- AC-6: agent-manual — verified no tooling false positives: `@moonrepo/cli`/`moon` resolves via knip's GitHub-Actions plugin, `remark-stringify` is imported by `projection.test.ts`, `@types/*` are detected; `ignoreDependencies`/`ignoreBinaries` left empty (adding `@moonrepo/cli` produced spurious "remove from ignore" hints).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The deterministic readiness gate and quality baseline (0 pre-existing findings) ran clean; the additive config kept the `build`/`typecheck`/`test` gate green with zero new drift.
+- knip's own output made triage fast — the clean split into unused files / exports / exported types / dependencies let the config converge on a genuine-only baseline quickly.
+- The barrel + co-located-test conventions the spec worried about produced zero false positives once the `entry` list was correct, exactly as designed.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Spec premised on a **single-project repo** (Out of scope: "no monorepo workspaces config"), but the repo is a **Bun monorepo** — knip auto-detects `.` / `packages/core` / `apps/web` as separate workspaces, so the spec's literal top-level `entry`/`project` never reached `packages/core` and left the `declarative`/`cli` barrels reported (AC-1 violation). A minimal `packages/core`-scoped `workspaces` block was required, diverging from the (wrongly-premised) out-of-scope note. → Specs for workspace-topology-sensitive tooling should assert the actual workspace shape before prescribing config; a spec-authoring lint could flag a "single-project" claim against a `workspaces` field in `package.json`. Captured as backlog task.
+- Spec's Approach step 5 CI recipe was stale (`actions/setup-node` + `npm ci`) while the real `ci.yml` is Bun-based (`setup-bun` + `bun install --frozen-lockfile`); the relevance check caught it, but the spec prose still said npm. → When a spec is re-pointed to a new layout (e.g. #136), re-point the CI-recipe prose too, not just the file paths.
+- moon's `runInCI: false` skips a task even for an explicit `moon run` once it detects CI (non-empty `CI` env var), so the dedicated `knip.yml` workflow needed an `env: CI: ''` override to actually exercise the report-only task via moon. Non-obvious moon behavior the spec did not anticipate. → Document the `runInCI: false` + dedicated-side-gate-workflow pattern (and the `CI:''` override) in the moon conventions so the next report-only workflow doesn't rediscover it. Captured as backlog task.
+- The spec explicitly defers deleting the dead code knip found; the 13-finding baseline now has a home. → Dead-code cleanup captured as a backlog task consuming this baseline.
