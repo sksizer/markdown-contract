@@ -89,12 +89,21 @@ _Captured by /sdlc:task-work on 2026-06-30. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1 (all five status states rendered with correct treatment): auto — prototype `npm run typecheck` (`nuxt prepare && vue-tsc --noEmit`) passed and `npm run build-storybook` compiled the `index.stories` chunk, proving the grid/table render every state (`error` surfaces `vault.error.message`; `running` shows an inline `LoadingState`; `drift` shows `drift.entries.length`; `findings`/`green` show `countByLevel` badges) on the five-state `VaultStatus` model. deferred-user — visual correctness of each status treatment.
+- AC-2 (≥2 layout variants + empty/first-run as stories): auto — the `layout: "grid" | "table"` prop drives both layouts and the Storybook build produced the `Grid`, `Table`, and `Empty` variant chunks (plus `AllGreen` / `Running` / `WithError`).
+- AC-3 (cards link to detail): agent-manual — every grid card root and every table row name is `<a :href="/vault/${vault.id}">` (plain anchor, Storybook-safe); confirmed in source. deferred-user — actual navigation in the running app.
+- AC-4 (refresh-all affordance, mock-driven): agent-manual — a "Refresh all" button calls `refreshAll()`, which re-invokes the `mockApi.listVaults()` seam and reassigns the reactive list; a per-state summary tally ("are they all green?") and status-legend filter chips are present. deferred-user — interaction feel.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- `pages/vault/[id].vue` was an exact dual-surface template: the prop-or-load pattern, explicit-imports-only discipline, and plain-anchor navigation transferred to the new page cleanly, so the `@storybook/vue3-vite` (Nuxt-free) surface and the Nuxt app shell both render it without divergence.
+- The mock seam already exported everything the screen needed — `mockApi.listVaults()`, all five per-state `VaultStatus` fixtures, and `emptyVaultList` — so AC-1's five states and the empty state needed zero new fixtures (CONVENTIONS.md "drive variants off mocks" satisfied for free).
+- The kit (`StatusBadge`, `EmptyState`, `LoadingState`, `statusTokens`) covered all five states out of the box; the screen is pure composition over `design/tokens.ts`.
+- The baseline-gated Step 7 gate cleanly separated the 4 pre-existing `typecheck` findings on `origin/main` from this branch's drift (zero new), so the gate passed without manual triage.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Permission-probe false positive — `preflight_permissions.ts` reported `Bash(bun:*)`, `Bash(npm:*)`, `Write`, and `Edit` as missing even though the harness granted them all (bun/git/Write/Edit ran throughout). In an autonomous dispatch there is no operator to confirm, so the probe's exit-1 is pure noise. Gap: the probe should reconcile against demonstrated tool access / the resolved runtime sandbox, not only the static settings files.
+- Step 7 baseline-dir resolution in a worktree — the gate, run from the worktree, looked for the baseline under the *worktree's* `.sdlc/quality-baselines/`, but Step 3a captured it in the *main repo's* `.sdlc/`. The gate failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly. Gap: task-work Step 7's default baseline-dir should resolve to the superproject (main repo) when cwd is a linked worktree, matching where Step 3a writes it.
+- Nested-app deps not installed by `worktree_init` — `worktree_init: [bun install]` installs only root deps; the prototype's own `vue-tsc` / Storybook needed a separate `npm install` in `prototype/web-ui/`. Already tracked by the in-flight meta-task `worktree-init-installs-nested-app-deps`; not re-filed.
+- Legacy `components/VaultDashboard.vue` orphaned — replacing the `pages/index.vue` scaffold left the older two-state dashboard component referenced only by its own story (a duplicate `Screens/*` sidebar entry). Captured as backlog `B-8ZKX-retire-legacy-vaultdashboard-component` (retire/reconcile) and committed on this branch rather than as a separate follow-up PR, per the PR-consolidation directive.
