@@ -1,0 +1,7 @@
+{
+  "name": "@markdown-contract/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Placeholder for the markdown-contract web UI (D-0012 / M-0009). No implementation yet — this reserves the apps/web workspace slot so future UI work is an add, not a retool."
+}

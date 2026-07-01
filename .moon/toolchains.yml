@@ -1,20 +1,23 @@
 # yaml-language-server: $schema=https://moonrepo.dev/schemas/toolchain.json
 #
-# Toolchain pins (AC-3). moon v2's WASM toolchain plugins are *runtime version
-# managers* only: both the `node` and `bun` plugins have `install_dependencies`,
+# Toolchain pins. moon v2's WASM toolchain plugins are *runtime version managers*
+# only: both the `node` and `bun` plugins have `install_dependencies`,
 # `parse_lock`, and `locate_dependencies_root` disabled (see `moon toolchain info
-# <id>`). So enabling them pins the runtimes WITHOUT moon ever managing or
-# replacing package-lock.json — npm stays the canonical package manager (AC-4,
-# D-0006). Dependencies are still installed with `npm ci` / `npm install`.
+# <id>`), so enabling them pins the runtimes WITHOUT moon ever managing a
+# lockfile. Dependencies are installed with `bun install` (T-WKSP / D-0010 D1):
+# Bun is the canonical dev package manager and bun.lock is committed. npm stays
+# canonical for the PUBLISHED artifact only (packages/core), not the dev PM.
 
-# Node runs build / typecheck / test today. Pin a concrete 20.x (matches
-# engines.node ">=20" and the Node 20 used in CI) so every machine and CI runner
-# resolves the identical runtime.
-node:
-  version: '20.20.2'
-
-# Bun is pinned forward-looking (D-0010 / D-0012): it is the runtime for the
-# future `bun build --compile` single-executable matrix. No current task runs on
-# Bun, so pinning it here only fixes the version for when that task lands.
+# Bun runs build + typecheck (T-WKSP): the moon `bun` toolchain launches those
+# tasks, and it is also the runtime for the future `bun build --compile`
+# single-executable matrix (D-0012). Pin a concrete version so every machine and
+# CI runner resolves the identical runtime.
 bun:
   version: '1.3.14'
+
+# Node runs the test/coverage gate: vitest executes under Node so the run doubles
+# as the Node-compatibility gate for the runtime-neutral published library. Pin a
+# concrete 20.x (matches packages/core engines.node ">=20" and the Bun setup in
+# CI) so every machine and CI runner resolves the identical runtime.
+node:
+  version: '20.20.2'

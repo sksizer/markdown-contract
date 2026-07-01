@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://moonrepo.dev/schemas/project.json
+#
+# The `core` project (mapped to 'packages/core' in .moon/workspace.yml) — the
+# canonical npm library + CLI (D-0006). Models the package.json scripts as cached
+# moon tasks; the scripts stay thin pass-throughs and this file is the single task
+# source of truth CI runs through.
+#
+# Toolchain split (T-WKSP / D-0010): build + typecheck run on the `bun` toolchain
+# for speed; `test` / `coverage` are pinned to the `node` toolchain so vitest
+# executes under Node — that run is the Node-compatibility gate for the
+# runtime-neutral published artifact. A peer guard
+# (tests/no-bun-only-apis.test.ts) fails the suite if any src/ file imports a
+# Bun-only API (`Bun.*`, `bun:*`).
+#
+# moon task ids cannot contain ':', so `lint:docs` becomes `lint-docs`.
+
+layer: 'library'
+language: 'typescript'
+
+tasks:
+  # `bun run build` (= tsc -p tsconfig.build.json) → emits dist/. Runs on the bun
+  # toolchain; `bun run` puts node_modules/.bin on PATH so tsc resolves. dist/ is
+  # the declared output, so a no-change re-run is a cache hit and downstream tasks
+  # (lint-docs) hydrate dist/ from cache.
+  build:
+    command: 'bun run build'
+    toolchain: 'bun'
+    inputs:
+      - 'src/**/*'
+      - 'tsconfig.json'
+      - 'tsconfig.build.json'
+      - 'package.json'
+    outputs:
+      - 'dist'
+
+  # `bun run typecheck` (= tsc --noEmit) — type-checks src + tests against the
+  # project tsconfig (which includes both). No outputs (pure check), so caching
+  # keys purely on inputs.
+  typecheck:
+    command: 'bun run typecheck'
+    toolchain: 'bun'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `npm run test` (= vitest run) — the full suite (src/**/*.test.ts unit peers +
+  # tests/** integration corpus, per vitest.config.ts). Pinned to the NODE
+  # toolchain: this run is the Node-compatibility gate. npm is the runner (rather
+  # than a bare `vitest`) because moon's runtime-only node toolchain does not put
+  # node_modules/.bin on PATH; npm does.
+  test:
+    command: 'npm run test'
+    toolchain: 'node'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'vitest.config.ts'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `npm run coverage` (= vitest run --coverage) — the full suite under v8
+  # coverage, enforcing the thresholds in vitest.config.ts. Also NODE-pinned (same
+  # gate as :test). CI runs this instead of :test, so the coverage gate rides the
+  # normal test run rather than doubling it. Output is coverage/.
+  coverage:
+    command: 'npm run coverage'
+    toolchain: 'node'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'vitest.config.ts'
+      - 'tsconfig.json'
+      - 'package.json'
+    outputs:
+      - 'coverage'
+    options:
+      cache: true
+
+  # `lint:docs` validates the repo's OWN in-flight planning docs with the built
+  # CLI. docs/planning lives at the workspace root (not under packages/core), so
+  # the command reaches up two levels and the input is workspace-relative
+  # ('/docs/...'). runInCI: false — it lints mid-edit planning docs, so it's a
+  # local author gate, not a CI gate. Run with `moon run core:lint-docs`.
+  lint-docs:
+    command: 'node dist/cli/index.js validate ../../docs/planning'
+    toolchain: 'node'
+    deps:
+      - 'build'
+    inputs:
+      - '/docs/planning/**/*'
+      - 'dist/**/*'
+    options:
+      runInCI: false
