@@ -1,10 +1,13 @@
 # yaml-language-server: $schema=https://moonrepo.dev/schemas/workspace.json
 
-# The single project today is the repo root. Mapping it by name keeps the later
-# packages/* + apps/web split (D-0010, D-0012) a pure *add* of projects rather
-# than a retool. See docs/planning/tasks/T-MOON-adopt-moon-monorepo.md.
+# Bun workspace split (T-WKSP, D-0010 D3): the library moved from the repo root
+# into packages/core; apps/web is the placeholder slot for the future web UI
+# (D-0012 / M-0009). moon's project map now points at the two workspace members
+# instead of '.', so later UI work is a pure *add* of a project rather than a
+# retool. See docs/planning/tasks/T-WKSP-bun-workspace-split.md.
 projects:
-  markdown-contract: "."
+  core: "packages/core"
+  web: "apps/web"
 
 # Version control system. The repo is git, default branch is main.
 vcs:

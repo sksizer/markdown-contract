@@ -383,9 +383,13 @@ describe("dialect round-trip (D-0002 proof)", () => {
 
 describe("real document (provenance entity file)", () => {
   test("the C-0004 capability doc projects: H1 title, H2 sections, frontmatter, ^summary", () => {
+    // docs/planning lives at the workspace root, not inside packages/core, so
+    // this real-document fixture climbs out of the package (src/core → package
+    // root → packages/ → workspace root). See T-WKSP post-mortem: a follow-up may
+    // vendor this doc as a package-local fixture to restore package isolation.
     const path = fileURLToPath(
       new URL(
-        "../../docs/planning/capabilities/C-0004-dialect-aware-projection.md",
+        "../../../../docs/planning/capabilities/C-0004-dialect-aware-projection.md",
         import.meta.url,
       ),
     );

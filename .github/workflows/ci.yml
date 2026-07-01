@@ -15,19 +15,21 @@ jobs:
           # Full history so moon can hash inputs / detect touched files reliably.
           fetch-depth: 0
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      # Bun is the canonical dev package manager (T-WKSP / D-0010 D1): it installs
+      # the workspace from the committed bun.lock and provides the pinned moon CLI
+      # (@moonrepo/cli, hoisted to node_modules/.bin). npm stays canonical for the
+      # PUBLISHED artifact only (packages/core).
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: "20"
-          cache: npm
+          bun-version: 1.3.14
 
-      # npm stays canonical (D-0006): npm ci installs deps AND the pinned moon CLI
-      # (@moonrepo/cli) from package-lock.json.
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
-      # Cache the proto-managed toolchain (the pinned Node 20.x moon downloads on
-      # first task run). Keyed on the toolchain pins so a version bump busts it.
+      # Cache the proto-managed toolchains (the pinned Node + Bun that moon
+      # downloads on first task run). Keyed on the toolchain pins so a version bump
+      # busts it.
       - name: Cache moon toolchain
         uses: actions/cache@v4
         with:
@@ -35,22 +37,20 @@ jobs:
           key: ${{ runner.os }}-proto-${{ hashFiles('.moon/toolchains.yml') }}
           restore-keys: ${{ runner.os }}-proto-
 
-      # Single task source of truth: run the suite through moon (no duplicate
-      # tsc/vitest definitions here — they live in moon.yml). moon installs the
-      # pinned Node toolchain on first run, then build/typecheck/test run cached.
-      # lint-docs is a moon task too, but it's run locally rather than gated in CI
-      # because it validates in-flight planning docs (which are mid-edit on any
-      # task branch); see moon.yml.
-      # :coverage runs the full suite under v8 coverage and enforces the
-      # thresholds in vitest.config.ts — it subsumes :test, so the coverage gate
-      # rides the normal run rather than doubling it.
+      # Single task source of truth: run the suite through moon (task defs live in
+      # packages/core/moon.yml). build + typecheck run on the bun toolchain;
+      # :coverage runs vitest under the pinned node toolchain (the Node-compat
+      # gate) and enforces the coverage thresholds in vitest.config.ts — it
+      # subsumes :test, so the coverage gate rides the normal run rather than
+      # doubling it. lint-docs is a moon task too, but runInCI:false because it
+      # validates mid-edit planning docs; see packages/core/moon.yml.
       - name: Run build, typecheck, and test+coverage via moon
-        run: npx moon run :build :typecheck :coverage
+        run: bunx moon run :build :typecheck :coverage
 
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage
-          path: coverage/
+          path: packages/core/coverage/
           if-no-files-found: ignore

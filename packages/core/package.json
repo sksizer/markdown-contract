@@ -44,8 +44,6 @@
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.0",
-    "@moonrepo/cli": "2.3.5",
     "@types/mdast": "^4.0.4",
     "@types/node": "^20.14.0",
     "@types/picomatch": "^4.0.3",

@@ -1,0 +1,20 @@
+{
+  "name": "markdown-contract-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bun workspace root for markdown-contract. The publishable library + CLI lives in packages/core; apps/web is a placeholder for the future web UI (D-0012 / M-0009).",
+  "license": "MIT",
+  "author": "sksizer",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
+    "@moonrepo/cli": "2.3.5"
+  }
+}

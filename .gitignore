@@ -32,5 +32,7 @@ docs/.obsidian/
 # Obsidian "Bases" view definitions (personal, generated locally)
 *.base
 
-# bun lockfile — repo is npm-primary (package-lock.json); see M-0005
-bun.lock
+# Bun is the canonical dev package manager (T-WKSP / D-0010 D1): bun.lock IS
+# committed. npm stays canonical for the PUBLISHED artifact only (packages/core),
+# so a root package-lock.json must never be committed.
+/package-lock.json
