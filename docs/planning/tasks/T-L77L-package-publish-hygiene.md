@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-L77L
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0010]]'
@@ -12,6 +12,7 @@ need_human_review: false
 impact: medium
 complexity: small
 readiness_verified_at: '2026-07-01T19:28:36Z'
+last_reviewed: '2026-07-01'
 ---
 # Validate published-package hygiene with publint and are-the-types-wrong
 
@@ -170,3 +171,19 @@ type-checks its source and gates coverage, but nothing validates the
 *published* package — the dual-entry `exports` map, `bin`, and hand-rolled
 `.d.ts` that downstream consumers actually resolve — which is precisely the
 shape publint and are-the-types-wrong exist to protect.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-01. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
