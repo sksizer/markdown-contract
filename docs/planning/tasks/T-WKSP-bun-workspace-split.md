@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-WKSP
-status: open/ready
+status: in-progress
 created: '2026-06-28'
 related:
 - '[[M-0005-monorepo-tooling]]'
@@ -21,6 +21,7 @@ impact: medium
 complexity: large
 autonomy: supervised
 readiness_verified_at: '2026-07-01T05:20:19Z'
+last_reviewed: '2026-07-01'
 ---
 # Split the repo into a Bun workspace — `packages/core` (+ `apps/web` placeholder)
 
@@ -77,3 +78,19 @@ The root `package.json` gains a `workspaces` (Bun) declaration; moon's `projects
 ## Dependencies
 
 - Depends on [[T-MOON-adopt-moon-monorepo]] (moon + Bun toolchain already in place; closed/done). Governed by [[D-0010-monorepo-tooling]] D1/D3. Supersedes the workspace-split intent of the closed T-AE0J.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-01. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
