@@ -37,6 +37,7 @@ import type {
 import { isMap, isSeq, parseDocument } from "yaml";
 
 import { extractTrailingAnchor, isStandaloneAnchor } from "./dialect/index.js";
+import { bodyAfterFrontmatter } from "./frontmatter.js";
 import type {
   BlockNode,
   DocTree,
@@ -423,8 +424,9 @@ export function parse(markdown: string, opts?: ParseOptions): DocTree {
   const yamlNode = mdast.children.find((c): c is Yaml => c.type === "yaml");
   const frontmatter = yamlNode ? buildFrontmatter(yamlNode) : null;
 
+  const body = bodyAfterFrontmatter(markdown, yamlNode);
   const { docRoot, title } = buildTree(mdast);
   docRoot.name = title ?? "";
 
-  return { frontmatter, root: docRoot, mdast };
+  return { frontmatter, body, root: docRoot, mdast };
 }

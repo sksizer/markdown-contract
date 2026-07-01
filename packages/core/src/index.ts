@@ -40,6 +40,7 @@ export {
   rule,
   section,
   sections,
+  splitFrontmatter,
   table,
   textRule,
 } from "./core/index.js";

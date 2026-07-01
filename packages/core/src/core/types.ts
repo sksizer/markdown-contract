@@ -63,6 +63,8 @@ export interface DocTree {
     /** E2 — maps a Zod issue path to its key's source line. */
     lineForPath(path: (string | number)[]): number | undefined;
   } | null;
+  /** verbatim source body after the frontmatter block (the whole doc when none) — pairs with `splitFrontmatter`, set from the same split */
+  body: string;
   /** synthetic; `root.sections` are the top-level H2s */
   root: SectionNode;
   /** F1 — the raw layer-0 tree, exposed for analysis (not hidden) */
