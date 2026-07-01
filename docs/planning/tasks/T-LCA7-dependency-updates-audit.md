@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-LCA7
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0010]]'
@@ -12,6 +12,7 @@ need_human_review: false
 impact: medium
 complexity: small
 readiness_verified_at: '2026-07-01T16:55:40Z'
+last_reviewed: '2026-07-01'
 ---
 # Add Dependabot updates and a dependency-audit CI step
 
@@ -136,3 +137,19 @@ Surfaced while planning M-0010 quality tooling: package hygiene needs both a way
 to keep dependencies and CI action pins current (Dependabot) and a gate that
 fails the build on known-vulnerable dependencies (an audit step). Neither exists
 in the repo today.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-01. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
