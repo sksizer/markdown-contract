@@ -1,18 +1,20 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-L77L
 status: in-progress
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0010]]'
+  - "[[M-0010]]"
 tags:
-- quality
+  - quality
 need_human_review: false
 impact: medium
 complexity: small
-readiness_verified_at: '2026-07-01T19:28:36Z'
-last_reviewed: '2026-07-01'
+readiness_verified_at: 2026-07-01T19:28:36Z
+last_reviewed: 2026-07-01
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/144
 ---
 # Validate published-package hygiene with publint and are-the-types-wrong
 
