@@ -34,10 +34,10 @@ deliberately, when the worktree fleet is relatively quiet.
 |---|---|
 | `biome.json` | Scaffolded: formatter `space`/2/lineWidth 100, linter `recommended` with `noExplicitAny` + `noNonNullAssertion` + `noExcessiveCognitiveComplexity` all at `warn`, `organizeImports` off. Defines the target style; nothing enforces it. |
 | `package.json` | Has `@biomejs/biome` devDep + `lint` (`biome lint .`), `format` (`biome format --write .`), `format:check`, `check` (`biome check .`) scripts — runnable locally, not gated |
-| `src/**/*.ts` | TypeScript source not yet Biome-formatted: `biome format` would touch ~46 files across `src` + `tests`; enabling `organizeImports` would reorder imports across ~130 files; ~4 functions exceed cognitive-complexity 15 |
-| `tests/**/*.ts` | TypeScript tests not yet Biome-formatted: swept by the same `biome format` pass (part of the ~46 files) and the same `organizeImports` reorder |
+| `packages/core/src/**/*.ts` | TypeScript source not yet Biome-formatted: `biome format` would touch ~46 files across `src` + `tests`; enabling `organizeImports` would reorder imports across ~130 files; ~4 functions exceed cognitive-complexity 15 |
+| `packages/core/tests/**/*.ts` | TypeScript tests not yet Biome-formatted: swept by the same `biome format` pass (part of the ~46 files) and the same `organizeImports` reorder |
 | `.github/workflows/ci.yml` | Runs `moon run :build :typecheck :coverage` — no lint/format gate |
-| `moon.yml` | No `lint` task |
+| `packages/core/moon.yml` | No `lint` task |
 
 ## Proposed
 
@@ -69,10 +69,10 @@ and the complexity rule is promoted from `warn` to a real ceiling.
 
 | Location | Kind | Change |
 |---|---|---|
-| `src/**/*.ts` | modify | Apply `biome format` (+ optional import organize) — mechanical reformat |
-| `tests/**/*.ts` | modify | Apply `biome format` (+ optional import organize) — mechanical reformat |
+| `packages/core/src/**/*.ts` | modify | Apply `biome format` (+ optional import organize) — mechanical reformat |
+| `packages/core/tests/**/*.ts` | modify | Apply `biome format` (+ optional import organize) — mechanical reformat |
 | `biome.json` | modify | Promote rule severities (complexity → error; resolve any/non-null decisions); maybe enable `organizeImports` |
-| `moon.yml` | modify | Add a `lint` task running `biome ci` |
+| `packages/core/moon.yml` | modify | Add a `lint` task running `biome ci` |
 | `.github/workflows/ci.yml` | modify | Add `:lint` to the moon run line (or add `lint.yml`) |
 | `package.json` | modify | Optionally add a `lint:fix` (`biome check --write`) script |
 | `sdlc.yaml` | modify | Add the lint gate to `quality_checks` |

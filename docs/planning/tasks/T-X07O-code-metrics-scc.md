@@ -34,11 +34,11 @@ of code.
 
 | Location | Role today |
 |---|---|
-| `src/` | The TypeScript source tree (`core/`, `runner/`, `cli/`, `declarative/`, `index.ts`) — the code whose size and branch complexity would be reported. No automated LOC or complexity metric is produced over it. |
+| `packages/core/src/` | The TypeScript source tree (`core/`, `runner/`, `cli/`, `declarative/`, `index.ts`) — the code whose size and branch complexity would be reported. No automated LOC or complexity metric is produced over it. |
 | `.github/workflows/ci.yml` | The only CI workflow — runs build, typecheck, and test+coverage via the single `npx moon run :build :typecheck :coverage` line. Emits no code-metrics report; that `moon run` task list is the milestone's one shared coordination point. |
-| `moon.yml` | Task source of truth (`build` / `typecheck` / `test` / `coverage` / `lint-docs`). No metrics task. |
+| `packages/core/moon.yml` | Task source of truth (`build` / `typecheck` / `test` / `coverage` / `lint-docs`). No metrics task. |
 | `package.json` | Scripts cover build/typecheck/test/coverage and Biome (`lint` / `format` / `check`). No `metrics` script; scc is **not** an npm package, so it is not (and cannot be) a devDependency. |
-| `vitest.config.ts` | Its coverage thresholds gate line/branch/function/statement **coverage** (T-79GV) — execution ratios, not LOC totals or cyclomatic complexity. |
+| `packages/core/vitest.config.ts` | Its coverage thresholds gate line/branch/function/statement **coverage** (T-79GV) — execution ratios, not LOC totals or cyclomatic complexity. |
 | `biome.json` | The `noExcessiveCognitiveComplexity` rule (at `warn`, applied by T-0MVN) measures per-function **cognitive** complexity — a different metric (cognitive ≠ cyclomatic) and per-function, not a repo-wide aggregate. |
 
 ## Proposed
@@ -62,7 +62,7 @@ and never exits non-zero on them. The scc version is **pinned** in one place —
 `SCC_VERSION` env at the top of `metrics.yml` — so the numbers are reproducible
 across runs.
 
-A thin **`metrics`** npm script (`scc src`) is added as a local convenience
+A thin **`metrics`** npm script (`scc packages/core/src`) is added as a local convenience
 pass-through for developers who have scc on `PATH` (installable via
 `brew install scc` or `go install github.com/boyter/scc/v3@<pin>`); it is **not**
 wired into the gated `moon run` line, `moon.yml`, or `sdlc.yaml` `quality_checks`,
@@ -81,14 +81,14 @@ a gate. `README.md` documents the script and the install prerequisite.
    if the release-asset path proves brittle.
 2. **Add `.github/workflows/metrics.yml`.** One job on `ubuntu-latest`, triggered
    on `pull_request` and `push` to `main`, with `permissions: contents: read`:
-   `actions/checkout@v4`, install pinned scc (step 1), then run scc over `src`
+   `actions/checkout@v4`, install pinned scc (step 1), then run scc over `packages/core/src`
    (optionally the whole repo too). Write the human summary with
-   `scc --ci src >> "$GITHUB_STEP_SUMMARY"` wrapped in a fenced block, and produce
-   the JSON with `scc --format json --by-file -o scc-report.json src` (or a single
-   `scc --format-multi "tabular:stdout,json:scc-report.json" src`).
+   `scc --ci packages/core/src >> "$GITHUB_STEP_SUMMARY"` wrapped in a fenced block, and produce
+   the JSON with `scc --format json --by-file -o scc-report.json packages/core/src` (or a single
+   `scc --format-multi "tabular:stdout,json:scc-report.json" packages/core/src`).
 3. **Upload the JSON report artifact.** `actions/upload-artifact@v4` with
    `name: code-metrics`, `path: scc-report.json`, `if-no-files-found: warn`.
-4. **Add the local `metrics` npm script.** `"metrics": "scc src"` in
+4. **Add the local `metrics` npm script.** `"metrics": "scc packages/core/src"` in
    `package.json` — a thin pass-through that assumes scc on `PATH`.
 5. **Document it in `README.md`.** A short note: what `npm run metrics` reports,
    that it requires scc on `PATH` (`brew install scc` / `go install …`), and that
@@ -96,7 +96,7 @@ a gate. `README.md` documents the script and the install prerequisite.
    differ if a developer's scc version drifts from the pin).
 6. **Verify.** Locally (with scc installed) confirm `npm run metrics` prints the
    per-language table with a Complexity column and COCOMO block, and confirm
-   `scc --format json --by-file -o scc-report.json src` writes valid JSON; confirm
+   `scc --format json --by-file -o scc-report.json packages/core/src` writes valid JSON; confirm
    `metrics.yml` parses (e.g. `npx moon ci` is unaffected, and the workflow is
    syntactically valid). The live workflow run waits on GitHub Actions billing
    (see Dependencies).
@@ -105,17 +105,17 @@ a gate. `README.md` documents the script and the install prerequisite.
 
 | Location | Kind | Change |
 |---|---|---|
-| `.github/workflows/metrics.yml` | new | Report-only metrics workflow: install pinned scc (`SCC_VERSION` env), run it over `src/`, write the `scc --ci` table into `$GITHUB_STEP_SUMMARY`, and upload a `scc --format json --by-file` report as the `code-metrics` artifact. Triggered on `pull_request` + push to `main`; never fails the build. |
-| `package.json` | modify | Add a thin `"metrics": "scc src"` script (local convenience; requires scc on `PATH`). Additive — no devDependency added (scc is not an npm package). |
+| `.github/workflows/metrics.yml` | new | Report-only metrics workflow: install pinned scc (`SCC_VERSION` env), run it over `packages/core/src/`, write the `scc --ci` table into `$GITHUB_STEP_SUMMARY`, and upload a `scc --format json --by-file` report as the `code-metrics` artifact. Triggered on `pull_request` + push to `main`; never fails the build. |
+| `package.json` | modify | Add a thin `"metrics": "scc packages/core/src"` script (local convenience; requires scc on `PATH`). Additive — no devDependency added (scc is not an npm package). |
 | `README.md` | modify | Document `npm run metrics`: what it reports, the scc install prerequisite (`brew install scc` / `go install github.com/boyter/scc/v3@<pin>`), and that CI's pinned scc is the reproducible source of truth. |
 
 ## Acceptance criteria
 
 - [ ] AC-1: `.github/workflows/metrics.yml` exists as its own workflow and pins the scc version in a single place (a `SCC_VERSION` env), installing exactly that tagged release — it does **not** add to or modify the `npx moon run …` task list in `ci.yml`.
-- [ ] AC-2: The workflow writes a human-readable scc metrics table into the GitHub Actions Step Summary (`$GITHUB_STEP_SUMMARY`) showing per-language Lines / Comments / Blanks / Code and a Complexity (cyclomatic) column for `src/`.
+- [ ] AC-2: The workflow writes a human-readable scc metrics table into the GitHub Actions Step Summary (`$GITHUB_STEP_SUMMARY`) showing per-language Lines / Comments / Blanks / Code and a Complexity (cyclomatic) column for `packages/core/src/`.
 - [ ] AC-3: The workflow produces a machine-readable scc JSON report (`scc --format json --by-file`) and uploads it as a build artifact (`actions/upload-artifact`).
 - [ ] AC-4: The workflow is **report-only** — it has no threshold/gating step and cannot fail the build on any LOC or complexity value (no step asserts on scc output).
-- [ ] AC-5: `package.json` exposes a `metrics` script that shells out to `scc` over `src/`, and no scc devDependency is added to `package.json` / `package-lock.json` (scc is not an npm package).
+- [ ] AC-5: `package.json` exposes a `metrics` script that shells out to `scc` over `packages/core/src/`, and no scc devDependency is added to `package.json` / `bun.lock` (scc is not an npm package).
 - [ ] AC-6: `README.md` documents `npm run metrics`, including that scc must be installed on `PATH` (`brew install scc` or `go install`) and the workflow's pinned version is the reproducible reference.
 
 ## Out of scope

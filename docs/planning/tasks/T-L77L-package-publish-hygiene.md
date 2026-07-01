@@ -35,10 +35,10 @@ downstream consumer can actually resolve them.
 
 | Location | Role today |
 |---|---|
-| `package.json` | Declares the published surface — `exports` (`.` → `dist/index.js` + `dist/index.d.ts`; `./declarative` → `dist/declarative/index.js` + `.d.ts`), `bin` (`markdown-contract` → `dist/cli/index.js`), `main`/`types`, `"type":"module"`, `"sideEffects":false`, `files:["dist"]`. No script lints any of this. |
-| `tsconfig.build.json` | The build config (`tsc -p tsconfig.build.json`): `declaration: true`, `declarationMap: true`, `outDir: dist`, `rootDir: src` — emits the hand-rolled `.d.ts` next to each `.js` under `dist/`. Nothing verifies those `.d.ts` resolve for consumers. |
-| `moon.yml` | Single task source of truth — wraps the npm scripts as cached moon tasks (`build`, `typecheck`, `test`, `coverage`, `lint-docs`). `lint-docs` is the precedent: `deps: ['build']` so the build output (`dist/`, the gitignored artifact these tools must lint) is fresh before it runs. No package-hygiene task exists. |
-| `package.json#scripts` | Thin pass-throughs moon wraps (`build`, `typecheck`, `test`, `coverage`, `lint:docs`). No `lint:package` / type-resolution script. |
+| `packages/core/package.json` | Declares the published surface — `exports` (`.` → `dist/index.js` + `dist/index.d.ts`; `./declarative` → `dist/declarative/index.js` + `.d.ts`), `bin` (`markdown-contract` → `dist/cli/index.js`), `main`/`types`, `"type":"module"`, `"sideEffects":false`, `files:["dist"]`. No script lints any of this. |
+| `packages/core/tsconfig.build.json` | The build config (`tsc -p tsconfig.build.json`): `declaration: true`, `declarationMap: true`, `outDir: dist`, `rootDir: src` — emits the hand-rolled `.d.ts` next to each `.js` under `dist/`. Nothing verifies those `.d.ts` resolve for consumers. |
+| `packages/core/moon.yml` | Single task source of truth — wraps the npm scripts as cached moon tasks (`build`, `typecheck`, `test`, `coverage`, `lint-docs`). `lint-docs` is the precedent: `deps: ['build']` so the build output (`dist/`, the gitignored artifact these tools must lint) is fresh before it runs. No package-hygiene task exists. |
+| `packages/core/package.json#scripts` | Thin pass-throughs moon wraps (`build`, `typecheck`, `test`, `coverage`, `lint:docs`). No `lint:package` / type-resolution script. |
 | `.github/workflows/ci.yml` | CI gate — runs `npx moon run :build :typecheck :coverage` on every PR and push to `main`. Does not check packaging or type resolution. |
 | `sdlc.yaml#quality_checks` | Local task-work gate list (`npm run test`, `npm run typecheck`). No package-hygiene entry. |
 
@@ -109,9 +109,9 @@ this validates the package shape, it does not ship it.
 
 | Location | Kind | Change |
 |---|---|---|
-| `package.json` | modify | Add `publint` + `@arethetypeswrong/cli` devDeps; add `lint:package`, `check:types`, and combined `package-check` scripts. |
-| `package-lock.json` | modify | Lockfile updated by `npm install` for the two new devDeps (committed; CI installs via `npm ci`). |
-| `moon.yml` | modify | Add a cached `package-check` task wrapping `npm run package-check` with `deps: ['build']` (mirrors `lint-docs`). |
+| `packages/core/package.json` | modify | Add `publint` + `@arethetypeswrong/cli` devDeps; add `lint:package`, `check:types`, and combined `package-check` scripts. |
+| `bun.lock` | modify | Root workspace lockfile updated when the two new devDeps are installed (committed; CI installs from it). |
+| `packages/core/moon.yml` | modify | Add a cached `package-check` task wrapping `npm run package-check` with `deps: ['build']` (mirrors `lint-docs`). |
 | `.github/workflows/package-quality.yml` | new | Dedicated CI workflow running `npx moon run :package-check` on every PR and push to `main` (recommended path; keeps `ci.yml`'s shared `moon run` line untouched). |
 | `.github/workflows/ci.yml` | modify | Only if the alternative is chosen: extend the `moon run` task list to include `:package-check`. (Skipped under the recommended dedicated-workflow path.) |
 | `sdlc.yaml` | modify | Add `moon run :package-check` to `quality_checks` (additive). |
