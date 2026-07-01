@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-UTKU
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0009-local-web-ui-vault-dashboard]]'
@@ -23,6 +23,7 @@ impact: high
 complexity: small
 autonomy: supervised
 readiness_verified_at: '2026-07-01T05:08:08Z'
+last_reviewed: '2026-07-01'
 ---
 # Prototype review & decide-after gate
 
@@ -81,3 +82,19 @@ stable JSON API ([[T-D7X1-web-ui-mock-api-shapes]]) must expose for that.
 ## Discovery context
 
 - Created in the M-0009 planning session (2026-06-30); this gate realizes the "prototype-first, decide after" scope choice for the milestone.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-01. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
