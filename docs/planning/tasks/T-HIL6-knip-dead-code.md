@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-HIL6
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0010]]'
@@ -12,6 +12,7 @@ need_human_review: false
 impact: medium
 complexity: small
 readiness_verified_at: '2026-07-01T18:18:32Z'
+last_reviewed: '2026-07-01'
 ---
 # Add knip to detect unused files, exports, and dependencies
 
@@ -148,3 +149,19 @@ dead-code / unused-dependency detector alongside the coverage gate (T-79GV) and
 the Biome lint gate (T-0MVN). knip was singled out because the repo's barrel and
 co-located-test conventions make an unconfigured run useless — the spec's value
 is the entry/project config that suppresses those false positives.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-01. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
