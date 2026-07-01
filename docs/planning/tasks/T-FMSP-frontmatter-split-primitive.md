@@ -162,12 +162,19 @@ _Captured by /sdlc:task-work on 2026-07-01. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `packages/core/src/core/frontmatter.test.ts` "pure { raw, body } split" cases assert `splitFrontmatter` returns `{ raw, body }` from a pure split (the minimal `FRONTMATTER_PROCESSOR` runs no YAML parse and no section/wikilink projection); exported from the package root. Verified by `core:test`.
+- AC-2: auto — the "parse() agreement" describe asserts `parse(md).body === splitFrontmatter(md).body` and `(parse(md).frontmatter?.raw ?? null) === splitFrontmatter(md).raw` across 6 inputs; `parse()` reuses the shared `bodyAfterFrontmatter` helper off its own `yamlNode` (no second scan). Verified by `core:test`.
+- AC-3: auto — no-frontmatter case asserts `body === md`; the `---`-in-body and CRLF cases assert verbatim preservation; the reconstruction case asserts `"---\n" + raw + "\n---\n" + body === md`. Verified by `core:test`.
+- AC-4: auto — recognition matches `parse()` by construction (same `remark-frontmatter`, which wraps `micromark-extension-frontmatter`); the parse()-agreement equalities confirm the `raw`/`body` boundaries coincide with the mdast `yaml` node, and the body-with-`---` case confirms only the leading block counts. Verified by `core:test`.
+- AC-5: auto — `bunx moon run core:build core:typecheck core:test` reported `OK 3/3`; the peer test covers the no-frontmatter / present / empty (`---\n---`) / body-preservation cases.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The design was fully de-risked before implementation: an empirical probe of the mdast `yaml` node's `position.end.offset` across all edge cases (no trailing newline, empty block, doc-ends-at-fence, `---`-in-body, CRLF) nailed the exact body-slice algorithm, so the implementation landed in a single pass with zero rework.
+- Reusing `remark-frontmatter` (already a direct dep) as the recognizer — rather than reaching for the transitive `micromark-extension-frontmatter` — meant "agrees with `parse()` by construction" required **no** new dependency.
+- The baseline-gated quality gate ran green (`OK 3/3`) with zero new drift once the baseline-dir was pointed at the superproject.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 3b's permissions probe reported false-positive gaps (`bun`, `Write`, `Edit` "missing") that directly contradicted the live sandbox, where every `bun run`, `Write`, and `Edit` succeeded — forcing a proceed-anyway judgment call. **Already filed** as [[B-PFPB-permissions-probe-false-positive]] (make the probe self-falsifying, or downgrade unconfirmed gaps to a non-blocking note); no new backlog doc created.
+- Step 7's documented `sdlc quality run --diff-against-baseline` invocation omits `--baseline-dir`, so from the worktree it looked for the baseline under `<worktree>/.sdlc/quality-baselines/` while Step 3a wrote it to the **main repo's** `.sdlc/quality-baselines/`; the gate aborted with `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly. **Already filed** as [[B-HVL1-worktree-quality-baseline-dir-resolution]] (make capture and gate agree on one directory in the worktree case); no new backlog doc created.
