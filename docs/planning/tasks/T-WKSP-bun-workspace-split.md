@@ -5,21 +5,22 @@ id: T-WKSP
 status: open/ready
 created: '2026-06-28'
 related:
-  - '[[M-0005-monorepo-tooling]]'
-  - '[[D-0010-monorepo-tooling]]'
-  - '[[D-0006-packaging]]'
-  - '[[D-0012-distribution-single-exec-and-web-ui]]'
+- '[[M-0005-monorepo-tooling]]'
+- '[[D-0010-monorepo-tooling]]'
+- '[[D-0006-packaging]]'
+- '[[D-0012-distribution-single-exec-and-web-ui]]'
 depends_on:
-  - '[[T-MOON-adopt-moon-monorepo]]'
+- '[[T-MOON-adopt-moon-monorepo]]'
 tags:
-  - monorepo
-  - workspace
-  - bun
-  - packaging
+- monorepo
+- workspace
+- bun
+- packaging
 need_human_review: true
 impact: medium
 complexity: large
 autonomy: supervised
+readiness_verified_at: '2026-07-01T05:20:19Z'
 ---
 # Split the repo into a Bun workspace — `packages/core` (+ `apps/web` placeholder)
 
