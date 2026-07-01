@@ -1,13 +1,16 @@
-> Example suite for [[D-0016-per-node-source-fidelity|D-0016]] — the proposed per-node source
-> fidelity API. Non-normative; the decision (and M-0011 for cell/inline) win. Names are
-> illustrative and may change.
+> Supporting examples for [[D-0016-per-node-source-fidelity|D-0016]] — worked API use cases for the
+> proposed per-node source-fidelity model. Non-normative; the decision (and M-0011 for cell/inline)
+> win. Names are illustrative and may change.
 
-# D-0016 example suite
+# D-0016 · example suite
 
-Nine worked cases. The first four walk the **depth ladder** — the same primitive (a per-node source
-range) at each granularity, each retiring a real downstream workaround. The last five are the
-**cross-cutting mechanics** — how the views attach, serialize, stay immutable, and coexist with the
-contract-typed model.
+This directory is the peer companion to [[D-0016-per-node-source-fidelity]] — nine worked API cases
+that motivate and pin the proposed shape.
+
+The first four walk the **depth ladder** — the same primitive (a per-node source range) at each
+granularity, each retiring a real downstream workaround. The last five are the **cross-cutting
+mechanics** — how the views attach, serialize, stay immutable, and coexist with the contract-typed
+model.
 
 ## Depth ladder
 
@@ -26,8 +29,8 @@ contract-typed model.
 
 ## Proposed API surface (illustrative)
 
-Used across the examples. The decision and M-0011 are the source of truth — names may change; this
-is a reading aid, not a spec.
+Used across the examples. The decision and M-0011 (PR #100, the in-flight cell/inline embodiment)
+are the source of truth — names may change; this is a reading aid, not a spec.
 
 ```ts
 // Every node (DocTree, SectionNode, BlockNode, cell, inline span):

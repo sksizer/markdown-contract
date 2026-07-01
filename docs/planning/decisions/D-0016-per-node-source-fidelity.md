@@ -275,6 +275,6 @@ existing changes; every point is an addition.
 - [[D-0002-projection-and-dialect]] — the projection and `SourcePos` this adds `range` to.
 - [[D-0005-consumption-oom]] — the typed object model = the third view.
 - `provenance/d0014/` — the framework shape.
-- **Worked examples:** `provenance/d0016/examples/` — nine API use cases (the depth ladder plus the cross-cutting mechanics), peers to this decision.
+- **Worked examples:** [`./D-0016-per-node-source-fidelity/`](./D-0016-per-node-source-fidelity/README.md) — nine API use cases (the depth ladder plus the cross-cutting mechanics), supporting docs in a directory peer to this decision.
 - Structured cells — **M-0011** (PR #100), implementing the **D-0015** structured-cells decision (`provenance/d0015/`, PR #49): the cell/inline-depth embodiment of this decision (`typed(row,col)`, `cellPos`, `inlineSpans`).
 - Prior art: tree-sitter — <https://tree-sitter.github.io/tree-sitter/using-parsers/2-basic-parsing.html>; Roslyn red-green trees — <https://github.com/dotnet/roslyn/blob/main/docs/compilers/Design/Red-Green%20Trees.md>; rust-analyzer/rowan — <https://github.com/rust-analyzer/rowan>; LibCST — <https://libcst.readthedocs.io/en/latest/why_libcst.html>; PostCSS syntax — <https://github.com/postcss/postcss/blob/main/docs/syntax.md>; unist positions — <https://github.com/syntax-tree/unist>.
