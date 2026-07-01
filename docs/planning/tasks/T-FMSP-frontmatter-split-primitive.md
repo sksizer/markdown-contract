@@ -1,24 +1,26 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-FMSP
 status: in-progress
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[T-2HF6-projection-engine]]'
-- '[[B-FM20-frontmatter-2-0-api]]'
+  - "[[T-2HF6-projection-engine]]"
+  - "[[B-FM20-frontmatter-2-0-api]]"
 depends_on: []
 tags:
-- engine
-- frontmatter
-- api
-- dx
+  - engine
+  - frontmatter
+  - api
+  - dx
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-last_reviewed: '2026-07-01'
-readiness_verified_at: '2026-07-01T17:00:24Z'
+last_reviewed: 2026-07-01
+readiness_verified_at: 2026-07-01T17:00:24Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/139
 ---
 # Frontmatter/body split — a pure splitter retained on the `parse()` result
 
