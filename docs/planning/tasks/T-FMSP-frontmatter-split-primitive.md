@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-FMSP
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[T-2HF6-projection-engine]]'
@@ -17,7 +17,7 @@ need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-01'
 readiness_verified_at: '2026-07-01T17:00:24Z'
 ---
 # Frontmatter/body split — a pure splitter retained on the `parse()` result
@@ -155,3 +155,19 @@ doc ends at the closing fence). `body` is byte-exact (no trim / re-serialize).
   2.0 design ([[B-FM20-frontmatter-2-0-api]]). Sibling analysis of `sksizer/dev`
   #518 / #520 confirmed the same "I need the verbatim source the projection
   flattened" theme at the section and table-cell layers. Filed 2026-06-30.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-01. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
