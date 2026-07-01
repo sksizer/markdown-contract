@@ -1,29 +1,29 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-WKSP
-status: in-progress
-created: 2026-06-28
+status: closed/done
+created: '2026-06-28'
 related:
-  - "[[M-0005-monorepo-tooling]]"
-  - "[[D-0010-monorepo-tooling]]"
-  - "[[D-0006-packaging]]"
-  - "[[D-0012-distribution-single-exec-and-web-ui]]"
+- '[[M-0005-monorepo-tooling]]'
+- '[[D-0010-monorepo-tooling]]'
+- '[[D-0006-packaging]]'
+- '[[D-0012-distribution-single-exec-and-web-ui]]'
 depends_on:
-  - "[[T-MOON-adopt-moon-monorepo]]"
+- '[[T-MOON-adopt-moon-monorepo]]'
 tags:
-  - monorepo
-  - workspace
-  - bun
-  - packaging
+- monorepo
+- workspace
+- bun
+- packaging
 need_human_review: true
 impact: medium
 complexity: large
 autonomy: supervised
-readiness_verified_at: 2026-07-01T05:20:19Z
-last_reviewed: 2026-07-01
+last_reviewed: '2026-07-01'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/135
+- https://github.com/sksizer/markdown-contract/pull/135
+completion_note: 'Shipped via #135.'
 ---
 # Split the repo into a Bun workspace — `packages/core` (+ `apps/web` placeholder)
 
