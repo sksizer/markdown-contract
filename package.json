@@ -13,6 +13,9 @@
     "packages/*",
     "apps/*"
   ],
+  "scripts": {
+    "audit": "bun audit --audit-level=high"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
     "@moonrepo/cli": "2.3.5"
