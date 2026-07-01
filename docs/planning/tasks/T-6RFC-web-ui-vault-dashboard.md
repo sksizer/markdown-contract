@@ -1,29 +1,29 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-6RFC
-status: in-progress
+status: closed/done
 created: '2026-06-30'
 related:
-  - "[[M-0009-local-web-ui-vault-dashboard]]"
-  - "[[C-0010-single-binary-and-vault-dashboard]]"
-  - "[[D-0012-distribution-single-exec-and-web-ui]]"
+- '[[M-0009-local-web-ui-vault-dashboard]]'
+- '[[C-0010-single-binary-and-vault-dashboard]]'
+- '[[D-0012-distribution-single-exec-and-web-ui]]'
 depends_on:
-  - "[[T-ZLND-web-ui-prototype-app]]"
-  - "[[T-D7X1-web-ui-mock-api-shapes]]"
-  - "[[T-S5K8-web-ui-status-design-system]]"
+- '[[T-ZLND-web-ui-prototype-app]]'
+- '[[T-D7X1-web-ui-mock-api-shapes]]'
+- '[[T-S5K8-web-ui-status-design-system]]'
 tags:
-  - web-ui
-  - prototype
-  - dashboard
+- web-ui
+- prototype
+- dashboard
 need_human_review: false
 impact: high
 complexity: medium
 autonomy: supervised
-readiness_verified_at: '2026-06-30T17:39:35Z'
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-01'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/127
+- https://github.com/sksizer/markdown-contract/pull/127
+completion_note: 'Shipped via #127.'
 ---
 # Prototype: all-vaults dashboard (home) view
 
