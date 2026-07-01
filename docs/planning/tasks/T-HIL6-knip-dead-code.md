@@ -11,6 +11,7 @@ tags:
 need_human_review: false
 impact: medium
 complexity: small
+readiness_verified_at: '2026-07-01T18:18:32Z'
 ---
 # Add knip to detect unused files, exports, and dependencies
 
