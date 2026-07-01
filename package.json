@@ -14,10 +14,12 @@
     "apps/*"
   ],
   "scripts": {
-    "audit": "bun audit --audit-level=high"
+    "audit": "bun audit --audit-level=high",
+    "lint:deps": "knip"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
-    "@moonrepo/cli": "2.3.5"
+    "@moonrepo/cli": "2.3.5",
+    "knip": "^5"
   }
 }
