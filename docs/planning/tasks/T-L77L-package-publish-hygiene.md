@@ -37,11 +37,10 @@ downstream consumer can actually resolve them.
 |---|---|
 | `package.json` | Declares the published surface — `exports` (`.` → `dist/index.js` + `dist/index.d.ts`; `./declarative` → `dist/declarative/index.js` + `.d.ts`), `bin` (`markdown-contract` → `dist/cli/index.js`), `main`/`types`, `"type":"module"`, `"sideEffects":false`, `files:["dist"]`. No script lints any of this. |
 | `tsconfig.build.json` | The build config (`tsc -p tsconfig.build.json`): `declaration: true`, `declarationMap: true`, `outDir: dist`, `rootDir: src` — emits the hand-rolled `.d.ts` next to each `.js` under `dist/`. Nothing verifies those `.d.ts` resolve for consumers. |
-| `dist/` | Build output the `exports`/`bin` targets point at; produced by the `build` task, excluded from git. The artifact these tools must lint, so they depend on a fresh build. |
-| `moon.yml` | Single task source of truth — wraps the npm scripts as cached moon tasks (`build`, `typecheck`, `test`, `coverage`, `lint-docs`). `lint-docs` is the precedent: `deps: ['build']` so `dist/` is fresh before it runs. No package-hygiene task exists. |
-| `package.json` `scripts` | Thin pass-throughs moon wraps (`build`, `typecheck`, `test`, `coverage`, `lint:docs`). No `lint:package` / type-resolution script. |
+| `moon.yml` | Single task source of truth — wraps the npm scripts as cached moon tasks (`build`, `typecheck`, `test`, `coverage`, `lint-docs`). `lint-docs` is the precedent: `deps: ['build']` so the build output (`dist/`, the gitignored artifact these tools must lint) is fresh before it runs. No package-hygiene task exists. |
+| `package.json#scripts` | Thin pass-throughs moon wraps (`build`, `typecheck`, `test`, `coverage`, `lint:docs`). No `lint:package` / type-resolution script. |
 | `.github/workflows/ci.yml` | CI gate — runs `npx moon run :build :typecheck :coverage` on every PR and push to `main`. Does not check packaging or type resolution. |
-| `sdlc.yaml` `quality_checks` | Local task-work gate list (`npm run test`, `npm run typecheck`). No package-hygiene entry. |
+| `sdlc.yaml#quality_checks` | Local task-work gate list (`npm run test`, `npm run typecheck`). No package-hygiene entry. |
 
 ## Proposed
 

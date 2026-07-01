@@ -31,8 +31,7 @@ tree (canonical per D-0006) and the action pins are kept current manually.
 
 | Location | Role today |
 |---|---|
-| `.github/dependabot.yml` | Absent — no Dependabot config, so there are no automated bump PRs for npm dependencies or for the workflow action pins; updating either is a manual edit. |
-| `package.json` | Declares `dependencies` / `devDependencies`; its `scripts` block is the thin pass-through layer the wrap pattern builds on. No `audit` script exists. |
+| `package.json` | Declares `dependencies` / `devDependencies`; its `scripts` block is the thin pass-through layer the wrap pattern builds on. No `audit` script exists, and no Dependabot config maintains these deps. |
 | `package-lock.json` | The committed lockfile CI installs from (`npm ci`); it pins the resolved tree but is never scanned against an advisory database. |
 | `.github/workflows/ci.yml` | CI runs `npx moon run :build :typecheck :coverage` on pull requests and pushes to `main`; no step scans dependencies for known vulnerabilities, and its `moon run` task list is the one genuine M-0010 coordination point. |
 | `.github/workflows/` | Holds only `ci.yml` today — room for a single-purpose, parallel-safe audit workflow that runs in its own file without touching the shared CI job. |
