@@ -2,7 +2,7 @@
 type: task
 schema_version: "5"
 id: T-FMSP
-status: planning/proposed
+status: open/ready
 created: 2026-06-30
 related:
   - "[[T-2HF6-projection-engine]]"
