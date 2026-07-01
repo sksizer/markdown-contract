@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Full history so moon can hash inputs / detect touched files reliably.
           fetch-depth: 0
@@ -31,7 +31,7 @@ jobs:
       # downloads on first task run). Keyed on the toolchain pins so a version bump
       # busts it.
       - name: Cache moon toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.proto
           key: ${{ runner.os }}-proto-${{ hashFiles('.moon/toolchains.yml') }}
@@ -49,7 +49,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: packages/core/coverage/
