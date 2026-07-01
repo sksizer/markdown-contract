@@ -178,12 +178,69 @@ _Captured by /sdlc:task-work on 2026-07-01. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `packages/core/package.json` declares `@arethetypeswrong/cli`
+  `^0.18.4` and `publint` `^0.3.21` in devDependencies and exposes
+  `lint:package` / `check:types` / `package-check`; the root `bun.lock` (the
+  Bun-workspace lockfile — the spec's "package-lock.json" maps to it) reflects
+  both. Verified by inspection and a frozen `bun install` (0 changes).
+- AC-2: auto — `bunx moon run core:package-check` runs publint → `All good!`,
+  0 errors, exit 0 on the built package.
+- AC-3: auto — `attw --pack . --profile esm-only` passes both entry points
+  (`.` and `./declarative`) 🟢 for `node16 (ESM)` and `bundler`; node10 /
+  node16-cjs are ignored by the `esm-only` profile (intended for this ESM-only
+  package). No `--ignore-rules` or exports restructuring needed; exit 0.
+- AC-4: auto — `moon run core:package-check` from a clean tree builds `dist/`
+  first (via `deps: ['build']`), then runs publint + attw, exit 0.
+- AC-5: agent-manual — dedicated `.github/workflows/package-quality.yml`
+  gates on every PR and push to `main`; a deliberately broken `exports`
+  target (`./declarative` types → nonexistent file) made publint report
+  `Errors: 1` and `package-check` exit 1, and the revert restored `All good!`
+  / exit 0. The break was not committed. (deferred-user: the GitHub Actions
+  run itself is only observable once the PR is open — please confirm the
+  Package Quality check appears and is green.)
+- AC-6: auto — `sdlc.yaml` `quality_checks` includes
+  `bunx moon run core:package-check`; exercised by the Step 7 gate reporting
+  `OK 4/4`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The existing moon `lint-docs` task was a near-exact template — the
+  `deps: ['build']` "lint the fresh built artifact" pattern dropped straight
+  onto `package-check`, so wiring the cached moon task was mechanical.
+- publint and attw both passed first-try against the current `exports`/`bin`
+  shape — no exports restructuring and no `--ignore-rules` were needed. The
+  `esm-only` profile correctly classified the node10 / CJS `require()`
+  resolutions as intended rather than as failures.
+- The baseline-gated Step 7 run reported `OK 4/4` with zero new drift,
+  cleanly isolating this branch's additions from the origin/main baseline.
+- `npm pack --dry-run` from `packages/core` stayed clean (159 files, no
+  `workspace:*` refs), so the T-WKSP published-artifact baseline held.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+Per the PR-consolidation directive, follow-ups are captured on this branch as
+backlog docs / links to existing backlog items — no separate follow-up PRs.
+
+- Spec prose was npm-flavored (`npm install`, `package-lock.json`, `npx
+  publint`, `npm run build`) while the repo is a Bun workspace, so every
+  command had to be translated to `bun` / `bunx moon`. The #136 re-point
+  fixed the Today table and Files-to-touch (`bun.lock`) but left `## Approach`
+  and the ACs in npm terms — the readiness gate passed structurally without
+  catching the contradiction. Already captured:
+  [[B-BUNZ-readiness-crosscheck-package-manager-layout]] (readiness gate
+  should cross-check task-referenced package-manager verbs/lockfiles against
+  the actual repo layout).
+- Step 7's baseline lookup failed from the worktree — it resolved
+  `<worktree>/.sdlc/quality-baselines/` instead of the superproject's dir,
+  requiring an explicit `--baseline-dir` pointing at the main repo. Already
+  captured: [[B-HVL1-worktree-quality-baseline-dir-resolution]].
+- Step 3b's permissions probe reported false-positive gaps
+  (`Bash(bun:*)` / `Bash(npm:*)` / `Write` / `Edit`) that did not reflect the
+  live harness grants — every one of those verbs worked throughout the run.
+  Already captured: [[B-PFPB-permissions-probe-false-positive]].
+- The locally-available proto bun binaries (both the 1.3.12 PATH shim and the
+  pinned 1.3.14) write a `"configVersion": 0` line into `bun.lock` that the
+  canonical CI bun (oven-sh setup-bun 1.3.14 + `--frozen-lockfile`) neither
+  writes nor requires — so a fresh local install dirties the lock with a field
+  that must be manually stripped to keep the committed lockfile frozen-clean.
+  New: [[B-L0CK-bun-lock-configversion-churn-from-local-proto-bun]].
