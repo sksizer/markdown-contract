@@ -20,6 +20,7 @@ impact: high
 complexity: medium
 autonomy: supervised
 last_reviewed: '2026-06-30'
+readiness_verified_at: '2026-07-02T20:04:21Z'
 ---
 # Keep the transform output at validate-time and cache it on the projection table node
 
