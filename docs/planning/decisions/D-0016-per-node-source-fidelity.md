@@ -195,9 +195,9 @@ keep the always-on surface small.
   (`read()` / `validate().doc`), not the raw `tree`, preserving the [[D-0005-consumption-oom]]
   `doc` vs `tree` boundary.
 
-### In-flight embodiment — structured cells (M-0011 / PR #100)
+### In-flight embodiment — structured cells (M-0011)
 
-The structured-cells milestone (M-0011, PR #100, implementing the D-0015 structured-cells
+The structured-cells milestone (M-0011, implementing the D-0015 structured-cells
 decision) is the **cell- and inline-depth instance of this decision — already in flight and
 already aligned**:
 
@@ -217,6 +217,63 @@ retain-don't-rewrite — it exposes *more* of what the parser already saw; it ne
 or re-serializes source. It generalizes D-0007's F1 fidelity ("the raw mdast is retained
 and exposed as `tree.mdast`") from a single root escape hatch to a per-node one. Nothing
 existing changes; every point is an addition.
+
+### Demonstration — the three views at one node
+
+Contract-free tree read (the fidelity lives on the projection, not the contract); the same node
+answers in all three views, with the fallthrough top to bottom:
+
+```ts
+import { parse, contract, sections, section, table } from "markdown-contract";
+
+const source = [
+  "## Goal",
+  "",
+  "Ship `splitFrontmatter` and wire `parse()` through it.",
+  "",
+  "## Files to touch",
+  "",
+  "| Location                  | Kind |",
+  "| ------------------------- | ---- |",
+  "| `src/core/frontmatter.ts` | new  |",
+].join("\n");
+
+const tree = parse(source);                                   // the contract-free projection
+const goal = tree.root.sections.find((s) => s.name === "Goal")!;
+const files = tree.root.sections.find((s) => s.name === "Files to touch")!;
+const t = files.blocks.find((b) => b.kind === "table")!;
+
+// (1) TYPED view — primary, opinionated, flattened (unchanged today):
+goal.blocks[0];        // { kind: "paragraph", text: "Ship splitFrontmatter and wire parse() through it." } — backticks gone
+t.rows[0][0];          // "src/core/frontmatter.ts" — flattened, backticks stripped
+
+// (2) MDAST segment — fallthrough for constructs the typed model doesn't cover (links, emphasis),
+//     read LOCALLY via a precisely-typed readonly accessor (composition, not inheritance):
+t.mdast();             // Mdast.Table — the layer-0 subtree for THIS node, no re-walk from the root
+t.cell(0, 0).mdast();  // Mdast.TableCell — inline children + positions
+
+// (3) RAW bytes — the last-resort fallthrough: verbatim source for the node's range:
+goal.raw();            // "## Goal\n\nShip `splitFrontmatter` and wire `parse()` through it.\n" — exact bytes
+t.cell(0, 0).raw();    // "`src/core/frontmatter.ts`" — backticks preserved
+files.range;           // { start, end } — the ONLY serializable datum; raw()/mdast() derive from it
+
+// Fallthrough guarantee at every node:  typed field  →  mdast() segment  →  raw() bytes
+// — a consumer is structurally never forced to leave the tree and re-read the file.
+```
+
+The typed-*model* door is unchanged and stays the [[D-0005-consumption-oom]] boundary — typed values
+flow through `read()` / `validate().doc`, the raw `tree` keeps strings — and `range` is the wire
+primitive: methods drop out of `JSON.stringify`, so the serialized shape is `range` + typed scalars and
+a client re-derives `raw()` / `mdast()` from `range` + source:
+
+```ts
+const spec = contract({
+  body: sections({}, [section("Files to touch", { content: table({ columns: ["Location", "Kind"] }) })]),
+});
+const doc = spec.read(source, { path: "task.md" });
+doc.body.filesToTouch;        // typed rows via the model (see D-0015); the raw `tree` still holds strings
+JSON.stringify(files.range);  // {"start":…,"end":…} — data only; raw()/mdast() are live-only accessors
+```
 
 ## Why
 
@@ -248,7 +305,7 @@ existing changes; every point is an addition.
   already-partial coupling (D-0002 / D-0007 expose `tree.mdast`).
 - **Memory stays O(nodes)** for ranges + one retained source; per-node eager `raw` copies
   are explicitly rejected.
-- **The structured-cell work (M-0011 / PR #100) is the cell/inline instance** of this
+- **The structured-cell work (M-0011) is the cell/inline instance** of this
   decision, already in flight and aligned (see the Decision) — its `typed(row,col)`,
   `cellPos`, and `inlineSpans` should converge on this decision's per-node `range`.
 
@@ -276,5 +333,5 @@ existing changes; every point is an addition.
 - [[D-0005-consumption-oom]] — the typed object model = the third view.
 - `provenance/d0014/` — the framework shape.
 - **Worked examples:** [`./D-0016-per-node-source-fidelity/`](./D-0016-per-node-source-fidelity/README.md) — nine API use cases (the depth ladder plus the cross-cutting mechanics), supporting docs in a directory peer to this decision.
-- Structured cells — **M-0011** (PR #100), implementing the **D-0015** structured-cells decision (`provenance/d0015/`, PR #49): the cell/inline-depth embodiment of this decision (`typed(row,col)`, `cellPos`, `inlineSpans`).
+- Structured cells — **M-0011**, implementing the **D-0015** structured-cells decision (`provenance/d0015/`): the cell/inline-depth embodiment of this decision (`typed(row,col)`, `cellPos`, `inlineSpans`).
 - Prior art: tree-sitter — <https://tree-sitter.github.io/tree-sitter/using-parsers/2-basic-parsing.html>; Roslyn red-green trees — <https://github.com/dotnet/roslyn/blob/main/docs/compilers/Design/Red-Green%20Trees.md>; rust-analyzer/rowan — <https://github.com/rust-analyzer/rowan>; LibCST — <https://libcst.readthedocs.io/en/latest/why_libcst.html>; PostCSS syntax — <https://github.com/postcss/postcss/blob/main/docs/syntax.md>; unist positions — <https://github.com/syntax-tree/unist>.
