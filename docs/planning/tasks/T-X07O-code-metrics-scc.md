@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-X07O
-status: in-progress
+status: closed/done
 created: '2026-06-30'
 related:
 - '[[M-0010]]'
@@ -11,10 +11,10 @@ tags:
 need_human_review: false
 impact: medium
 complexity: small
-readiness_verified_at: '2026-07-02T03:34:43Z'
 last_reviewed: '2026-07-02'
 prs:
 - https://github.com/sksizer/markdown-contract/pull/166
+completion_note: 'Shipped via #166.'
 ---
 # Add scc code metrics — lines of code and cyclomatic complexity reporting
 
