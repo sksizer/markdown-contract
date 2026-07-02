@@ -40,6 +40,51 @@ Stop discarding a cell transform's parsed output. `validateTable` already runs `
 
 `validateTable` keeps `res.data` on a successful cell `safeParse` and writes it onto the table node through a new sparse setter (`setTyped(row, col, value)` / read via `typed(row, col)`), populated during the **existing** content-plane pass. The `table` arm of `BlockNode` gains an additive `typed(row, col): unknown | undefined` accessor returning the cached output, or `undefined` for any cell with no transform (the common case) — so a plain-string table allocates nothing extra and the raw `rows: string[][]` is never removed. No finding shape changes; a failed transform stays a `content/table/cell` finding at the row's line. The output is an internal projection-node detail the model reads — it is **not** exposed on the public `tree`.
 
+After `validate()`, the parsed output of a transform cell is retrievable from the projection table node via `typed(row, col)`, while a no-transform column returns `undefined` and the raw `rows` stay verbatim:
+
+```ts
+import { z } from "zod";
+import { contract, sections, section, table } from "markdown-contract";
+
+// A transform cell: `path` or `path#symbol` (backticked) → { path, symbol? }.
+const LOCATION_RE = /^`([^#`]+)(?:#([^`]+))?`$/;
+const Location = z.string().transform((s, ctx) => {
+  const m = LOCATION_RE.exec(s.trim());
+  if (!m) { ctx.addIssue({ code: "custom", message: "expected `path` or `path#symbol`" }); return z.NEVER; }
+  return { path: m[1]!, ...(m[2] ? { symbol: m[2] } : {}) };       // → { path: string; symbol?: string }
+});
+
+const spec = contract({
+  body: sections({}, [
+    section("Files to touch", {
+      content: table({
+        columns: ["Location", "Kind", "Change"],                  // "Change" declares no cell → no transform
+        cells: { Location, Kind: z.enum(["new", "modify", "delete"]) },
+      }),
+    }),
+  ]),
+});
+
+const src = [
+  "## Files to touch",
+  "",
+  "| Location | Kind | Change |",
+  "| --- | --- | --- |",
+  "| `src/core/content.ts#validateTable` | modify | keep res.data |",
+].join("\n");
+
+const { tree } = spec.validate(src, { path: "task.md" });          // never throws; findings collected
+
+// Reach the projection table BlockNode. The typed cache rides on its `typed()` method —
+// it is NOT serialized onto the public `tree` data (T-SCRB adds the public `doc.body` read-back).
+const node = tree.root.sections[0]!.blocks[0]!;
+if (node.kind === "table") {
+  node.typed(0, 0);   // transform cell → { path: "src/core/content.ts", symbol: "validateTable" } (cached res.data)
+  node.typed(0, 2);   // "Change" cell has no transform → undefined
+  node.rows[0]![0];   // raw rows retained verbatim → "`src/core/content.ts#validateTable`"
+}
+```
+
 ## Approach
 
 1. Add the additive `typed(row, col)` accessor (and the internal `setTyped` writer / sparse backing store) to the `table` arm of `BlockNode` in `src/core/types.ts`; raw `rows`, `rowPos`, `pos`, `anchor` unchanged.
