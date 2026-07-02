@@ -42,10 +42,11 @@ jobs:
       # :coverage runs vitest under the pinned node toolchain (the Node-compat
       # gate) and enforces the coverage thresholds in vitest.config.ts — it
       # subsumes :test, so the coverage gate rides the normal run rather than
-      # doubling it. lint-docs is a moon task too, but runInCI:false because it
-      # validates mid-edit planning docs; see packages/core/moon.yml.
-      - name: Run build, typecheck, and test+coverage via moon
-        run: bunx moon run :build :typecheck :coverage
+      # doubling it. :lint is the biome ci gate (format + lint + import
+      # organization, T-0MVN). lint-docs is a moon task too, but runInCI:false
+      # because it validates mid-edit planning docs; see packages/core/moon.yml.
+      - name: Run build, typecheck, test+coverage, and lint via moon
+        run: bunx moon run :build :typecheck :coverage :lint
 
       - name: Upload coverage report
         if: always()

@@ -22,12 +22,14 @@ describe("makeCtx — the rule-author finding factory", () => {
   const ctx = makeCtx("docs/x.md", defaultRegistry());
 
   test("finding() stamps the document path and fills the registry default level", () => {
-    expect(ctx.finding({ id: "structure/section-missing", message: "Summary is missing" })).toEqual({
-      id: "structure/section-missing",
-      level: "error",
-      path: "docs/x.md",
-      message: "Summary is missing",
-    });
+    expect(ctx.finding({ id: "structure/section-missing", message: "Summary is missing" })).toEqual(
+      {
+        id: "structure/section-missing",
+        level: "error",
+        path: "docs/x.md",
+        message: "Summary is missing",
+      },
+    );
   });
 
   test("an explicit level overrides the registry default", () => {

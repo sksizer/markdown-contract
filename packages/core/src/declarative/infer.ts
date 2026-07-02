@@ -54,23 +54,22 @@ import { basename, resolve, sep } from "node:path";
 
 import picomatch from "picomatch";
 import { stringify as stringifyYaml } from "yaml";
-
-import { parse } from "../core/index.js";
 import { toCamelKey } from "../core/camel.js";
+import { parse } from "../core/index.js";
 import { DEFAULT_MAX_CONST_STRING_LENGTH, DEFAULT_MIN_CONST_EXAMPLES } from "./constants.js";
 import { DeclarativeError } from "./errors.js";
 import { compileSchema } from "./schema.js";
 
 /** Options for `inferConfig` — mirrors the `init` CLI flags (D-0009 § The CLI surface). */
 export interface InferOptions {
-  meta?: boolean;        // emit a meta-config across the tree (default: single contract)
-  depth?: number;        // directory cut for meta mode (default 1; 0 == single contract)
-  relax?: boolean;       // loosen generation toward a permissive floor
-  inline?: boolean;      // single self-contained config instead of per-dir contract files
+  meta?: boolean; // emit a meta-config across the tree (default: single contract)
+  depth?: number; // directory cut for meta mode (default 1; 0 == single contract)
+  relax?: boolean; // loosen generation toward a permissive floor
+  inline?: boolean; // single self-contained config instead of per-dir contract files
   inferBounds?: boolean; // opt into pattern / min / max inference
   maxConstStringLength?: number; // strings longer than this never become const/enum (default DEFAULT_MAX_CONST_STRING_LENGTH)
-  minConstExamples?: number;     // a uniform scalar needs >= this many docs to become const (default DEFAULT_MIN_CONST_EXAMPLES)
-  include?: string[];    // glob pre-filter (relative to root), as `validate`
+  minConstExamples?: number; // a uniform scalar needs >= this many docs to become const (default DEFAULT_MIN_CONST_EXAMPLES)
+  include?: string[]; // glob pre-filter (relative to root), as `validate`
   exclude?: string[];
 }
 
@@ -111,18 +110,21 @@ interface InferSink {
  *              sections?: Array<{ section: string; optional?: boolean }> } }
  */
 export interface InferredContract {
-  name: string;          // directory full-relative-path slug
-  include: string[];     // rule globs, relative to the run root
+  name: string; // directory full-relative-path slug
+  include: string[]; // rule globs, relative to the run root
   def: Record<string, unknown>;
 }
 
-export interface InferredFile { path: string; content: string; }
+export interface InferredFile {
+  path: string;
+  content: string;
+}
 
 export interface InferResult {
   mode: "single" | "meta";
   contracts: InferredContract[];
   files: InferredFile[]; // serialized YAML to write (paths relative to the out dir)
-  warnings: string[];    // e.g. files stranded above a depth>=2 cut
+  warnings: string[]; // e.g. files stranded above a depth>=2 cut
 }
 
 // ── Discovery & parse ────────────────────────────────────────────────────────────
@@ -251,6 +253,7 @@ function precedence(docs: ParsedDoc[]): Map<string, Set<string>> {
   const edges = new Map<string, Set<string>>();
   const add = (a: string, b: string): void => {
     let set = edges.get(a);
+    // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic get-or-create memoization
     if (!set) edges.set(a, (set = new Set<string>()));
     set.add(b);
   };
@@ -370,7 +373,9 @@ function deepEqual(a: unknown, b: unknown): boolean {
     const kb = Object.keys(b as object);
     return (
       ka.length === kb.length &&
-      ka.every((k) => deepEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]))
+      ka.every((k) =>
+        deepEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]),
+      )
     );
   }
   return false;
@@ -405,7 +410,11 @@ function isScalar(v: unknown): v is string | number | boolean {
  * ever loosens the rung, so accept-by-construction holds. `min` / `max` / `pattern` are never
  * inferred here (opt-in via `--infer-bounds`, a future phase).
  */
-function inferFieldSchema(values: unknown[], fileCount: number, opts: FieldInferOptions): Record<string, unknown> {
+function inferFieldSchema(
+  values: unknown[],
+  fileCount: number,
+  opts: FieldInferOptions,
+): Record<string, unknown> {
   if (values.length === 0) return { type: "string" };
 
   // Null — handled before the rungs. No base rung admits `null` (string/number/boolean/array and
@@ -415,7 +424,8 @@ function inferFieldSchema(values: unknown[], fileCount: number, opts: FieldInfer
   // placeholder (the author can tighten the base type by hand).
   if (values.some((v) => v === null)) {
     const nonNull = values.filter((v) => v !== null);
-    const baseSchema = nonNull.length > 0 ? inferFieldSchema(nonNull, fileCount, opts) : { type: "string" };
+    const baseSchema =
+      nonNull.length > 0 ? inferFieldSchema(nonNull, fileCount, opts) : { type: "string" };
     return { ...baseSchema, nullable: true };
   }
 
@@ -491,7 +501,10 @@ function inferFieldSchema(values: unknown[], fileCount: number, opts: FieldInfer
  * carried is listed, so the key set is closed by construction; `--relax` drops it to non-strict
  * and (via the ladder) drops categorical enums.
  */
-function inferFrontmatter(docs: ParsedDoc[], opts: FieldInferOptions): { strict?: boolean; fields: Record<string, unknown> } | undefined {
+function inferFrontmatter(
+  docs: ParsedDoc[],
+  opts: FieldInferOptions,
+): { strict?: boolean; fields: Record<string, unknown> } | undefined {
   const keys: string[] = [];
   const seen = new Set<string>();
   const values = new Map<string, unknown[]>();
@@ -527,7 +540,9 @@ function inferFrontmatter(docs: ParsedDoc[], opts: FieldInferOptions): { strict?
 
 /** Render a sample of `list` for a diagnostic, capping the tail so a big vault stays readable. */
 function sampleList(list: string[], n = 5): string {
-  return list.length <= n ? list.join(", ") : `${list.slice(0, n).join(", ")} (and ${list.length - n} more)`;
+  return list.length <= n
+    ? list.join(", ")
+    : `${list.slice(0, n).join(", ")} (and ${list.length - n} more)`;
 }
 
 /**
@@ -546,8 +561,16 @@ function sampleList(list: string[], n = 5): string {
  * `sink.errors` entry naming the offending file(s) (T-KCOL). A heading that yields no key (no
  * alphanumerics) generates no alias and so can never collide — it is emitted unchanged.
  */
-function inferBody(docs: ParsedDoc[], relax: boolean, sink: InferSink):
-  | { order: Order; allowUnknown: boolean; sections: Array<{ section: string; aliases?: string[]; optional?: boolean }> }
+function inferBody(
+  docs: ParsedDoc[],
+  relax: boolean,
+  sink: InferSink,
+):
+  | {
+      order: Order;
+      allowUnknown: boolean;
+      sections: Array<{ section: string; aliases?: string[]; optional?: boolean }>;
+    }
   | undefined {
   const { order, sections } = detectOrder(docs);
   if (sections.length === 0) return undefined;
@@ -558,6 +581,7 @@ function inferBody(docs: ParsedDoc[], relax: boolean, sink: InferSink):
     const key = toCamelKey(name);
     if (key === "") continue; // no alphanumerics ⇒ no generated alias ⇒ cannot collide
     let spellings = byKey.get(key);
+    // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic get-or-create memoization
     if (!spellings) byKey.set(key, (spellings = []));
     spellings.push(name);
   }
@@ -646,7 +670,11 @@ function nameForDir(relDir: string, absRoot: string): string {
  * (one group per directory at the depth cut). Returns the bare `def` object an
  * `InferredContract` and `compileContractObject` both consume.
  */
-function generalize(docs: ParsedDoc[], opts: FieldInferOptions, sink: InferSink): Record<string, unknown> {
+function generalize(
+  docs: ParsedDoc[],
+  opts: FieldInferOptions,
+  sink: InferSink,
+): Record<string, unknown> {
   const def: Record<string, unknown> = {};
   const frontmatter = inferFrontmatter(docs, opts);
   if (frontmatter) def.frontmatter = frontmatter;
@@ -672,13 +700,10 @@ function ancestorAt(relDir: string, depth: number): string {
 }
 
 /** Get (creating on first sight, recording walk order) the doc bucket for a group key. */
-function bucketFor(
-  groups: Map<string, ParsedDoc[]>,
-  order: string[],
-  key: string,
-): ParsedDoc[] {
+function bucketFor(groups: Map<string, ParsedDoc[]>, order: string[], key: string): ParsedDoc[] {
   let bucket = groups.get(key);
   if (!bucket) {
+    // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic get-or-create memoization
     groups.set(key, (bucket = []));
     order.push(key);
   }
@@ -736,10 +761,7 @@ function inferMeta(
   }
 
   // Emit the root group first (its direct-only glob), then the subdir groups in walk order.
-  const orderedKeys = [
-    ...(hasRoot ? [""] : []),
-    ...groupOrder.filter((k) => k !== ""),
-  ];
+  const orderedKeys = [...(hasRoot ? [""] : []), ...groupOrder.filter((k) => k !== "")];
 
   const contracts: InferredContract[] = orderedKeys.map((key) => ({
     name: nameForDir(key, absRoot),

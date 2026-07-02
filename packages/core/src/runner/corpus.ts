@@ -174,9 +174,7 @@ export function runCorpus(
     const posixRel = toPosix(rel);
     if (exclude && exclude(posixRel)) continue;
     if (include && !include(posixRel)) continue;
-    const idx = rules.findIndex(
-      (r) => r.include(posixRel) && !(r.exclude && r.exclude(posixRel)),
-    );
+    const idx = rules.findIndex((r) => r.include(posixRel) && !(r.exclude && r.exclude(posixRel)));
     if (idx === -1) continue;
     matchedByRule[idx] = (matchedByRule[idx] ?? 0) + 1;
     filesMatched += 1;

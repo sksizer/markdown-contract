@@ -24,7 +24,12 @@ function para(line: number, text: string): BlockNode {
 }
 
 /** A minimal projected `SectionNode` for direct-run unit cases. */
-function sectionNode(name: string, line: number, blocks: BlockNode[], sub: SectionNode[] = []): SectionNode {
+function sectionNode(
+  name: string,
+  line: number,
+  blocks: BlockNode[],
+  sub: SectionNode[] = [],
+): SectionNode {
   return { name, depth: 2, pos: { line, col: 1 }, sections: sub, blocks, anchors: [] };
 }
 
@@ -112,10 +117,15 @@ describe("count bounds (AC-3)", () => {
 
   it("a satisfied minimum emits nothing — DONE markers counted across list items", () => {
     const node = sectionNode("Checklist", 1, [
-      { kind: "list", ordered: false, pos: { line: 3, col: 1 }, items: [
-        { text: "Step one DONE", pos: { line: 3, col: 3 } },
-        { text: "Step two DONE", pos: { line: 4, col: 3 } },
-      ] },
+      {
+        kind: "list",
+        ordered: false,
+        pos: { line: 3, col: 1 },
+        items: [
+          { text: "Step one DONE", pos: { line: 3, col: 3 } },
+          { text: "Step two DONE", pos: { line: 4, col: 3 } },
+        ],
+      },
     ]);
     expect(requires([{ pattern: "DONE", min: 2 }]).run(node, ctx)).toEqual([]);
   });
@@ -133,7 +143,9 @@ describe("regex / normalize / ignoreCase (AC-3)", () => {
   it("normalize (default) tolerates a phrase wrapped across a soft line break", () => {
     const wrapped = sectionNode("Summary", 1, [para(3, "the widget\nprotocol here")]);
     expect(requires([{ pattern: "widget protocol" }]).run(wrapped, ctx)).toEqual([]);
-    expect(requires([{ pattern: "widget protocol", normalize: false }]).run(wrapped, ctx)).toHaveLength(1);
+    expect(
+      requires([{ pattern: "widget protocol", normalize: false }]).run(wrapped, ctx),
+    ).toHaveLength(1);
   });
 
   it("ignoreCase folds case", () => {
@@ -146,9 +158,13 @@ describe("regex / normalize / ignoreCase (AC-3)", () => {
 describe("note and level flow onto the finding (AC-3)", () => {
   it("appends the note and rides the spec's level", () => {
     const node = sectionNode("Summary", 1, [para(3, "no mention")]);
-    const out = requires([{ pattern: "outcome", note: "name the decision outcome", level: "warn" }]).run(node, ctx);
+    const out = requires([
+      { pattern: "outcome", note: "name the decision outcome", level: "warn" },
+    ]).run(node, ctx);
     expect(out[0]!.level).toBe("warn");
-    expect(out[0]!.message).toBe('required phrase "outcome" not found in Summary — name the decision outcome');
+    expect(out[0]!.message).toBe(
+      'required phrase "outcome" not found in Summary — name the decision outcome',
+    );
   });
 });
 

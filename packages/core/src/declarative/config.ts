@@ -50,7 +50,11 @@ function compileRule(
   baseDir: string,
 ): { include: string[]; exclude?: string[]; contract: Contract; name?: string } {
   if (!isMap(rule)) throw new DeclarativeError(`${path}: a rule must be a mapping`);
-  if (!Array.isArray(rule.include) || rule.include.length === 0 || !rule.include.every((g) => typeof g === "string")) {
+  if (
+    !Array.isArray(rule.include) ||
+    rule.include.length === 0 ||
+    !rule.include.every((g) => typeof g === "string")
+  ) {
     throw new DeclarativeError(`${path}.include must be a non-empty list of globs`);
   }
   const out: { include: string[]; exclude?: string[]; contract: Contract; name?: string } = {
@@ -75,13 +79,18 @@ function resolveContract(
   contracts: Record<string, unknown>,
   baseDir: string,
 ): Contract {
-  if (ref === undefined) throw new DeclarativeError(`${path}: a rule needs a contract (a name, a .yaml path, or an inline contract)`);
+  if (ref === undefined)
+    throw new DeclarativeError(
+      `${path}: a rule needs a contract (a name, a .yaml path, or an inline contract)`,
+    );
   if (isMap(ref)) {
     // An inline contract object (frontmatter? / body?) — no envelope needed here.
     return compileContractObject(ref);
   }
   if (typeof ref !== "string") {
-    throw new DeclarativeError(`${path}: contract must be a name, a .yaml path, or an inline contract`);
+    throw new DeclarativeError(
+      `${path}: contract must be a name, a .yaml path, or an inline contract`,
+    );
   }
   // A name resolves through the `contracts` map; otherwise the string is itself a path.
   const target = typeof contracts[ref] === "string" ? (contracts[ref] as string) : ref;

@@ -1,6 +1,6 @@
-import { contract, sections, section, rule } from "../../../src/index.js";
-import type { ValidationFixture } from "../../harness.js";
 import type { SectionNode } from "../../../src/index.js";
+import { contract, rule, section, sections } from "../../../src/index.js";
+import type { ValidationFixture } from "../../harness.js";
 import { loadSource } from "../../harness.js";
 
 // Provenance: validation/17-node-level-custom-rule.md

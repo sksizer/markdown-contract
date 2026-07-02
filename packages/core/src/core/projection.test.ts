@@ -26,10 +26,9 @@ import remarkParse from "remark-parse";
 import remarkStringify from "remark-stringify";
 import { unified } from "unified";
 import { describe, expect, test } from "vitest";
-
-import { extractVaultRefs } from "./dialect/index.js";
-import { parse } from "../index.js";
 import type { BlockNode } from "../index.js";
+import { parse } from "../index.js";
+import { extractVaultRefs } from "./dialect/index.js";
 
 /** Narrow a BlockNode to a specific kind for typed assertions. */
 function blockOf<K extends BlockNode["kind"]>(
@@ -62,17 +61,9 @@ describe("section nesting (flat headings → tree)", () => {
 
   test("H3/H4 nest under their parent H2 by heading depth", () => {
     const t = parse(
-      [
-        "## Decision",
-        "",
-        "### Components",
-        "",
-        "prose",
-        "",
-        "### Resolution",
-        "",
-        "more",
-      ].join("\n"),
+      ["## Decision", "", "### Components", "", "prose", "", "### Resolution", "", "more"].join(
+        "\n",
+      ),
     );
     const decision = t.root.sections[0]!;
     expect(decision.name).toBe("Decision");
@@ -214,15 +205,7 @@ describe("^block-id anchors", () => {
 
   test("anchor row absorbed under a table becomes the table anchor (not a data row)", () => {
     const t = parse(
-      [
-        "## D",
-        "",
-        "| # | C |",
-        "| - | - |",
-        "| 1 | x |",
-        "| 2 | y |",
-        "^components",
-      ].join("\n"),
+      ["## D", "", "| # | C |", "| - | - |", "| 1 | x |", "| 2 | y |", "^components"].join("\n"),
     );
     const table = blockOf(t.root.sections[0]!.blocks[0], "table");
     expect(table.anchor).toBe("components");
@@ -272,9 +255,7 @@ describe("invariant D2 — fenced code is opaque", () => {
 
 describe("invariant D3 — no depth-jump synthesis", () => {
   test("H2 then H4 attaches the H4 directly under the H2, preserving depth: 4", () => {
-    const t = parse(
-      ["## Decision", "", "prose", "", "#### Components", "", "more"].join("\n"),
-    );
+    const t = parse(["## Decision", "", "prose", "", "#### Components", "", "more"].join("\n"));
     const decision = t.root.sections[0]!;
     expect(decision.depth).toBe(2);
     // The H4 is a DIRECT child of the H2 — no synthesized intermediate H3.
@@ -310,15 +291,7 @@ describe("invariant D4 — no hoisting", () => {
 
   test("a table inside a list item is NOT a section-level table block", () => {
     const t = parse(
-      [
-        "## D",
-        "",
-        "- intro",
-        "",
-        "  | a | b |",
-        "  | - | - |",
-        "  | 1 | 2 |",
-      ].join("\n"),
+      ["## D", "", "- intro", "", "  | a | b |", "  | - | - |", "  | 1 | 2 |"].join("\n"),
     );
     expect(t.root.sections[0]!.blocks.filter((b) => b.kind === "table")).toHaveLength(0);
     // The list itself is heading-direct, so it IS a section block.
@@ -414,8 +387,7 @@ describe("real document (provenance entity file)", () => {
     // The `^summary` anchor inside ## Summary binds (block- or section-level).
     const summary = t.root.sections.find((s) => s.name === "Summary")!;
     const anchorBound =
-      summary.anchors.includes("summary") ||
-      summary.blocks.some((b) => b.anchor === "summary");
+      summary.anchors.includes("summary") || summary.blocks.some((b) => b.anchor === "summary");
     expect(anchorBound).toBe(true);
   });
 });

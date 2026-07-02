@@ -10,7 +10,6 @@
  * leaf and the cross-plane / docRule merge land in T-5LW7 / T-3NC8.
  */
 import { toCamelKey } from "./camel.js";
-import { read as readEntry, validate as validateEntry } from "./validate.js";
 import type {
   Contract,
   ContractDef,
@@ -31,6 +30,7 @@ import type {
   Spec,
   ValidateCtx,
 } from "./types.js";
+import { read as readEntry, validate as validateEntry } from "./validate.js";
 
 // Re-export the structure matcher so callers can `import { matchStructure } from "./grammar.js"`.
 export { matchStructure } from "./structure.js";
@@ -152,6 +152,9 @@ export function rule(id: string, fn: (node: SectionNode, ctx: Ctx) => Finding[])
  * Register a cross-plane / cross-file named rule over the whole typed doc. Constructed
  * inertly here; the engine wires `docRule` into the cross-plane merge in T-3NC8.
  */
-export function docRule<F>(id: string, fn: (doc: Doc<F>, ctx: Ctx, tree: DocTree) => Finding[]): DocRule {
+export function docRule<F>(
+  id: string,
+  fn: (doc: Doc<F>, ctx: Ctx, tree: DocTree) => Finding[],
+): DocRule {
   return { __brand: "DocRule", id, run: fn as DocRule["run"] };
 }

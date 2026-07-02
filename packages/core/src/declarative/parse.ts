@@ -32,7 +32,9 @@ export function parseDeclarativeDoc(yamlText: string): DeclarativeDoc {
     throw new DeclarativeError(`invalid YAML: ${(err as Error).message}`);
   }
   if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new DeclarativeError("a declarative document must be a YAML mapping with mcVersion and kind");
+    throw new DeclarativeError(
+      "a declarative document must be a YAML mapping with mcVersion and kind",
+    );
   }
   const obj = raw as Record<string, unknown>;
 
@@ -43,7 +45,9 @@ export function parseDeclarativeDoc(yamlText: string): DeclarativeDoc {
     );
   }
   if (obj.kind !== "contract" && obj.kind !== "config") {
-    throw new DeclarativeError(`kind must be "contract" or "config" (got ${JSON.stringify(obj.kind)})`);
+    throw new DeclarativeError(
+      `kind must be "contract" or "config" (got ${JSON.stringify(obj.kind)})`,
+    );
   }
 
   return { mcVersion: version, kind: obj.kind, raw: obj };

@@ -23,7 +23,9 @@ import { compileBodyTextRule } from "./text.js";
 export function loadContract(yamlText: string): Contract {
   const doc = parseDeclarativeDoc(yamlText);
   if (doc.kind !== "contract") {
-    throw new DeclarativeError(`expected a contract document (kind: contract), got kind: ${doc.kind}`);
+    throw new DeclarativeError(
+      `expected a contract document (kind: contract), got kind: ${doc.kind}`,
+    );
   }
   return compileContractObject(doc.raw);
 }
@@ -49,6 +51,7 @@ export function compileContractObject(raw: Record<string, unknown>): Contract {
     // verified `raw.body` is a mapping.
     if (raw.body !== null && typeof raw.body === "object" && !Array.isArray(raw.body)) {
       const docRule = compileBodyTextRule(raw.body as Record<string, unknown>);
+      // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic default-and-push
       if (docRule) (def.rules ??= []).push(docRule);
     }
   }
@@ -58,7 +61,9 @@ export function compileContractObject(raw: Record<string, unknown>): Contract {
 
 function compileFrontmatter(fm: unknown): z.ZodType {
   if (fm === null || typeof fm !== "object" || Array.isArray(fm)) {
-    throw new DeclarativeError("frontmatter must be a mapping with an optional 'strict' flag and a 'fields' map");
+    throw new DeclarativeError(
+      "frontmatter must be a mapping with an optional 'strict' flag and a 'fields' map",
+    );
   }
   const node = fm as Record<string, unknown>;
   return compileObjectSchema(node.fields, node.strict === true, "frontmatter");

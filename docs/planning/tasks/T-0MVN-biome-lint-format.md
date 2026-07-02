@@ -120,12 +120,21 @@ _Captured by /sdlc:task-work on 2026-07-02. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `bunx moon run core:lint` (→ `biome ci .`) exits 0 on the reformatted tree; re-running `biome format packages/core` reports "No fixes applied" (idempotent).
+- AC-2: auto + agent-manual — CI wiring is auto (`.github/workflows/ci.yml` now runs `bunx moon run :build :typecheck :coverage :lint`); the blocking behaviour was demonstrated agent-manual with a scratch probe (bad formatting + a `noSelfCompare` error) → `biome ci` and `moon run core:lint` both exit 1. Probe deleted.
+- AC-3: auto + agent-manual — `noExcessiveCognitiveComplexity` is promoted to `error` in `biome.jsonc` with a documented ceiling (`maxAllowedComplexity: 46`, today's maximum); demonstrated agent-manual with a scratch function of complexity > 46 → gate fails on the complexity rule at error, exit 1. Probe deleted.
+- AC-4: auto — `bunx moon run core:lint` reproduces the CI gate locally and exits 0 (rides the Step-7 quality gate, `OK 5/5`).
+- AC-5: auto — commit `5f0d7b6` (format pass) is exactly `biome format --write packages/core`: verified byte-identical to `biome format(parent-tree)` for the changed files, 51 `.ts` files only, no config/logic. The four commits are isolated: format / organize-imports / lint-error resolution / gate-wiring.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The mechanical core (`biome format --write`, then `biome check --write` with linter+formatter disabled for import organization) was fully hands-off. A pre-flight grep confirmed zero side-effect-only imports, so the ~90-file import reorder carried no ordering risk — 662 tests stayed green after every commit.
+- The baseline-gated `quality run --diff-against-baseline` cleanly reported `OK 5/5` with zero new drift, so the reformat's large mechanical diff did not require triaging the 289 deliberately-relaxed `any`/non-null warnings.
+- Empirically probing biome.json comment support up front (it breaks parsing; biome.jsonc is required) meant the config-rename decision was settled before any commit.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- `let parsed: ReturnType<typeof parseArgs>` did not typecheck — node:util's generic `parseArgs` default widens `values` and broke ~10 downstream uses — so a `parseCliArgs()` wrapper had to be extracted to recover the call-site return type. A readiness spec that says "annotate the type" for a generic stdlib function should require a pre-implementation typecheck of the proposed annotation, since "add a type" is not always mechanical.
+- The spec estimated "~4 functions over cognitive-complexity 15"; the real count is 16 (max 46). Refactoring them is out of scope for a behavior-preserving reformat, so the ceiling was set to 46 to gate regressions only — leaving genuine complexity debt. Captured as a follow-up backlog task on this branch (ratchet the ceiling down by refactoring the worst offenders).
+- Test fixtures still carry stale `// eslint-disable-next-line @typescript-eslint/...` comments though the repo now lints with Biome, not ESLint. Captured as a follow-up backlog task on this branch (sweep and remove/convert to `biome-ignore`).
+- `noExplicitAny` (104) and `noNonNullAssertion` (185) are kept at `warn` deliberately (pervasive in the parser/AST + Zod code) — honest but noisy debt surfaced on every lint run. Noted here; not separately spawned (folds into the same Biome-debt theme as the complexity ratchet).

@@ -55,11 +55,7 @@ export function rawTableRows(
   const lines = toLines(source);
   const header = splitRow(lines[table.pos.line - 1] ?? "");
   const padTo =
-    opts?.pad === "header"
-      ? header.length
-      : typeof opts?.pad === "number"
-        ? opts.pad
-        : undefined;
+    opts?.pad === "header" ? header.length : typeof opts?.pad === "number" ? opts.pad : undefined;
 
   const rows: string[][] = [];
   for (let i = 0; i < table.rows.length; i++) {

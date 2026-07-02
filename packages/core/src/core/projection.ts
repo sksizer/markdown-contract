@@ -34,8 +34,11 @@ import type {
   Table,
   Yaml,
 } from "mdast";
+import remarkFrontmatter from "remark-frontmatter";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
 import { isMap, isSeq, parseDocument } from "yaml";
-
 import { extractTrailingAnchor, isStandaloneAnchor } from "./dialect/index.js";
 import { bodyAfterFrontmatter } from "./frontmatter.js";
 import type {
@@ -46,11 +49,6 @@ import type {
   SectionNode,
   SourcePos,
 } from "./types.js";
-
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkGfm from "remark-gfm";
-import remarkFrontmatter from "remark-frontmatter";
 
 // ── mdast → SourcePos ───────────────────────────────────────────────────────────
 
@@ -402,10 +400,7 @@ function offsetToLine(text: string, offset: number): number {
 
 // ── parse() — the public entry point ─────────────────────────────────────────────
 
-const PROCESSOR = unified()
-  .use(remarkParse)
-  .use(remarkGfm)
-  .use(remarkFrontmatter, ["yaml"]);
+const PROCESSOR = unified().use(remarkParse).use(remarkGfm).use(remarkFrontmatter, ["yaml"]);
 
 /**
  * Parse raw markdown (frontmatter + body) into a positioned `DocTree`.

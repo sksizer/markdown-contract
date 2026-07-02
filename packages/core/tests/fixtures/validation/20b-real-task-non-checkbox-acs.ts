@@ -1,14 +1,14 @@
+import { z } from "zod";
 import {
   contract,
-  sections,
-  section,
-  optional,
-  oneOf,
-  list,
-  table,
   docRule,
+  list,
+  oneOf,
+  optional,
+  section,
+  sections,
+  table,
 } from "../../../src/index.js";
-import { z } from "zod";
 import type { ValidationFixture } from "../../harness.js";
 import { loadSource } from "../../harness.js";
 

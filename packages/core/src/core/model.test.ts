@@ -8,17 +8,8 @@
  */
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-
-import {
-  contract,
-  gap,
-  list,
-  optional,
-  section,
-  sections,
-  table,
-} from "../index.js";
 import type { SectionGroup, SectionView, TableView } from "../index.js";
+import { contract, gap, list, optional, section, sections, table } from "../index.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -42,10 +33,7 @@ describe("unknown partitioning", () => {
         gap(),
       ]),
     });
-    const doc = c.read(
-      "## Title\n\nt\n\n## Status\n\non track\n\n## Risks\n\nthin\n",
-      PATH,
-    );
+    const doc = c.read("## Title\n\nt\n\n## Status\n\non track\n\n## Risks\n\nthin\n", PATH);
     const body = doc.body as any;
     expect(body.unknown.length).toBe(1);
     expect(body.unknown[0].name).toBe("Risks");
@@ -104,9 +92,7 @@ describe("dual-key — three paths, one view", () => {
 
   test("a sole content:table() section promotes its key to the TableView; .section() stays the SectionView", () => {
     const c = contract({
-      body: sections({}, [
-        section("Files", { content: table({ columns: ["File", "Kind"] }) }),
-      ]),
+      body: sections({}, [section("Files", { content: table({ columns: ["File", "Kind"] }) })]),
     });
     const doc = c.read("## Files\n\n| File | Kind |\n| - | - |\n| a.ts | add |\n", PATH);
     const body = doc.body as any;

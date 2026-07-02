@@ -1,4 +1,4 @@
-import { contract, sections, oneOf } from "../../../src/index.js";
+import { contract, oneOf, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
 import { loadSource } from "../../harness.js";
 

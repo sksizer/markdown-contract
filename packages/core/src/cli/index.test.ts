@@ -22,13 +22,12 @@
  * findings); the config maps `D-*` / `T-*` globs to small inline contracts.
  */
 import { execSync, spawnSync } from "node:child_process";
-import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { beforeAll, describe, expect, test } from "vitest";
-
-import { runCli } from "./index.js";
-import { runCorpus } from "../index.js";
 import type { CorpusConfig, Finding } from "../index.js";
+import { runCorpus } from "../index.js";
+import { runCli } from "./index.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
@@ -167,11 +166,10 @@ describe("runCorpus — pure library API", () => {
 describe("the built bin (AC-5)", () => {
   test("spawn the real bin over the corpus → exit 1, parseable json stdout", () => {
     const bin = resolve(REPO, "dist/cli/index.js");
-    const r = spawnSync(
-      "node",
-      [bin, "validate", CORPUS, "--config", CONFIG, "--format", "json"],
-      { cwd: CORPUS, encoding: "utf8" },
-    );
+    const r = spawnSync("node", [bin, "validate", CORPUS, "--config", CONFIG, "--format", "json"], {
+      cwd: CORPUS,
+      encoding: "utf8",
+    });
     expect(r.status).toBe(1);
     const findings = JSON.parse(r.stdout) as Finding[];
     expect(Array.isArray(findings)).toBe(true);

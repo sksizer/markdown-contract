@@ -1,5 +1,5 @@
-import { contract, sections, section, docRule } from "../../../src/index.js";
 import { extractVaultRefs } from "../../../src/core/dialect/index.js";
+import { contract, docRule, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
 import { loadSource } from "../../harness.js";
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { section } from "./grammar.js";
-import { LENIENT, STRICT, lenientBody, optionalSection, strictBody } from "./presets.js";
+import { LENIENT, lenientBody, optionalSection, STRICT, strictBody } from "./presets.js";
 
 // presets.ts holds the level-option combos and section shorthands the schemas repeat.
 

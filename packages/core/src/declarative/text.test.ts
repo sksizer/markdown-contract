@@ -10,7 +10,9 @@ import { loadContract } from "./load.js";
 // as "author this YAML, feed it this markdown, get exactly these findings".
 
 /** Compare on the fields a finding pins: id / level / line. */
-const shape = (findings: Finding[]): Array<{ id: string; level: string; line: number | undefined }> =>
+const shape = (
+  findings: Finding[],
+): Array<{ id: string; level: string; line: number | undefined }> =>
   findings.map((f) => ({ id: f.id, level: f.level, line: f.pos?.line }));
 
 const ctx = { path: "doc.md" };
@@ -81,27 +83,27 @@ ${body}`;
 
 describe("declarative requires / forbids — rejected at compile time", () => {
   it("rejects an unknown match-spec key", () => {
-    expect(() => loadContract(sectionWith("requires", "        - pattern: x\n          wat: 1\n"))).toThrow(
-      DeclarativeError,
-    );
+    expect(() =>
+      loadContract(sectionWith("requires", "        - pattern: x\n          wat: 1\n")),
+    ).toThrow(DeclarativeError);
   });
 
   it("rejects an entry with neither pattern nor regex", () => {
-    expect(() => loadContract(sectionWith("requires", "        - note: nothing to match\n"))).toThrow(
-      DeclarativeError,
-    );
+    expect(() =>
+      loadContract(sectionWith("requires", "        - note: nothing to match\n")),
+    ).toThrow(DeclarativeError);
   });
 
   it("rejects an entry with both pattern and regex", () => {
-    expect(() => loadContract(sectionWith("requires", "        - pattern: x\n          regex: x\n"))).toThrow(
-      DeclarativeError,
-    );
+    expect(() =>
+      loadContract(sectionWith("requires", "        - pattern: x\n          regex: x\n")),
+    ).toThrow(DeclarativeError);
   });
 
   it("rejects two identical specs in one list (duplicate)", () => {
-    expect(() => loadContract(sectionWith("requires", "        - pattern: x\n        - pattern: x\n"))).toThrow(
-      DeclarativeError,
-    );
+    expect(() =>
+      loadContract(sectionWith("requires", "        - pattern: x\n        - pattern: x\n")),
+    ).toThrow(DeclarativeError);
   });
 
   it("rejects the same literal pattern both required and forbidden at one scope (contradiction)", () => {
@@ -123,14 +125,16 @@ body:
 
   it("rejects a single entry whose max is below its min (contradiction)", () => {
     expect(() =>
-      loadContract(sectionWith("requires", "        - pattern: x\n          min: 3\n          max: 1\n")),
+      loadContract(
+        sectionWith("requires", "        - pattern: x\n          min: 3\n          max: 1\n"),
+      ),
     ).toThrow(DeclarativeError);
   });
 
   it("rejects a requires entry with max: 0 (absence belongs to forbids)", () => {
-    expect(() => loadContract(sectionWith("requires", "        - pattern: x\n          max: 0\n"))).toThrow(
-      DeclarativeError,
-    );
+    expect(() =>
+      loadContract(sectionWith("requires", "        - pattern: x\n          max: 0\n")),
+    ).toThrow(DeclarativeError);
   });
 
   it("rejects a non-list requires value", () => {

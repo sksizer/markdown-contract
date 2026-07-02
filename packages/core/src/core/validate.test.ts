@@ -7,28 +7,18 @@
  */
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-
-import {
-  contract,
-  ContractError,
-  docRule,
-  list,
-  parse,
-  section,
-  sections,
-} from "../index.js";
 import type { Doc, Finding, SectionView } from "../index.js";
+import { ContractError, contract, docRule, list, parse, section, sections } from "../index.js";
 
 const PATH = "doc.md";
 
 /** A contract that trips all four planes at once, for the merge/sort test. */
 function fourPlaneContract() {
   return contract({
-    frontmatter: z
-      .strictObject({
-        id: z.string(),
-        status: z.enum(["open", "closed"]),
-      }),
+    frontmatter: z.strictObject({
+      id: z.string(),
+      status: z.enum(["open", "closed"]),
+    }),
     body: sections({ order: "recognized-relative", allowUnknown: true }, [
       section("Summary"),
       section("Items", { content: list({ everyItem: "checkbox", minItems: 1 }) }),
@@ -80,8 +70,12 @@ describe("deterministic cross-plane finding order (D-0001 E3)", () => {
       body: sections({}, [section("S", { anchor: "x" })]),
       rules: [
         docRule("z/same-pos", (doc, ctx) => {
-          const s = (doc.body as { section(n: string): { pos: { line: number; col?: number } } | undefined }).section("S");
-          return s ? [ctx.finding({ id: "z/same-pos", message: "rule at the section pos", pos: s.pos })] : [];
+          const s = (
+            doc.body as { section(n: string): { pos: { line: number; col?: number } } | undefined }
+          ).section("S");
+          return s
+            ? [ctx.finding({ id: "z/same-pos", message: "rule at the section pos", pos: s.pos })]
+            : [];
         }),
       ],
     });
