@@ -2,9 +2,9 @@
 type: task
 schema_version: '5'
 id: T-7UTE
-status: open/ready
+status: in-progress
 created: '2026-06-28'
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-02'
 related:
 - '[[M-0006-documentation-site]]'
 - '[[M-0005-monorepo-tooling]]'
@@ -108,3 +108,19 @@ A new **`apps/docs`** moon project holding an Astro + Starlight site:
 
 - Depends on [[T-WKSP-bun-workspace-split]] (creates the `apps/` slot and the Bun workspace).
   Governed by [[D-0010-monorepo-tooling]] (moon + Bun; `apps/docs` builds as a moon project).
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-02. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
