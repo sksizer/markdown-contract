@@ -42,7 +42,7 @@ Stand up the gated fixture corpus and the public typed-surface stubs for structu
 
 ## Proposed
 
-Add three gate components — `cell-typed`, `list-typed`, `cell-pos` — to the `Component` union and the `IMPLEMENTED` map in `tests/components.ts`, all seeded `false` (skipped-green). Author the fixtures each gate guards: typed table-row read-back (a `Location`-transform contract read back as `{ path, symbol? }`), typed list-item read-back, and position preservation (per-cell `col` + inline-code spans). Stub the typed public surface (`table()` generic over its `cells`, a `TableView<Row>` that can carry `z.output<cells>`) with placeholder bodies so the fixtures type-check while the gates are off. No engine behavior changes; the suite stays green by skipping.
+Add three gate components — `cell-typed`, `list-typed`, `cell-pos` — to the `Component` union and the `IMPLEMENTED` map in `packages/core/tests/components.ts`, all seeded `false` (skipped-green). Author the fixtures each gate guards: typed table-row read-back (a `Location`-transform contract read back as `{ path, symbol? }`), typed list-item read-back, and position preservation (per-cell `col` + inline-code spans). Stub the typed public surface (`table()` generic over its `cells`, a `TableView<Row>` that can carry `z.output<cells>`) with placeholder bodies so the fixtures type-check while the gates are off. No engine behavior changes; the suite stays green by skipping.
 
 ## Approach
 
@@ -65,7 +65,7 @@ Add three gate components — `cell-typed`, `list-typed`, `cell-pos` — to the 
 
 ## Acceptance criteria
 
-- [ ] AC-1: `tests/components.ts` exports `cell-typed`, `list-typed`, and `cell-pos` as `Component` members, present in `IMPLEMENTED` seeded `false`.
+- [ ] AC-1: `packages/core/tests/components.ts` exports `cell-typed`, `list-typed`, and `cell-pos` as `Component` members, present in `IMPLEMENTED` seeded `false`.
 - [ ] AC-2: The structured-cells fixtures exist and are **skipped** (green, not failing) with all three gates `false`; running the suite reports them skipped.
 - [ ] AC-3: At least one fixture asserts typed table-row read-back, one asserts typed list items, one asserts `cellPos(...).col` + `inlineSpans(...)`, and one asserts byte-identical behavior for a no-transform contract.
 - [ ] AC-4: The repo type-checks (`bunx moon run core:typecheck`) with the stubbed typed surface and the gates off.
