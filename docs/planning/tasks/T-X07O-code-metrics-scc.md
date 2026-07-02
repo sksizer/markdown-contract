@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-X07O
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0010]]'
@@ -12,6 +12,7 @@ need_human_review: false
 impact: medium
 complexity: small
 readiness_verified_at: '2026-07-02T03:34:43Z'
+last_reviewed: '2026-07-02'
 ---
 # Add scc code metrics — lines of code and cyclomatic complexity reporting
 
@@ -141,3 +142,19 @@ asked for repo-wide lines-of-code and cyclomatic-complexity reporting. Coverage
 (T-79GV) and Biome's per-function cognitive-complexity rule (T-0MVN) cover
 adjacent ground but neither produces an aggregate LOC/cyclomatic view, so scc was
 chosen as the dedicated, report-only metrics surface.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-02. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
