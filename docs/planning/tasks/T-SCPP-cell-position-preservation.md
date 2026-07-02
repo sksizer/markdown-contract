@@ -40,6 +40,33 @@ Stop flattening away the byte positions a position-precise consumer needs. `flat
 
 `flattenInline`'s replacement records, per inline-code run, an `InlineSpan { start: SourcePos; end: SourcePos; raw: string }` (the byte/column range + the backticked text) while still returning the flattened string every other consumer relies on. The `table` arm of `BlockNode` gains additive `cellPos(row, col): SourcePos` (with `col` set) and `inlineSpans(row, col): InlineSpan[]`; paragraphs gain the analogous inline-span accessor. Existing `pos` / `rowPos(i)` and the flattened string are untouched. Whether spans are threaded from mdast's `inlineCode.position` or recomputed against the flattened text is resolved in this task (the implementation spike question from `proposed-shape.md` §7). Flips `cell-pos` and un-skips the position fixtures.
 
+Consuming the new surface — a `scan-placeholders`-style masking pass that flags unfilled `<...>` placeholders in a table cell while skipping any `<T>` written as inline code:
+
+```ts
+import { validate, blocksOfKind } from "markdown-contract";
+
+// `validate` never throws; `.tree` is the contract-free projection this consumer reads.
+const { tree } = validate(source, { path: "contract.md" });
+// Obtain the table node — the `table` arm of `BlockNode` (columns, rows, rowPos, pos + the new accessors).
+const [tbl] = blocksOfKind(tree.root, "table", { recursive: true });
+
+const [row, col] = [0, 1]; // the cell to scan
+// cellPos(row, col): SourcePos — precise cell start with `col` set (previously deferred, now populated by T-SCPP).
+const at = tbl.cellPos(row, col);
+// inlineSpans(row, col): InlineSpan[] — one { start: SourcePos; end: SourcePos; raw: string } per inline-code run (empty when none).
+const spans = tbl.inlineSpans(row, col);
+
+// Scan the flattened cell text (byte-identical to before) for `<...>` tokens.
+for (const m of tbl.rows[row][col].matchAll(/<[^>]*>/g)) {
+  const tokenCol = at.col! + m.index; // token's source column, anchored on cellPos().col
+  // Masked when some inline-code span covers the token's column range.
+  const masked = spans.some((s) => tokenCol >= s.start.col! && tokenCol < s.end.col!);
+  if (masked) continue; // e.g. a `<T>` inside backticks — inline code, NOT an unfilled placeholder
+  // A `<...>` no span covers IS a real placeholder.
+  console.warn(`unfilled placeholder ${m[0]} at ${at.line}:${tokenCol}`);
+}
+```
+
 ## Approach
 
 1. Define the `InlineSpan { start: SourcePos; end: SourcePos; raw: string }` type in `src/core/types.ts`; add `cellPos(row, col)` and `inlineSpans(row, col)` to the `table` arm of `BlockNode`, and an inline-span accessor to the paragraph arm.
