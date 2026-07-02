@@ -6,7 +6,7 @@
 ## Affordance
 
 An OOM node **references** its mdast segment through a precisely-typed accessor — it does **not**
-`extends` the mdast interface. You get mdast's full types by composition (`t.mdast(): Mdast.Table`),
+`extend` the mdast interface. You get mdast's full types by composition (`t.mdast(): Mdast.Table`),
 while the OOM node keeps its own semantic shape (`kind` / `columns` / `rows`, not `type` / `children`
 / `position`).
 
