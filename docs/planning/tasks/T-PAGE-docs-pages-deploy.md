@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-PAGE
-status: open/ready
+status: planning/needs-definition
 created: '2026-06-30'
 last_reviewed: '2026-06-30'
 related:
@@ -20,6 +20,12 @@ need_human_review: true
 impact: medium
 complexity: small
 autonomy: supervised
+definition_gap: 'The ''## Files to touch'' table row for apps/docs/astro.config.mjs
+  declares an invalid Kind value ''maybe''; the controlled vocabulary is new/modify/delete,
+  so the v3 touchpoint verifier rejects the row (touchpoint-parse-error) and the spec
+  is not implementation-ready. Fix: change the Kind cell to ''modify'' (the Change
+  note ''Confirm base/site match the Pages project URL'' describes a conditional modification
+  of that file). One-word edit, then re-run /sdlc:task-work.'
 ---
 # Wire the GitHub Pages deploy workflow for `apps/docs` (moon/Bun build → Pages)
 
