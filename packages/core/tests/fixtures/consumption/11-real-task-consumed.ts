@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   contract,
   docRule,
@@ -8,7 +9,6 @@ import {
   sections,
   table,
 } from "../../../src/index.js";
-import { z } from "zod";
 import type { ConsumptionFixture } from "../../harness.js";
 import { loadSource } from "../../harness.js";
 

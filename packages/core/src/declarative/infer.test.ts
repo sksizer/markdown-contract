@@ -4,17 +4,16 @@
  * direct, fast assertions over the model an in-memory vault produces — base-type frontmatter,
  * required/optional split, order detection, the strict flag, naming, and the emitted YAML.
  */
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { parse } from "yaml";
-
-import { compileContractObject } from "./load.js";
-import { inferConfig } from "./infer.js";
 import type { InferredContract } from "./infer.js";
+import { inferConfig } from "./infer.js";
+import { compileContractObject } from "./load.js";
 
 let root: string;
 

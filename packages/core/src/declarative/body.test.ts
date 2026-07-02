@@ -2,9 +2,6 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
-
-import type { Finding } from "../core/types.js";
-import type { ValidationFixture } from "../../tests/harness.js";
 import v01 from "../../tests/fixtures/validation/01-single-required-section.js";
 import v05 from "../../tests/fixtures/validation/05-strict-prefix-gap-tail.js";
 import v06 from "../../tests/fixtures/validation/06-alias-sets-oneof.js";
@@ -13,6 +10,8 @@ import v10 from "../../tests/fixtures/validation/10-table-leaf-columns-minrows.j
 import v11 from "../../tests/fixtures/validation/11-typed-cells-enum-pattern.js";
 import v12 from "../../tests/fixtures/validation/12-list-leaf-checkbox-minitems.js";
 import v14 from "../../tests/fixtures/validation/14-nested-children-subsections.js";
+import type { ValidationFixture } from "../../tests/harness.js";
+import type { Finding } from "../core/types.js";
 import { loadContract } from "./index.js";
 
 // Compare on the fields a YAML contract must reproduce exactly: id / level / line.

@@ -54,9 +54,8 @@ import { basename, resolve, sep } from "node:path";
 
 import picomatch from "picomatch";
 import { stringify as stringifyYaml } from "yaml";
-
-import { parse } from "../core/index.js";
 import { toCamelKey } from "../core/camel.js";
+import { parse } from "../core/index.js";
 import { DEFAULT_MAX_CONST_STRING_LENGTH, DEFAULT_MIN_CONST_EXAMPLES } from "./constants.js";
 import { DeclarativeError } from "./errors.js";
 import { compileSchema } from "./schema.js";

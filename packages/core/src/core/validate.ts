@@ -20,7 +20,7 @@ import { matchContent } from "./content.js";
 import { ContractError } from "./finding.js";
 import { buildModel } from "./model.js";
 import { parse } from "./projection.js";
-import { makeCtx, defaultRegistry } from "./registry.js";
+import { defaultRegistry, makeCtx } from "./registry.js";
 import { matchStructure, scanHeadingDepthJumps } from "./structure.js";
 import type {
   ContractDef,

@@ -7,9 +7,8 @@
  */
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-
-import { contract, ContractError, docRule, list, parse, section, sections } from "../index.js";
 import type { Doc, Finding, SectionView } from "../index.js";
+import { ContractError, contract, docRule, list, parse, section, sections } from "../index.js";
 
 const PATH = "doc.md";
 

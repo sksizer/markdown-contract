@@ -16,15 +16,15 @@ import { stringify as stringifyYaml } from "yaml";
 
 import {
   compileContractObject,
+  type InferOptions,
+  type InferResult,
+  type InferredContract,
+  type InferredFile,
   inferConfig,
   loadConfigFile,
   loadContractFile,
-  type InferOptions,
-  type InferredContract,
-  type InferredFile,
-  type InferResult,
 } from "../declarative/index.js";
-import { runCorpus, type CorpusConfig } from "../runner/index.js";
+import { type CorpusConfig, runCorpus } from "../runner/index.js";
 import { formatHuman, formatJson, formatRunSummary, formatSarif } from "./format.js";
 
 const USAGE = [

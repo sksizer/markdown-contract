@@ -8,5 +8,5 @@
  * `provenance/d0014/review-checklist.md` (M·corpus-runner, L6).
  */
 
-export { defineConfig, runCorpus, compileMatcher } from "./corpus.js";
 export type { CorpusConfig, RunStats } from "./corpus.js";
+export { compileMatcher, defineConfig, runCorpus } from "./corpus.js";

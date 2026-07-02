@@ -26,8 +26,8 @@
  */
 import { toCamelKey } from "./camel.js";
 import { ContractBuildError } from "./grammar.js";
-import { buildTextFindings, matchText } from "./text-match.js";
 import type { TextMatchSpec } from "./text-match.js";
+import { buildTextFindings, matchText } from "./text-match.js";
 import type { BlockNode, Ctx, Doc, DocRule, DocTree, Finding, Rule, SectionNode } from "./types.js";
 
 /**

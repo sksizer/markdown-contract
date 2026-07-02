@@ -21,14 +21,13 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, test } from "vitest";
-
-import { ContractError } from "../src/index.js";
-import type { Contract, Doc, Finding } from "../src/index.js";
-import { compileContractObject, inferConfig } from "../src/declarative/index.js";
 import type { InferOptions, InferResult } from "../src/declarative/index.js";
-import { runCorpus } from "../src/runner/index.js";
+import { compileContractObject, inferConfig } from "../src/declarative/index.js";
+import type { Contract, Doc, Finding } from "../src/index.js";
+import { ContractError } from "../src/index.js";
 import type { CorpusConfig } from "../src/runner/index.js";
-import { IMPLEMENTED, type Component } from "./components.js";
+import { runCorpus } from "../src/runner/index.js";
+import { type Component, IMPLEMENTED } from "./components.js";
 
 const DEFAULT_PATH = "fixture.md";
 

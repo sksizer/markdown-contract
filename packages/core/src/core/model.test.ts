@@ -8,9 +8,8 @@
  */
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-
-import { contract, gap, list, optional, section, sections, table } from "../index.js";
 import type { SectionGroup, SectionView, TableView } from "../index.js";
+import { contract, gap, list, optional, section, sections, table } from "../index.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

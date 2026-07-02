@@ -24,8 +24,9 @@
  * `DocRule`. Either surface emits findings identical to the equivalent TS builder — same
  * synthesized ids, levels, positions, messages.
  */
-import { forbids, requires, textRule } from "../core/text-constraints.js";
+
 import type { TextMatchSpec } from "../core/text-constraints.js";
+import { forbids, requires, textRule } from "../core/text-constraints.js";
 import type { DocRule, Rule } from "../core/types.js";
 import { DeclarativeError } from "./errors.js";
 

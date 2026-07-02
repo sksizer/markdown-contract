@@ -26,10 +26,9 @@ import remarkParse from "remark-parse";
 import remarkStringify from "remark-stringify";
 import { unified } from "unified";
 import { describe, expect, test } from "vitest";
-
-import { extractVaultRefs } from "./dialect/index.js";
-import { parse } from "../index.js";
 import type { BlockNode } from "../index.js";
+import { parse } from "../index.js";
+import { extractVaultRefs } from "./dialect/index.js";
 
 /** Narrow a BlockNode to a specific kind for typed assertions. */
 function blockOf<K extends BlockNode["kind"]>(

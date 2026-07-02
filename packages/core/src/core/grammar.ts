@@ -10,7 +10,6 @@
  * leaf and the cross-plane / docRule merge land in T-5LW7 / T-3NC8.
  */
 import { toCamelKey } from "./camel.js";
-import { read as readEntry, validate as validateEntry } from "./validate.js";
 import type {
   Contract,
   ContractDef,
@@ -31,6 +30,7 @@ import type {
   Spec,
   ValidateCtx,
 } from "./types.js";
+import { read as readEntry, validate as validateEntry } from "./validate.js";
 
 // Re-export the structure matcher so callers can `import { matchStructure } from "./grammar.js"`.
 export { matchStructure } from "./structure.js";

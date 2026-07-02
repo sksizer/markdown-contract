@@ -9,10 +9,9 @@
  * `contract().validate(...)`, which runs the structure plane and returns findings as data.
  */
 import { describe, expect, test } from "vitest";
-
+import type { Finding } from "../index.js";
 import { code, contract, gap, list, maxWords, section, sections, table } from "../index.js";
 import { ContractBuildError } from "./grammar.js";
-import type { Finding } from "../index.js";
 
 const ctx = { path: "fixture.md" };
 

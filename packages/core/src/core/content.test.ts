@@ -7,9 +7,8 @@
  */
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-
-import { code, contract, list, maxWords, section, sections, table } from "../index.js";
 import type { Finding } from "../index.js";
+import { code, contract, list, maxWords, section, sections, table } from "../index.js";
 
 const CTX = { path: "fixture.md" };
 
