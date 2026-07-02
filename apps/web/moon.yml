@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://moonrepo.dev/schemas/project.json
+#
+# The `web` project (mapped to 'apps/web' in .moon/workspace.yml) — the server face
+# of the single binary (T-DAEM, D-0012 §D3): the combined `bin.ts` entry and the
+# loopback daemon exposing a JSON API over packages/core's runner. Models the
+# package.json scripts as moon tasks; the scripts stay thin pass-throughs.
+#
+# All Bun-only / server code lives here (never in packages/core), so every task runs
+# on the `bun` toolchain — Bun is both the dev runtime and the target for the future
+# `bun build --compile` matrix ([[T-BMTX-bun-compile-matrix]], out of scope here: no
+# compile / build:web task in this file yet).
+#
+# typecheck/test both `deps: ['core:build']` because apps/web imports the published
+# library through its `exports` map (`markdown-contract`, `.../cli`, `.../declarative`),
+# which resolves to packages/core's `dist/` — so dist must be fresh first.
+
+layer: 'application'
+language: 'typescript'
+
+tasks:
+  # `bun run daemon` (= bun src/bin.ts daemon) — boot the loopback JSON API for local
+  # development. `preset: server` marks it local + persistent, cache off, never a CI gate.
+  dev:
+    command: 'bun run daemon'
+    toolchain: 'bun'
+    preset: 'server'
+
+  # `bun run typecheck` (= tsc --noEmit) — type-check src against the project tsconfig.
+  # No outputs (pure check), so caching keys purely on inputs. Needs core's dist for the
+  # `markdown-contract/*` type resolutions.
+  typecheck:
+    command: 'bun run typecheck'
+    toolchain: 'bun'
+    deps:
+      - 'core:build'
+    inputs:
+      - 'src/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `bun run test` (= bun test) — the peer test suite. Pinned to `bun test` (not vitest)
+  # because the daemon boots `Bun.serve`, a Bun-only API. Needs core's dist for the
+  # `markdown-contract/*` runtime imports the daemon resolves.
+  test:
+    command: 'bun run test'
+    toolchain: 'bun'
+    deps:
+      - 'core:build'
+    inputs:
+      - 'src/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
