@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-BMTX
-status: open/ready
+status: in-progress/blocked
 created: '2026-06-28'
 related:
   - '[[M-0008-single-exec-distribution]]'
@@ -100,3 +100,44 @@ single host and a CI job that builds the host binary and smoke-tests **both face
 ## Dependencies
 
 - Depends on [[T-WKSP-bun-workspace-split]] (`packages/core` + the `apps/web` slot) and the moon/Bun toolchain ([[T-MOON-adopt-moon-monorepo]]). Compiles the combined entry from [[T-DAEM-daemon-and-json-api]] (with the embed from [[T-SPAE-spa-embed]]). Governed by [[D-0012-distribution-single-exec-and-web-ui]] / [[D-0010-monorepo-tooling]].
+
+<blocked>
+
+Blocked by unmet upstream dependencies — discovered during the `/sdlc:task-work` relevance check
+on 2026-07-02, before any implementation. The compile target and both faces this task must build
+and smoke-test **do not exist yet**:
+
+- **No compile target.** The entire task compiles `apps/web/src/bin.ts` (`bun build --compile`),
+  the combined CLI+daemon entry created by [[T-DAEM-daemon-and-json-api]]. That file — and any
+  `apps/web/src/` at all — is absent. `apps/web/` is still the explicit placeholder from
+  [[T-WKSP-bun-workspace-split]] (only `package.json` + `README.md`, whose own text says "There is
+  no implementation here yet"). There is nothing to `--compile`.
+- **No SPA to embed / `build:web` to wire.** AC-3 requires `build:web` to produce an SPA dist that
+  `compile` depends on. The SPA ([[T-WEBU-nuxt-spa-ui]]) and its embed mechanism
+  ([[T-SPAE-spa-embed]]) are both unbuilt, so there is no `build:web` output and no `apps/web/moon.yml`.
+- **No daemon to smoke-test.** AC-2/AC-4 boot the binary as `daemon` and curl `/api/health` +
+  `/api/validate` and assert the embedded SPA HTML. No daemon/API server exists in `apps/` or
+  `packages/` yet (again [[T-DAEM-daemon-and-json-api]]).
+
+Consequently AC-1 through AC-4 are all unsatisfiable right now. Only AC-5 (leave `packages/core`'s
+npm publish untouched) is trivially true because nothing was built.
+
+**Why this wasn't caught at pickup.** The task's `depends_on:` frontmatter lists only
+[[T-WKSP-bun-workspace-split]] (which *is* `closed/done`), so the dependency-aware pickup filter
+considered it dispatchable. Its real prerequisites — [[T-DAEM-daemon-and-json-api]],
+[[T-WEBU-nuxt-spa-ui]], [[T-SPAE-spa-embed]] (all currently `open/ready`) — appear only in the body
+prose and `related:`, not in `depends_on`.
+
+**What an unblock needs:**
+
+1. Land [[T-DAEM-daemon-and-json-api]] (creates `apps/web/src/bin.ts`, the combined entry), then
+   [[T-WEBU-nuxt-spa-ui]] + [[T-SPAE-spa-embed]] (the SPA and its embed) so `bin.ts` pulls in a real
+   SPA at compile time.
+2. Add those three tasks to this task's `depends_on:` so the pickup filter holds it back until they
+   are `closed/done` (prevents a repeat premature dispatch).
+3. Re-run `/sdlc:task-work T-BMTX-bun-compile-matrix` once the compile target and both faces exist.
+
+No implementation was attempted; the worktree at `.sdlc/worktrees/T-BMTX-bun-compile-matrix` and the
+`task/T-BMTX-bun-compile-matrix` branch carry only this blocked note.
+
+</blocked>
