@@ -41,6 +41,41 @@ Extend the "keep the transform output" mechanism from table cells to list items 
 
 `validateList` keeps `res.data` on a successful `everyItem` `safeParse` and caches it on the list node via an additive sparse `typedItem(i)` accessor (the list analogue of the table `typed(row, col)` overlay), raw items retained. `listView` reads the cache and yields typed items when present; `list<I extends ZodType>(...)` captures the item schema's literal type so a declared `everyItem` transform reaches `read()` as a typed `ListView` of `z.output<everyItem>`. The `"checkbox"` gate and the `ListView` default (raw items) are unchanged. Un-skip the list fixtures by flipping `list-typed`.
 
+Consuming a transforming list — the per-item transform output flows to the typed model and reads back through `ListView`, mirroring table cells:
+
+```ts
+import { z } from "zod";
+import { contract, sections, section, list } from "markdown-contract";
+
+// A "Steps" section whose content is a list; `everyItem`'s transform runs per item
+// and T-SCLI keeps that output so it flows to the typed model (the table-cell analogue).
+const c = contract({
+  body: sections({}, [
+    section("Steps", {
+      // list<I extends ZodType> captures the item schema's literal type (I = the transform)
+      content: list({ everyItem: z.string().transform((s) => s.length) }),
+    }),
+  ]),
+});
+
+const src = "## Steps\n\n- knead\n- proof\n";
+
+// read() -> typed model, or throws ContractError on an error-level finding
+const doc = c.read(src, { path: "recipe.md" });
+// doc.body.steps is the lowerCamelCase alias of "Steps"; .lists[0] is its ListView
+const steps = doc.body.steps.lists[0]; // ListView<Item>, Item = z.output<everyItem> = number
+const lengths: number[] = [...steps];  // [5, 5] — typed items from the cache, transform not re-run
+// validate() never throws; the same typed ListView hangs off .doc
+const also = c.validate(src, { path: "recipe.md" }).doc?.body.steps.lists[0];
+
+// Contrast — no `everyItem`: the ListView default is unchanged (raw ListItem, each .text a string)
+const plain = contract({
+  body: sections({}, [section("Notes", { content: list({}) })]),
+});
+const notes = plain.read("## Notes\n\n- a\n- b\n", { path: "notes.md" }).body.notes.lists[0];
+const raw: string[] = [...notes].map((i) => i.text); // items stay raw strings, no transform
+```
+
 ## Approach
 
 1. Add an additive sparse `typedItem(i): unknown | undefined` accessor (+ internal writer) to the `list` arm of `BlockNode` in `src/core/types.ts`; raw `items` retained.
