@@ -1,29 +1,29 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-7UTE
-status: in-progress
-created: 2026-06-28
-last_reviewed: 2026-07-02
+status: closed/done
+created: '2026-06-28'
+last_reviewed: '2026-07-02'
 related:
-  - "[[M-0006-documentation-site]]"
-  - "[[M-0005-monorepo-tooling]]"
-  - "[[D-0010-monorepo-tooling]]"
+- '[[M-0006-documentation-site]]'
+- '[[M-0005-monorepo-tooling]]'
+- '[[D-0010-monorepo-tooling]]'
 depends_on:
-  - "[[T-WKSP-bun-workspace-split]]"
+- '[[T-WKSP-bun-workspace-split]]'
 tags:
-  - docs
-  - website
-  - astro
-  - starlight
-  - moon
+- docs
+- website
+- astro
+- starlight
+- moon
 need_human_review: true
 impact: medium
 complexity: medium
 autonomy: supervised
-readiness_verified_at: 2026-07-02T18:43:44Z
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/175
+- https://github.com/sksizer/markdown-contract/pull/175
+completion_note: 'Shipped via #175.'
 ---
 # Scaffold the `apps/docs` Astro + Starlight project as a moon workspace member
 
