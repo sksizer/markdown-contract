@@ -19,6 +19,7 @@ need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
+readiness_verified_at: '2026-07-02T19:59:18Z'
 ---
 # Author the bare-shell landing page and content-collection IA for `apps/docs`
 
