@@ -8,6 +8,7 @@
 projects:
   core: "packages/core"
   web: "apps/web"
+  docs: "apps/docs"
 
 # Version control system. The repo is git, default branch is main.
 vcs:
