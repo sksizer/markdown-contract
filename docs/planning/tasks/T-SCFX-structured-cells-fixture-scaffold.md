@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-SCFX
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0011-structured-cells]]'
@@ -17,7 +17,7 @@ need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-02'
 readiness_verified_at: '2026-07-02T17:07:23Z'
 ---
 # Scaffold the structured-cells fixtures and enable gates (`cell-typed` / `list-typed` / `cell-pos`)
@@ -80,3 +80,19 @@ Add three gate components — `cell-typed`, `list-typed`, `cell-pos` — to the 
 ## Dependencies
 
 - None. This is the first task of the milestone; it establishes the targets the rest green.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-02. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
