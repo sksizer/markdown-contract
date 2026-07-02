@@ -22,14 +22,28 @@ export { matchContent } from "./content.js";
  */
 const PLACEHOLDER_SCHEMA: ZodType = {};
 
-/** A typed-table leaf: columns, optional anchor, per-cell schemas, min rows. */
-export function table(s: {
+/**
+ * The typed row a `cells` map projects to: each declared cell's `z.output` (read off the
+ * `ZodType` phantom `_output`), keyed by column name. Undeclared columns stay string-valued at
+ * runtime; this only types the declared, possibly-transforming cells. Stub-level — the real
+ * per-row wiring into the model lands in T-SCRB.
+ */
+type CellsRow<C extends Record<string, ZodType>> = {
+  [K in keyof C]: C[K] extends ZodType<infer O> ? O : never;
+};
+
+/**
+ * A typed-table leaf: columns, optional anchor, per-cell schemas, min rows. Generic over its
+ * `cells` map so the return type carries the transformed row shape (`z.output` per cell) forward
+ * on `LeafSpec._row`; the runtime is an inert passthrough (real inference lands in T-SCRB).
+ */
+export function table<C extends Record<string, ZodType> = Record<string, ZodType>>(s: {
   columns: string[];
   anchor?: string;
   minRows?: number;
-  cells?: Record<string, ZodType>;
+  cells?: C;
   extraColumns?: "ignore" | "error";
-}): LeafSpec {
+}): LeafSpec<CellsRow<C>> {
   return { kind: "table", schema: PLACEHOLDER_SCHEMA, config: s };
 }
 

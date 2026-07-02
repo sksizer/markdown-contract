@@ -136,6 +136,40 @@ active surface is visible as it grows.
 A real-corpus end-to-end case that needs several planes is tagged with the **highest** one it
 reaches (e.g. a full decision contract → `validate`; a typed read of it → `consumption`).
 
+## Structured cells
+
+The structured-cells feature (D-0015 / M-0011) lets a table cell or list item **transform** its
+source string into a typed value (`z.output<cell>`), and preserves each cell's source position
+through that transform. Its consumption fixtures gate on three `cell`/`list`-family components in
+`tests/components.ts`, flipped in this order by the implementation tasks:
+
+```
+cell-typed → list-typed → cell-pos
+```
+
+| component | greens the fixture that needs… |
+|---|---|
+| `cell-typed` | typed table-row read-back — a `cells` map whose values `.transform()` (e.g. a `Location` cell parsed to `{ path, symbol? }`) read back as the typed row (`c12`). |
+| `list-typed` | typed list items — a `list({ everyItem })` whose items transform to a typed shape (`c13`). |
+| `cell-pos` | position preservation — per-cell `cellPos(row, col).col` + inline-code `inlineSpans(...)` ranges surviving the transform (`c14`). |
+
+| fixture | gate | asserts |
+|---|---|---|
+| `12-typed-row-transform` | `cell-typed` | `row.Location` reads back as `{ path, symbol? }` (transforming cell). |
+| `13-typed-list-items` | `list-typed` | each list item reads back as the transformed `{ ref, text }`. |
+| `14-cell-position` | `cell-pos` | `cellPos(row, "Location").col` and the cell's `inlineSpans(...)` ranges. |
+| `15-no-transform-parity` | `consumption` | a **no-transform** contract reads back **byte-identical** raw string rows — the "no golden moves" guard. |
+
+All three transform/position gates seed `false`, so `c12`–`c14` are **skipped** (green, not
+failing) until each component lands and flips its flag. Because `build()` is lazy and the reads
+navigate through `(doc.body as any)` / `(doc as any)`, the fixtures type-check against the stubbed
+typed surface (`table()` generic over its `cells`, `LeafSpec._row`, `TableView<Row>`) even though
+the transform-capture, read-back, and position accessors do not exist yet. `c12`–`c14` are
+`peerless` — v1 YAML cannot express a Zod `.transform()` (nor the position accessors), so they
+carry no `.contract.yaml` twin. `c15` is gated on `consumption` (already `true`), so it **runs**
+today and its assertion actually demonstrates the no-transform parity; it keeps a real
+`.contract.yaml` twin (a no-transform contract round-trips through v1 YAML).
+
 ## Inference fixtures
 
 The config-inference feature (D-0009 / C-0008) — `markdown-contract init <dir>…`, which scaffolds
