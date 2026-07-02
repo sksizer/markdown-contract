@@ -44,6 +44,30 @@ Author a new decision record under `provenance/` (the next free `D-00NN`; `prove
 - **Read-back shape.** How `ParagraphView` exposes the typed value (a new `.value` alongside `.text`?) and whether `Infer` carries it to `read()`.
 - **Motivation strength.** Whether the use cases (a one-line `Owner: @handle` paragraph, a paragraph that is really a date/identifier) justify the surface — the three D-0015 consumers are all tables, none is a paragraph.
 
+The recommended surface, sketched non-normatively (this ADR ships no source — the leaf below does not exist yet):
+
+```ts
+// PROPOSED (design-only): the schema-bearing paragraph leaf this ADR would decide — not yet shipped.
+import { z } from "zod";
+import { contract, sections, section, paragraph, text } from "markdown-contract";
+
+const Card = contract({
+  body: sections({}, [
+    // `paragraph({ schema })` — the proposed schema-bearing paragraph leaf (the Surface question)
+    section("Reviewed", { content: paragraph({ schema: z.string().transform((s) => new Date(s)) }) }),
+  ]),
+});
+
+// `read()` returns the typed model, or throws ContractError on an error-level finding
+const doc = Card.read("## Reviewed\n\n2026-07-01\n", { path: "card.md" });
+doc.body.reviewed.value; // Date — the transform output, exposed as the proposed ParagraphView.value (Read-back shape)
+doc.body.reviewed.text; // "2026-07-01" — the raw paragraph text still available alongside .value
+
+// Variant: the alternate spelling `text({ schema })`, read back via validate() (never throws)
+const alt = contract({ body: sections({}, [section("Reviewed", { content: text({ schema: z.string().transform((s) => new Date(s)) }) })]) });
+alt.validate("## Reviewed\n\n2026-07-01\n", { path: "card.md" }).doc?.body.reviewed.value; // Date | undefined
+```
+
 ## Approach
 
 1. Read `provenance/d0015/README.md` + `proposed-shape.md` (§7 "List / paragraph generalization") and the three paragraph touchpoints in `## Today`, to ground the ADR in the shipped paragraph path.
