@@ -1,22 +1,24 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-0MVN
 status: in-progress
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0010]]'
+  - "[[M-0010]]"
 tags:
-- quality
-- lint
-- format
-- biome
-- complexity
+  - quality
+  - lint
+  - format
+  - biome
+  - complexity
 need_human_review: false
 impact: medium
 complexity: medium
-readiness_verified_at: '2026-07-02T03:59:22Z'
-last_reviewed: '2026-07-02'
+readiness_verified_at: 2026-07-02T03:59:22Z
+last_reviewed: 2026-07-02
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/169
 ---
 # Adopt Biome for lint, format, and per-function complexity gating
 
