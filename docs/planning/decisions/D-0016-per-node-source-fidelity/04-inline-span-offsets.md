@@ -53,7 +53,7 @@ for (const span of para.spans()) {
   for (const m of span.value.matchAll(PLACEHOLDER)) {
     hits.push({
       text: m[0],                                 // "<owner>"
-      range: offsetWithin(span.range, m.index),   // absolute source offset, from the span's range
+      range: offsetWithin(span.range, m.index!),  // absolute source offset, from the span's range
     });
   }
 }
@@ -69,12 +69,12 @@ hits;   // [{ text: "<owner>", range: { start: 8, end: 15 } }]
 // then regex the masked line and back-compute the column from the raw line
 const masked = maskInlineCode(rawLine);            // hand-rolled `…` masking
 for (const m of masked.matchAll(PLACEHOLDER)) {
-  const col = m.index;                             // column re-derived against the raw line
-  report(rawLine.slice(m.index, m.index + m[0].length), lineNo, col);
+  const col = m.index!;                            // column re-derived against the raw line
+  report(rawLine.slice(col, col + m[0].length), lineNo, col);
 }
 
 // after — the projection already knows which spans are code and where each span sits
-for (const span of para.spans()) { … }             // (above)
+for (const span of para.spans()) { /* …as above… */ }   // (above)
 ```
 
 ## Why it matters
