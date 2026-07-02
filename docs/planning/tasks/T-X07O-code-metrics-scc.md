@@ -149,12 +149,23 @@ _Captured by /sdlc:task-work on 2026-07-02. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — inspected `.github/workflows/metrics.yml`: standalone workflow, `env: SCC_VERSION: v3.5.0` is the single pin, installs exactly that tagged release; confirmed `ci.yml` is absent from the commit's file list, so its `moon run` line is untouched.
+- AC-2: agent-manual — inspected the "Write metrics table to step summary" step: runs `scc --ci packages/core/src` fenced into `$GITHUB_STEP_SUMMARY` (per-language Files/Lines/Blanks/Comments/Code/Complexity + COCOMO). Live rendering deferred (Actions billing-blocked).
+- AC-3: agent-manual — inspected the JSON + upload steps: `scc --format json --by-file -o scc-report.json packages/core/src` then `actions/upload-artifact@v7` as `code-metrics`. Live artifact deferred (Actions billing-blocked).
+- AC-4: agent-manual — confirmed no threshold/assertion step exists and scc has no native gating, so the workflow cannot fail on any LOC/complexity value.
+- AC-5: auto — `package.json` diff shows only the added `metrics` script; `devDependencies` unchanged and `bun.lock` absent from the diff; the `core:package-check` quality gate passed (`OK 4/4`, baseline-gated).
+- AC-6: agent-manual — read the new `## Code metrics` README section documenting `bun run metrics`/`npm run metrics`, the scc PATH prerequisite (`brew install scc` / `go install …@v3.5.0`, not a devDependency), and CI's pinned `SCC_VERSION` as the reproducible source of truth.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The task was fully specified and the three sibling side-gate workflows (`knip.yml` / `audit.yml` / `package-quality.yml`) made the workflow shape unambiguous — a dedicated report-only file with no contention on `ci.yml`'s shared `moon run` line.
+- Verified the scc release pin end-to-end before writing (`gh api` for the tag + asset name `scc_Linux_x86_64.tar.gz`, `curl -sIL` for a 200 on the download URL), so the pin is correct despite the live workflow run being deferred by the Actions billing block.
+- The baseline-gated quality gate cleanly separated pre-existing drift (0 findings at `origin/main`) from branch drift (0 new), giving an unambiguous `OK 4/4`.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The task doc's Files-to-touch cited `actions/checkout@v4` / `actions/upload-artifact@v4`, but every sibling workflow in the repo pins `@v7`; reconciled by reading the siblings and using `@v7` for consistency. Minor, task-specific, and cleanly resolved — not worth a new backlog doc.
+- `worktree_init`'s `bun install` (no `--frozen-lockfile`) added a `configVersion: 0` line to `bun.lock` in the worktree, which had to be manually reverted to keep it out of the PR — already captured as `[[B-L0CK-bun-lock-configversion-churn-from-local-proto-bun]]`.
+- Step 7's documented `sdlc quality run --diff-against-baseline` invocation defaults `--baseline-dir` to the worktree's own `.sdlc/quality-baselines/`, but the baseline is captured in the main repo; had to pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly — already captured as `[[B-HVL1-worktree-quality-baseline-dir-resolution]]`.
+- Step 3b's permissions probe reported false-positive gaps for `bun` / `Write` / `Edit` even though those tools work in this environment — already captured as `[[B-PFPB-permissions-probe-false-positive]]`.
+- The live workflow (Step Summary render + `code-metrics` artifact for AC-2/AC-3) cannot be exercised until GitHub Actions billing is unblocked (task Dependencies/Risk); those two ACs are inspection-verified only and want a manual spot-check on the first live run.
