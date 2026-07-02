@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-DAEM
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0008-single-exec-distribution]]'
@@ -23,6 +23,7 @@ impact: high
 complexity: medium
 autonomy: supervised
 readiness_verified_at: '2026-07-02T17:15:15Z'
+last_reviewed: '2026-07-02'
 ---
 # `daemon` mode + a JSON API over the runner — the `apps/web` server face
 
@@ -101,3 +102,19 @@ all Bun-only and server code lives only in `apps/web`, preserving the one-way la
 ## Dependencies
 
 - Depends on [[T-WKSP-bun-workspace-split]] (the `apps/web` slot + `packages/core` as a workspace dependency). Consumes `runCorpus` / `inferConfig`. Governed by [[D-0012-distribution-single-exec-and-web-ui]] §D1/§D3.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-02. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
