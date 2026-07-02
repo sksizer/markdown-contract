@@ -71,7 +71,7 @@ const spec = contract({
   ]),
 });
 
-const doc = read(source, { path: "T-SCRB.md" }); // throws ContractError on invalid input
+const doc = spec.read(source, { path: "T-SCRB.md" }); // read() is a contract method; throws ContractError on invalid input
 
 // doc.body.filesToTouch is the auto lowerCamelCase alias of "Files to touch"
 // (dual-key SectionGroup, D-0005 §6); ["Files to touch"] / .section(...) reach the same view.
@@ -98,7 +98,7 @@ const plain = contract({
   ]),
 });
 
-const plainDoc = read(source, { path: "T-SCRB.md" });
+const plainDoc = plain.read(source, { path: "T-SCRB.md" });
 for (const r of plainDoc.body.filesToTouch) {
   r.Location; // string — no transform, so the value is the raw cell text
   r.Kind;     // string — every column is a raw string
