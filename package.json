@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "audit": "bun audit --audit-level=high",
-    "lint:deps": "knip"
+    "lint:deps": "knip",
+    "metrics": "scc packages/core/src"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
