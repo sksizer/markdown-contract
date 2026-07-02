@@ -21,6 +21,7 @@ need_human_review: true
 impact: medium
 complexity: medium
 autonomy: supervised
+readiness_verified_at: '2026-07-02T18:43:44Z'
 ---
 # Scaffold the `apps/docs` Astro + Starlight project as a moon workspace member
 
