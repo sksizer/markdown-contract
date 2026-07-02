@@ -20,6 +20,25 @@ Replace <owner> before review; leave `<placeholder>` alone.
 `<owner>` is an unfilled placeholder to flag; `<placeholder>` is inside inline code and must be
 skipped.
 
+## How inline code is represented
+
+Inline code is its **own mdast node** — `inlineCode`, a phrasing *leaf* — distinct from a fenced
+**block** code node (`code`). It has no `children`; its content is a raw string in `value`, and (as
+in [03](./03-verbatim-table-cells.md)) mdast stores that `value` with the backticks stripped. The
+input above parses to this phrasing sequence:
+
+```ts
+[
+  { type: "text",       value: "Replace <owner> before review; leave " },
+  { type: "inlineCode", value: "<placeholder>" },   // ← leaf: no children, no backticks in value
+  { type: "text",       value: " alone." },
+]
+```
+
+`spans()` is the positioned projection of exactly this sequence: each `inlineCode` becomes a span
+with `kind: "code"`, each `text` a `kind: "text"` span, every span carrying its own `range`. That is
+why the consumer below can skip a whole code span in one `kind === "code"` check.
+
 ## Consumer code
 
 ```ts
