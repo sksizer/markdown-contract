@@ -11,6 +11,7 @@ tags:
 need_human_review: false
 impact: medium
 complexity: small
+readiness_verified_at: '2026-07-02T03:34:43Z'
 ---
 # Add scc code metrics — lines of code and cyclomatic complexity reporting
 
