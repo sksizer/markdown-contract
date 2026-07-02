@@ -51,7 +51,7 @@ The convention is documented only in its superseded, npm-canonical form:
 | Location | Role today |
 |---|---|
 | `README.md` | **Develop** section states "npm stays canonical … `npm run <script>` works exactly as before", shows `npx moon run :build` examples it describes as wrapping "the same npm scripts above", and a **Pinned versions** table whose roles read "Node — runs build / typecheck / test" and "Bun — pinned forward-looking … runs no task today". |
-| `moon.yml` | The `build` task comment explains the no-`.bin`-on-PATH rule for the npm path only: "The npm script is run rather than `tsc` directly because moon v2's runtime-only node toolchain does not put node_modules/.bin on PATH; npm does". |
+| `packages/core/moon.yml` | The `build` task comment explains the no-`.bin`-on-PATH rule for the npm path only: "The npm script is run rather than `tsc` directly because moon v2's runtime-only node toolchain does not put node_modules/.bin on PATH; npm does". |
 
 Once [[T-WKSP-bun-workspace-split]] makes Bun canonical (`bun install` / `bun.lock`, `build`/`typecheck` on the bun toolchain, `test` pinned to node), every one of those statements is wrong — and the reason a task cannot call `tsc`/`vitest` directly is no longer written down for the bun path.
 
@@ -60,7 +60,7 @@ Once [[T-WKSP-bun-workspace-split]] makes Bun canonical (`bun install` / `bun.lo
 Rewrite the convention docs to match the bun-canonical workspace and state the authoring rule explicitly:
 
 - The **Develop** section reflects Bun as canonical (`bun install`, `bun run …` / `npx moon run :…`), with the pinned-versions roles corrected: **Bun** = installer + `build`/`typecheck` runner; **Node** = the `test` gate and the published-artifact target.
-- A short **"Authoring moon tasks"** note (in README, mirrored as a `moon.yml` comment at the edit site) states the rule so future tasks follow it:
+- A short **"Authoring moon tasks"** note (in README, mirrored as a `packages/core/moon.yml` comment at the edit site) states the rule so future tasks follow it:
   > moon v2's runtime-only toolchains do not put `node_modules/.bin` on PATH, so a task must invoke its runner explicitly — `bun run <script>` / `bunx …`, **not** bare `tsc` / `vitest`. The `test` task is deliberately `toolchain: node` so `vitest` runs under Node as the Node-compatibility gate — don't "simplify" it onto bun.
 
 ## Approach
@@ -69,7 +69,7 @@ This task documents the convention [[T-WKSP-bun-workspace-split]] establishes; l
 
 1. Rewrite the `README.md` **Develop** section: replace the npm-canonical framing with `bun install` / `bun run`, update the moon command examples, and correct the **Pinned versions** table roles (Bun = install + build/typecheck; Node = test gate + artifact target). Remove the stale *"Bun … runs no task today"* line.
 2. Add a brief **"Authoring moon tasks"** subsection stating the `bun run`/`bunx` rule and the deliberate node-pinned `test` gate.
-3. Mirror the rule as a comment in `moon.yml` next to the task definitions, so it's visible where tasks are edited.
+3. Mirror the rule as a comment in `packages/core/moon.yml` next to the task definitions, so it's visible where tasks are edited.
 4. Spot-check that every command shown actually runs against the post-T-WKSP layout.
 
 ## Files to touch
@@ -77,13 +77,13 @@ This task documents the convention [[T-WKSP-bun-workspace-split]] establishes; l
 | Location | Kind | Change |
 |---|---|---|
 | `README.md` | modify | Rewrite the **Develop** section to bun-canonical commands (`bun install` / `bun run`), correct the **Pinned versions** roles (Bun = install + build/typecheck; Node = test gate + artifact target), and add the "Authoring moon tasks" note. |
-| `moon.yml` | modify | Add task comments stating the `bun run`/`bunx` rule and the node-pinned `test` gate, at the edit site. |
+| `packages/core/moon.yml` | modify | Add task comments stating the `bun run`/`bunx` rule and the node-pinned `test` gate, at the edit site. |
 
 ## Acceptance criteria
 
 - [ ] AC-1: The README **Develop** section documents Bun as canonical (`bun install` / `bun run`), the moon command examples are accurate, and the **Pinned versions** roles read Bun = install + build/typecheck, Node = test gate + artifact target.
-- [ ] AC-2: A stated authoring rule appears in **both** the README and a `moon.yml` comment: tasks invoke runners via `bun run`/`bunx` (not bare `tsc`/`vitest`) because runtime-only toolchains don't expose `node_modules/.bin`; the `test` task stays `toolchain: node` so `vitest` runs under Node — documented as the reason, not left implicit.
-- [ ] AC-3: No stale npm-canonical claims remain — no *"npm stays canonical,"* *"wrap the same npm scripts,"* or *"Bun … runs no task today"* in `README.md` or `moon.yml`.
+- [ ] AC-2: A stated authoring rule appears in **both** the README and a `packages/core/moon.yml` comment: tasks invoke runners via `bun run`/`bunx` (not bare `tsc`/`vitest`) because runtime-only toolchains don't expose `node_modules/.bin`; the `test` task stays `toolchain: node` so `vitest` runs under Node — documented as the reason, not left implicit.
+- [ ] AC-3: No stale npm-canonical claims remain — no *"npm stays canonical,"* *"wrap the same npm scripts,"* or *"Bun … runs no task today"* in `README.md` or `packages/core/moon.yml`.
 - [ ] AC-4: Every command shown in the rewritten docs runs successfully against the post-[[T-WKSP-bun-workspace-split]] layout.
 
 ## Out of scope
