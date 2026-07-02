@@ -18,6 +18,11 @@
         "tests/fixtures/**/*.ts"
       ],
       "project": ["src/**/*.ts"]
+    },
+    "apps/web": {
+      "entry": ["src/daemon/index.ts", "src/**/*.test.ts"],
+      "project": ["src/**/*.ts", "scripts/**/*.ts", "types/**/*.ts"],
+      "ignoreDependencies": ["vue", "vue-tsc"]
     }
   },
   "ignoreDependencies": [],

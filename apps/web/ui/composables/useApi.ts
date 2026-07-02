@@ -1,0 +1,55 @@
+/**
+ * The REAL API client — the thing the mock prototype's `mockApi` loader was
+ * built to be swapped for: one method per D-0012 §D3 route, same shapes
+ * (`types/api.ts`), now over `$fetch` against the live daemon.
+ *
+ * `apiBase` is "" when the SPA is served BY the daemon (same origin, the
+ * compiled-binary case). In `nuxt dev` the daemon is another origin, so set
+ * `NUXT_PUBLIC_API_BASE=http://127.0.0.1:4319` (the daemon reflects localhost
+ * origins for CORS).
+ */
+import type {
+  CheckResponse,
+  InitVaultRequest,
+  InitVaultResponse,
+  RegisterVaultRequest,
+  RegisterVaultResponse,
+  RemoveVaultResponse,
+  ValidateResponse,
+  VaultDetailResponse,
+  VaultListResponse,
+  WatchResponse,
+} from "~/types";
+
+/** The daemon origin the client talks to ("" = same origin). */
+export function useApiBase(): string {
+  return (useRuntimeConfig().public.apiBase as string) ?? "";
+}
+
+/** Pull the daemon's error envelope (`{ error }`) out of a failed `$fetch`. */
+export function apiErrorMessage(err: unknown): string {
+  const e = err as { data?: { error?: string }; message?: string };
+  return e.data?.error ?? e.message ?? "request failed";
+}
+
+export function useApi() {
+  const base = useApiBase();
+  return {
+    listVaults: () => $fetch<VaultListResponse>(`${base}/api/vaults`),
+    getVault: (id: string) => $fetch<VaultDetailResponse>(`${base}/api/vaults/${id}`),
+    registerVault: (body: RegisterVaultRequest) =>
+      $fetch<RegisterVaultResponse>(`${base}/api/vaults`, { method: "POST", body }),
+    removeVault: (id: string) =>
+      $fetch<RemoveVaultResponse>(`${base}/api/vaults/${id}`, { method: "DELETE" }),
+    validateVault: (id: string) =>
+      $fetch<ValidateResponse>(`${base}/api/vaults/${id}/validate`, { method: "POST" }),
+    checkVault: (id: string) => $fetch<CheckResponse>(`${base}/api/vaults/${id}/check`),
+    initVault: (id: string, body: InitVaultRequest = {}) =>
+      $fetch<InitVaultResponse>(`${base}/api/vaults/${id}/init`, { method: "POST", body }),
+    setWatch: (id: string, watching: boolean) =>
+      $fetch<WatchResponse>(`${base}/api/vaults/${id}/watch`, {
+        method: "POST",
+        body: { watching },
+      }),
+  };
+}

@@ -3,5 +3,26 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Placeholder for the markdown-contract web UI (D-0012 / M-0009). No implementation yet — this reserves the apps/web workspace slot so future UI work is an add, not a retool."
+  "description": "The markdown-contract single binary (D-0012 / M-0008): one bun-compiled executable that is the CLI when run bare and a localhost vault-dashboard daemon (Nuxt SPA + JSON API) under `daemon`.",
+  "scripts": {
+    "cli": "bun run src/bin.ts",
+    "daemon": "bun run src/bin.ts daemon",
+    "ui:dev": "nuxt dev ui",
+    "ui:generate": "nuxt generate ui",
+    "gen:assets": "bun run scripts/gen-assets.ts",
+    "compile": "bun build --compile src/bin.ts --outfile dist/markdown-contract",
+    "build:binary": "bun run ui:generate && bun run gen:assets && bun run compile",
+    "test": "bun test src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "markdown-contract": "workspace:*",
+    "nuxt": "^3.15.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.7.2",
+    "vue-tsc": "^2"
+  }
 }
