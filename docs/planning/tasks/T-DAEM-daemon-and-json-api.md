@@ -5,23 +5,24 @@ id: T-DAEM
 status: open/ready
 created: '2026-06-30'
 related:
-  - '[[M-0008-single-exec-distribution]]'
-  - '[[D-0012-distribution-single-exec-and-web-ui]]'
-  - '[[C-0010-single-binary-and-vault-dashboard]]'
-  - '[[M-0009-local-web-ui-vault-dashboard]]'
+- '[[M-0008-single-exec-distribution]]'
+- '[[D-0012-distribution-single-exec-and-web-ui]]'
+- '[[C-0010-single-binary-and-vault-dashboard]]'
+- '[[M-0009-local-web-ui-vault-dashboard]]'
 depends_on:
-  - '[[T-WKSP-bun-workspace-split]]'
+- '[[T-WKSP-bun-workspace-split]]'
 tags:
-  - distribution
-  - daemon
-  - web-ui
-  - api
-  - bun
-  - prototype
+- distribution
+- daemon
+- web-ui
+- api
+- bun
+- prototype
 need_human_review: true
 impact: high
 complexity: medium
 autonomy: supervised
+readiness_verified_at: '2026-07-02T17:15:15Z'
 ---
 # `daemon` mode + a JSON API over the runner — the `apps/web` server face
 
