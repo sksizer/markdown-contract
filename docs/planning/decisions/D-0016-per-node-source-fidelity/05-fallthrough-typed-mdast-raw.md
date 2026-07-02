@@ -48,7 +48,10 @@ markdown construct, because the tier below is always one call away and always lo
 
 ## Notes
 
-- The tiers are ordered by opinionation: typed model (most opinionated, contract-shaped) → mdast
-  (syntax, generic) → raw (bytes, zero interpretation).
+- The tiers form a **spectrum of interpretation**, not a call sequence or a nesting: typed model
+  (most opinionated, contract-shaped) → mdast (syntax, generic) → raw (bytes, zero interpretation).
+  All three are **peer accessors on the same node** (`para.text`, `para.mdast()`, `para.raw()`) — you
+  reach for whichever tier you need. "Fallthrough" names the *guarantee* that a lower tier is always
+  one call away, not an order you must step through.
 - `mdast()` returns a **readonly** view (example 08) — the fallthrough is a read, never a handle to
   mutate the shared tree.
