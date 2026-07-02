@@ -43,10 +43,11 @@ Stop flattening away the byte positions a position-precise consumer needs. `flat
 Consuming the new surface — a `scan-placeholders`-style masking pass that flags unfilled `<...>` placeholders in a table cell while skipping any `<T>` written as inline code:
 
 ```ts
-import { validate, blocksOfKind } from "markdown-contract";
+import { parse, blocksOfKind } from "markdown-contract";
 
-// `validate` never throws; `.tree` is the contract-free projection this consumer reads.
-const { tree } = validate(source, { path: "contract.md" });
+// `parse` builds the contract-free projection this consumer reads (positions are a projection
+// enrichment, independent of any contract).
+const tree = parse(source);
 // Obtain the table node — the `table` arm of `BlockNode` (columns, rows, rowPos, pos + the new accessors).
 const [tbl] = blocksOfKind(tree.root, "table", { recursive: true });
 
