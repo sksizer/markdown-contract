@@ -104,12 +104,17 @@ _Captured by /sdlc:task-work on 2026-07-02. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — README Toolchain section rewritten to state the roles in prose (Bun = installer + `build`/`typecheck` runner; Node = the `test`/`coverage` compatibility gate + the runtime the published library targets; pins pointed at `.moon/toolchains.yml`, no invented table); the shown moon commands were run against the worktree (`bunx moon run core:build`, `core:test`, `:build :typecheck :coverage` all OK).
+- AC-2: auto + agent-manual — the authoring rule now appears in **both** `README.md` (`### Authoring moon tasks`) and a `packages/core/moon.yml` comment (the `Authoring rule (T-U6W3)` block above `tasks:`); both state the per-toolchain runner split (`bun run` on the `bun` toolchain, `npm run` on the `node` toolchain) and give the node-pinned `test` gate as the documented reason. Presence confirmed by grep.
+- AC-3: auto — grep over `README.md` + `packages/core/moon.yml` finds none of "npm stays canonical", "wrap the same npm scripts", or "Bun … runs no task today"; the old npm line was reworded to "The published artifact still ships via `npm publish` from `packages/core`, unchanged from before the split."
+- AC-4: agent-manual — each README command was run from the worktree; all succeeded except `bun run metrics`, which exits 127 only because `scc` is not on PATH (an external prerequisite the README already documents). The command wiring is correct.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The baseline-gated quality gate (`quality run --diff-against-baseline`) returned `OK 5/5` with zero new drift, cleanly proving the docs-only edits introduced no regressions against `origin/main`.
+- `task gap-report` deterministically pinpointed the single real spec-drift (the moved `moon.yml` touchpoint) rather than leaving it to be discovered mid-implementation.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Task spec referenced `moon.yml` at the repo root, but the now-closed dependency [[T-WKSP-bun-workspace-split]] had relocated it to `packages/core/moon.yml`; the ensure-ready gate flagged the touchpoint as unresolved — a task authored ahead of a dependency that relocates files goes stale silently once that dependency merges. When a task `depends_on:` a now-closed task, `/sdlc:task-work` (or `/sdlc:task-review`) could re-resolve moved touchpoints against the dependency's final layout at pickup and offer the path correction automatically.
+- The relevance-driven task-doc body fix (the moved-path correction) had no sanctioned path to `origin/main`: an ad-hoc `git push origin HEAD:main` was blocked by the sandbox default-branch-push guard, even though the flow's own `ensure_ready_mutate.ts` / `start_task.ts` push to main fine. Task-work Step 5's "land task-body edits on origin/main before the gate" instruction lacks a sanctioned CLI verb — a small `sdlc task doc-edit --commit-on main` helper (mirroring the ephemeral-worktree push those scripts already use) would give body edits a first-class path. Worked around by folding the correction into the implementation PR instead, which fixes `origin/main` on merge.
