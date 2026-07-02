@@ -36,8 +36,14 @@ depend on (D-0007): the worst case is a wrong finding, never a damaged tree.
 
 ## Notes
 
-- **`readonly` types first.** Cheap and sufficient to start ("used that way for now"). Runtime
-  `Object.freeze` is optional and can follow if defense-in-depth is wanted; it has a cost, so it's
-  not the default.
+- **Compile-time only, today.** Enforcement is the type system alone — `readonly` fields,
+  `ReadonlyArray`, `Readonly<…>`. There is **no runtime enforcement**: nothing is frozen and nothing
+  is copied, so a consumer who casts through `any` can still mutate. `readonly` types are cheap and
+  sufficient to start ("used that way for now").
+- **No defensive copy.** `mdast()` hands back the **same shared node**, typed as readonly
+  (composition, by reference — example 06); it is not a clone. A copy would defeat example 07's memory
+  model (O(nodes) + one retained source) and the safe-sharing property above. The optional
+  defense-in-depth escalation is runtime `Object.freeze` (which would need to be deep to fully hold),
+  **not** copying; it has a cost, so it is not the default.
 - Immutability is what makes the fallthrough (example 05) and composition (example 06) safe: sharing
   the mdast segment by reference is fine precisely because no one can mutate it.
