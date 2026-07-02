@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-U6W3
-status: open/ready
+status: in-progress
 created: '2026-06-28'
 related:
 - '[[T-MOON-adopt-moon-monorepo]]'
@@ -19,6 +19,7 @@ need_human_review: false
 impact: low
 complexity: small
 readiness_verified_at: '2026-07-02T18:49:40Z'
+last_reviewed: '2026-07-02'
 ---
 # Document that moon tasks must wrap npm scripts under moon's runtime-only node toolchain
 
@@ -96,3 +97,19 @@ This task documents the convention [[T-WKSP-bun-workspace-split]] establishes; l
 ## Discovery context
 
 Spawned by /sdlc:spawn-task-pr on 2026-06-28 UTC from [[T-MOON-adopt-moon-monorepo]] in https://github.com/sksizer/markdown-contract.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-02. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
