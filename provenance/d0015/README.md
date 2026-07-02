@@ -148,6 +148,86 @@ delete their duplicate split-and-parse code. This is the same gap as use case 1,
 and third consumer, which is what makes "the transform output flows to `read()`" load-bearing rather
 than a nicety.
 
+### Demonstration — contract ↔ consumption (the shape this decision buys)
+
+A self-contained sketch of use case 1, so the capability is visible without leaving this record.
+The **contract** declares a `## Files to touch` section whose table gives `Location` a *transform*
+cell (the new D-0015 capability); `columns`, `cells`, and `z.enum` are the already-shipped D-0014
+surface:
+
+```ts
+import { z } from "zod";
+import { contract, sections, section, table } from "markdown-contract";
+
+const LOCATION_RE = /^`([^#`]+)(?:#([^`]+))?`$/;              // `path` or `path#symbol`, backticked
+
+const Location = z.string().transform((s, ctx) => {
+  const m = LOCATION_RE.exec(s.trim());
+  if (!m) { ctx.addIssue({ code: "custom", message: "expected `path` or `path#symbol`" }); return z.NEVER; }
+  return { path: m[1]!, ...(m[2] ? { symbol: m[2] } : {}) };  // → { path: string; symbol?: string }
+});
+
+const TaskContract = contract({
+  body: sections({}, [
+    section("Files to touch", {                                // ← the section heading
+      content: table({
+        columns: ["Location", "Kind", "Change"],
+        cells: {
+          Location,                                            // transforms → { path; symbol? }
+          Kind: z.enum(["new", "modify", "delete"]),           // D-0014 G1 — closed vocabulary
+        },
+      }),
+    }),
+  ]),
+});
+```
+
+**Consumption.** Note what the contract does *not* declare: there is no field named `filesToTouch`.
+That accessor is the auto-generated **lowerCamelCase alias of the section heading** `"Files to touch"`,
+produced by the dual-key `SectionGroup` (D-0005 §6 "Dual access") via `toCamelKey()`
+(`packages/core/src/core/camel.ts`: split on `/[^\p{L}\p{N}]+/u`, then lowerCamelCase). The three keys
+below all resolve to the **same** view; the columns (`Location` / `Kind` / `Change`) are what the
+contract declares:
+
+```ts
+const doc = TaskContract.read(source, { path });
+
+doc.body.filesToTouch;               // dotted alias  — camelCase of the heading (heading-derived, NOT a field)
+doc.body["Files to touch"];          // bracket       — exact heading text
+doc.body.section("Files to touch");  // accessor      — always available (edge / dynamic names)
+
+for (const r of doc.body.filesToTouch) {
+  r.Location.path;    // string             — parsed by the CONTRACT's transform, not the consumer
+  r.Location.symbol;  // string | undefined
+  r.Kind;             // "new" | "modify" | "delete"
+  r.Change;           // string             — undeclared cell stays raw
+}
+// Row = { Location: { path: string; symbol?: string }; Kind: "new"|"modify"|"delete"; Change: string }
+```
+
+**Variant — no transform cell → rows stay string-typed (the opt-in / additive guarantee).** A table
+that declares no transforming `cells` is byte-identical to today; only the heading→alias derivation
+still applies (`"Change log"` → `changeLog`):
+
+```ts
+const NotesContract = contract({
+  body: sections({}, [
+    section("Change log", { content: table({ columns: ["Date", "Note"] }) }),   // no `cells` → no transforms
+  ]),
+});
+
+const notes = NotesContract.read(source, { path });
+for (const r of notes.body.changeLog) {   // "Change log" → "changeLog" by the same camel rule
+  r.Date;  // string   — undeclared, raw
+  r.Note;  // string
+}
+// Row defaults to Record<string, string>; structured cells is strictly opt-in.
+```
+
+A heading with no alphanumeric run (e.g. `"---"`) yields **no** dotted alias — reach it by bracket or
+`section()`. The full worked examples for all three use cases (and the position-preservation case) are
+in [proposed-shape.md](proposed-shape.md).
+
 ## Decision
 
 Add **structured cells** as an **additive, opt-in** layer on the existing `table()` leaf and the
