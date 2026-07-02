@@ -1,7 +1,7 @@
-> Example 04 for [[D-0016-per-node-source-fidelity|D-0016]] — inline-depth raw: positioned inline
+> Example 08 for [[D-0016-per-node-source-fidelity|D-0016]] — inline-depth raw: positioned inline
 > spans. Non-normative; the decision wins.
 
-# 04 · Inline — placeholder span offsets
+# 08 · Inline — placeholder span offsets
 
 ## Affordance
 
@@ -24,7 +24,7 @@ skipped.
 
 Inline code is its **own mdast node** — `inlineCode`, a phrasing *leaf* — distinct from a fenced
 **block** code node (`code`). It has no `children`; its content is a raw string in `value`, and (as
-in [03](./03-verbatim-table-cells.md)) mdast stores that `value` with the backticks stripped. The
+in [07](./07-verbatim-table-cells.md)) mdast stores that `value` with the backticks stripped. The
 input above parses to this phrasing sequence:
 
 ```ts

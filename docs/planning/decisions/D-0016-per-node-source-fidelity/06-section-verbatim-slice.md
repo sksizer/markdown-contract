@@ -1,7 +1,7 @@
-> Example 02 for [[D-0016-per-node-source-fidelity|D-0016]] — section-depth raw: the verbatim source
+> Example 06 for [[D-0016-per-node-source-fidelity|D-0016]] — section-depth raw: the verbatim source
 > slice. Non-normative; the decision wins.
 
-# 02 · Section — verbatim source slice
+# 06 · Section — verbatim source slice
 
 ## Affordance
 
@@ -69,7 +69,7 @@ built into the node: the heading's `range.start` to the next sibling's `range.st
 
 ## Notes
 
-- Consumes the same section model as [08](./08-immutability.md); consumed by any source-extraction /
+- Consumes the same section model as [04](./04-immutability.md); consumed by any source-extraction /
   round-tripping tool.
-- The synthetic document root has no single heading; `tree.body` (example 01) is the whole-document
+- The synthetic document root has no single heading; `tree.body` (example 05) is the whole-document
   analog of `section.raw()`.

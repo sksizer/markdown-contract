@@ -1,7 +1,7 @@
-> Example 05 for [[D-0016-per-node-source-fidelity|D-0016]] — the three-tier fallthrough guarantee.
+> Example 01 for [[D-0016-per-node-source-fidelity|D-0016]] — the three-tier fallthrough guarantee.
 > Non-normative; the decision wins.
 
-# 05 · Fallthrough — typed → mdast → raw
+# 01 · Fallthrough — typed → mdast → raw
 
 ## Affordance
 
@@ -43,7 +43,7 @@ para.raw();                // "See [the spec](https://example.com/spec) and `par
 Without the fallthrough, "I need a link URL" forces the consumer out of the projection and back to
 `parse(source).mdast`, then a manual walk *from the root* to re-find this paragraph. With `para.mdast()`
 the segment is already in hand — the projection node and its layer-0 subtree are the same span. This
-is the composition escape hatch (example 06) doing real work: the OOM never has to model every
+is the composition escape hatch (example 02) doing real work: the OOM never has to model every
 markdown construct, because the tier below is always one call away and always local.
 
 ## Notes
@@ -53,5 +53,5 @@ markdown construct, because the tier below is always one call away and always lo
   All three are **peer accessors on the same node** (`para.text`, `para.mdast()`, `para.raw()`) — you
   reach for whichever tier you need. "Fallthrough" names the *guarantee* that a lower tier is always
   one call away, not an order you must step through.
-- `mdast()` returns a **readonly** view (example 08) — the fallthrough is a read, never a handle to
+- `mdast()` returns a **readonly** view (example 04) — the fallthrough is a read, never a handle to
   mutate the shared tree.

@@ -1,7 +1,7 @@
-> Example 06 for [[D-0016-per-node-source-fidelity|D-0016]] — the OOM composes over mdast; it does
+> Example 02 for [[D-0016-per-node-source-fidelity|D-0016]] — the OOM composes over mdast; it does
 > not extend it. Non-normative; the decision wins.
 
-# 06 · Composition, not inheritance
+# 02 · Composition, not inheritance
 
 ## Affordance
 

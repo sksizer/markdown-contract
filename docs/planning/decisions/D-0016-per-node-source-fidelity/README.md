@@ -7,24 +7,25 @@
 This directory is the peer companion to [[D-0016-per-node-source-fidelity]] — nine worked API cases
 that motivate and pin the proposed shape.
 
-The first four walk the **depth ladder** — the same primitive (a per-node source range) at each
-granularity, each retiring a real downstream workaround. The last five are the **cross-cutting
-mechanics** — how the views attach, serialize, stay immutable, and coexist with the contract-typed
-model.
+The first four are the **concepts** — the cross-cutting mechanics that hold at every depth: how the
+views compose over mdast, fall through typed → mdast → raw, serialize, and stay immutable. The last
+five are the **worked examples** — the depth ladder, the same primitive (a per-node source range) at
+each granularity, each retiring a real downstream workaround, and closing with the M-0011
+structured-cells convergence.
 
-## Depth ladder
+## Concepts
 
-- [01 · Document body — frontmatter read-modify-write](./01-document-body-frontmatter-rewrite.md)
-- [02 · Section — verbatim source slice](./02-section-verbatim-slice.md)
-- [03 · Cell — verbatim table cells](./03-verbatim-table-cells.md)
-- [04 · Inline — placeholder span offsets](./04-inline-span-offsets.md)
+- [01 · Fallthrough — typed → mdast → raw](./01-fallthrough-typed-mdast-raw.md)
+- [02 · Composition, not inheritance](./02-composition-not-inheritance.md)
+- [03 · `range` as the serializable primitive](./03-range-serialization.md)
+- [04 · Immutability](./04-immutability.md)
 
-## Cross-cutting mechanics
+## Worked examples
 
-- [05 · Fallthrough — typed → mdast → raw](./05-fallthrough-typed-mdast-raw.md)
-- [06 · Composition, not inheritance](./06-composition-not-inheritance.md)
-- [07 · `range` as the serializable primitive](./07-range-serialization.md)
-- [08 · Immutability](./08-immutability.md)
+- [05 · Document body — frontmatter read-modify-write](./05-document-body-frontmatter-rewrite.md)
+- [06 · Section — verbatim source slice](./06-section-verbatim-slice.md)
+- [07 · Cell — verbatim table cells](./07-verbatim-table-cells.md)
+- [08 · Inline — placeholder span offsets](./08-inline-span-offsets.md)
 - [09 · Structured cells — three views on one cell (M-0011)](./09-structured-cells-three-views.md)
 
 ## Proposed API surface (illustrative)
