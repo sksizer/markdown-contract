@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-0MVN
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0010]]'
@@ -16,6 +16,7 @@ need_human_review: false
 impact: medium
 complexity: medium
 readiness_verified_at: '2026-07-02T03:59:22Z'
+last_reviewed: '2026-07-02'
 ---
 # Adopt Biome for lint, format, and per-function complexity gating
 
@@ -110,3 +111,19 @@ Surfaced while planning [[M-0010]] code-quality tooling. Biome was chosen over
 ESLint+Prettier / oxlint for a one-tool lint+format+complexity pass that fits the
 Bun/moon/TS stack. The scaffold landed immediately; this task carries the disruptive
 application + gate.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-02. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
