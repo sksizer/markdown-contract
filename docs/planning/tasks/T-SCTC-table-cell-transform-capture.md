@@ -79,8 +79,8 @@ const { tree } = spec.validate(src, { path: "task.md" });          // never thro
 // it is NOT serialized onto the public `tree` data (T-SCRB adds the public `doc.body` read-back).
 const node = tree.root.sections[0]!.blocks[0]!;
 if (node.kind === "table") {
-  node.typed(0, 0);   // transform cell → { path: "src/core/content.ts", symbol: "validateTable" } (cached res.data)
-  node.typed(0, 2);   // "Change" cell has no transform → undefined
+  node.typed(0, "Location"); // transform cell → { path: "src/core/content.ts", symbol: "validateTable" } (cached res.data)
+  node.typed(0, "Change");   // no transform declared for "Change" → undefined
   node.rows[0]![0];   // raw rows retained verbatim → "`src/core/content.ts#validateTable`"
 }
 ```
