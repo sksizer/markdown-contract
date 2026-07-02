@@ -39,6 +39,8 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "check": "biome check .",
+    "check:ci": "biome ci .",
+    "lint:fix": "biome check --write .",
     "cli": "node dist/cli/index.js",
     "lint:docs": "npm run build && node dist/cli/index.js validate docs/planning",
     "lint:package": "publint",
