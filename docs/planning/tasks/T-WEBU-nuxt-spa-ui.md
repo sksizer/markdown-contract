@@ -2,26 +2,39 @@
 type: task
 schema_version: '5'
 id: T-WEBU
-status: open/ready
+status: planning/needs-definition
 created: '2026-06-30'
 related:
-  - '[[M-0008-single-exec-distribution]]'
-  - '[[D-0012-distribution-single-exec-and-web-ui]]'
-  - '[[C-0010-single-binary-and-vault-dashboard]]'
-  - '[[M-0009-local-web-ui-vault-dashboard]]'
-  - '[[T-DAEM-daemon-and-json-api]]'
+- '[[M-0008-single-exec-distribution]]'
+- '[[D-0012-distribution-single-exec-and-web-ui]]'
+- '[[C-0010-single-binary-and-vault-dashboard]]'
+- '[[M-0009-local-web-ui-vault-dashboard]]'
+- '[[T-DAEM-daemon-and-json-api]]'
 depends_on:
-  - '[[T-WKSP-bun-workspace-split]]'
+- '[[T-WKSP-bun-workspace-split]]'
 tags:
-  - distribution
-  - web-ui
-  - nuxt
-  - spa
-  - prototype
+- distribution
+- web-ui
+- nuxt
+- spa
+- prototype
 need_human_review: true
 impact: high
 complexity: medium
 autonomy: supervised
+definition_gap: The spec has stale/ambiguous path citations that fail the readiness
+  gate. The `## Today` table lists `apps/web/src/daemon/api.ts` as an existing file,
+  but it does not exist yet (it is built by the not-yet-done [[T-DAEM-daemon-and-json-api]]);
+  reword that row so it does not assert a present-day file. Six cited component/config
+  paths (`apps/web/nuxt.config.ts`, `apps/web/app/app.vue`, `apps/web/app/pages/index.vue`,
+  `apps/web/app/components/FindingsList.vue`, `app/pages/index.vue`, and the daemon
+  `api.ts`) each collide by basename with an existing file under `prototype/web-ui/`,
+  so the readiness gate reads them as relocated citations; the spec must reconcile
+  the relationship to that existing prototype (reuse/adapt vs. build fresh) and disambiguate
+  the new-file paths. Finally, AC-3's universal quantifier 'lists each finding's id,
+  level, path, and message' is unpinned — name the set it ranges over (e.g. 'each
+  finding in the returned findings[] array'). Fixing these citation and quantifier
+  gaps needs human or /sdlc:task-define attention before pickup.
 ---
 # Minimal Nuxt SPA (`ssr: false`) — the embedded validate-and-findings UI
 
