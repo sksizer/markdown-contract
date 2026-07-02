@@ -27,13 +27,18 @@ Stand up the gated fixture corpus and the public typed-surface stubs for structu
 
 ## Today
 
+> Path note (2026-07-02 relevance check): the core library relocated into the
+> `packages/core/` workspace since this task was written. Every `tests/…` and
+> `src/…` path below is now under `packages/core/`. Quality/typecheck runs via
+> moon (`bunx moon run core:typecheck`), not `npm run typecheck`.
+
 | Location | Role today |
 |---|---|
-| `tests/components.ts#IMPLEMENTED` | The greening switch — one boolean per pipeline component. Has no structured-cells gates. |
-| `tests/fixtures/consumption/` | Consumption fixtures (`<n>-<name>.md` + `.ts` + `.contract.yaml`); all string-typed rows today. |
-| `src/core/types.ts#TableView` | `TableView<Row = Record<string, string>>` — string default; no typed-row path. |
-| `src/core/leaves.ts#table` | `table()` takes `cells?: Record<string, ZodType>` but carries no literal types out. |
-| `tests/harness.ts` | Fixture loader; skips a fixture when its `IMPLEMENTED[component]` is `false`. |
+| `packages/core/tests/components.ts#IMPLEMENTED` | The greening switch — one boolean per pipeline component. Has no structured-cells gates. |
+| `packages/core/tests/fixtures/consumption/` | Consumption fixtures (`<n>-<name>.md` + `.ts` + `.contract.yaml`); all string-typed rows today. |
+| `packages/core/src/core/types.ts#TableView` | `TableView<Row = Record<string, string>>` — the `Row` slot already exists (defaults to `Record<string, string>`); no typed-row wiring feeds it. |
+| `packages/core/src/core/leaves.ts#table` | `table()` takes `cells?: Record<string, ZodType>` but carries no literal types out. |
+| `packages/core/tests/harness.ts` | Fixture loader; skips a fixture when its `IMPLEMENTED[component]` is `false`. |
 
 ## Proposed
 
@@ -41,29 +46,29 @@ Add three gate components — `cell-typed`, `list-typed`, `cell-pos` — to the 
 
 ## Approach
 
-1. Add `"cell-typed" | "list-typed" | "cell-pos"` to the `Component` union in `tests/components.ts`, add the three keys to `IMPLEMENTED` seeded `false`, and extend the header comment with the structured-cells flip order (`cell-typed` after capture+read-back; `list-typed` after the list slice; `cell-pos` after position preservation).
-2. Author typed table-row fixtures under `tests/fixtures/consumption/` (a `Location | Kind | Change` contract whose `Location` cell transforms to `{ path, symbol? }`), tagged to the `cell-typed` gate — the `.md` input, the `.ts` expectation asserting typed `row.Location.path`, and the parity `.contract.yaml` where applicable.
+1. Add `"cell-typed" | "list-typed" | "cell-pos"` to the `Component` union in `packages/core/tests/components.ts`, add the three keys to `IMPLEMENTED` seeded `false`, and extend the header comment with the structured-cells flip order (`cell-typed` after capture+read-back; `list-typed` after the list slice; `cell-pos` after position preservation).
+2. Author typed table-row fixtures under `packages/core/tests/fixtures/consumption/` (a `Location | Kind | Change` contract whose `Location` cell transforms to `{ path, symbol? }`), tagged to the `cell-typed` gate — the `.md` input, the `.ts` expectation asserting typed `row.Location.path`, and the parity `.contract.yaml` where applicable.
 3. Author typed list-item fixtures (a `list({ everyItem })` whose items transform) tagged to `list-typed`, and position-preservation fixtures (asserting `cellPos(row, col).col` and `inlineSpans(...)` ranges) tagged to `cell-pos`.
 4. Add a backward-compat fixture asserting a contract with **no** transforming cells yields byte-identical rows + findings (guards the "no golden moves" criterion).
-5. Stub the typed surface so fixtures compile with gates off: make `table()` generic over its `cells` map and give `TableView<Row>` a `Row` slot that defaults to `Record<string, string>` (placeholder runtime; real wiring lands in `T-SCRB`).
+5. Stub the typed surface so fixtures compile with gates off: make `table()` generic over its `cells` map so its return type can carry `z.output<cells>`. `TableView<Row>` already exposes a `Row` slot defaulting to `Record<string, string>`, so no type change is needed there beyond confirming the fixtures can name a typed `Row` (placeholder runtime; real wiring lands in `T-SCRB`).
 6. Run the suite; confirm the new fixtures are **skipped** (not failing) and the existing suite is unchanged.
 
 ## Files to touch
 
 | Location | Kind | Change |
 |---|---|---|
-| `tests/components.ts` | modify | Add `cell-typed` / `list-typed` / `cell-pos` to `Component` + `IMPLEMENTED` (seeded `false`); extend the flip-order comment |
-| `tests/fixtures/consumption/` | new | Typed-row, typed-item, and position-preservation fixtures (`.md` + `.ts` + `.contract.yaml`), each tagged to its gate |
-| `src/core/types.ts` | modify | Stub the `TableView<Row>` typed-row slot (default stays `Record<string, string>`) so fixtures type-check |
-| `src/core/leaves.ts` | modify | Make `table()` generic over its `cells` map (stub passthrough; real inference in `T-SCRB`) |
-| `tests/FIXTURES.md` | modify | Document the three new gate components and the fixtures they guard |
+| `packages/core/tests/components.ts` | modify | Add `cell-typed` / `list-typed` / `cell-pos` to `Component` + `IMPLEMENTED` (seeded `false`); extend the flip-order comment |
+| `packages/core/tests/fixtures/consumption/` | new | Typed-row, typed-item, and position-preservation fixtures (`.md` + `.ts` + `.contract.yaml`), each tagged to its gate |
+| `packages/core/src/core/types.ts` | modify | Confirm/extend the `TableView<Row>` typed-row slot (default stays `Record<string, string>`) so fixtures type-check; the `Row` slot already exists |
+| `packages/core/src/core/leaves.ts` | modify | Make `table()` generic over its `cells` map (stub passthrough; real inference in `T-SCRB`) |
+| `packages/core/tests/FIXTURES.md` | modify | Document the three new gate components and the fixtures they guard |
 
 ## Acceptance criteria
 
 - [ ] AC-1: `tests/components.ts` exports `cell-typed`, `list-typed`, and `cell-pos` as `Component` members, present in `IMPLEMENTED` seeded `false`.
 - [ ] AC-2: The structured-cells fixtures exist and are **skipped** (green, not failing) with all three gates `false`; running the suite reports them skipped.
 - [ ] AC-3: At least one fixture asserts typed table-row read-back, one asserts typed list items, one asserts `cellPos(...).col` + `inlineSpans(...)`, and one asserts byte-identical behavior for a no-transform contract.
-- [ ] AC-4: The repo type-checks (`npm run typecheck`) with the stubbed typed surface and the gates off.
+- [ ] AC-4: The repo type-checks (`bunx moon run core:typecheck`) with the stubbed typed surface and the gates off.
 - [ ] AC-5: The existing (non-structured-cells) fixtures and their goldens are unchanged — no pre-existing fixture flips state.
 
 ## Out of scope
