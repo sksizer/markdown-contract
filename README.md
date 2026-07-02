@@ -32,3 +32,20 @@ bunx moon run core:build                     # tsc → packages/core/dist
 bunx moon run core:test                      # vitest under Node
 bunx moon run :build :typecheck :coverage    # what CI runs
 ```
+
+## Code metrics
+
+`bun run metrics` (equivalently `npm run metrics`) runs
+[scc](https://github.com/boyter/scc) over `packages/core/src` to report
+lines-of-code, comments, blanks, and code per language/file, plus a
+cyclomatic-complexity aggregate and a COCOMO cost estimate. It is
+**report-only** — it never gates the build.
+
+scc is a single Go binary, not an npm package, so it is **not** a devDependency:
+it must be installed on your `PATH` first, e.g. `brew install scc` or
+`go install github.com/boyter/scc/v3@v3.5.0`.
+
+CI runs scc too, pinned via the `SCC_VERSION` env in
+[`.github/workflows/metrics.yml`](.github/workflows/metrics.yml) — that pinned
+version is the reproducible source of truth. Local numbers may differ if your
+installed scc version drifts from the pin.
