@@ -15,6 +15,7 @@ tags:
 need_human_review: false
 impact: medium
 complexity: medium
+readiness_verified_at: '2026-07-02T03:59:22Z'
 ---
 # Adopt Biome for lint, format, and per-function complexity gating
 
