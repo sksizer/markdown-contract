@@ -11,6 +11,7 @@ the future web UI (D-0012 / M-0009).
 | Path | Role |
 |---|---|
 | `packages/core` | The `markdown-contract` npm library + CLI. Runtime-neutral; the canonical published artifact. See [`packages/core/README.md`](packages/core/README.md). |
+| `apps/docs` | Astro + Starlight documentation site (M-0006). Private; never published. See [`apps/docs/README.md`](apps/docs/README.md). |
 | `apps/web` | Placeholder for the future web UI. No code yet. |
 | `prototype/web-ui` | Exploratory UI prototype (not a workspace member). |
 | `docs/`, `contracts/` | Project planning docs and their contracts. |
