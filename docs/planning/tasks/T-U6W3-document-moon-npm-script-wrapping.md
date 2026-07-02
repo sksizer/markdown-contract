@@ -1,25 +1,27 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-U6W3
 status: in-progress
-created: '2026-06-28'
+created: 2026-06-28
 related:
-- '[[T-MOON-adopt-moon-monorepo]]'
-- '[[M-0005-monorepo-tooling]]'
-- '[[D-0010-monorepo-tooling]]'
-- '[[T-WKSP-bun-workspace-split]]'
+  - "[[T-MOON-adopt-moon-monorepo]]"
+  - "[[M-0005-monorepo-tooling]]"
+  - "[[D-0010-monorepo-tooling]]"
+  - "[[T-WKSP-bun-workspace-split]]"
 depends_on:
-- '[[T-WKSP-bun-workspace-split]]'
+  - "[[T-WKSP-bun-workspace-split]]"
 tags:
-- docs
-- moon
-- bun
+  - docs
+  - moon
+  - bun
 need_human_review: false
 impact: low
 complexity: small
-readiness_verified_at: '2026-07-02T18:49:40Z'
-last_reviewed: '2026-07-02'
+readiness_verified_at: 2026-07-02T18:49:40Z
+last_reviewed: 2026-07-02
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/176
 ---
 # Document that moon tasks must wrap npm scripts under moon's runtime-only node toolchain
 
