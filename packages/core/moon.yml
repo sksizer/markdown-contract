@@ -124,3 +124,24 @@ tasks:
       - 'dist/**/*'
     options:
       runInCI: false
+
+  # `bun run package-check` (= publint && attw --pack . --profile esm-only) — the
+  # published-package hygiene gate (T-L77L). publint lints package.json's
+  # exports/main/types/bin packaging; attw packs the dir and verifies the emitted
+  # .d.ts resolve for both entry points ('.' and './declarative') across node10,
+  # node16/nodenext, and bundler modes under the esm-only profile. Both lint the
+  # BUILT output, so deps: ['build'] keeps dist/ fresh first (mirrors lint-docs).
+  # BUN toolchain: `bun run` puts node_modules/.bin on PATH so the publint/attw
+  # bins resolve (the node toolchain does not). Unlike lint-docs/lint-deps this is
+  # a REAL CI gate (no runInCI: false) — it rides the dedicated package-quality.yml
+  # workflow. Run with `moon run core:package-check`.
+  package-check:
+    command: 'bun run package-check'
+    toolchain: 'bun'
+    deps:
+      - 'build'
+    inputs:
+      - 'dist/**/*'
+      - 'package.json'
+    options:
+      cache: true
