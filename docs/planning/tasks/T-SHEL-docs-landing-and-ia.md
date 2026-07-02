@@ -1,25 +1,27 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-SHEL
 status: in-progress
-created: '2026-06-30'
-last_reviewed: '2026-07-02'
+created: 2026-06-30
+last_reviewed: 2026-07-02
 related:
-- '[[M-0006-documentation-site]]'
-- '[[M-0007-example-use-case-catalog]]'
+  - "[[M-0006-documentation-site]]"
+  - "[[M-0007-example-use-case-catalog]]"
 depends_on:
-- '[[T-7UTE-astro-docs-site]]'
+  - "[[T-7UTE-astro-docs-site]]"
 tags:
-- docs
-- website
-- content
-- starlight
+  - docs
+  - website
+  - content
+  - starlight
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-07-02T19:59:18Z'
+readiness_verified_at: 2026-07-02T19:59:18Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/181
 ---
 # Author the bare-shell landing page and content-collection IA for `apps/docs`
 
