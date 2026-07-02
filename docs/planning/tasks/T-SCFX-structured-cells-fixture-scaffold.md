@@ -1,24 +1,26 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-SCFX
 status: in-progress
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0011-structured-cells]]'
-- '[[D-0015-structured-cells]]'
+  - "[[M-0011-structured-cells]]"
+  - "[[D-0015-structured-cells]]"
 depends_on: []
 tags:
-- structured-cells
-- fixtures
-- consumption
-- typed-model
+  - structured-cells
+  - fixtures
+  - consumption
+  - typed-model
 need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-last_reviewed: '2026-07-02'
-readiness_verified_at: '2026-07-02T17:07:23Z'
+last_reviewed: 2026-07-02
+readiness_verified_at: 2026-07-02T17:07:23Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/174
 ---
 # Scaffold the structured-cells fixtures and enable gates (`cell-typed` / `list-typed` / `cell-pos`)
 
