@@ -128,7 +128,13 @@ _Captured by /sdlc:task-work on 2026-07-02. PR: pending._
 
 ### Friction and automation gaps
 
-- Starlight scaffolder drops a `CLAUDE.md -> AGENTS.md` symlink; deleting the starter `AGENTS.md` left a dangling symlink that `find -type f`/`cat` skip but `git ls-files --others` still tracks — worktree init or a scaffold-cleanup step should sweep dangling symlinks so a broken link can't get committed.
-- The quality baseline is written under the main repo's `.sdlc/quality-baselines/` but Step 7's gate defaults `--baseline-dir` to the worktree's `.sdlc/`, so the first baseline-gated run failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed — task-work Step 7 should pass the main-repo baseline dir explicitly (or the executor should resolve the superproject `.sdlc/`).
-- preflight_permissions reported `Bash(bun:*)`/`Write`/`Edit` as hard gaps though bun and file-mutation worked throughout — the static-settings probe under-reported this session's grants; a probe that also consults the live/effective permission mode would avoid a spurious gate.
+- Starlight scaffolder drops a `CLAUDE.md -> AGENTS.md` symlink; deleting the starter `AGENTS.md` left a dangling symlink that `find -type f`/`cat` skip but `git ls-files --others` still tracks — worktree init or a scaffold-cleanup step should sweep dangling symlinks so a broken link can't get committed. → [[worktree-init-sweeps-dangling-symlinks]]
+- The quality baseline is written under the main repo's `.sdlc/quality-baselines/` but Step 7's gate defaults `--baseline-dir` to the worktree's `.sdlc/`, so the first baseline-gated run failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed — task-work Step 7 should pass the main-repo baseline dir explicitly (or the executor should resolve the superproject `.sdlc/`). → [[task-work-step7-threads-baseline-dir]]
+- preflight_permissions reported `Bash(bun:*)`/`Write`/`Edit` as hard gaps though bun and file-mutation worked throughout — the static-settings probe under-reported this session's grants; a probe that also consults the live/effective permission mode would avoid a spurious gate. → [[preflight-permissions-checks-effective-mode]]
+
+### Spawned follow-up tasks
+
+- [[worktree-init-sweeps-dangling-symlinks]] (https://github.com/sksizer/dev/pull/601) — spawned; Upstream-plugin (sdlc). Sweep dangling symlinks during task-work worktree init so a broken link can't be committed.
+- [[task-work-step7-threads-baseline-dir]] (https://github.com/sksizer/dev/pull/598) — linked to existing upstream PR; Upstream-plugin (sdlc). Thread the main-repo quality-baseline dir into worktree gate runs.
+- [[preflight-permissions-checks-effective-mode]] (https://github.com/sksizer/dev/pull/603) — spawned; Upstream-plugin (sdlc). Probe consults the live/effective permission mode instead of only static settings.
 
