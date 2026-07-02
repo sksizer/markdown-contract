@@ -29,8 +29,8 @@ const para = tree.root.sections[0].blocks.find((b) => b.kind === "paragraph")!;
 // tier 1 — typed model: flattened text. Good for prose; the link URL and the backticks are gone.
 para.text;                 // "See the spec and parse()."
 
-// tier 2 — mdast segment: the construct the typed model doesn't cover, reached locally
-const link = para.mdast().children.find((n) => n.type === "link");
+// tier 2 — mdast segment: a construct the typed model doesn't cover, reached locally
+const link = para.mdast().children.find((n): n is Mdast.Link => n.type === "link");
 link?.url;                 // "https://example.com/spec"
 link?.children;            // [{ type: "text", value: "the spec" }]
 
@@ -41,7 +41,7 @@ para.raw();                // "See [the spec](https://example.com/spec) and `par
 ## Why it matters
 
 Without the fallthrough, "I need a link URL" forces the consumer out of the projection and back to
-`parse().mdast`, then a manual walk *from the root* to re-find this paragraph. With `para.mdast()`
+`parse(source).mdast`, then a manual walk *from the root* to re-find this paragraph. With `para.mdast()`
 the segment is already in hand — the projection node and its layer-0 subtree are the same span. This
 is the composition escape hatch (example 06) doing real work: the OOM never has to model every
 markdown construct, because the tier below is always one call away and always local.
