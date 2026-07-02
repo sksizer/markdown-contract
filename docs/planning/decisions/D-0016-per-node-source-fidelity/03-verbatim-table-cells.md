@@ -6,9 +6,12 @@
 ## Affordance
 
 The flattened `table.rows` / `table.columns` drop inline markup — a `` `code` `` cell becomes bare
-`code`, because `flattenInline` keeps only the `inlineCode` node's value. `table.cell(row, col).raw()`
-returns the **verbatim cell source, markup intact**. The flat form stays the default for the common
-case; the raw view is there when the bytes matter.
+`code`, because `flattenInline` keeps only the `inlineCode` node's value, and mdast stores that value
+with the **surrounding backticks already stripped** (the delimiters are not part of the node's
+`value`). It is not a special case for code: the flat view reduces every inline construct to plain
+text, so the backticks have nowhere to survive. `table.cell(row, col).raw()` returns the **verbatim
+cell source, markup intact**. The flat form stays the default for the common case; the raw view is
+there when the bytes matter.
 
 ## Input
 
