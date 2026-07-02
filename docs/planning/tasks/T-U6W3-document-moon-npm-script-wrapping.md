@@ -18,7 +18,7 @@ tags:
 need_human_review: false
 impact: low
 complexity: small
-readiness_verified_at: '2026-06-30T04:48:46Z'
+readiness_verified_at: '2026-07-02T18:49:40Z'
 ---
 # Document that moon tasks must wrap npm scripts under moon's runtime-only node toolchain
 
