@@ -42,6 +42,71 @@ Surface the cached transform output (from `T-SCTC`) as a **typed** row read-back
 
 `tableView` reads `node.typed(row, col)` and uses it when present, falling back to the raw string otherwise (sparse: undeclared and no-transform cells stay raw strings). The combinator carries literal types: `table<C extends Record<string, ZodType>>(...)` derives `Row = { [K in Cols]: K extends keyof C ? z.output<C[K]> : string }`, threaded through `section()` → `sections()` → `Infer` so `read()` returns a `Doc` whose `body.<table>` is a `TableView` of the typed `Row`. The `TableView` **default** type parameter stays `Record<string, string>`, so a `byAnchor` table or an undeclared table is still string-typed. Un-skip the typed-row fixtures by flipping `cell-typed`.
 
+Consuming typed rows off the public model — a declared transform cell yields parsed objects, an undeclared column stays a raw string:
+
+```ts
+import { z } from "zod";
+import { contract, sections, section, table } from "markdown-contract";
+
+// A cell transform: parse `path` or `path#symbol` into a structured object.
+const LOCATION_RE = /^`([^#`]+)(?:#([^`]+))?`$/;
+const Location = z.string().transform((s, ctx) => {
+  const m = LOCATION_RE.exec(s.trim());
+  if (!m) { ctx.addIssue({ code: "custom", message: "expected `path` or `path#symbol`" }); return z.NEVER; }
+  return { path: m[1]!, ...(m[2] ? { symbol: m[2] } : {}) };
+});
+
+const spec = contract({
+  body: sections({}, [
+    section("Files to touch", {
+      content: table({
+        columns: ["Location", "Kind", "Change"], // declared columns
+        cells: {
+          Location,                               // transform → { path; symbol? }
+          Kind: z.enum(["new", "modify", "delete"]), // transform → literal union
+          // Change is undeclared → stays a raw string
+        },
+      }),
+    }),
+  ]),
+});
+
+const doc = read(source, { path: "T-SCRB.md" }); // throws ContractError on invalid input
+
+// doc.body.filesToTouch is the auto lowerCamelCase alias of "Files to touch"
+// (dual-key SectionGroup, D-0005 §6); ["Files to touch"] / .section(...) reach the same view.
+for (const r of doc.body.filesToTouch) {
+  r.Location.path;   // string        — from the Location transform
+  r.Location.symbol; // string | undefined — optional field of the parsed object
+  r.Kind;            // "new" | "modify" | "delete" — enum-typed
+  r.Change;          // string        — undeclared column, raw string
+}
+// Inferred Row:
+//   { Location: { path: string; symbol?: string };
+//     Kind: "new" | "modify" | "delete";
+//     Change: string }
+```
+
+VARIANT — a table with no `cells` transforms keeps the `Record<string, string>` default, demonstrating the opt-in/additive guarantee:
+
+```ts
+const plain = contract({
+  body: sections({}, [
+    section("Files to touch", {
+      content: table({ columns: ["Location", "Kind", "Change"] }), // no cells → nothing declared
+    }),
+  ]),
+});
+
+const plainDoc = read(source, { path: "T-SCRB.md" });
+for (const r of plainDoc.body.filesToTouch) {
+  r.Location; // string — no transform, so the value is the raw cell text
+  r.Kind;     // string — every column is a raw string
+  r.Change;   // string
+}
+// Inferred Row falls back to the default: Record<string, string>
+```
+
 ## Approach
 
 1. In `src/core/model.ts#tableView`, build each row by reading `node.typed(r, col)` when defined and falling back to `cells[c] ?? ""` otherwise; the row map becomes `Record<string, unknown>` internally, typed as `Row` at the boundary.
