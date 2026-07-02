@@ -382,10 +382,11 @@ export type Doc<F = unknown, B = unknown> = {
  * refinement is left as deliberate future work; `B & SectionGroup` keeps `Infer` correct and
  * navigable in the meantime.
  */
-export type Infer<C> = C extends Contract<infer F, infer B>
-  ? {
-      frontmatter: F;
-      body: B & SectionGroup;
-      byAnchor(id: string): BlockView | undefined;
-    }
-  : never;
+export type Infer<C> =
+  C extends Contract<infer F, infer B>
+    ? {
+        frontmatter: F;
+        body: B & SectionGroup;
+        byAnchor(id: string): BlockView | undefined;
+      }
+    : never;

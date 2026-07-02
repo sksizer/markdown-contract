@@ -22,9 +22,7 @@ const ANCHOR_RE = /(?:^|\s)\^([A-Za-z0-9_-]+)\s*$/;
  * token removed; otherwise return `null`. Operates on the *last line* of the text so a
  * multi-line paragraph whose final line is `^summary` binds correctly.
  */
-export function extractTrailingAnchor(
-  text: string,
-): { id: string; rest: string } | null {
+export function extractTrailingAnchor(text: string): { id: string; rest: string } | null {
   // Work line-by-line so only a *line-terminal* anchor on the final non-empty line binds.
   const lines = text.replace(/\s+$/, "").split("\n");
   const lastIdx = lines.length - 1;

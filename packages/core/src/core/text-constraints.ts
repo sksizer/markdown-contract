@@ -28,16 +28,7 @@ import { toCamelKey } from "./camel.js";
 import { ContractBuildError } from "./grammar.js";
 import { buildTextFindings, matchText } from "./text-match.js";
 import type { TextMatchSpec } from "./text-match.js";
-import type {
-  BlockNode,
-  Ctx,
-  Doc,
-  DocRule,
-  DocTree,
-  Finding,
-  Rule,
-  SectionNode,
-} from "./types.js";
+import type { BlockNode, Ctx, Doc, DocRule, DocTree, Finding, Rule, SectionNode } from "./types.js";
 
 /**
  * One required / forbidden text-match entry — the closed match-spec vocabulary (D-0011 § The
@@ -240,12 +231,24 @@ export function textRule(spec: TextRuleSpec): DocRule {
       const out: Finding[] = [];
       for (const s of requiresSpecs) {
         out.push(
-          ...buildTextFindings({ kind: "requires", spec: s, match: matchText(text, s), scopeKey: "doc", ctx }),
+          ...buildTextFindings({
+            kind: "requires",
+            spec: s,
+            match: matchText(text, s),
+            scopeKey: "doc",
+            ctx,
+          }),
         );
       }
       for (const s of forbidsSpecs) {
         out.push(
-          ...buildTextFindings({ kind: "forbids", spec: s, match: matchText(text, s), scopeKey: "doc", ctx }),
+          ...buildTextFindings({
+            kind: "forbids",
+            spec: s,
+            match: matchText(text, s),
+            scopeKey: "doc",
+            ctx,
+          }),
         );
       }
       return out;

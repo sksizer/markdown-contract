@@ -67,9 +67,7 @@ describe("formatRunSummary", () => {
       filesUnmatched: 0,
       matchedByRule: [12],
     };
-    expect(formatRunSummary(stats, [undefined])).toBe(
-      "Scanned 12 files; 12 matched, 0 unmatched",
-    );
+    expect(formatRunSummary(stats, [undefined])).toBe("Scanned 12 files; 12 matched, 0 unmatched");
   });
 
   test("a named rule that matched 0 still gets a row (evidence it routed nothing)", () => {

@@ -73,13 +73,11 @@ export function compileSchema(node: unknown, path = "schema"): z.ZodType {
 }
 
 /** Compile an object shape `{ <key>: <schema> }` into a (strict) Zod object — used for `type: object` and frontmatter. */
-export function compileObjectSchema(
-  fields: unknown,
-  strict: boolean,
-  path = "schema",
-): z.ZodType {
+export function compileObjectSchema(fields: unknown, strict: boolean, path = "schema"): z.ZodType {
   if (fields === null || typeof fields !== "object" || Array.isArray(fields)) {
-    throw new DeclarativeError(`${path}: fields must be a mapping of key → schema (got ${describe(fields)})`);
+    throw new DeclarativeError(
+      `${path}: fields must be a mapping of key → schema (got ${describe(fields)})`,
+    );
   }
   const shape: Record<string, z.ZodType> = {};
   for (const [key, value] of Object.entries(fields as Record<string, unknown>)) {
@@ -92,7 +90,11 @@ export function compileObjectSchema(
 function base(n: Record<string, unknown>, path: string): z.ZodType {
   if ("enum" in n) {
     const values = n.enum;
-    if (!Array.isArray(values) || values.length === 0 || !values.every((v) => typeof v === "string")) {
+    if (
+      !Array.isArray(values) ||
+      values.length === 0 ||
+      !values.every((v) => typeof v === "string")
+    ) {
       throw new DeclarativeError(`${path}: enum must be a non-empty list of strings`);
     }
     return z.enum(values as [string, ...string[]]);
@@ -138,7 +140,8 @@ function typed(n: Record<string, unknown>, path: string): z.ZodType {
     case "boolean":
       return z.boolean();
     case "array": {
-      if (!("of" in n)) throw new DeclarativeError(`${path}: an array schema needs an 'of' element schema`);
+      if (!("of" in n))
+        throw new DeclarativeError(`${path}: an array schema needs an 'of' element schema`);
       let s = z.array(compileSchema(n.of, `${path}[]`));
       const min = num(n.min);
       const max = num(n.max);

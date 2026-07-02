@@ -32,7 +32,8 @@ const TaskFrontmatter = z
   .strict();
 
 // G3 — a worked task must carry a ## Post-mortem section. An open task is not worked, so this is dormant.
-const isWorked = (status: string): boolean => status.startsWith("in-progress/") || status.startsWith("closed/");
+const isWorked = (status: string): boolean =>
+  status.startsWith("in-progress/") || status.startsWith("closed/");
 
 const c11: ConsumptionFixture = {
   id: "c11",
@@ -107,7 +108,8 @@ const c11: ConsumptionFixture = {
       equals: 2,
     },
     {
-      label: "files.find(r => r.Kind === 'delete')?.Location === undefined — typed lookup, none here",
+      label:
+        "files.find(r => r.Kind === 'delete')?.Location === undefined — typed lookup, none here",
       get: (doc) =>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (doc.body as any).filesToTouch.find((r: any) => r.Kind === "delete")?.Location,
@@ -132,7 +134,8 @@ const c11: ConsumptionFixture = {
       equals: undefined,
     },
     {
-      label: "pm?.sections.whatWorked.text() === undefined — pm absent, optional chaining short-circuits",
+      label:
+        "pm?.sections.whatWorked.text() === undefined — pm absent, optional chaining short-circuits",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).postMortem?.sections.whatWorked.text(),
       equals: undefined,

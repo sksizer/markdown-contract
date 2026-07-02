@@ -64,15 +64,20 @@ export function compileMatchSpec(raw: unknown, kind: TextKind, path: string): Te
   const hasPattern = "pattern" in raw;
   const hasRegex = "regex" in raw;
   if (hasPattern && hasRegex) {
-    throw new DeclarativeError(`${path}: a match spec needs exactly one of 'pattern' / 'regex', not both`);
+    throw new DeclarativeError(
+      `${path}: a match spec needs exactly one of 'pattern' / 'regex', not both`,
+    );
   }
   if (!hasPattern && !hasRegex) {
-    throw new DeclarativeError(`${path}: a match spec needs one of 'pattern' (a literal) or 'regex' (a source)`);
+    throw new DeclarativeError(
+      `${path}: a match spec needs one of 'pattern' (a literal) or 'regex' (a source)`,
+    );
   }
 
   const spec: TextMatchSpec = {};
   if (hasPattern) {
-    if (typeof raw.pattern !== "string") throw new DeclarativeError(`${path}.pattern must be a string`);
+    if (typeof raw.pattern !== "string")
+      throw new DeclarativeError(`${path}.pattern must be a string`);
     spec.pattern = raw.pattern;
   }
   if (hasRegex) {
@@ -80,11 +85,13 @@ export function compileMatchSpec(raw: unknown, kind: TextKind, path: string): Te
     spec.regex = raw.regex;
   }
   if ("normalize" in raw) {
-    if (typeof raw.normalize !== "boolean") throw new DeclarativeError(`${path}.normalize must be a boolean`);
+    if (typeof raw.normalize !== "boolean")
+      throw new DeclarativeError(`${path}.normalize must be a boolean`);
     spec.normalize = raw.normalize;
   }
   if ("ignoreCase" in raw) {
-    if (typeof raw.ignoreCase !== "boolean") throw new DeclarativeError(`${path}.ignoreCase must be a boolean`);
+    if (typeof raw.ignoreCase !== "boolean")
+      throw new DeclarativeError(`${path}.ignoreCase must be a boolean`);
     spec.ignoreCase = raw.ignoreCase;
   }
   if ("min" in raw) {
@@ -105,7 +112,9 @@ export function compileMatchSpec(raw: unknown, kind: TextKind, path: string): Te
   }
   if ("level" in raw) {
     if (raw.level !== "error" && raw.level !== "warn") {
-      throw new DeclarativeError(`${path}.level must be "error" or "warn" (got ${JSON.stringify(raw.level)})`);
+      throw new DeclarativeError(
+        `${path}.level must be "error" or "warn" (got ${JSON.stringify(raw.level)})`,
+      );
     }
     spec.level = raw.level;
   }
@@ -135,7 +144,9 @@ function matcherIdentity(spec: TextMatchSpec): string {
   const fold = spec.ignoreCase ? "i" : "";
   if (spec.regex !== undefined) return `regex|${spec.regex}|${fold}`;
   const normalize = spec.normalize ?? true;
-  const needle = normalize ? (spec.pattern ?? "").trim().replace(/\s+/g, " ") : (spec.pattern ?? "");
+  const needle = normalize
+    ? (spec.pattern ?? "").trim().replace(/\s+/g, " ")
+    : (spec.pattern ?? "");
   return `pattern|${normalize ? "n" : "x"}|${needle}|${fold}`;
 }
 
@@ -180,8 +191,10 @@ export function compileScopeTextSpecs(
   path: string,
   scopeLabel: string,
 ): ScopeTextSpecs {
-  const reqSpecs = "requires" in node ? compileMatchSpecs(node.requires, "requires", `${path}.requires`) : [];
-  const forbidsSpecs = "forbids" in node ? compileMatchSpecs(node.forbids, "forbids", `${path}.forbids`) : [];
+  const reqSpecs =
+    "requires" in node ? compileMatchSpecs(node.requires, "requires", `${path}.requires`) : [];
+  const forbidsSpecs =
+    "forbids" in node ? compileMatchSpecs(node.forbids, "forbids", `${path}.forbids`) : [];
 
   // Literal-only contradiction: regex needles carry no identity here (no overlap analysis).
   const literalId = (spec: TextMatchSpec): string | undefined =>
@@ -209,7 +222,11 @@ export function compileSectionTextRules(
   path: string,
   scopeLabel: string,
 ): Rule[] {
-  const { requires: reqSpecs, forbids: forbidsSpecs } = compileScopeTextSpecs(node, path, scopeLabel);
+  const { requires: reqSpecs, forbids: forbidsSpecs } = compileScopeTextSpecs(
+    node,
+    path,
+    scopeLabel,
+  );
   const rules: Rule[] = [];
   if (reqSpecs.length > 0) rules.push(requires(reqSpecs));
   if (forbidsSpecs.length > 0) rules.push(forbids(forbidsSpecs));
@@ -221,8 +238,15 @@ export function compileSectionTextRules(
  * `textRule({ requires, forbids })`, the document-scoped form (AC-1, body root). `undefined` when
  * neither key is present, so the caller attaches nothing.
  */
-export function compileBodyTextRule(node: Record<string, unknown>, path = "body"): DocRule | undefined {
-  const { requires: reqSpecs, forbids: forbidsSpecs } = compileScopeTextSpecs(node, path, "the document");
+export function compileBodyTextRule(
+  node: Record<string, unknown>,
+  path = "body",
+): DocRule | undefined {
+  const { requires: reqSpecs, forbids: forbidsSpecs } = compileScopeTextSpecs(
+    node,
+    path,
+    "the document",
+  );
   if (reqSpecs.length === 0 && forbidsSpecs.length === 0) return undefined;
   return textRule({
     requires: reqSpecs.length > 0 ? reqSpecs : undefined,

@@ -167,11 +167,10 @@ describe("runCorpus — pure library API", () => {
 describe("the built bin (AC-5)", () => {
   test("spawn the real bin over the corpus → exit 1, parseable json stdout", () => {
     const bin = resolve(REPO, "dist/cli/index.js");
-    const r = spawnSync(
-      "node",
-      [bin, "validate", CORPUS, "--config", CONFIG, "--format", "json"],
-      { cwd: CORPUS, encoding: "utf8" },
-    );
+    const r = spawnSync("node", [bin, "validate", CORPUS, "--config", CONFIG, "--format", "json"], {
+      cwd: CORPUS,
+      encoding: "utf8",
+    });
     expect(r.status).toBe(1);
     const findings = JSON.parse(r.stdout) as Finding[];
     expect(Array.isArray(findings)).toBe(true);

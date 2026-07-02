@@ -159,11 +159,7 @@ export function validate<F, B>(
  * {@link ContractError} carrying the error-level findings (D-0001 F1). Runs `validate`,
  * then either returns `doc` (no error-level finding) or throws with the error findings.
  */
-export function read<F, B>(
-  def: ContractDef<F, B>,
-  source: string,
-  ctx: ValidateCtx,
-): Doc<F, B> {
+export function read<F, B>(def: ContractDef<F, B>, source: string, ctx: ValidateCtx): Doc<F, B> {
   const { findings, doc } = validate<F, B>(def, source, ctx);
   const errors = findings.filter((f) => f.level === "error");
   if (errors.length > 0 || doc === undefined) {

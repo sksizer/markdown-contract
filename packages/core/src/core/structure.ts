@@ -63,10 +63,20 @@ function slotsOf(specs: readonly Spec[]): Slot[] {
     if (inner.kind === "gap") return;
     if (inner.kind === "section") {
       const s = inner as SectionSpec;
-      slots.push({ specIdx, names: s.names, optional: optional || s.opts?.optional === true, opts: s.opts });
+      slots.push({
+        specIdx,
+        names: s.names,
+        optional: optional || s.opts?.optional === true,
+        opts: s.opts,
+      });
     } else if (inner.kind === "oneOf") {
       const o = inner as OneOfSpec;
-      slots.push({ specIdx, names: o.names, optional: optional || o.opts?.optional === true, opts: o.opts });
+      slots.push({
+        specIdx,
+        names: o.names,
+        optional: optional || o.opts?.optional === true,
+        opts: o.opts,
+      });
     }
   });
   return slots;
@@ -90,12 +100,7 @@ interface Assigned {
  * Match one level: `nodes` (the sibling sections at this depth) against `specs` under
  * `opts`. Emits findings into `out`, then recurses into declared sections' `children`.
  */
-function matchLevel(
-  nodes: SectionNode[],
-  seq: SectionSeq,
-  ctx: Ctx,
-  out: Finding[],
-): void {
+function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Finding[]): void {
   const specs = seq.specs;
   const order = seq.opts.order ?? "none";
   const allowUnknown = seq.opts.allowUnknown ?? true;
@@ -135,7 +140,10 @@ function matchLevel(
   }
 
   // ── Assign each section to its declared slot (first occurrence binds the slot) ────
-  const assigned: Assigned[] = nodes.map((node) => ({ node, slotIdx: slotForOrNull(slots, node.name) }));
+  const assigned: Assigned[] = nodes.map((node) => ({
+    node,
+    slotIdx: slotForOrNull(slots, node.name),
+  }));
 
   // ── oneOf / alias ambiguity: a second distinct spelling filling an already-filled slot ──
   const slotBoundBy = new Map<number, string>(); // slotIdx → the heading that first filled it
@@ -538,11 +546,7 @@ function pickBlock(node: SectionNode, anchor: string | undefined): BlockNode | n
  * `structure/*` finding. The result is returned in emission order; `validate()` applies
  * the deterministic sort (T-3NC8 finalizes the cross-plane merge).
  */
-export function matchStructure(
-  tree: { root: SectionNode },
-  body: SectionSeq,
-  ctx: Ctx,
-): Finding[] {
+export function matchStructure(tree: { root: SectionNode }, body: SectionSeq, ctx: Ctx): Finding[] {
   const out: Finding[] = [];
   matchLevel(tree.root.sections, body, ctx, out);
   return out;

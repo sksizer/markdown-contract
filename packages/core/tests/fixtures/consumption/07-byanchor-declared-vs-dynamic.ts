@@ -43,7 +43,8 @@ const c07: ConsumptionFixture = {
       equals: "B",
     },
     {
-      label: "doc.byAnchor('components')?.kind === 'table' — declared anchor reachable dynamically too",
+      label:
+        "doc.byAnchor('components')?.kind === 'table' — declared anchor reachable dynamically too",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc as any).byAnchor("components")?.kind,
       equals: "table",

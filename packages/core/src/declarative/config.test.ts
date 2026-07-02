@@ -106,12 +106,16 @@ describe("CLI — config-less --contract parameterization", () => {
   });
 
   it("one contract over a clean subtree → exit 0", async () => {
-    const res = await runCli(["validate", join(dir, "clean"), "--contract", contract()], { cwd: dir });
+    const res = await runCli(["validate", join(dir, "clean"), "--contract", contract()], {
+      cwd: dir,
+    });
     expect(res.code).toBe(0);
   });
 
   it("inline contract/path pair routes by directory (clean subtree → exit 0)", async () => {
-    const res = await runCli(["validate", "--contract", contract(), "--path", "clean"], { cwd: dir });
+    const res = await runCli(["validate", "--contract", contract(), "--path", "clean"], {
+      cwd: dir,
+    });
     expect(res.code).toBe(0);
   });
 
@@ -145,16 +149,17 @@ describe("CLI — config-less --contract parameterization", () => {
   });
 
   it("positional <path> combined with pairs → exit 2", async () => {
-    const res = await runCli(
-      ["validate", dir, "--contract", contract(), "--path", "clean"],
-      { cwd: dir },
-    );
+    const res = await runCli(["validate", dir, "--contract", contract(), "--path", "clean"], {
+      cwd: dir,
+    });
     expect(res.code).toBe(2);
     expect(res.stderr).toContain("positional");
   });
 
   it("a non-YAML --contract ref → exit 2 (code escape deferred)", async () => {
-    const res = await runCli(["validate", dir, "--contract", join(dir, "contract.ts")], { cwd: dir });
+    const res = await runCli(["validate", dir, "--contract", join(dir, "contract.ts")], {
+      cwd: dir,
+    });
     expect(res.code).toBe(2);
     expect(res.stderr).toContain(".yaml");
   });
@@ -194,18 +199,16 @@ describe("CLI — glob scoping (--glob / --include / --exclude), all modes", () 
   });
 
   it("--exclude drops the failing file from a --contract run (exit 0)", async () => {
-    const res = await runCli(
-      ["validate", dir, "--contract", contract(), "--exclude", "bad.md"],
-      { cwd: dir },
-    );
+    const res = await runCli(["validate", dir, "--contract", contract(), "--exclude", "bad.md"], {
+      cwd: dir,
+    });
     expect(res.code).toBe(0);
   });
 
   it("--include is the explicit form of --glob (exit 0)", async () => {
-    const res = await runCli(
-      ["validate", dir, "--contract", contract(), "--include", "good.md"],
-      { cwd: dir },
-    );
+    const res = await runCli(["validate", dir, "--contract", contract(), "--include", "good.md"], {
+      cwd: dir,
+    });
     expect(res.code).toBe(0);
   });
 
@@ -218,10 +221,9 @@ describe("CLI — glob scoping (--glob / --include / --exclude), all modes", () 
   });
 
   it("a --glob matching nothing validates nothing → exit 0", async () => {
-    const res = await runCli(
-      ["validate", dir, "--contract", contract(), "--glob", "nope/**"],
-      { cwd: dir },
-    );
+    const res = await runCli(["validate", dir, "--contract", contract(), "--glob", "nope/**"], {
+      cwd: dir,
+    });
     expect(res.code).toBe(0);
   });
 });

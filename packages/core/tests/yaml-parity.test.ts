@@ -30,12 +30,12 @@ const DECLARATIVE_IMPLEMENTED = true;
 // The globs RECURSE (`**/*.ts`) so a subdirectory can never hide a fixture from the "peers
 // exist" check — folder placement is not load-bearing. A fixture opts out of the twin
 // expectation explicitly with `peerless: true` (see below), not by where it sits on disk.
-const valMods = (process.env.VITEST
-  ? import.meta.glob("./fixtures/validation/**/*.ts", { eager: true })
-  : {}) as Record<string, { default: ValidationFixture }>;
-const conMods = (process.env.VITEST
-  ? import.meta.glob("./fixtures/consumption/**/*.ts", { eager: true })
-  : {}) as Record<string, { default: ConsumptionFixture }>;
+const valMods = (
+  process.env.VITEST ? import.meta.glob("./fixtures/validation/**/*.ts", { eager: true }) : {}
+) as Record<string, { default: ValidationFixture }>;
+const conMods = (
+  process.env.VITEST ? import.meta.glob("./fixtures/consumption/**/*.ts", { eager: true }) : {}
+) as Record<string, { default: ConsumptionFixture }>;
 
 interface Entry<T> {
   key: string;
@@ -45,13 +45,20 @@ interface Entry<T> {
 
 function fixtures<T>(mods: Record<string, { default: T }>): Entry<T>[] {
   return Object.entries(mods)
-    .map(([key, m]) => ({ key, fx: m.default, stem: key.slice(key.lastIndexOf("/") + 1).replace(/\.ts$/, "") }))
+    .map(([key, m]) => ({
+      key,
+      fx: m.default,
+      stem: key.slice(key.lastIndexOf("/") + 1).replace(/\.ts$/, ""),
+    }))
     .filter((e) => e.stem !== "index" && !e.stem.startsWith("_"))
     .sort((a, b) => a.stem.localeCompare(b.stem));
 }
 
 const peerText = (key: string): string =>
-  readFileSync(fileURLToPath(new URL(key.replace(/\.ts$/, ".contract.yaml"), import.meta.url)), "utf8");
+  readFileSync(
+    fileURLToPath(new URL(key.replace(/\.ts$/, ".contract.yaml"), import.meta.url)),
+    "utf8",
+  );
 
 /** Whether a fixture's `.contract.yaml` twin exists on disk. */
 const hasPeer = (key: string): boolean => {
@@ -112,7 +119,8 @@ describe("YAML contract peers exist for every fixture", () => {
 // accidentally twin-less fixture is excluded — the latter is already surfaced as a soft warning
 // above, and must not become a hard failure here (that's AC-2). Everything else is unchanged, so a
 // real TS⇄YAML mismatch on a fixture that DOES have a twin still fails hard (AC-4).
-const hasTwin = <T extends { peerless?: boolean }>(e: Entry<T>): boolean => !e.fx.peerless && hasPeer(e.key);
+const hasTwin = <T extends { peerless?: boolean }>(e: Entry<T>): boolean =>
+  !e.fx.peerless && hasPeer(e.key);
 
 describe.skipIf(!DECLARATIVE_IMPLEMENTED)("YAML ⇄ TS validation parity", () => {
   for (const e of valEntries.filter(hasTwin)) {

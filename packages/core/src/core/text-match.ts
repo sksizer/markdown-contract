@@ -157,7 +157,9 @@ function patternKey(spec: TextMatchSpec): string {
   const fold = spec.ignoreCase ? "i" : "";
   if (spec.regex !== undefined) return `regex|${spec.regex}|${fold}`;
   const normalize = spec.normalize ?? true;
-  const needle = normalize ? (spec.pattern ?? "").trim().replace(/\s+/g, " ") : (spec.pattern ?? "");
+  const needle = normalize
+    ? (spec.pattern ?? "").trim().replace(/\s+/g, " ")
+    : (spec.pattern ?? "");
   return `pattern|${normalize ? "n" : "x"}|${needle}|${fold}`;
 }
 
@@ -168,7 +170,11 @@ function patternKey(spec: TextMatchSpec): string {
  * renamed (`scopeKey`) or the pattern is edited. An entry that sets an explicit `id` gets exactly
  * that id back (pinning identity across pattern edits).
  */
-export function synthesizeTextId(kind: TextFindingKind, scopeKey: string, spec: TextMatchSpec): string {
+export function synthesizeTextId(
+  kind: TextFindingKind,
+  scopeKey: string,
+  spec: TextMatchSpec,
+): string {
   if (spec.id !== undefined) return spec.id;
   return `text/${kind}/${scopeKey}/${shortHash(patternKey(spec))}`;
 }

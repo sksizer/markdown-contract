@@ -19,7 +19,9 @@ const v25: ValidationFixture = {
     contract({
       body: sections({ order: "recognized-relative", allowUnknown: true }, [
         section("Failure modes", {
-          rules: [requires([{ regex: "LEASE-(CONFLICT|MISSING) ref=", note: "lease failure markers" }])],
+          rules: [
+            requires([{ regex: "LEASE-(CONFLICT|MISSING) ref=", note: "lease failure markers" }]),
+          ],
         }),
       ]),
     }),

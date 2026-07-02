@@ -13,9 +13,7 @@ const v09b: ValidationFixture = {
   path: "docs/.../README.md",
   build: () =>
     contract({
-      body: sections({}, [
-        section("Summary", { anchor: "summary", content: maxWords(120) }),
-      ]),
+      body: sections({}, [section("Summary", { anchor: "summary", content: maxWords(120) })]),
     }),
   cases: [
     {

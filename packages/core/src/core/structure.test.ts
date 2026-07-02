@@ -10,16 +10,7 @@
  */
 import { describe, expect, test } from "vitest";
 
-import {
-  code,
-  contract,
-  gap,
-  list,
-  maxWords,
-  section,
-  sections,
-  table,
-} from "../index.js";
+import { code, contract, gap, list, maxWords, section, sections, table } from "../index.js";
 import { ContractBuildError } from "./grammar.js";
 import type { Finding } from "../index.js";
 
@@ -112,15 +103,7 @@ describe("kind-gate · block-missing / block-kind", () => {
         }),
       ]),
     });
-    const source = [
-      "## Decision",
-      "",
-      "| # |",
-      "| - |",
-      "| 1 |",
-      "^components",
-      "",
-    ].join("\n");
+    const source = ["## Decision", "", "| # |", "| - |", "| 1 |", "^components", ""].join("\n");
     // components present; risks anchor missing → one block-missing.
     expect(ids(c.validate(source, ctx).findings)).toEqual(["structure/block-missing"]);
   });
@@ -169,9 +152,7 @@ describe("build-time contract/key-collision", () => {
 
   test("alias spellings within one slot are not a collision", () => {
     expect(() =>
-      sections({ order: "none", allowUnknown: true }, [
-        section(["Goal", "Goal statement"]),
-      ]),
+      sections({ order: "none", allowUnknown: true }, [section(["Goal", "Goal statement"])]),
     ).not.toThrow();
   });
 });
@@ -198,14 +179,7 @@ describe("gap({min,max}) bounds", () => {
   });
 
   test("within [min,max] passes", () => {
-    const source = [
-      "## Summary",
-      "",
-      "## Extra",
-      "",
-      "## Sign-off",
-      "",
-    ].join("\n");
+    const source = ["## Summary", "", "## Extra", "", "## Sign-off", ""].join("\n");
     expect(c.validate(source, ctx).findings).toEqual([]);
   });
 

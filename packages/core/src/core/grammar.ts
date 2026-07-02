@@ -152,6 +152,9 @@ export function rule(id: string, fn: (node: SectionNode, ctx: Ctx) => Finding[])
  * Register a cross-plane / cross-file named rule over the whole typed doc. Constructed
  * inertly here; the engine wires `docRule` into the cross-plane merge in T-3NC8.
  */
-export function docRule<F>(id: string, fn: (doc: Doc<F>, ctx: Ctx, tree: DocTree) => Finding[]): DocRule {
+export function docRule<F>(
+  id: string,
+  fn: (doc: Doc<F>, ctx: Ctx, tree: DocTree) => Finding[],
+): DocRule {
   return { __brand: "DocRule", id, run: fn as DocRule["run"] };
 }

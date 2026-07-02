@@ -33,7 +33,9 @@ function compileLevel(node: unknown, path: string): SectionSeq {
   const opts: LevelOpts = {};
   if ("order" in node) {
     if (node.order !== "none" && node.order !== "recognized-relative" && node.order !== "strict") {
-      throw new DeclarativeError(`${path}.order must be none | recognized-relative | strict (got ${JSON.stringify(node.order)})`);
+      throw new DeclarativeError(
+        `${path}.order must be none | recognized-relative | strict (got ${JSON.stringify(node.order)})`,
+      );
     }
     opts.order = node.order;
   }
@@ -72,7 +74,10 @@ function compileNode(node: unknown, path: string): Spec {
       throw new DeclarativeError(`${path}.section must be a heading name (string)`);
     }
     const aliases = node.aliases;
-    if (aliases !== undefined && (!Array.isArray(aliases) || !aliases.every((s) => typeof s === "string"))) {
+    if (
+      aliases !== undefined &&
+      (!Array.isArray(aliases) || !aliases.every((s) => typeof s === "string"))
+    ) {
       throw new DeclarativeError(`${path}.aliases must be a list of alias spellings`);
     }
     const names = Array.isArray(aliases) ? [name, ...(aliases as string[])] : name;
@@ -118,7 +123,9 @@ function isLeafMap(v: unknown): v is Record<string, unknown> {
 
 function compileContent(content: unknown, path: string): LeafSpec | Record<string, LeafSpec> {
   if (!isMap(content)) {
-    throw new DeclarativeError(`${path}: must be a leaf (table/list/code/maxWords) or a named-leaf map`);
+    throw new DeclarativeError(
+      `${path}: must be a leaf (table/list/code/maxWords) or a named-leaf map`,
+    );
   }
   if (isLeafMap(content)) return compileLeaf(content, path);
   // A record of `^anchor`-named leaves.
@@ -131,7 +138,9 @@ function compileContent(content: unknown, path: string): LeafSpec | Record<strin
 
 function compileLeaf(node: unknown, path: string): LeafSpec {
   if (!isMap(node) || Object.keys(node).length !== 1) {
-    throw new DeclarativeError(`${path}: a leaf must be a single-key mapping (table | list | code | maxWords)`);
+    throw new DeclarativeError(
+      `${path}: a leaf must be a single-key mapping (table | list | code | maxWords)`,
+    );
   }
   const key = Object.keys(node)[0]!;
   const cfg = node[key];
@@ -156,19 +165,33 @@ function compileLeaf(node: unknown, path: string): LeafSpec {
 function tableConfig(
   cfg: unknown,
   path: string,
-): { columns: string[]; anchor?: string; minRows?: number; cells?: Record<string, ZodType>; extraColumns?: "ignore" | "error" } {
+): {
+  columns: string[];
+  anchor?: string;
+  minRows?: number;
+  cells?: Record<string, ZodType>;
+  extraColumns?: "ignore" | "error";
+} {
   if (!isMap(cfg)) throw new DeclarativeError(`${path}.table must be a mapping`);
   if (!Array.isArray(cfg.columns) || !cfg.columns.every((c) => typeof c === "string")) {
     throw new DeclarativeError(`${path}.table.columns must be a list of column names`);
   }
-  const out: { columns: string[]; anchor?: string; minRows?: number; cells?: Record<string, ZodType>; extraColumns?: "ignore" | "error" } = {
+  const out: {
+    columns: string[];
+    anchor?: string;
+    minRows?: number;
+    cells?: Record<string, ZodType>;
+    extraColumns?: "ignore" | "error";
+  } = {
     columns: cfg.columns as string[],
   };
   if ("anchor" in cfg) out.anchor = String(cfg.anchor);
   if (typeof cfg.minRows === "number") out.minRows = cfg.minRows;
-  if (cfg.extraColumns === "ignore" || cfg.extraColumns === "error") out.extraColumns = cfg.extraColumns;
+  if (cfg.extraColumns === "ignore" || cfg.extraColumns === "error")
+    out.extraColumns = cfg.extraColumns;
   if ("cells" in cfg) {
-    if (!isMap(cfg.cells)) throw new DeclarativeError(`${path}.table.cells must be a mapping of column → schema`);
+    if (!isMap(cfg.cells))
+      throw new DeclarativeError(`${path}.table.cells must be a mapping of column → schema`);
     const cells: Record<string, ZodType> = {};
     for (const [col, schema] of Object.entries(cfg.cells)) {
       cells[col] = compileSchema(schema, `${path}.table.cells.${col}`);
@@ -187,7 +210,10 @@ function listConfig(
   if (typeof cfg.ordered === "boolean") out.ordered = cfg.ordered;
   if (typeof cfg.minItems === "number") out.minItems = cfg.minItems;
   if ("everyItem" in cfg) {
-    out.everyItem = cfg.everyItem === "checkbox" ? "checkbox" : compileSchema(cfg.everyItem, `${path}.list.everyItem`);
+    out.everyItem =
+      cfg.everyItem === "checkbox"
+        ? "checkbox"
+        : compileSchema(cfg.everyItem, `${path}.list.everyItem`);
   }
   return out;
 }

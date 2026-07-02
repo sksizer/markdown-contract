@@ -402,10 +402,7 @@ function offsetToLine(text: string, offset: number): number {
 
 // ── parse() — the public entry point ─────────────────────────────────────────────
 
-const PROCESSOR = unified()
-  .use(remarkParse)
-  .use(remarkGfm)
-  .use(remarkFrontmatter, ["yaml"]);
+const PROCESSOR = unified().use(remarkParse).use(remarkGfm).use(remarkFrontmatter, ["yaml"]);
 
 /**
  * Parse raw markdown (frontmatter + body) into a positioned `DocTree`.

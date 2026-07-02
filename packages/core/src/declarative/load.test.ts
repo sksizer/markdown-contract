@@ -46,7 +46,9 @@ describe("loadContract — envelope + current-build limits", () => {
   });
 
   it("compiles a body grammar (a required section that is absent → structure/section-missing)", () => {
-    const c = loadContract("mcVersion: 1\nkind: contract\nbody:\n  order: none\n  sections:\n    - section: Summary\n");
+    const c = loadContract(
+      "mcVersion: 1\nkind: contract\nbody:\n  order: none\n  sections:\n    - section: Summary\n",
+    );
     const r = c.validate("## Other\n\nx\n", { path: "x.md" });
     expect(r.findings.map((f) => f.id)).toContain("structure/section-missing");
   });

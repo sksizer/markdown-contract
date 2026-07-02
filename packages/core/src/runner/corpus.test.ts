@@ -165,7 +165,12 @@ describe("runCorpus — docRule findings aggregate across documents into finding
           const body = doc.body as { section(name: string): unknown };
           return body.section("Summary")
             ? []
-            : [ctx.finding({ id: "doc/needs-summary", message: "a doc needs a ## Summary section" })];
+            : [
+                ctx.finding({
+                  id: "doc/needs-summary",
+                  message: "a doc needs a ## Summary section",
+                }),
+              ];
         }),
         docRule("doc/has-owner", (doc, ctx) => {
           const body = doc.body as { section(name: string): unknown };
