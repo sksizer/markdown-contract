@@ -20,6 +20,11 @@
       "types": "./dist/declarative/index.d.ts",
       "import": "./dist/declarative/index.js",
       "default": "./dist/declarative/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli/index.d.ts",
+      "import": "./dist/cli/index.js",
+      "default": "./dist/cli/index.js"
     }
   },
   "bin": {
