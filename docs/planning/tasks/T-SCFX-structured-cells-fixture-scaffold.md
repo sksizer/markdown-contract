@@ -18,6 +18,7 @@ impact: medium
 complexity: medium
 autonomy: supervised
 last_reviewed: '2026-06-30'
+readiness_verified_at: '2026-07-02T17:07:23Z'
 ---
 # Scaffold the structured-cells fixtures and enable gates (`cell-typed` / `list-typed` / `cell-pos`)
 
