@@ -102,6 +102,28 @@ describe("block kinds", () => {
     expect(table.pos.line).toBe(3);
   });
 
+  test("table: additive typed(...) overlay is undefined before any cache write; raw rows unchanged", () => {
+    const t = parse(
+      [
+        "## Files",
+        "",
+        "| Location | Kind   |",
+        "| -------- | ------ |",
+        "| src/a.ts | modify |",
+      ].join("\n"),
+    );
+    const table = blockOf(t.root.sections[0]!.blocks[0], "table");
+    // Projection alone runs no content plane, so the sparse overlay is empty → undefined.
+    expect(table.typed(0, "Location")).toBeUndefined();
+    expect(table.typed(0, "Kind")).toBeUndefined();
+    // Raw rows are exactly the flattened strings — the typed overlay is purely additive.
+    expect(table.rows).toEqual([["src/a.ts", "modify"]]);
+    // setTyped → typed round-trips, keyed by column NAME, and stays sparse elsewhere.
+    table.setTyped(0, "Location", { path: "src/a.ts" });
+    expect(table.typed(0, "Location")).toEqual({ path: "src/a.ts" });
+    expect(table.typed(0, "Kind")).toBeUndefined();
+  });
+
   test("list: ordered flag + task-list checked", () => {
     const t = parse(["## A", "", "- [ ] todo", "- [x] done", "- plain"].join("\n"));
     const list = blockOf(t.root.sections[0]!.blocks[0], "list");
