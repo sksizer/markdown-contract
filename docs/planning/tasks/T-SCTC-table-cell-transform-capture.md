@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-SCTC
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0011-structured-cells]]'
@@ -19,7 +19,7 @@ need_human_review: false
 impact: high
 complexity: medium
 autonomy: supervised
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-02'
 readiness_verified_at: '2026-07-02T20:04:21Z'
 ---
 # Keep the transform output at validate-time and cache it on the projection table node
@@ -121,3 +121,19 @@ if (node.kind === "table") {
 ## Dependencies
 
 - [[T-SCFX-structured-cells-fixture-scaffold]] — the gated fixtures + stubbed surface this builds the runtime substrate for.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-02. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
