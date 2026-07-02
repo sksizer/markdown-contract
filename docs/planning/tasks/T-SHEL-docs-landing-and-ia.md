@@ -2,9 +2,9 @@
 type: task
 schema_version: '5'
 id: T-SHEL
-status: open/ready
+status: in-progress
 created: '2026-06-30'
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-02'
 related:
 - '[[M-0006-documentation-site]]'
 - '[[M-0007-example-use-case-catalog]]'
@@ -98,3 +98,19 @@ document ([[M-0007-example-use-case-catalog]]) but its pages are not yet generat
   [[T-SITE-bootstrap-docs-website]], which later **supersedes** this interim landing with the
   catalog-data-driven version (hero tour) and fills the IA slots once
   [[T-CTLG-example-catalog-finalize]] lands the `docs/catalog/*.yaml` data.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-02. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
