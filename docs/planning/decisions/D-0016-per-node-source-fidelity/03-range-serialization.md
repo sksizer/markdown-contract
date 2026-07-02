@@ -1,7 +1,7 @@
-> Example 07 for [[D-0016-per-node-source-fidelity|D-0016]] — `range` is the serializable primitive;
+> Example 03 for [[D-0016-per-node-source-fidelity|D-0016]] — `range` is the serializable primitive;
 > `raw()` / `mdast()` are lazy and live-only. Non-normative; the decision wins.
 
-# 07 · `range` as the serializable primitive
+# 03 · `range` as the serializable primitive
 
 ## Affordance
 

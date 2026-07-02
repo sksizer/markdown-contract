@@ -1,7 +1,7 @@
-> Example 03 for [[D-0016-per-node-source-fidelity|D-0016]] — cell-depth raw: verbatim table cells.
+> Example 07 for [[D-0016-per-node-source-fidelity|D-0016]] — cell-depth raw: verbatim table cells.
 > Non-normative; the decision wins.
 
-# 03 · Cell — verbatim table cells
+# 07 · Cell — verbatim table cells
 
 ## Affordance
 

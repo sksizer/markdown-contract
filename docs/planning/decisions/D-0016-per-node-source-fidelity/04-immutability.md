@@ -1,7 +1,7 @@
-> Example 08 for [[D-0016-per-node-source-fidelity|D-0016]] — nodes are immutable; accessors return
+> Example 04 for [[D-0016-per-node-source-fidelity|D-0016]] — nodes are immutable; accessors return
 > readonly views. Non-normative; the decision wins.
 
-# 08 · Immutability
+# 04 · Immutability
 
 ## Affordance
 
@@ -41,9 +41,9 @@ depend on (D-0007): the worst case is a wrong finding, never a damaged tree.
   is copied, so a consumer who casts through `any` can still mutate. `readonly` types are cheap and
   sufficient to start ("used that way for now").
 - **No defensive copy.** `mdast()` hands back the **same shared node**, typed as readonly
-  (composition, by reference — example 06); it is not a clone. A copy would defeat example 07's memory
+  (composition, by reference — example 02); it is not a clone. A copy would defeat example 03's memory
   model (O(nodes) + one retained source) and the safe-sharing property above. The optional
   defense-in-depth escalation is runtime `Object.freeze` (which would need to be deep to fully hold),
   **not** copying; it has a cost, so it is not the default.
-- Immutability is what makes the fallthrough (example 05) and composition (example 06) safe: sharing
+- Immutability is what makes the fallthrough (example 01) and composition (example 02) safe: sharing
   the mdast segment by reference is fine precisely because no one can mutate it.

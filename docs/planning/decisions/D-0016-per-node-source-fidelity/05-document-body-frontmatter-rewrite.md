@@ -1,7 +1,7 @@
-> Example 01 for [[D-0016-per-node-source-fidelity|D-0016]] — document-depth raw: the frontmatter
+> Example 05 for [[D-0016-per-node-source-fidelity|D-0016]] — document-depth raw: the frontmatter
 > body split. Non-normative; the decision wins.
 
-# 01 · Document body — frontmatter read-modify-write
+# 05 · Document body — frontmatter read-modify-write
 
 ## Affordance
 
