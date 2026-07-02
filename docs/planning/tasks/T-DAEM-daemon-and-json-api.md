@@ -37,9 +37,9 @@ and the server half of the [[M-0008-single-exec-distribution]] feasibility slice
 
 | Location | Role today |
 |---|---|
-| `src/cli/run.ts#runCli` | Pure CLI core; dispatches `init` / `validate` by positional (`src/cli/run.ts:114`); an unknown command exits `2`. No `daemon` verb, no server. |
-| `src/runner/corpus.ts#runCorpus` | `runCorpus(config, opts) → { findings, stats, exitCode }` — the library API a JSON handler calls. |
-| `src/declarative/infer.ts#inferConfig` | `inferConfig(root, opts) → InferResult` — the `init`/drift API. |
+| `packages/core/src/cli/run.ts#runCli` | Pure CLI core; dispatches `init` / `validate` by positional (`packages/core/src/cli/run.ts:124`); an unknown command exits `2`. No `daemon` verb, no server. |
+| `packages/core/src/runner/corpus.ts#runCorpus` | `runCorpus(config, opts) → { findings, stats, exitCode }` — the library API a JSON handler calls. |
+| `packages/core/src/declarative/infer.ts#inferConfig` | `inferConfig(root, opts) → InferResult` — the `init`/drift API. |
 | `apps/web/` | A placeholder workspace member scaffolded by [[T-WKSP-bun-workspace-split]] (empty; no server code yet). |
 
 ## Proposed
@@ -54,7 +54,7 @@ all Bun-only and server code lives only in `apps/web`, preserving the one-way la
 
 1. **Combined entry.** Add `apps/web/src/bin.ts`: parse `argv[0]`; if `daemon`, start the
    server; otherwise call `packages/core`'s `runCli(argv)` and apply the same
-   write-streams-and-exit wrapper as `src/cli/index.ts`. This file (not `packages/core`'s
+   write-streams-and-exit wrapper as `packages/core/src/cli/index.ts`. This file (not `packages/core`'s
    bin) becomes the `bun build --compile` target in [[T-BMTX-bun-compile-matrix]].
 2. **Server.** Use **`Bun.serve`** (simplest path with the fewest moving parts to prove the
    loop; Nitro's `bun` preset is the M-0009 productionization noted in
@@ -77,10 +77,10 @@ all Bun-only and server code lives only in `apps/web`, preserving the one-way la
 |---|---|---|
 | `apps/web/src/bin.ts` | new | Combined-binary entry: `daemon` → server, else delegate to `packages/core` `runCli`. |
 | `apps/web/src/daemon/server.ts` | new | `Bun.serve` loopback server: static assets + the JSON API; `--port` / `--open`. |
-| `apps/web/src/daemon/api.ts` | new | Route handlers over `runCorpus` / `inferConfig` (`/api/validate`, `/api/health`). |
+| `apps/web/src/daemon/routes.ts` | new | Route handlers over `runCorpus` / `inferConfig` (`/api/validate`, `/api/health`). |
 | `apps/web/src/daemon/server.test.ts` | new | Peer test: boot on ephemeral port, validate a fixture vault, assert JSON. |
 | `apps/web/package.json` | modify | Add the `bin`, the `daemon` script, and the `packages/core` workspace dependency. |
-| `apps/web/moon.yml` | new | `dev` / `typecheck` / `test` tasks for the daemon (compile/build:web land in [[T-BMTX-bun-compile-matrix]]). |
+| `apps/web/` | new | New `moon.yml` manifest declaring the daemon's `dev` / `typecheck` / `test` tasks (compile/build:web land in [[T-BMTX-bun-compile-matrix]]). |
 
 ## Acceptance criteria
 
