@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { basename, join } from "node:path";
 
 import { Registry, RegistryError, slugId } from "./registry";
 
@@ -40,6 +40,28 @@ describe("Registry", () => {
     new Registry(registryPath).add({ name: "My Docs", path: vaultDir });
     expect(JSON.parse(readFileSync(registryPath, "utf8")).version).toBe(1);
     expect(new Registry(registryPath).list().map((v) => v.id)).toEqual(["vault-my-docs"]);
+  });
+
+  it("expands ~/ — form input arrives unexpanded by any shell", () => {
+    const { registryPath } = scratch();
+    // a real directory under $HOME, so `~/<name>` genuinely exists
+    const homeDir = mkdtempSync(join(homedir(), ".mc-registry-test-"));
+    try {
+      const entry = new Registry(registryPath).add({
+        name: "Home Docs",
+        path: `~/${basename(homeDir)}`,
+      });
+      expect(entry.path).toBe(homeDir);
+      expect(entry.configPath).toBe(join(homeDir, "markdown-contract.yaml"));
+    } finally {
+      rmSync(homeDir, { recursive: true, force: true });
+    }
+  });
+
+  it("trims surrounding whitespace from a pasted path", () => {
+    const { registryPath, vaultDir } = scratch();
+    const entry = new Registry(registryPath).add({ name: "Padded", path: `  ${vaultDir}\n` });
+    expect(entry.path).toBe(vaultDir);
   });
 
   it("rejects a path that is not an existing directory", () => {

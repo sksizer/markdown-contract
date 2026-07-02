@@ -50,6 +50,17 @@ export function slugId(name: string): string {
 export class RegistryError extends Error {}
 
 /**
+ * Expand a leading `~` to the home directory. Paths arrive from the web form,
+ * not a shell, so nothing has expanded `~` for the user — without this,
+ * `~/docs` would resolve relative to the daemon's cwd.
+ */
+function expandTilde(p: string): string {
+  if (p === "~") return homedir();
+  if (p.startsWith("~/")) return join(homedir(), p.slice(2));
+  return p;
+}
+
+/**
  * The registry: loads the versioned file once, mutates in memory, and persists
  * every mutation atomically (tmp + rename) so a crash never half-writes the file.
  * A missing file is an empty registry; the file is created on first save.
@@ -91,8 +102,8 @@ export class Registry {
   }
 
   /**
-   * Register a vault. The path is untrusted input (D-0012): it is resolved to an
-   * absolute path and must be an existing directory. `configPath` defaults to
+   * Register a vault. The path is untrusted input (D-0012): `~` is expanded,
+   * then it is resolved to an absolute path and must be an existing directory. `configPath` defaults to
    * `<path>/markdown-contract.yaml` and may not exist yet (the init flow covers
    * that). Ids are slugs of the name, suffixed `-2`, `-3`… on collision.
    */
@@ -103,7 +114,7 @@ export class Registry {
     if (typeof req.path !== "string" || req.path.trim() === "") {
       throw new RegistryError("a vault needs a path");
     }
-    const path = resolve(req.path);
+    const path = resolve(expandTilde(req.path.trim()));
     if (!existsSync(path) || !statSync(path).isDirectory()) {
       throw new RegistryError(`vault path is not an existing directory: ${path}`);
     }
@@ -117,7 +128,9 @@ export class Registry {
       id,
       name: req.name.trim(),
       path,
-      configPath: req.configPath ? resolve(req.configPath) : join(path, "markdown-contract.yaml"),
+      configPath: req.configPath
+        ? resolve(expandTilde(req.configPath.trim()))
+        : join(path, "markdown-contract.yaml"),
       watch: true,
     };
     this.vaults.push(entry);
