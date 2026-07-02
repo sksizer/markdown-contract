@@ -117,12 +117,26 @@ _Captured by /sdlc:task-work on 2026-07-02. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — `MOON_CACHE=off bunx moon run docs:build` exits 0 and emits `apps/docs/dist/index.html` (19434 bytes); `docs: "apps/docs"` present in `.moon/workspace.yml`, `moon.yml` build task on `toolchain: 'bun'` with `outputs: ['dist']`.
+- AC-2: agent-manual — `apps/docs/astro.config.mjs` registers `starlight()` with `site: 'https://sksizer.github.io'` + `base: '/markdown-contract/'` and four declared-but-empty sidebar IA groups (Overview/Guides/Examples/Reference); Starlight 0.41.2 built green with `items: []`.
+- AC-3: agent-manual — `src/content.config.ts` wires `docsLoader()` + `docsSchema()`; placeholder `src/content/docs/index.md` renders to `dist/index.html`.
+- AC-4: auto — `git check-ignore` confirms `apps/docs/{node_modules,dist,.astro}/` ignored; `git status --porcelain` shows no site artifacts staged after a build.
+- AC-5: auto — `git diff --name-only origin/main -- packages/core` is empty (untouched); docs package is `private: true`, never published to npm.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- Baseline-gated quality run stayed green (`OK 5/5`, pre-existing ignored) — adding a new workspace member broke none of the `core:`-scoped gates.
+- Astro/Starlight scaffold + `bun install` + `moon run docs:build` composed cleanly on the bun toolchain; empty sidebar groups needed no autogenerate fallback.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Starlight scaffolder drops a `CLAUDE.md -> AGENTS.md` symlink; deleting the starter `AGENTS.md` left a dangling symlink that `find -type f`/`cat` skip but `git ls-files --others` still tracks — worktree init or a scaffold-cleanup step should sweep dangling symlinks so a broken link can't get committed. → [[worktree-init-sweeps-dangling-symlinks]]
+- The quality baseline is written under the main repo's `.sdlc/quality-baselines/` but Step 7's gate defaults `--baseline-dir` to the worktree's `.sdlc/`, so the first baseline-gated run failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed — task-work Step 7 should pass the main-repo baseline dir explicitly (or the executor should resolve the superproject `.sdlc/`). → [[task-work-step7-threads-baseline-dir]]
+- preflight_permissions reported `Bash(bun:*)`/`Write`/`Edit` as hard gaps though bun and file-mutation worked throughout — the static-settings probe under-reported this session's grants; a probe that also consults the live/effective permission mode would avoid a spurious gate. → [[preflight-permissions-checks-effective-mode]]
+
+### Spawned follow-up tasks
+
+- [[worktree-init-sweeps-dangling-symlinks]] (https://github.com/sksizer/dev/pull/601) — spawned; Upstream-plugin (sdlc). Sweep dangling symlinks during task-work worktree init so a broken link can't be committed.
+- [[task-work-step7-threads-baseline-dir]] (https://github.com/sksizer/dev/pull/598) — linked to existing upstream PR; Upstream-plugin (sdlc). Thread the main-repo quality-baseline dir into worktree gate runs.
+- [[preflight-permissions-checks-effective-mode]] (https://github.com/sksizer/dev/pull/603) — spawned; Upstream-plugin (sdlc). Probe consults the live/effective permission mode instead of only static settings.
+
