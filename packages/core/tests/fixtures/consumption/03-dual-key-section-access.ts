@@ -47,6 +47,7 @@ const c03: ConsumptionFixture = {
       label: "section() resolves the underlying SectionView, stable across calls",
       get: (doc) =>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // biome-ignore lint/suspicious/noSelfCompare: intentional — asserts section() returns a stable SectionView across calls
         (doc.body as any).section("Files to touch") === (doc.body as any).section("Files to touch"),
       equals: true,
     },

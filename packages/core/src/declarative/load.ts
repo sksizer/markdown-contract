@@ -51,6 +51,7 @@ export function compileContractObject(raw: Record<string, unknown>): Contract {
     // verified `raw.body` is a mapping.
     if (raw.body !== null && typeof raw.body === "object" && !Array.isArray(raw.body)) {
       const docRule = compileBodyTextRule(raw.body as Record<string, unknown>);
+      // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic default-and-push
       if (docRule) (def.rules ??= []).push(docRule);
     }
   }

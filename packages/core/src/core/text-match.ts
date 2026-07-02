@@ -126,6 +126,7 @@ export function matchText(text: string, spec: TextMatchSpec): TextMatchResult {
   const re = new RegExp(source, flags);
   const positions: SourcePos[] = [];
   let m: RegExpExecArray | null;
+  // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic regex.exec iteration
   while ((m = re.exec(text)) !== null) {
     positions.push(offsetToPos(text, m.index));
     // Guard against a zero-width match (e.g. a `regex` that can match empty) looping forever.

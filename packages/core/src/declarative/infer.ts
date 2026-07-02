@@ -253,6 +253,7 @@ function precedence(docs: ParsedDoc[]): Map<string, Set<string>> {
   const edges = new Map<string, Set<string>>();
   const add = (a: string, b: string): void => {
     let set = edges.get(a);
+    // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic get-or-create memoization
     if (!set) edges.set(a, (set = new Set<string>()));
     set.add(b);
   };
@@ -580,6 +581,7 @@ function inferBody(
     const key = toCamelKey(name);
     if (key === "") continue; // no alphanumerics ⇒ no generated alias ⇒ cannot collide
     let spellings = byKey.get(key);
+    // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic get-or-create memoization
     if (!spellings) byKey.set(key, (spellings = []));
     spellings.push(name);
   }
@@ -701,6 +703,7 @@ function ancestorAt(relDir: string, depth: number): string {
 function bucketFor(groups: Map<string, ParsedDoc[]>, order: string[], key: string): ParsedDoc[] {
   let bucket = groups.get(key);
   if (!bucket) {
+    // biome-ignore lint/suspicious/noAssignInExpressions: idiomatic get-or-create memoization
     groups.set(key, (bucket = []));
     order.push(key);
   }

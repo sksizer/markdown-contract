@@ -59,6 +59,40 @@ export interface CliResult {
 }
 
 /**
+ * `parseArgs` over the CLI flag schema — extracted so `runCli` can name its exact
+ * return type (`ReturnType<typeof parseCliArgs>`) instead of relying on an implicit
+ * `any` for the `parsed` binding.
+ */
+function parseCliArgs(argv: string[]) {
+  return parseArgs({
+    args: argv,
+    options: {
+      format: { type: "string", default: "human" }, // human | json | sarif
+      config: { type: "string" },
+      contract: { type: "string", multiple: true }, // a YAML contract (repeatable for pairs)
+      path: { type: "string", multiple: true }, // the target dir paired with each --contract
+      glob: { type: "string", multiple: true }, // include filter (alias of --include), relative to run root
+      include: { type: "string", multiple: true }, // include filter, relative to run root
+      exclude: { type: "string", multiple: true }, // exclude filter, relative to run root
+      help: { type: "boolean", short: "h" },
+      // `init` flags (D-0009 § The CLI surface).
+      meta: { type: "boolean" }, // emit a meta-config + per-dir contracts (default: single)
+      depth: { type: "string" }, // directory cut for --meta (default 1; 0 == single)
+      relax: { type: "boolean" }, // loosen generation toward a permissive floor
+      inline: { type: "boolean" }, // one self-contained config instead of contracts/ files
+      out: { type: "string" }, // where to write (default: cwd)
+      force: { type: "boolean" }, // overwrite an existing config (default: refuse)
+      "dry-run": { type: "boolean" }, // print the would-be files to stdout; write nothing
+      check: { type: "boolean" }, // verify an existing config still accepts the tree
+      "infer-bounds": { type: "boolean" }, // opt into pattern / min / max inference
+      "max-const-len": { type: "string" }, // cap: strings longer than this never become const/enum
+      "min-const-examples": { type: "string" }, // floor: a uniform scalar needs >= n docs to become const
+    },
+    allowPositionals: true,
+  });
+}
+
+/**
  * The pure, testable CLI core. Parses `argv` (everything after `node bin`), loads the
  * config, runs the corpus, formats the findings, and returns the exit code plus the
  * captured stdout/stderr. NEVER calls `process.exit` and NEVER writes to real streams.
@@ -70,34 +104,9 @@ export interface CliResult {
 export async function runCli(argv: string[], opts?: { cwd?: string }): Promise<CliResult> {
   const cwd = opts?.cwd ?? process.cwd();
 
-  let parsed;
+  let parsed: ReturnType<typeof parseCliArgs>;
   try {
-    parsed = parseArgs({
-      args: argv,
-      options: {
-        format: { type: "string", default: "human" }, // human | json | sarif
-        config: { type: "string" },
-        contract: { type: "string", multiple: true }, // a YAML contract (repeatable for pairs)
-        path: { type: "string", multiple: true }, // the target dir paired with each --contract
-        glob: { type: "string", multiple: true }, // include filter (alias of --include), relative to run root
-        include: { type: "string", multiple: true }, // include filter, relative to run root
-        exclude: { type: "string", multiple: true }, // exclude filter, relative to run root
-        help: { type: "boolean", short: "h" },
-        // `init` flags (D-0009 § The CLI surface).
-        meta: { type: "boolean" }, // emit a meta-config + per-dir contracts (default: single)
-        depth: { type: "string" }, // directory cut for --meta (default 1; 0 == single)
-        relax: { type: "boolean" }, // loosen generation toward a permissive floor
-        inline: { type: "boolean" }, // one self-contained config instead of contracts/ files
-        out: { type: "string" }, // where to write (default: cwd)
-        force: { type: "boolean" }, // overwrite an existing config (default: refuse)
-        "dry-run": { type: "boolean" }, // print the would-be files to stdout; write nothing
-        check: { type: "boolean" }, // verify an existing config still accepts the tree
-        "infer-bounds": { type: "boolean" }, // opt into pattern / min / max inference
-        "max-const-len": { type: "string" }, // cap: strings longer than this never become const/enum
-        "min-const-examples": { type: "string" }, // floor: a uniform scalar needs >= n docs to become const
-      },
-      allowPositionals: true,
-    });
+    parsed = parseCliArgs(argv);
   } catch (err) {
     return {
       code: 2,

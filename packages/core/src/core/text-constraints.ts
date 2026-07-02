@@ -117,7 +117,9 @@ function placeBlock(buf: LineBuffer, block: BlockNode): void {
       break;
     case "table":
       buf.place(block.pos.line, block.columns.join(" "));
-      block.rows.forEach((row, i) => buf.place(block.rowPos(i).line, row.join(" ")));
+      block.rows.forEach((row, i) => {
+        buf.place(block.rowPos(i).line, row.join(" "));
+      });
       break;
   }
 }

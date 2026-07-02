@@ -21,7 +21,7 @@ const v11: ValidationFixture = {
             columns: ["File", "Kind", "Location"],
             cells: {
               Kind: z.enum(["add", "modify", "delete"]),
-              Location: z.string().regex(/^[A-Za-z0-9._\/-]+\/$/),
+              Location: z.string().regex(/^[A-Za-z0-9._/-]+\/$/),
             },
           }),
         }),
