@@ -135,7 +135,19 @@ _Captured by /sdlc:task-work on 2026-07-02. PR: pending._
 - The project's `quality_checks:` in `sdlc.yaml` cover only `core:` verbs, so `docs:build`
   (the load-bearing check for AC-3) is outside the gate and had to be run manually — a
   `docs:build` verb (or a docs-scoped quality profile) would let the gate cover doc-site tasks.
+  → [[T-MWBG-quality-gate-covers-docs-build]]
 - Step 7's baseline-gated `quality run` defaults its `--baseline-dir` to the worktree cwd,
   but Step 3a writes the baseline into the main repo's `.sdlc/quality-baselines/`; the first
   gate invocation failed `baseline not found` until `--baseline-dir <main-repo>/...` was passed
   explicitly — task-work Step 7 should pass the main-repo baseline dir when running from a worktree.
+  → [[T-P6OB-task-work-baseline-dir-main-repo]]
+
+### Spawned follow-up tasks
+
+- [[T-MWBG-quality-gate-covers-docs-build]]
+  (https://github.com/sksizer/markdown-contract/pull/180) — Local: add a `docs:build` verb
+  (or docs-scoped quality profile) to `sdlc.yaml` `quality_checks:` so the gate covers
+  doc-site tasks — spawned.
+- [[T-P6OB-task-work-baseline-dir-main-repo]]
+  (https://github.com/sksizer/dev/pull/605) — Upstream-plugin (`sdlc-meta`): task-work Step 7
+  should default `--baseline-dir` to the main-repo baseline dir when run from a worktree — spawned.
