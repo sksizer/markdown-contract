@@ -13,6 +13,8 @@ impact: medium
 complexity: small
 readiness_verified_at: '2026-07-02T03:34:43Z'
 last_reviewed: '2026-07-02'
+prs:
+- https://github.com/sksizer/markdown-contract/pull/166
 ---
 # Add scc code metrics — lines of code and cyclomatic complexity reporting
 
