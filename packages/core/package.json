@@ -47,7 +47,7 @@
     "check:ci": "biome ci .",
     "lint:fix": "biome check --write .",
     "cli": "node dist/cli/index.js",
-    "lint:docs": "npm run build && node dist/cli/index.js validate docs/planning",
+    "lint:docs": "npm run build && node dist/cli/index.js validate ../../docs/planning --config ../../markdown-contract.yaml",
     "lint:package": "publint",
     "check:types": "attw --pack . --profile esm-only",
     "package-check": "bun run lint:package && bun run check:types",
