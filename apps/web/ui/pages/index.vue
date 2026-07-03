@@ -18,7 +18,7 @@ import SeverityBadge from "~/components/kit/SeverityBadge.vue";
 import StatusBadge from "~/components/kit/StatusBadge.vue";
 import Toolbar from "~/components/kit/Toolbar.vue";
 import { useVaults } from "~/composables/useVaults";
-import { SEVERITY_ORDER, STATUS_ORDER, statusTokens, type StatusToken } from "~/design/tokens";
+import { SEVERITY_ORDER, STATUS_ORDER, statusTokens } from "~/design/tokens";
 import { countByLevel } from "~/lib/findings";
 import type { FindingLevel, VaultStatus, VaultStatusState } from "~/types";
 
@@ -50,7 +50,6 @@ function toggleFilter(state: VaultStatusState): void {
 // ── view-model: resolve every per-state optional in TS-land (no optional access in the template) ──
 interface VaultView {
   vault: VaultStatus;
-  token: StatusToken;
   /** only the severity levels actually present, with their counts */
   levels: Array<{ level: FindingLevel; count: number }>;
   hasFindings: boolean;
@@ -77,7 +76,6 @@ function toView(vault: VaultStatus): VaultView {
   }));
   return {
     vault,
-    token: statusTokens[vault.state],
     levels,
     hasFindings: (vault.result?.findings.length ?? 0) > 0,
     driftCount: vault.drift?.entries.length ?? 0,
@@ -129,19 +127,19 @@ const summaryLine = computed(() => {
         </span>
       </template>
 
-      <div class="db__seg" role="group" aria-label="Layout">
+      <div class="segmented" role="group" aria-label="Layout">
         <button
           type="button"
-          class="db__seg-btn"
-          :class="{ 'db__seg-btn--on': layoutMode === 'table' }"
+          class="segmented__btn"
+          :aria-pressed="layoutMode === 'table'"
           @click="layoutMode = 'table'"
         >
           Table
         </button>
         <button
           type="button"
-          class="db__seg-btn"
-          :class="{ 'db__seg-btn--on': layoutMode === 'grid' }"
+          class="segmented__btn"
+          :aria-pressed="layoutMode === 'grid'"
           @click="layoutMode = 'grid'"
         >
           Grid
@@ -206,7 +204,7 @@ const summaryLine = computed(() => {
             </thead>
             <tbody>
               <tr v-for="view in visibleViews" :key="view.vault.id" class="db__row">
-                <td class="db__cell-name" :style="{ borderLeftColor: view.token.color }">
+                <td class="db__cell-name">
                   <NuxtLink class="db__row-link" :to="`/vault/${view.vault.id}`">
                     {{ view.vault.name }}
                   </NuxtLink>
@@ -249,7 +247,6 @@ const summaryLine = computed(() => {
             :key="view.vault.id"
             class="dcard"
             :to="`/vault/${view.vault.id}`"
-            :style="{ borderTopColor: view.token.color }"
           >
             <header class="dcard__head">
               <div class="dcard__id">
@@ -312,34 +309,7 @@ const summaryLine = computed(() => {
   font-weight: 600;
 }
 
-/* segmented table/grid toggle */
-.db__seg {
-  display: inline-flex;
-  border: 1px solid var(--mc-border);
-  border-radius: var(--mc-radius);
-  overflow: hidden;
-}
-.db__seg-btn {
-  appearance: none;
-  height: 26px;
-  padding: 0 9px;
-  font-family: var(--mc-font);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--mc-text-muted);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-.db__seg-btn + .db__seg-btn {
-  border-left: 1px solid var(--mc-border);
-}
-.db__seg-btn--on {
-  color: var(--mc-text);
-  background: var(--mc-active);
-}
-
-/* status legend / filter chips */
+/* status legend / filter chips — Finder-style filter capsules */
 .db__legend {
   display: flex;
   flex-wrap: wrap;
@@ -349,18 +319,19 @@ const summaryLine = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 9px;
+  height: 22px;
+  padding: 0 10px;
   font-family: var(--mc-font);
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--mc-text-muted);
-  background: var(--mc-surface);
+  background: var(--mc-control-bg);
   border: 1px solid var(--mc-border);
   border-radius: 999px;
   cursor: pointer;
 }
 .db__chip:hover {
-  border-color: var(--mc-border-strong);
+  background: var(--mc-control-hover);
 }
 .db__chip--active {
   border-color: currentColor;
@@ -392,12 +363,12 @@ const summaryLine = computed(() => {
   color: var(--mc-text-muted);
 }
 
-/* table */
+/* table — macOS list: no striping, hairline separators, full-row hover tint */
 .db__tablewrap {
   overflow-x: auto;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
-  border-radius: var(--mc-radius);
+  border-radius: var(--mc-radius-lg);
 }
 .db__table {
   width: 100%;
@@ -406,18 +377,17 @@ const summaryLine = computed(() => {
 }
 .db__table th {
   text-align: left;
-  padding: 6px 10px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 500;
   color: var(--mc-text-muted);
   border-bottom: 1px solid var(--mc-border);
   white-space: nowrap;
 }
 .db__table td {
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--mc-border);
+  height: 30px;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--mc-separator);
   vertical-align: middle;
 }
 .db__row:hover td {
@@ -425,9 +395,6 @@ const summaryLine = computed(() => {
 }
 .db__row:last-child td {
   border-bottom: none;
-}
-.db__cell-name {
-  border-left: 3px solid transparent;
 }
 .db__row-link {
   font-weight: 600;
@@ -466,13 +433,12 @@ const summaryLine = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 11px 13px;
   color: var(--mc-text);
   text-decoration: none;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
-  border-top-width: 3px;
-  border-radius: var(--mc-radius);
+  border-radius: var(--mc-radius-lg);
 }
 .dcard:hover {
   border-color: var(--mc-border-strong);

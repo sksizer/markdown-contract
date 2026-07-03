@@ -18,8 +18,8 @@
  */
 import { computed } from "vue";
 import type { DriftEntry, DriftKind, DriftResult } from "../types";
-import StatusBadge from "./kit/StatusBadge.vue";
 import EmptyState from "./kit/EmptyState.vue";
+import StatusBadge from "./kit/StatusBadge.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -319,7 +319,7 @@ const summary = computed(() => {
   padding: 10px;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
-  border-radius: var(--mc-radius);
+  border-radius: var(--mc-radius-lg);
 }
 .dv__col-head {
   display: flex;

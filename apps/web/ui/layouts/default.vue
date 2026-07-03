@@ -130,20 +130,27 @@ const healthLabel = computed(() => {
   overflow: hidden;
 }
 
-/* ── sidebar ── */
+/* ── sidebar — macOS source list: translucent, blurred, selection pills ── */
 .side {
-  flex: 0 0 230px;
-  width: 230px;
+  flex: 0 0 232px;
+  width: 232px;
   display: flex;
   flex-direction: column;
-  background: var(--mc-sidebar);
+  background: var(--mc-sidebar-translucent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
   border-right: 1px solid var(--mc-border);
+}
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .side {
+    background: var(--mc-sidebar);
+  }
 }
 .side__brand {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 14px 10px;
+  padding: 14px 16px 10px;
   color: var(--mc-text);
   text-decoration: none;
 }
@@ -153,31 +160,35 @@ const healthLabel = computed(() => {
   justify-content: center;
   width: 22px;
   height: 22px;
-  border-radius: 5px;
-  background: var(--mc-text);
-  color: var(--mc-sidebar);
+  border-radius: 6px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--mc-accent) 80%, #fff),
+    var(--mc-accent)
+  );
+  color: var(--mc-on-accent);
   font-family: var(--mc-mono);
   font-size: 10.5px;
   font-weight: 700;
 }
 .side__brand-name {
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 .side__nav {
   flex: 1;
   overflow-y: auto;
-  padding: 2px 8px 12px;
+  padding: 2px 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
 .side__section {
-  margin: 12px 6px 3px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
+  margin: 14px 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--mc-text-faint);
 }
@@ -185,10 +196,11 @@ const healthLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 8px;
-  border-radius: 5px;
-  font-size: 12.5px;
-  font-weight: 500;
+  height: 27px;
+  padding: 0 9px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 400;
   color: var(--mc-text);
   text-decoration: none;
 }
@@ -196,8 +208,7 @@ const healthLabel = computed(() => {
   background: var(--mc-hover);
 }
 .side__item--active {
-  background: var(--mc-active);
-  font-weight: 600;
+  background: var(--mc-selection);
 }
 .side__item--add {
   color: var(--mc-text-muted);

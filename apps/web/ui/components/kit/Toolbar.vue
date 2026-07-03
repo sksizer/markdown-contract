@@ -21,6 +21,8 @@ defineProps<{ title: string }>();
 </template>
 
 <style scoped>
+/* macOS unified toolbar: same tone as the content window (translucent over
+   scrolling content), hairline bottom border, window-title-weight title. */
 .tb {
   position: sticky;
   top: 0;
@@ -29,10 +31,17 @@ defineProps<{ title: string }>();
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 45px;
-  padding: 6px 18px;
-  background: var(--mc-bg);
+  min-height: 46px;
+  padding: 7px 16px;
+  background: color-mix(in srgb, var(--mc-bg) 80%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
   border-bottom: 1px solid var(--mc-border);
+}
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .tb {
+    background: var(--mc-bg);
+  }
 }
 .tb__left {
   display: flex;
@@ -43,7 +52,7 @@ defineProps<{ title: string }>();
 .tb__title {
   margin: 0;
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;

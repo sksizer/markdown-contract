@@ -110,7 +110,7 @@ const countLabel = computed(
   padding: 0 8px;
   font-family: var(--mc-font);
   font-size: inherit;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--mc-text-muted);
   background: transparent;
   border: 1px solid var(--mc-border);

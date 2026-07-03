@@ -346,10 +346,10 @@ function passFailLabel(group: ContractGrouping): string {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 28px;
-  padding: 8px 12px;
+  padding: 9px 13px;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
-  border-radius: var(--mc-radius);
+  border-radius: var(--mc-radius-lg);
 }
 .vd__meta-item {
   display: flex;
@@ -416,7 +416,7 @@ function passFailLabel(group: ContractGrouping): string {
   padding: 8px 12px;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
-  border-radius: var(--mc-radius);
+  border-radius: var(--mc-radius-lg);
 }
 .vd__init-head {
   display: flex;
