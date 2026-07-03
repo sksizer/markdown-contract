@@ -122,12 +122,46 @@ _Captured by /sdlc:task-work on 2026-07-03. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `sites/docs/scripts/generate.ts` emits one page per example from
+  `docs/catalog/*.yaml` (117 generated pages; artifact verbatim, `builds_on` cross-links,
+  rank order); regenerated on every `dev`/`build`, generated files gitignored.
+- AC-2: agent-manual — interim `index.md` removed from tracking; the generator emits the
+  landing with a rank-1-per-category hero tour (116 unique example links verified in built
+  `dist/index.html`).
+- AC-3: agent-manual — built sidebar inspected in `dist/index.html`: Overview → Introduction,
+  then a single top-level **Examples** group holding the eight category sub-groups in spine
+  order (Starlight 0.41 needed `items: [{ autogenerate }]` nesting).
+- AC-4: auto — `moon run docs:check-artifacts` (deps `core:build`): 108 artifacts — 91 pass,
+  5 baselined known failures (genuine catalog data bugs, reasons recorded in
+  `scripts/checks/known-failures.ts`), 12 skipped (9 planned, 3 mixed with no command);
+  exits 1 on unexpected failures and stale baseline entries.
+- AC-5: auto — `bunx moon run docs:build` green (118 pages incl. 404), verified from scratch
+  and re-verified post-implementation; quality gate `OK 5/5` baseline-diffed against
+  `origin/main`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The catalog YAML schema (shaped by T-CTLG for content-collection consumption) mapped
+  directly onto page generation — no data massaging needed.
+- The shell's pre-declared sidebar slots and moon task wiring (T-7UTE) made the IA
+  restructure a config-only change.
+- The baseline-gated quality run isolated the branch cleanly from pre-existing core lint
+  drift.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The readiness gate flagged three spec defects the relevance check missed (an annotation
+  inside a Files-to-touch Location cell, an `index.(md|mdx)` alternation as a path, an AC
+  quantifier whose pinning glob sat on the following line) — the quantifier resolver reads
+  line-scoped, so multi-line ACs can false-positive; worth documenting in the
+  implementation-ready contract or widening the resolver's window.
+- `sdlc quality run` false-FAILs on `core:lint` under the stock invocation: the runner's
+  1MB `spawnSync` maxBuffer overflows on moon's ANSI-inflated replay of biome's 306-warning
+  stream (ENOBUFS → SIGTERM → FAIL), reproduced identically on main. Workaround
+  `MOON_CACHE=off NO_COLOR=1`; upstream fix: raise maxBuffer or stream output — and core's
+  warning count is the other lever (T-D8TE ratchet).
+- The artifact check surfaced 5 genuine catalog data bugs: DIALECT-03/07/08/10 import
+  `extractVaultRefs` from `"markdown-contract"` but the package root never re-exports it
+  (export chain stops at the internal dialect barrel), and EMBED-AND-CI-01 calls
+  `sections()` with no arguments against a two-required-arg signature — catalog data
+  corrections (or a deliberate `extractVaultRefs` public export) owned by the catalog side.
