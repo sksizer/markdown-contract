@@ -22,7 +22,10 @@ complexity: small
 autonomy: supervised
 prs:
 - https://github.com/sksizer/markdown-contract/pull/184
-completion_note: 'Shipped via #184.'
+completion_note: 'Shipped via #184. Superseded 2026-07-03: the repo is private,
+  so GitHub Pages could never be enabled (the only deploy run failed at
+  configure-pages); publishing moved to Cloudflare Pages
+  (markdown-contract-docs.pages.dev) and the workflow file was removed.'
 ---
 # Wire the GitHub Pages deploy workflow for `sites/docs` (moon/Bun build → Pages)
 
