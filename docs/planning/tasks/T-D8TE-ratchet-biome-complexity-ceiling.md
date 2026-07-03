@@ -2,8 +2,9 @@
 type: task
 schema_version: "5"
 id: T-D8TE
-status: planning/backlog
+status: open/ready
 created: 2026-07-02
+last_reviewed: 2026-07-03
 related:
   - "[[M-0010 Quality Tooling]]"
   - "[[T-0MVN-biome-lint-format]]"
@@ -85,7 +86,12 @@ ceiling; behavior is unchanged (the full test suite stays green).
 
 ## Dependencies
 
-- [[T-0MVN-biome-lint-format]] (must be merged first — it introduces the rule at `error` and the ceiling).
+- [[T-0MVN-biome-lint-format]] — satisfied (closed/done via #169); the rule is live at `error` with the parked ceiling.
+- **Soft coordination:** [[T-JGCX-biome-noexplicitany-source-fix]] and
+  [[T-FOCX-biome-nononnull-source-fix]] refactor some of the same complex modules
+  (`declarative/infer.ts`, `core/structure.ts`, `cli/run.ts`). No ordering
+  requirement, but avoid running them concurrently in separate worktrees against
+  the same files — sequence or rebase deliberately.
 
 ## Discovery context
 
