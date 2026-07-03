@@ -155,13 +155,29 @@ _Captured by /sdlc:task-work on 2026-07-03. PR: pending._
   quantifier whose pinning glob sat on the following line) — the quantifier resolver reads
   line-scoped, so multi-line ACs can false-positive; worth documenting in the
   implementation-ready contract or widening the resolver's window.
+  → [[T-0O6S-widen-quantifier-resolver-ac-window]]
 - `sdlc quality run` false-FAILs on `core:lint` under the stock invocation: the runner's
   1MB `spawnSync` maxBuffer overflows on moon's ANSI-inflated replay of biome's 306-warning
   stream (ENOBUFS → SIGTERM → FAIL), reproduced identically on main. Workaround
   `MOON_CACHE=off NO_COLOR=1`; upstream fix: raise maxBuffer or stream output — and core's
   warning count is the other lever (T-D8TE ratchet).
+  → [[T-ADNR-quality-runner-maxbuffer-stream-output]]
 - The artifact check surfaced 5 genuine catalog data bugs: DIALECT-03/07/08/10 import
   `extractVaultRefs` from `"markdown-contract"` but the package root never re-exports it
   (export chain stops at the internal dialect barrel), and EMBED-AND-CI-01 calls
   `sections()` with no arguments against a two-required-arg signature — catalog data
   corrections (or a deliberate `extractVaultRefs` public export) owned by the catalog side.
+  → [[T-E698-export-extractvaultrefs-from-package-root]]
+
+### Spawned follow-up tasks
+
+- [[T-0O6S-widen-quantifier-resolver-ac-window]] (https://github.com/sksizer/dev/pull/617) —
+  widen the task-work readiness gate's AC quantifier resolver beyond line scope, spawned
+  (Upstream-plugin, `sdlc-meta`).
+- [[T-ADNR-quality-runner-maxbuffer-stream-output]] (https://github.com/sksizer/dev/pull/618) —
+  quality runner raises its `spawnSync` maxBuffer or streams child output, spawned
+  (Upstream-plugin, `sdlc-meta`).
+- [[T-E698-export-extractvaultrefs-from-package-root]] — the catalog data bugs trace to the
+  missing package-root export that task already covers, linked (the residual EMBED-AND-CI-01
+  `sections()` arity correction is recorded in its Discovery context and in
+  `sites/docs/scripts/checks/known-failures.ts`).
