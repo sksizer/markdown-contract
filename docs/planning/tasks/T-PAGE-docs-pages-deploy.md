@@ -1,26 +1,28 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-PAGE
 status: in-progress
-created: '2026-06-30'
-last_reviewed: '2026-07-03'
+created: 2026-06-30
+last_reviewed: 2026-07-03
 related:
-- '[[M-0006-documentation-site]]'
-- '[[D-0010-monorepo-tooling]]'
+  - "[[M-0006-documentation-site]]"
+  - "[[D-0010-monorepo-tooling]]"
 depends_on:
-- '[[T-7UTE-astro-docs-site]]'
+  - "[[T-7UTE-astro-docs-site]]"
 tags:
-- docs
-- ci
-- deploy
-- github-pages
-- moon
+  - docs
+  - ci
+  - deploy
+  - github-pages
+  - moon
 need_human_review: true
 impact: medium
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-07-03T02:25:22Z'
+readiness_verified_at: 2026-07-03T02:25:22Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/184
 ---
 # Wire the GitHub Pages deploy workflow for `apps/docs` (moon/Bun build → Pages)
 
