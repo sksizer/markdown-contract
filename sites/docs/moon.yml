@@ -34,3 +34,17 @@ tasks:
     outputs:
       - 'dist'
 
+  # Artifact regression check (T-SITE AC-4): verifies each SHIPPED catalog
+  # example's `artifact` against the real CLI / library build so the published
+  # snippets stay honest. See scripts/check-artifacts.ts for the exact
+  # verification level each artifact_kind gets. Exits non-zero on any
+  # unexpected failure (or stale known-failure entry), so CI can gate on it.
+  check-artifacts:
+    command: 'bun run check-artifacts'
+    toolchain: 'bun'
+    deps:
+      - 'core:build'
+    inputs:
+      - 'scripts/**/*'
+      - 'package.json'
+      - '/docs/catalog/*.yaml'
