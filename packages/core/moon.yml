@@ -120,12 +120,15 @@ tasks:
       - '/package.json'
 
   # `lint:docs` validates the repo's OWN in-flight planning docs with the built
-  # CLI. docs/planning lives at the workspace root (not under packages/core), so
-  # the command reaches up two levels and the input is workspace-relative
-  # ('/docs/...'). runInCI: false — it lints mid-edit planning docs, so it's a
-  # local author gate, not a CI gate. Run with `moon run core:lint-docs`.
+  # CLI. docs/planning and markdown-contract.yaml live at the workspace root (not
+  # under packages/core), so the command reaches up two levels for both and the
+  # input is workspace-relative ('/docs/...'). --config is required: discovery
+  # searches the cwd (packages/core), not the target dir (same fix as the
+  # package.json lint:docs script). runInCI: false — it lints mid-edit planning
+  # docs, so it's a local author gate, not a CI gate. Run with
+  # `moon run core:lint-docs`.
   lint-docs:
-    command: 'node dist/cli/index.js validate ../../docs/planning'
+    command: 'node dist/cli/index.js validate ../../docs/planning --config ../../markdown-contract.yaml'
     toolchain: 'node'
     deps:
       - 'build'

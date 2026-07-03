@@ -22,13 +22,16 @@ complexity: small
 autonomy: supervised
 prs:
 - https://github.com/sksizer/markdown-contract/pull/184
-completion_note: 'Shipped via #184.'
+completion_note: 'Shipped via #184. Superseded 2026-07-03: the repo is private,
+  so GitHub Pages could never be enabled (the only deploy run failed at
+  configure-pages); publishing moved to Cloudflare Pages
+  (markdown-contract-docs.pages.dev) and the workflow file was removed.'
 ---
-# Wire the GitHub Pages deploy workflow for `apps/docs` (moon/Bun build → Pages)
+# Wire the GitHub Pages deploy workflow for `sites/docs` (moon/Bun build → Pages)
 
 ## Goal
 
-Publish `apps/docs` to GitHub Pages via a workflow that builds the site through **moon** on the
+Publish `sites/docs` to GitHub Pages via a workflow that builds the site through **moon** on the
 **Bun** toolchain and deploys with `actions/deploy-pages`. The live publish is **blocked on
 GitHub Actions billing** — the workflow and the one-time Pages repo setting can be authored and
 reviewed now; the actual deploy runs once billing clears. Isolating the publish here lets the
@@ -37,7 +40,7 @@ reach "green locally" without waiting on billing.
 
 ## Today
 
-`apps/docs` builds locally via `moon run docs:build` ([[T-7UTE-astro-docs-site]]); there is no
+`sites/docs` builds locally via `moon run docs:build` ([[T-7UTE-astro-docs-site]]); there is no
 deploy workflow and GitHub Pages is not wired. The repo's GitHub Actions are currently
 **billing-blocked** (jobs do not start: "recent account payments have failed or your spending
 limit needs to be increased"), so any new workflow will not execute until that is resolved.
@@ -45,8 +48,8 @@ limit needs to be increased"), so any new workflow will not execute until that i
 ## Proposed
 
 - A new **`.github/workflows/deploy-docs.yml`**: triggered on push to `main` filtered to
-  `apps/docs/**` (plus `workflow_dispatch`); bootstraps with **Bun** (`setup-bun` +
-  `bun install`), builds via `moon run docs:build`, uploads `apps/docs/dist/` with
+  `sites/docs/**` (plus `workflow_dispatch`); bootstraps with **Bun** (`setup-bun` +
+  `bun install`), builds via `moon run docs:build`, uploads `sites/docs/dist/` with
   `actions/upload-pages-artifact`, and publishes with `actions/deploy-pages`. `permissions` grant
   `pages: write` + `id-token: write`; it uses the `github-pages` environment.
 - The one-time repo setting (documented, not in the workflow file): **Pages source = GitHub
@@ -57,7 +60,7 @@ limit needs to be increased"), so any new workflow will not execute until that i
 
 1. Author `.github/workflows/deploy-docs.yml` as above — **Bun-bootstrapped**, consistent with the
    M-0005 CI model ([[D-0010-monorepo-tooling]]), not `setup-node`/`npm`.
-2. Confirm `apps/docs` `astro.config.mjs` `base`/`site` match the Pages project URL (set in
+2. Confirm `sites/docs` `astro.config.mjs` `base`/`site` match the Pages project URL (set in
    [[T-7UTE-astro-docs-site]]).
 3. Document the one-time **Settings → Pages → Source: GitHub Actions** step.
 4. **Once Actions billing clears:** enable Pages, run the workflow (push or `workflow_dispatch`),
@@ -69,13 +72,13 @@ limit needs to be increased"), so any new workflow will not execute until that i
 |---|---|---|
 | `.github/workflows/deploy-docs.yml` | new | Bun-bootstrapped Pages workflow: `moon run docs:build` → upload-pages-artifact → deploy-pages. |
 | `README.md` | modify | Link to the published documentation URL. |
-| `apps/docs/astro.config.mjs` | modify | Confirm `base`/`site` match the Pages project URL. |
+| `sites/docs/astro.config.mjs` | modify | Confirm `base`/`site` match the Pages project URL. |
 
 ## Acceptance criteria
 
-- [ ] AC-1: `deploy-docs.yml` builds `apps/docs` via `moon run docs:build` and publishes via
+- [ ] AC-1: `deploy-docs.yml` builds `sites/docs` via `moon run docs:build` and publishes via
   `actions/deploy-pages`, with `permissions` granting `pages: write` + `id-token: write` and the
-  `github-pages` environment, triggered on push to `main` filtered to `apps/docs/**` plus
+  `github-pages` environment, triggered on push to `main` filtered to `sites/docs/**` plus
   `workflow_dispatch`.
 - [ ] AC-2: The workflow bootstraps with **Bun** (`setup-bun` + `bun install`) and runs the build
   through moon — consistent with the M-0005 CI model, not `setup-node`/`npm`.
@@ -92,7 +95,7 @@ limit needs to be increased"), so any new workflow will not execute until that i
 
 ## Dependencies
 
-- Depends on [[T-7UTE-astro-docs-site]] (a buildable `apps/docs`). **Blocked at publish time by
+- Depends on [[T-7UTE-astro-docs-site]] (a buildable `sites/docs`). **Blocked at publish time by
   GitHub Actions billing** — author and review now, deploy when it clears. Governed by
   [[D-0010-monorepo-tooling]] (Bun-bootstrapped CI through moon).
 
@@ -102,7 +105,7 @@ _Captured by /sdlc:task-work on 2026-07-03. PR: pending._
 
 ### Acceptance criteria coverage
 
-- AC-1: agent-manual — inspected `.github/workflows/deploy-docs.yml`: builds via `bunx moon run docs:build`, publishes with `actions/deploy-pages@v4`, `permissions` grant `pages: write` + `id-token: write` (+ `contents: read`), `deploy` job uses the `github-pages` environment, triggered on `push` to `main` filtered to `apps/docs/**` plus `workflow_dispatch`. YAML parsed clean.
+- AC-1: agent-manual — inspected `.github/workflows/deploy-docs.yml`: builds via `bunx moon run docs:build`, publishes with `actions/deploy-pages@v4`, `permissions` grant `pages: write` + `id-token: write` (+ `contents: read`), `deploy` job uses the `github-pages` environment, triggered on `push` to `main` filtered to `sites/docs/**` plus `workflow_dispatch`. YAML parsed clean.
 - AC-2: agent-manual — the `build` job bootstraps with Bun (`oven-sh/setup-bun@v2`, `bun-version: 1.3.14`) + `bun install --frozen-lockfile` and builds through moon, mirroring `.github/workflows/ci.yml` (no `setup-node`/`npm`).
 - AC-3: deferred-user — billing-gated. GitHub Actions are billing-blocked, so the live publish cannot be run; the workflow file + README link + the documented one-time "Settings → Pages → Source: GitHub Actions" prerequisite are the reviewable deliverable. Once billing clears and Pages source is set, an operator must trigger the workflow and confirm the public URL (`https://sksizer.github.io/markdown-contract/`) serves the shell.
 

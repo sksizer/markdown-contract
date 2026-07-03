@@ -20,7 +20,7 @@ const ctx: Ctx = makeCtx("fixture.md", defaultRegistry());
 
 /** A heading-direct paragraph block at a given source line. */
 function para(line: number, text: string): BlockNode {
-  return { kind: "paragraph", text, pos: { line, col: 1 } };
+  return { kind: "paragraph", text, pos: { line, col: 1 }, inlineSpans: () => [] };
 }
 
 /** A minimal projected `SectionNode` for direct-run unit cases. */

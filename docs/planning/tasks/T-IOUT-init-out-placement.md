@@ -6,7 +6,8 @@ status: closed/done
 created: '2026-06-28'
 related:
 - '[[M-0007-example-use-case-catalog]]'
-- '[[B-OUTD-init-out-defaults-to-cwd-not-inferred-root]]'
+- '[[M-0003-config-inference]]'
+- '[[T-64SI-init-out-defaults-to-inferred-root]]'
 depends_on: []
 tags:
 - test
@@ -53,7 +54,7 @@ Add a case to `tests/inference.cli.test.ts` (and/or `src/declarative/infer.test.
 
 ## Out of scope
 
-- The design question of what `--out` should **default** to — tracked separately by [[B-OUTD-init-out-defaults-to-cwd-not-inferred-root]]. This task covers only test coverage of the existing flag.
+- The design question of what `--out` should **default** to — tracked separately by [[T-64SI-init-out-defaults-to-inferred-root]] (promoted from backlog B-OUTD). This task covers only test coverage of the existing flag.
 
 ## Dependencies
 

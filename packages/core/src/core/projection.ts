@@ -32,6 +32,7 @@ import type {
   Root,
   RootContent,
   Table,
+  TableCell,
   Yaml,
 } from "mdast";
 import remarkFrontmatter from "remark-frontmatter";
@@ -44,6 +45,7 @@ import { bodyAfterFrontmatter } from "./frontmatter.js";
 import type {
   BlockNode,
   DocTree,
+  InlineSpan,
   ListItem,
   ParseOptions,
   SectionNode,
@@ -88,6 +90,80 @@ function flattenInline(nodes: readonly PhrasingContent[]): string {
   return out;
 }
 
+// ── Inline-code spans (C1 / T-SCPP: the byte range flattening drops) ──────────────
+
+/**
+ * A single point projected to a clean `{ line, col }` — no `offset` key rides along, so the
+ * `SourcePos` deep-equals what a fixture pins. `column` is 1-based (unist convention).
+ */
+function pointPos(point: { line: number; column: number }): SourcePos {
+  return { line: point.line, col: point.column };
+}
+
+/**
+ * Walk an inline phrasing subtree and collect every `inlineCode` run's `InlineSpan` into `out`,
+ * in document order. The mdast node's NATIVE `position` is threaded through verbatim (start on
+ * the opening backtick, end one column past the closing backtick — unist's half-open range); `raw`
+ * is the exact source slice between the node's offsets, so the backticks round-trip. We recurse
+ * into container nodes (emphasis / strong / link / …) so an `inlineCode` nested inside them still
+ * registers. This runs BESIDE `flattenInline` — the flattened string it returns is untouched (AC-4).
+ */
+function collectInlineSpans(
+  nodes: readonly PhrasingContent[],
+  source: string,
+  out: InlineSpan[],
+): void {
+  for (const n of nodes) {
+    if (n.type === "inlineCode") {
+      const p = n.position;
+      if (p) {
+        out.push({
+          start: pointPos(p.start),
+          end: pointPos(p.end),
+          raw: inlineRaw(source, p, n.value),
+        });
+      }
+    } else if ("children" in n && Array.isArray(n.children)) {
+      collectInlineSpans(n.children as PhrasingContent[], source, out);
+    }
+  }
+}
+
+/** The inline spans of a phrasing subtree (`[]` when none) — the collector as an expression. */
+function inlineSpansOf(nodes: readonly PhrasingContent[], source: string): InlineSpan[] {
+  const spans: InlineSpan[] = [];
+  collectInlineSpans(nodes, source, spans);
+  return spans;
+}
+
+/**
+ * The verbatim backticked source of an inline-code node: the slice between the node's byte offsets
+ * (delimiters included). Falls back to a single-backtick reconstruction only if offsets are absent
+ * (they never are from remark) — a defensive belt, not the live path.
+ */
+function inlineRaw(
+  source: string,
+  position: { start: { offset?: number }; end: { offset?: number } },
+  value: string,
+): string {
+  const from = position.start.offset;
+  const to = position.end.offset;
+  if (typeof from === "number" && typeof to === "number") return source.slice(from, to);
+  return `\`${value}\``;
+}
+
+/**
+ * The cell's content-start position (with `col`): the source column of the cell's FIRST inline
+ * child (its first non-whitespace content), falling back to the cell node's own start when empty.
+ * GFM already trims a cell's surrounding whitespace off the child positions, so this lands on the
+ * cell's real content column — for a `` `path` `` cell, the opening backtick.
+ */
+function cellContentPos(cell: TableCell): SourcePos {
+  const first = cell.children[0];
+  if (first?.position) return pointPos(first.position.start);
+  return posOf(cell);
+}
+
 /** Flatten a list item's content to a single text string (its first paragraph's prose). */
 function flattenListItem(item: MdListItem): string {
   const parts: string[] = [];
@@ -102,8 +178,19 @@ function flattenListItem(item: MdListItem): string {
 // ── Block projection (a root-level RootContent → BlockNode | null) ───────────────
 
 /** Project a `paragraph` node to a `paragraph` BlockNode (anchor stripped by the caller). */
-function projectParagraph(node: Paragraph): Extract<BlockNode, { kind: "paragraph" }> {
-  return { kind: "paragraph", text: flattenInline(node.children).trim(), pos: posOf(node) };
+function projectParagraph(
+  node: Paragraph,
+  source: string,
+): Extract<BlockNode, { kind: "paragraph" }> {
+  // The inline-code spans are computed once here (C1 / T-SCPP) and closed over by the accessor,
+  // so they never serialize onto the block. The flattened `text` is unchanged (AC-4).
+  const spans = inlineSpansOf(node.children, source);
+  return {
+    kind: "paragraph",
+    text: flattenInline(node.children).trim(),
+    pos: posOf(node),
+    inlineSpans: () => spans,
+  };
 }
 
 /** Project a `code` node verbatim. `lang` is `null` for an unlabelled fence. */
@@ -128,7 +215,10 @@ function projectList(node: MdList): Extract<BlockNode, { kind: "list" }> {
  * the table's anchor, not kept as a data row. `rowPos(i)` returns the i-th *body* row's
  * source line.
  */
-function projectTable(node: Table): {
+function projectTable(
+  node: Table,
+  source: string,
+): {
   block: Extract<BlockNode, { kind: "table" }>;
   /** an anchor absorbed as a trailing single-cell `^id` row, if any */
   absorbedAnchor?: string;
@@ -156,6 +246,14 @@ function projectTable(node: Table): {
   );
   const rowLines = dataRows.map((row) => posOf(row));
 
+  // C1 (T-SCPP) — per-cell overlays, indexed [bodyRow][col] exactly like `rows`. `cellPositions`
+  // is each cell's content-start `SourcePos` (with `col`); `cellSpans` is each cell's inline-code
+  // spans. Both are closure-captured below so they never serialize onto the public block (AC-4).
+  const cellPositions: SourcePos[][] = dataRows.map((row) => row.children.map(cellContentPos));
+  const cellSpans: InlineSpan[][][] = dataRows.map((row) =>
+    row.children.map((cell) => inlineSpansOf(cell.children, source)),
+  );
+
   // A1 — the sparse typed overlay. A closure-captured store (NOT an enumerable property on the
   // block) so `typed`/`setTyped` are the only way in and the cache never serializes onto the
   // public `tree`. Nested `Map<row, Map<col, value>>` keys by column NAME safely — a delimiter
@@ -169,6 +267,12 @@ function projectTable(node: Table): {
     rows,
     rowPos(i: number): SourcePos {
       return rowLines[i] ?? { line: 0 };
+    },
+    cellPos(row: number, col: number): SourcePos {
+      return cellPositions[row]?.[col] ?? { line: 0 };
+    },
+    inlineSpans(row: number, col: number): InlineSpan[] {
+      return cellSpans[row]?.[col] ?? [];
     },
     typed(row: number, col: string): unknown | undefined {
       return typedStore.get(row)?.get(col);
@@ -191,16 +295,16 @@ function projectTable(node: Table): {
  * (a heading is handled by the section walker; a blockquote / nested list is NOT hoisted —
  * D4 — so it yields no section-level block).
  */
-function projectBlock(node: RootContent): BlockNode | null {
+function projectBlock(node: RootContent, source: string): BlockNode | null {
   switch (node.type) {
     case "paragraph":
-      return projectParagraph(node);
+      return projectParagraph(node, source);
     case "code":
       return projectCode(node);
     case "list":
       return projectList(node);
     case "table":
-      return projectTable(node).block;
+      return projectTable(node, source).block;
     default:
       // blockquote, thematicBreak, html, definition, footnoteDefinition, …: D4 — not hoisted.
       return null;
@@ -226,7 +330,10 @@ function newSection(name: string, depth: number, pos: SourcePos): SectionNode {
  * - `^block-id` anchors bind to the block they terminate (`BlockNode.anchor`) or, when
  *   standalone with no preceding block in the section, to the section (`SectionNode.anchors`).
  */
-function buildTree(root: Root): { docRoot: SectionNode; title: string | undefined } {
+function buildTree(
+  root: Root,
+  source: string,
+): { docRoot: SectionNode; title: string | undefined } {
   // The synthetic root is depth 1 (the H1 level); its `sections` are the top-level H2s.
   const docRoot = newSection("", 1, { line: 0 });
   let title: string | undefined;
@@ -269,7 +376,7 @@ function buildTree(root: Root): { docRoot: SectionNode; title: string | undefine
 
     // Table: project once; a trailing single-cell `^id` row becomes the table's anchor.
     if (node.type === "table") {
-      const projected = projectTable(node);
+      const projected = projectTable(node, source);
       if (projected.absorbedAnchor !== undefined) {
         projected.block.anchor = projected.absorbedAnchor;
       }
@@ -277,7 +384,7 @@ function buildTree(root: Root): { docRoot: SectionNode; title: string | undefine
       continue;
     }
 
-    const block = projectBlock(node);
+    const block = projectBlock(node, source);
 
     // Standalone `^block-id` paragraph: bind to the preceding block, else to the section.
     if (block && block.kind === "paragraph") {
@@ -438,7 +545,7 @@ export function parse(markdown: string, opts?: ParseOptions): DocTree {
   const frontmatter = yamlNode ? buildFrontmatter(yamlNode) : null;
 
   const body = bodyAfterFrontmatter(markdown, yamlNode);
-  const { docRoot, title } = buildTree(mdast);
+  const { docRoot, title } = buildTree(mdast, markdown);
   docRoot.name = title ?? "";
 
   return { frontmatter, body, root: docRoot, mdast };

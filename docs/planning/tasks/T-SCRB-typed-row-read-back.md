@@ -1,27 +1,29 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-SCRB
 status: in-progress
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0011-structured-cells]]'
-- '[[D-0015-structured-cells]]'
-- '[[D-0005-consumption-oom]]'
-- '[[C-0002-typed-consumption]]'
+  - "[[M-0011-structured-cells]]"
+  - "[[D-0015-structured-cells]]"
+  - "[[D-0005-consumption-oom]]"
+  - "[[C-0002-typed-consumption]]"
 depends_on:
-- '[[T-SCTC-table-cell-transform-capture]]'
+  - "[[T-SCTC-table-cell-transform-capture]]"
 tags:
-- structured-cells
-- consumption
-- typed-model
-- oom
+  - structured-cells
+  - consumption
+  - typed-model
+  - oom
 need_human_review: false
 impact: high
 complexity: large
 autonomy: supervised
-last_reviewed: '2026-07-03'
-readiness_verified_at: '2026-07-03T03:22:32Z'
+last_reviewed: 2026-07-03
+readiness_verified_at: 2026-07-03T03:22:32Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/192
 ---
 # Thread `z.output<cells>` to a typed `TableView` row read-back through `read()` and `Infer`
 

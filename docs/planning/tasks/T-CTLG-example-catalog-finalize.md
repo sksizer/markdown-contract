@@ -2,8 +2,13 @@
 type: task
 schema_version: '5'
 id: T-CTLG
-status: planning/proposed
+status: closed/done
 created: '2026-06-30'
+last_reviewed: '2026-07-03'
+completion_note: 'Umbrella complete: all eight per-category children shipped
+  (T-CCLI #112, T-CINF, T-CDYL, T-CVPL #125, T-CCON, T-CDIA #96, T-CEMB,
+  T-CRWS #128) and all eight docs/catalog/<category>.yaml files exist and
+  verify. No work of its own remained.'
 related:
 - '[[M-0007-example-use-case-catalog]]'
 - '[[T-SITE-bootstrap-docs-website]]'

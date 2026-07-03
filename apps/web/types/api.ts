@@ -2,7 +2,7 @@
  * THE API SEAM — the stable JSON API the vault-dashboard daemon emits, per
  * [[D-0012-distribution-single-exec-and-web-ui]] §D3.
  *
- * COPIED from `prototype/web-ui/types/api.ts` (T-D7X1, the pinned shapes) so the
+ * COPIED from `apps/daemon-web-prototype/types/api.ts` (T-D7X1, the pinned shapes) so the
  * daemon and the real UI both bind to the exact contract the mock prototype
  * validated. Sections (a)–(e) are byte-compatible with the pinned file; the
  * trailing "prototype additions" section carries the small additive envelopes

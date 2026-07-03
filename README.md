@@ -3,21 +3,22 @@
 [![CI](https://github.com/sksizer/markdown-contract/actions/workflows/ci.yml/badge.svg)](https://github.com/sksizer/markdown-contract/actions/workflows/ci.yml)
 
 Bun workspace for **markdown-contract**. The publishable library + CLI lives in
-[`packages/core`](packages/core/); [`apps/web`](apps/web/) is a placeholder for
-the future web UI (D-0012 / M-0009).
+[`packages/core`](packages/core/); runtime apps (the single-binary prototype,
+the daemon-web UI prototype) live under `apps/`; websites — including the
+documentation site — live under `sites/`.
 
-**Documentation:** <https://sksizer.github.io/markdown-contract/> — the
-[`apps/docs`](apps/docs/) Starlight site, published to GitHub Pages by
-[`.github/workflows/deploy-docs.yml`](.github/workflows/deploy-docs.yml).
+**Documentation:** <https://markdown-contract-docs.pages.dev/> — the
+[`sites/docs`](sites/docs/) Starlight site, auto-deployed to Cloudflare Pages on
+push to `main` (build settings: [`sites/docs/README.md`](sites/docs/README.md)).
 
 ## Layout
 
 | Path | Role |
 |---|---|
 | `packages/core` | The `markdown-contract` npm library + CLI. Runtime-neutral; the canonical published artifact. See [`packages/core/README.md`](packages/core/README.md). |
-| `apps/docs` | Astro + Starlight documentation site (M-0006). Private; never published. See [`apps/docs/README.md`](apps/docs/README.md). |
-| `apps/web` | Placeholder for the future web UI. No code yet. |
-| `prototype/web-ui` | Exploratory UI prototype (not a workspace member). |
+| `apps/web` | The single-binary prototype (D-0012 "one binary, two faces"): CLI + localhost daemon serving the vault dashboard. See [`apps/web/README.md`](apps/web/README.md). |
+| `apps/daemon-web-prototype` | Nuxt + Storybook UI prototype of the daemon's vault dashboard. Mock data only; not a moon project. See [`apps/daemon-web-prototype/README.md`](apps/daemon-web-prototype/README.md). |
+| `sites/docs` | Astro + Starlight documentation site (M-0006), published to Cloudflare Pages; never published to npm. See [`sites/docs/README.md`](sites/docs/README.md). |
 | `docs/`, `contracts/` | Project planning docs and their contracts. |
 | `provenance/d0014/` | The originating ADR: proposed shape + decision log. |
 

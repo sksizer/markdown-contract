@@ -160,6 +160,67 @@ describe("block kinds", () => {
   });
 });
 
+// ── Per-cell positions & inline-code spans (C1 / T-SCPP) ─────────────────────────
+
+describe("cellPos + inlineSpans (C1 position overlay)", () => {
+  const t = parse(
+    [
+      "## Files",
+      "",
+      "| Code | Note |",
+      "| --- | --- |",
+      "| `alpha` | `x` and `y` |",
+      "| plain | none |",
+    ].join("\n"),
+  );
+  const table = blockOf(t.root.sections[0]!.blocks[0], "table");
+
+  test("cellPos(row, col).col locates each cell's content-start column, not just the row line", () => {
+    // `Code` (col 0): the opening backtick sits at column 3 on each body row.
+    expect(table.cellPos(0, 0)).toEqual({ line: 5, col: 3 });
+    expect(table.cellPos(1, 0)).toEqual({ line: 6, col: 3 });
+    // `Note` (col 1): content begins deeper into the row (its own column, per cell).
+    expect(table.cellPos(0, 1)).toEqual({ line: 5, col: 13 });
+    expect(table.cellPos(1, 1)).toEqual({ line: 6, col: 11 });
+  });
+
+  test("inlineSpans: a single inline-code run → one span (start/end/raw, end exclusive)", () => {
+    // `` `alpha` `` spans columns 3..9; `end.col` is 10 — one past the closing backtick.
+    expect(table.inlineSpans(0, 0)).toEqual([
+      { start: { line: 5, col: 3 }, end: { line: 5, col: 10 }, raw: "`alpha`" },
+    ]);
+  });
+
+  test("inlineSpans: a cell with multiple runs returns them in document order", () => {
+    expect(table.inlineSpans(0, 1)).toEqual([
+      { start: { line: 5, col: 13 }, end: { line: 5, col: 16 }, raw: "`x`" },
+      { start: { line: 5, col: 21 }, end: { line: 5, col: 24 }, raw: "`y`" },
+    ]);
+  });
+
+  test("inlineSpans: a cell with no inline code returns an empty array", () => {
+    expect(table.inlineSpans(1, 0)).toEqual([]);
+    expect(table.inlineSpans(1, 1)).toEqual([]);
+  });
+
+  test("out-of-range indices are safe — cellPos → {line:0}, inlineSpans → []", () => {
+    expect(table.cellPos(9, 9)).toEqual({ line: 0 });
+    expect(table.inlineSpans(9, 9)).toEqual([]);
+  });
+
+  test("paragraph exposes the analogous inlineSpans accessor (document order; [] when none)", () => {
+    const p = parse(["## A", "", "Prose with `inline` and `two` code runs."].join("\n"));
+    const para = blockOf(p.root.sections[0]!.blocks[0], "paragraph");
+    expect(para.inlineSpans()).toEqual([
+      { start: { line: 3, col: 12 }, end: { line: 3, col: 20 }, raw: "`inline`" },
+      { start: { line: 3, col: 25 }, end: { line: 3, col: 30 }, raw: "`two`" },
+    ]);
+
+    const plain = parse(["## A", "", "No code at all here."].join("\n"));
+    expect(blockOf(plain.root.sections[0]!.blocks[0], "paragraph").inlineSpans()).toEqual([]);
+  });
+});
+
 // ── Frontmatter ──────────────────────────────────────────────────────────────────
 
 describe("frontmatter", () => {

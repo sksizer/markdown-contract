@@ -41,7 +41,7 @@ decision.
 
 | Location | Role today |
 |---|---|
-| `prototype/web-ui/` | the assembled prototype + Storybook variants from the surface tasks, ready to review |
+| `apps/daemon-web-prototype/` | the assembled prototype + Storybook variants from the surface tasks, ready to review |
 | `docs/planning/milestones/M-0009-local-web-ui-vault-dashboard.md` | the milestone this review's verdict feeds back into |
 
 ## Proposed
@@ -65,7 +65,7 @@ stable JSON API ([[T-D7X1-web-ui-mock-api-shapes]]) must expose for that.
 | Location | Kind | Change |
 |---|---|---|
 | `docs/planning/milestones/M-0009-local-web-ui-vault-dashboard.md` | modify | record the review verdict + decide-after recommendation |
-| `prototype/web-ui/REVIEW.md` | new | chosen variants, IA verdict, gap list |
+| `apps/daemon-web-prototype/REVIEW.md` | new | chosen variants, IA verdict, gap list |
 
 ## Acceptance criteria
 
