@@ -2,8 +2,9 @@
 type: task
 schema_version: '5'
 id: T-LI8T
-status: planning/draft
+status: closed/superseded
 created: '2026-06-30'
+completion_note: 'Superseded by the workspace reorg (PR #193): prototype/web-ui moved to apps/daemon-web-prototype and joined the Bun workspace, so the root `bun install` that worktree_init already runs resolves its deps too. There is no nested standalone install left to bootstrap; the npm-era standalone package-lock.json and .npmrc were removed in the same PR.'
 related:
 - T-4CUI-web-ui-vault-detail-findings
 tags: []
