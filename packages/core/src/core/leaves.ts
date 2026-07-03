@@ -11,6 +11,7 @@
  * remaps Zod issue paths to source lines. `matchContent` is re-exported here so the leaf
  * vocabulary and its validator surface from one module.
  */
+import type { z } from "zod";
 import type { LeafSpec, ZodType } from "./types.js";
 
 export { matchContent } from "./content.js";
@@ -23,27 +24,61 @@ export { matchContent } from "./content.js";
 const PLACEHOLDER_SCHEMA: ZodType = {};
 
 /**
- * The typed row a `cells` map projects to: each declared cell's `z.output` (read off the
- * `ZodType` phantom `_output`), keyed by column name. Undeclared columns stay string-valued at
- * runtime; this only types the declared, possibly-transforming cells. Stub-level — the real
- * per-row wiring into the model lands in T-SCRB.
+ * The typed row a `table(...)` leaf reads back to (T-SCRB). Keyed by EVERY declared column:
+ *   - a column with a declared `cells` schema → that cell's `z.output` (the parsed / transformed
+ *     value, e.g. a `Location` cell `.transform()`ed from a string into `{ path, symbol? }`);
+ *   - a column with no declared cell → `string` (the raw cell text, additive/opt-in).
+ * `Cols` is the literal union of column names (captured off the `columns` tuple); `C` is the
+ * `cells` map. A table with no `cells` falls back to the `Record<string, string>` default (see the
+ * `table` overloads), so an undeclared or `byAnchor` table reads back string rows (AC-3).
  */
-type CellsRow<C extends Record<string, ZodType>> = {
-  [K in keyof C]: C[K] extends ZodType<infer O> ? O : never;
+export type RowOf<Cols extends string, C> = {
+  [K in Cols]: K extends keyof C ? z.output<C[K]> : string;
 };
 
 /**
  * A typed-table leaf: columns, optional anchor, per-cell schemas, min rows. Generic over its
- * `cells` map so the return type carries the transformed row shape (`z.output` per cell) forward
- * on `LeafSpec._row`; the runtime is an inert passthrough (real inference lands in T-SCRB).
+ * `columns` tuple and `cells` map so the return type carries the read-back row shape
+ * (`RowOf<Cols, C>`, `z.output` per declared cell) forward on `LeafSpec._row`, which
+ * `section()` → `sections()` → `Infer` thread into `read()`'s `TableView<Row>` (T-SCRB).
+ *
+ * Two overloads keep the additive/opt-in guarantee: a table with NO `cells` reads back the
+ * `Record<string, string>` default (AC-3); a table WITH `cells` reads back the typed `RowOf` row.
+ * The runtime is an inert passthrough — the row read-back itself lives in `model.ts#tableView`.
  */
-export function table<C extends Record<string, ZodType> = Record<string, ZodType>>(s: {
+export function table<const Cols extends string = string>(s: {
+  columns: Cols[];
+  anchor?: string;
+  minRows?: number;
+  extraColumns?: "ignore" | "error";
+  cells?: undefined;
+}): LeafSpec<Record<string, string>>;
+export function table<
+  const Cols extends string,
+  C extends Partial<Record<Cols, z.core.$ZodType>>,
+>(s: {
+  columns: Cols[];
+  anchor?: string;
+  minRows?: number;
+  extraColumns?: "ignore" | "error";
+  cells: C;
+}): LeafSpec<RowOf<Cols, C>>;
+// Runtime/dynamic path (the declarative YAML loader builds its config from parsed data, typed with
+// the placeholder `ZodType`): accepts a non-literal config and reads back the untyped default row.
+export function table(s: {
   columns: string[];
   anchor?: string;
   minRows?: number;
-  cells?: C;
   extraColumns?: "ignore" | "error";
-}): LeafSpec<CellsRow<C>> {
+  cells?: Record<string, ZodType>;
+}): LeafSpec;
+export function table(s: {
+  columns: string[];
+  anchor?: string;
+  minRows?: number;
+  cells?: Record<string, unknown>;
+  extraColumns?: "ignore" | "error";
+}): LeafSpec {
   return { kind: "table", schema: PLACEHOLDER_SCHEMA, config: s };
 }
 
