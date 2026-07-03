@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-UDPO
-status: open/ready
+status: in-progress
 created: '2026-07-03'
 related:
 - '[[M-0008-single-exec-distribution]]'
@@ -27,6 +27,7 @@ impact: high
 complexity: medium
 autonomy: supervised
 readiness_verified_at: '2026-07-03T23:38:41Z'
+last_reviewed: '2026-07-03'
 ---
 # Extract the M-0008 single-binary prototype into examples/single-binary — minimal two-faces example
 
@@ -209,3 +210,19 @@ without a *pure* minimal prototype. Decision: keep M-0008 focused on the core id
 extracted as a canonical example under a new top-level `examples/` tree (chosen over an
 `apps/` sibling so the boundary between canonical demonstration and product app is
 readable from the directory layout).
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-03. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
