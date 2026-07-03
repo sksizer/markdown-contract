@@ -1,18 +1,27 @@
 <script setup lang="ts">
 /**
- * SectionRow — one node of a contract's body grammar: a `section` (name +
- * aliases), a `oneOf` chip-list, or a `gap` min/max row, each with the
- * optional toggle and reorder/remove controls. Keys the form can't represent
- * (`anchor`, `content`, `children`, `requires`/`forbids`) surface as small
- * "+key" chips linking to YAML mode — their data is never modified.
+ * SectionRow — one node of a body-grammar LEVEL (any depth): a `section`
+ * (name + aliases), a `oneOf` chip-list, or a `gap` min/max row, each with the
+ * optional toggle, a drag grip, and reorder/remove controls (reorder/remove
+ * are emitted — the owning SectionLevel does the splice bookkeeping).
+ *
+ * Nested structure: a section/oneOf node can grow a `children` level — this
+ * row shows the expand/collapse disclosure and the add/remove-nested-level
+ * affordances; the level itself renders below the row in SectionLevel.
+ * Keys the form can't represent (`anchor`, `content`, `requires`/`forbids`,
+ * malformed `children`) surface as "+key" chips linking to YAML mode — their
+ * data is never modified.
  */
+import { computed, ref } from "vue";
 
+import ConfirmBar from "~/components/editor/ConfirmBar.vue";
+import DragHandle from "~/components/editor/DragHandle.vue";
 import TagInput from "~/components/editor/TagInput.vue";
-import type { ApplyFn, BodyNodeView } from "~/lib/contract-doc";
+import type { DragReorder } from "~/components/editor/useDragReorder";
+import type { ApplyFn, BodyNodeView, DocPath } from "~/lib/contract-doc";
 import {
-  BODY_SECTIONS_PATH,
-  moveSeqItem,
-  removeBodyNode,
+  ensureChildren,
+  removeAt,
   setGapBound,
   setNodeOptional,
   setOneOfNames,
@@ -25,10 +34,20 @@ const props = defineProps<{
   node: BodyNodeView;
   index: number;
   count: number;
+  /** the owning level's sections sequence in the document */
+  sectionsPath: DocPath;
   apply: ApplyFn;
+  /** the owning level's drag controller (this row's grip wires into it) */
+  drag: DragReorder;
+  childrenExpanded: boolean;
 }>();
 
-const emit = defineEmits<(e: "edit-yaml") => void>();
+const emit = defineEmits<{
+  (e: "edit-yaml"): void;
+  (e: "toggle-children"): void;
+  (e: "move", delta: number): void;
+  (e: "remove"): void;
+}>();
 
 const TYPE_LABEL: Record<BodyNodeView["type"], string> = {
   section: "§ section",
@@ -44,8 +63,18 @@ const EXTRA_LABEL: Record<string, string> = {
   rules: "+rules",
 };
 
+const nodePath = computed<DocPath>(() => [...props.sectionsPath, props.index]);
+const rowLabel = computed(() =>
+  props.node.type === "section" && props.node.name !== "" ? props.node.name : props.node.type,
+);
+
+// ── content edits (all through the Document API on this level's path) ───────────
+
 const commitName = debounce((index: number, name: string) => {
-  if (name !== "") props.apply((doc) => setSectionName(doc, index, name));
+  if (name !== "") {
+    const path = props.sectionsPath;
+    props.apply((doc) => setSectionName(doc, path, index, name));
+  }
 }, 400);
 
 function onNameInput(event: Event): void {
@@ -54,42 +83,74 @@ function onNameInput(event: Event): void {
 
 function onOptional(event: Event): void {
   const on = (event.target as HTMLInputElement).checked;
-  const index = props.index;
-  props.apply((doc) => setNodeOptional(doc, index, on));
+  const { index } = props;
+  const path = props.sectionsPath;
+  props.apply((doc) => setNodeOptional(doc, path, index, on));
 }
 
 function onAliases(aliases: string[]): void {
-  const index = props.index;
-  props.apply((doc) => setSectionAliases(doc, index, aliases));
+  const { index } = props;
+  const path = props.sectionsPath;
+  props.apply((doc) => setSectionAliases(doc, path, index, aliases));
 }
 
 function onOneOf(names: string[]): void {
-  const index = props.index;
-  props.apply((doc) => setOneOfNames(doc, index, names));
+  const { index } = props;
+  const path = props.sectionsPath;
+  props.apply((doc) => setOneOfNames(doc, path, index, names));
 }
 
 function onGapBound(bound: "min" | "max", event: Event): void {
   const text = (event.target as HTMLInputElement).value.trim();
   const value = text === "" ? undefined : Number(text);
   if (value !== undefined && Number.isNaN(value)) return;
-  const index = props.index;
-  props.apply((doc) => setGapBound(doc, index, bound, value));
+  const { index } = props;
+  const path = props.sectionsPath;
+  props.apply((doc) => setGapBound(doc, path, index, bound, value));
 }
 
-function onMove(delta: number): void {
-  const index = props.index;
-  props.apply((doc) => moveSeqItem(doc, BODY_SECTIONS_PATH, index, index + delta));
+// ── nested children level ────────────────────────────────────────────────────────
+
+const canNest = computed(() => props.node.type === "section" || props.node.type === "oneOf");
+const childCount = computed(() => props.node.children?.sections.length ?? 0);
+const pendingRemoveChildren = ref(false);
+
+function onAddChildren(): void {
+  const path = nodePath.value;
+  props.apply((doc) => ensureChildren(doc, path));
 }
 
-function onRemove(): void {
-  const index = props.index;
-  props.apply((doc) => removeBodyNode(doc, index));
+function onRemoveChildren(): void {
+  if (childCount.value > 0) {
+    pendingRemoveChildren.value = true;
+    return;
+  }
+  doRemoveChildren();
+}
+
+function doRemoveChildren(): void {
+  pendingRemoveChildren.value = false;
+  const path: DocPath = [...nodePath.value, "children"];
+  props.apply((doc) => removeAt(doc, path));
 }
 </script>
 
 <template>
   <div class="sr">
     <header class="sr__head">
+      <DragHandle
+        :label="`Drag to reorder ${rowLabel}`"
+        @dragstart="drag.start(index, $event)"
+        @dragend="drag.end()"
+      />
+      <button
+        v-if="node.children !== null"
+        class="sr__disclose"
+        type="button"
+        :aria-expanded="childrenExpanded"
+        :aria-label="childrenExpanded ? 'Collapse nested sections' : 'Expand nested sections'"
+        @click="emit('toggle-children')"
+      >{{ childrenExpanded ? "▾" : "▸" }}</button>
       <span class="sr__type">{{ TYPE_LABEL[node.type] }}</span>
       <label class="sr__flag">
         <input type="checkbox" :checked="node.optional" @change="onOptional" />
@@ -107,24 +168,40 @@ function onRemove(): void {
         {{ EXTRA_LABEL[extra] ?? `+${extra}` }}
       </button>
       <button
+        v-if="canNest && node.children === null"
+        class="btn btn--ghost sr__nest"
+        type="button"
+        title="Add nested sections (a children level under this node)"
+        aria-label="Add nested sections"
+        @click="onAddChildren"
+      >+ nested</button>
+      <button
+        v-if="node.children !== null"
+        class="btn btn--ghost sr__nest"
+        type="button"
+        title="Remove the nested level under this node"
+        aria-label="Remove nested level"
+        @click="onRemoveChildren"
+      >− nested</button>
+      <button
         class="btn btn--ghost"
         type="button"
         :disabled="index === 0"
         aria-label="Move node up"
-        @click="onMove(-1)"
+        @click="emit('move', -1)"
       >↑</button>
       <button
         class="btn btn--ghost"
         type="button"
         :disabled="index === count - 1"
         aria-label="Move node down"
-        @click="onMove(1)"
+        @click="emit('move', 1)"
       >↓</button>
       <button
         class="btn btn--ghost btn--danger"
         type="button"
         aria-label="Remove node"
-        @click="onRemove"
+        @click="emit('remove')"
       >✕</button>
     </header>
 
@@ -185,6 +262,15 @@ function onRemove(): void {
         unrecognized node — edit in YAML
       </button>
     </div>
+
+    <ConfirmBar
+      v-if="pendingRemoveChildren"
+      :message="`This removes the nested level and its ${childCount} section${childCount === 1 ? '' : 's'}.`"
+      confirm-label="Remove nested level"
+      danger
+      @confirm="doRemoveChildren"
+      @cancel="pendingRemoveChildren = false"
+    />
   </div>
 </template>
 
@@ -202,6 +288,17 @@ function onRemove(): void {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.sr__disclose {
+  appearance: none;
+  flex: 0 0 auto;
+  padding: 0 2px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--mc-text-muted);
+  cursor: pointer;
 }
 .sr__type {
   font-size: 10.5px;
@@ -221,6 +318,9 @@ function onRemove(): void {
 }
 .sr__spacer {
   flex: 1;
+}
+.sr__nest {
+  white-space: nowrap;
 }
 .sr__chip {
   appearance: none;

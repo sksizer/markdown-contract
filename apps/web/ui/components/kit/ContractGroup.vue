@@ -66,7 +66,7 @@ const presentLevels = computed(() => SEVERITY_ORDER.filter((level) => counts.val
   padding: 10px 12px;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
-  border-radius: var(--mc-radius);
+  border-radius: var(--mc-radius-lg);
 }
 .cg__head {
   display: flex;

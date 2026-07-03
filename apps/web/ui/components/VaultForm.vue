@@ -399,7 +399,7 @@ function removeVault(id: string): void {
 .vf__formwrap--inline {
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
-  border-radius: var(--mc-radius);
+  border-radius: var(--mc-radius-lg);
   padding: 12px 14px;
 }
 .vf__form {
@@ -450,8 +450,8 @@ function removeVault(id: string): void {
   overflow-y: auto;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
-  border-radius: var(--mc-radius);
-  padding: 16px;
+  border-radius: var(--mc-radius-lg);
+  padding: 16px 18px;
   z-index: 11;
   box-shadow: var(--mc-shadow-overlay);
 }

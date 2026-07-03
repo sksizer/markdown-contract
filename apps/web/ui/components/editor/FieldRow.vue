@@ -1,22 +1,28 @@
 <script setup lang="ts">
 /**
- * FieldRow — one frontmatter field of a contract: key, kind select
- * (string/number/boolean/enum/const/array/object), per-kind extras, and the
- * optional/nullable wrappers. A schema the form can't fully represent
- * (nested objects, array-of-object, `default`, `$ref`) renders as a LOCKED
- * row — a "complex — edit in YAML" chip — and its data is never modified.
+ * FieldRow — one schema node of a contract's frontmatter, rendered
+ * RECURSIVELY to any depth: a keyed row when the node sits in a fields
+ * mapping (the frontmatter root or an object's `fields`), a keyless row for
+ * an array's `of` schema. Object fields nest object/array sub-schemas with
+ * the same row UI; keyed rows in a mapping reorder by drag grip or ↑/↓
+ * (the keyboard path), constrained to their own mapping.
  *
- * All mutations go through the Document API via `apply`; the row re-derives
- * from the plain-JS schema prop after every change.
+ * Only genuinely unrepresentable schemas lock — `$ref`, a `default` wrapper,
+ * malformed nodes, anywhere in the subtree — rendering as a "complex — edit
+ * in YAML" chip whose data is never modified. All mutations go through the
+ * Document API via `apply`; the row re-derives from the plain-JS schema prop
+ * after every change.
  */
 import { computed } from "vue";
 
+import DragHandle from "~/components/editor/DragHandle.vue";
 import TagInput from "~/components/editor/TagInput.vue";
+import { type DragReorder, useDragReorder } from "~/components/editor/useDragReorder";
 import {
   type ApplyFn,
   addField,
   type DocPath,
-  FRONTMATTER_FIELDS_PATH,
+  moveMapItem,
   removeAt,
   renameMapKey,
   setSchemaFlag,
@@ -29,24 +35,34 @@ import {
   FIELD_KINDS,
   type FieldKind,
   isRecord,
-  SCALAR_FIELD_KINDS,
   STRING_FORMATS,
-  schemaKindOf,
 } from "~/lib/contract-schema";
 import { debounce } from "~/lib/debounce";
 
 const props = defineProps<{
-  fieldKey: string;
+  /** this schema node's path in the document */
+  nodePath: DocPath;
   schema: unknown;
   apply: ApplyFn;
+  /** the fields mapping this row's key lives in — absent for the keyless array-`of` row */
+  mapPath?: DocPath;
+  fieldKey?: string;
+  /** the owning mapping's drag controller + this row's position (keyed rows only) */
+  drag?: DragReorder;
+  index?: number;
+  count?: number;
 }>();
 
-const emit = defineEmits<(e: "edit-yaml") => void>();
+const emit = defineEmits<{
+  (e: "edit-yaml"): void;
+  (e: "move", delta: number): void;
+}>();
 
-const nodePath = computed<DocPath>(() => [...FRONTMATTER_FIELDS_PATH, props.fieldKey]);
 const cls = computed(() => classifySchema(props.schema));
 const node = computed<Record<string, unknown>>(() => (isRecord(props.schema) ? props.schema : {}));
 const kind = computed<FieldKind>(() => cls.value.kind ?? "string");
+const keyed = computed(() => props.mapPath !== undefined && props.fieldKey !== undefined);
+const listed = computed(() => props.index !== undefined && props.count !== undefined);
 
 // ── derived extras ───────────────────────────────────────────────────────────────
 
@@ -65,47 +81,63 @@ const optionalOn = computed(() => node.value.optional === true);
 const nullableOn = computed(() => node.value.nullable === true);
 const strictOn = computed(() => node.value.strict === true);
 
-const ofNode = computed<Record<string, unknown>>(() =>
-  isRecord(node.value.of) ? node.value.of : {},
-);
-const ofKind = computed<FieldKind>(() => schemaKindOf(ofNode.value) ?? "string");
-const ofEnumValues = computed(() =>
-  Array.isArray(ofNode.value.enum) ? ofNode.value.enum.map(String) : [],
-);
-
+const ofPath = computed<DocPath>(() => [...props.nodePath, "of"]);
+const fieldsPath = computed<DocPath>(() => [...props.nodePath, "fields"]);
 const subFields = computed(() => {
   const fields = node.value.fields;
   if (!isRecord(fields)) return [];
-  return Object.entries(fields).map(([key, schema]) => ({
-    key,
-    kind: schemaKindOf(schema) ?? "string",
-    optional: isRecord(schema) && schema.optional === true,
-    enumValues: isRecord(schema) && Array.isArray(schema.enum) ? schema.enum.map(String) : [],
-  }));
+  return Object.entries(fields).map(([key, schema]) => ({ key, schema }));
 });
+
+// ── this row's drag/reorder participation (keyed rows only) ──────────────────────
+
+const dragClass = computed(() =>
+  props.drag !== undefined && props.index !== undefined ? props.drag.rowClass(props.index) : null,
+);
+
+function onGripStart(event: DragEvent): void {
+  if (props.drag !== undefined && props.index !== undefined) props.drag.start(props.index, event);
+}
+
+function onGripEnd(): void {
+  props.drag?.end();
+}
+
+function onRowDragOver(event: DragEvent): void {
+  if (props.drag !== undefined && props.index !== undefined) props.drag.over(props.index, event);
+}
+
+function onRowDrop(event: DragEvent): void {
+  props.drag?.dropOn(event);
+}
 
 // ── handlers ─────────────────────────────────────────────────────────────────────
 
 function onRename(event: Event): void {
   const newKey = (event.target as HTMLInputElement).value.trim();
   const oldKey = props.fieldKey;
+  const mapPath = props.mapPath;
+  if (oldKey === undefined || mapPath === undefined) return;
   if (newKey !== "" && newKey !== oldKey) {
-    props.apply((doc) => renameMapKey(doc, FRONTMATTER_FIELDS_PATH, oldKey, newKey));
+    props.apply((doc) => renameMapKey(doc, mapPath, oldKey, newKey));
   }
 }
 
 function onKind(event: Event): void {
   const next = (event.target as HTMLSelectElement).value as FieldKind;
-  props.apply((doc) => setSchemaKind(doc, nodePath.value, next));
+  const path = props.nodePath;
+  props.apply((doc) => setSchemaKind(doc, path, next));
 }
 
 function setProp(prop: string, value: string | number | boolean | string[] | undefined): void {
-  props.apply((doc) => setSchemaProp(doc, nodePath.value, prop, value));
+  const path = props.nodePath;
+  props.apply((doc) => setSchemaProp(doc, path, prop, value));
 }
 
 function onFlag(prop: "optional" | "nullable" | "strict", event: Event): void {
   const on = (event.target as HTMLInputElement).checked;
-  props.apply((doc) => setSchemaFlag(doc, nodePath.value, prop, on));
+  const path = props.nodePath;
+  props.apply((doc) => setSchemaFlag(doc, path, prop, on));
 }
 
 function onFormat(event: Event): void {
@@ -128,98 +160,110 @@ const commitConst = debounce((value: string) => {
   setProp("const", coerceScalar(value));
 }, 400);
 
-function onOfKind(event: Event): void {
-  const next = (event.target as HTMLSelectElement).value as FieldKind;
-  const path: DocPath = [...nodePath.value, "of"];
-  props.apply((doc) => setSchemaKind(doc, path, next));
-}
-
-function onOfEnum(values: string[]): void {
-  const path: DocPath = [...nodePath.value, "of"];
-  props.apply((doc) => setSchemaProp(doc, path, "enum", values));
-}
-
-// ── object sub-fields (one level deep — deeper nesting locks the row) ────────────
-
-const subFieldsPath = computed<DocPath>(() => [...nodePath.value, "fields"]);
-
-function onSubRename(oldKey: string, event: Event): void {
-  const newKey = (event.target as HTMLInputElement).value.trim();
-  const mapPath = subFieldsPath.value;
-  if (newKey !== "" && newKey !== oldKey) {
-    props.apply((doc) => renameMapKey(doc, mapPath, oldKey, newKey));
-  }
-}
-
-function onSubKind(key: string, event: Event): void {
-  const next = (event.target as HTMLSelectElement).value as FieldKind;
-  const path: DocPath = [...subFieldsPath.value, key];
-  props.apply((doc) => setSchemaKind(doc, path, next));
-}
-
-function onSubOptional(key: string, event: Event): void {
-  const on = (event.target as HTMLInputElement).checked;
-  const path: DocPath = [...subFieldsPath.value, key];
-  props.apply((doc) => setSchemaFlag(doc, path, "optional", on));
-}
-
-function onSubEnum(key: string, values: string[]): void {
-  const path: DocPath = [...subFieldsPath.value, key];
-  props.apply((doc) => setSchemaProp(doc, path, "enum", values));
-}
-
-function onSubRemove(key: string): void {
-  const path: DocPath = [...subFieldsPath.value, key];
+function onRemove(): void {
+  const path = props.nodePath;
   props.apply((doc) => removeAt(doc, path));
+}
+
+// ── object sub-fields (recursive keyed rows over [...nodePath, "fields"]) ────────
+
+const subDrag = useDragReorder(
+  () => subFields.value.length,
+  (from, to) => {
+    const mapPath = fieldsPath.value;
+    props.apply((doc) => moveMapItem(doc, mapPath, from, to));
+  },
+);
+
+function onSubMove(index: number, delta: number): void {
+  const to = index + delta;
+  if (to < 0 || to >= subFields.value.length) return;
+  const mapPath = fieldsPath.value;
+  props.apply((doc) => moveMapItem(doc, mapPath, index, to));
 }
 
 function onSubAdd(event: Event): void {
   const input = event.target as HTMLInputElement;
   const key = input.value.trim();
   if (key === "" || subFields.value.some((f) => f.key === key)) return;
-  const mapPath = subFieldsPath.value;
+  const mapPath = fieldsPath.value;
   props.apply((doc) => addField(doc, mapPath, key));
   input.value = "";
-}
-
-function onRemove(): void {
-  const path = nodePath.value;
-  props.apply((doc) => removeAt(doc, path));
 }
 </script>
 
 <template>
   <!-- locked: the form can't fully represent this schema — never touch it -->
-  <div v-if="!cls.representable" class="fr fr--locked">
-    <code class="fr__key-ro">{{ fieldKey }}</code>
+  <div
+    v-if="!cls.representable"
+    class="fr fr--locked"
+    :class="dragClass"
+    @dragover="onRowDragOver"
+    @drop="onRowDrop"
+  >
+    <DragHandle
+      v-if="drag !== undefined && index !== undefined"
+      :label="`Drag to reorder ${fieldKey ?? 'schema'}`"
+      @dragstart="onGripStart"
+      @dragend="onGripEnd"
+    />
+    <code class="fr__key-ro">{{ fieldKey ?? "of" }}</code>
     <button class="fr__chip" type="button" :title="cls.reason" @click="emit('edit-yaml')">
       complex — edit in YAML
     </button>
     <span class="fr__summary">{{ cls.summary }}</span>
   </div>
 
-  <div v-else class="fr">
+  <div v-else class="fr" :class="dragClass" @dragover="onRowDragOver" @drop="onRowDrop">
     <div class="fr__main">
+      <DragHandle
+        v-if="drag !== undefined && index !== undefined"
+        :label="`Drag to reorder ${fieldKey ?? 'schema'}`"
+        @dragstart="onGripStart"
+        @dragend="onGripEnd"
+      />
       <input
+        v-if="keyed"
         class="input fr__key"
         type="text"
         :value="fieldKey"
         aria-label="Field key"
         @change="onRename"
       />
+      <span v-else class="fr__of-label">each item</span>
       <select class="select fr__kind" :value="kind" aria-label="Field kind" @change="onKind">
         <option v-for="k in FIELD_KINDS" :key="k" :value="k">{{ k }}</option>
       </select>
-      <label class="fr__flag">
-        <input type="checkbox" :checked="optionalOn" @change="onFlag('optional', $event)" />
-        optional
-      </label>
-      <label class="fr__flag">
-        <input type="checkbox" :checked="nullableOn" @change="onFlag('nullable', $event)" />
-        nullable
-      </label>
+      <template v-if="keyed">
+        <label class="fr__flag">
+          <input type="checkbox" :checked="optionalOn" @change="onFlag('optional', $event)" />
+          optional
+        </label>
+        <label class="fr__flag">
+          <input type="checkbox" :checked="nullableOn" @change="onFlag('nullable', $event)" />
+          nullable
+        </label>
+      </template>
+      <span class="fr__grow" />
+      <template v-if="listed">
+        <button
+          class="btn btn--ghost"
+          type="button"
+          :disabled="index === 0"
+          :aria-label="`Move field ${fieldKey} up`"
+          @click="emit('move', -1)"
+        >↑</button>
+        <button
+          class="btn btn--ghost"
+          type="button"
+          :disabled="index === (count ?? 0) - 1"
+          :aria-label="`Move field ${fieldKey} down`"
+          @click="emit('move', 1)"
+        >↓</button>
+      </template>
       <button
-        class="btn btn--ghost btn--danger fr__remove"
+        v-if="keyed"
+        class="btn btn--ghost btn--danger"
         type="button"
         :aria-label="`Remove field ${fieldKey}`"
         @click="onRemove"
@@ -296,65 +340,51 @@ function onRemove(): void {
       </label>
     </div>
 
-    <div v-else-if="kind === 'array'" class="fr__extras">
-      <label class="field fr__extra">
-        <span class="field__label">of</span>
-        <select class="select" :value="ofKind" @change="onOfKind">
-          <option v-for="k in SCALAR_FIELD_KINDS" :key="k" :value="k">{{ k }}</option>
-        </select>
-      </label>
-      <label v-if="ofKind === 'enum'" class="field fr__extra fr__extra--wide">
-        <span class="field__label">enum values</span>
-        <TagInput :model-value="ofEnumValues" mono placeholder="add value…" @update:model-value="onOfEnum" />
-      </label>
-      <label class="field fr__extra fr__extra--num">
-        <span class="field__label">min items</span>
-        <input class="input" type="number" :value="minText" @change="onBound('min', $event)" />
-      </label>
-      <label class="field fr__extra fr__extra--num">
-        <span class="field__label">max items</span>
-        <input class="input" type="number" :value="maxText" @change="onBound('max', $event)" />
-      </label>
-    </div>
+    <template v-else-if="kind === 'array'">
+      <div class="fr__extras">
+        <label class="field fr__extra fr__extra--num">
+          <span class="field__label">min items</span>
+          <input class="input" type="number" :value="minText" @change="onBound('min', $event)" />
+        </label>
+        <label class="field fr__extra fr__extra--num">
+          <span class="field__label">max items</span>
+          <input class="input" type="number" :value="maxText" @change="onBound('max', $event)" />
+        </label>
+      </div>
+      <!-- the element schema, recursive: array-of-anything-representable -->
+      <div class="fr__nest">
+        <span class="fr__nest-label">of</span>
+        <FieldRow
+          :node-path="ofPath"
+          :schema="node.of"
+          :apply="props.apply"
+          @edit-yaml="emit('edit-yaml')"
+        />
+      </div>
+    </template>
 
-    <div v-else-if="kind === 'object'" class="fr__object">
+    <div v-else-if="kind === 'object'" class="fr__nest fr__object">
       <label class="fr__flag">
         <input type="checkbox" :checked="strictOn" @change="onFlag('strict', $event)" />
         strict (unknown keys are findings)
       </label>
-      <div v-for="sf in subFields" :key="sf.key" class="fr__sub">
-        <input
-          class="input fr__sub-key"
-          type="text"
-          :value="sf.key"
-          aria-label="Sub-field key"
-          @change="onSubRename(sf.key, $event)"
-        />
-        <select class="select" :value="sf.kind" aria-label="Sub-field kind" @change="onSubKind(sf.key, $event)">
-          <option v-for="k in SCALAR_FIELD_KINDS" :key="k" :value="k">{{ k }}</option>
-        </select>
-        <TagInput
-          v-if="sf.kind === 'enum'"
-          class="fr__sub-enum"
-          :model-value="sf.enumValues"
-          mono
-          placeholder="value…"
-          @update:model-value="onSubEnum(sf.key, $event)"
-        />
-        <label class="fr__flag">
-          <input type="checkbox" :checked="sf.optional" @change="onSubOptional(sf.key, $event)" />
-          optional
-        </label>
-        <button
-          class="btn btn--ghost fr__remove"
-          type="button"
-          :aria-label="`Remove sub-field ${sf.key}`"
-          @click="onSubRemove(sf.key)"
-        >✕</button>
-      </div>
+      <FieldRow
+        v-for="(sf, i) in subFields"
+        :key="sf.key"
+        :node-path="[...fieldsPath, sf.key]"
+        :schema="sf.schema"
+        :apply="props.apply"
+        :map-path="fieldsPath"
+        :field-key="sf.key"
+        :drag="subDrag"
+        :index="i"
+        :count="subFields.length"
+        @edit-yaml="emit('edit-yaml')"
+        @move="(delta) => onSubMove(i, delta)"
+      />
       <div class="fr__sub-add">
         <input
-          class="input fr__sub-key"
+          class="input fr__key"
           type="text"
           placeholder="new sub-field key…"
           @keydown.enter.prevent="onSubAdd($event)"
@@ -394,6 +424,14 @@ function onRemove(): void {
 .fr__key-ro {
   font-size: 11.5px;
 }
+.fr__of-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mc-text-faint);
+  white-space: nowrap;
+}
 .fr__kind {
   flex: 0 0 auto;
 }
@@ -406,8 +444,8 @@ function onRemove(): void {
   white-space: nowrap;
   cursor: pointer;
 }
-.fr__remove {
-  margin-left: auto;
+.fr__grow {
+  flex: 1;
 }
 .fr__extras {
   display: flex;
@@ -450,28 +488,26 @@ function onRemove(): void {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.fr__object {
+/* one guide line + indent per nesting level (levels nest structurally) */
+.fr__nest {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px;
-  border: 1px dashed var(--mc-border-strong);
-  border-radius: var(--mc-radius);
+  margin-left: 4px;
+  padding-left: 12px;
+  border-left: 2px solid var(--mc-border-strong);
 }
-.fr__sub,
+.fr__nest-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mc-text-faint);
+}
 .fr__sub-add {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-}
-.fr__sub-key {
-  flex: 0 1 160px;
-  font-family: var(--mc-mono);
-  font-size: 11.5px;
-}
-.fr__sub-enum {
-  flex: 1;
-  min-width: 160px;
 }
 </style>
