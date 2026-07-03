@@ -8,7 +8,7 @@
  */
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import type { SectionGroup, SectionView, TableView } from "../index.js";
+import type { Infer, SectionGroup, SectionView, TableView } from "../index.js";
 import { contract, gap, list, optional, section, sections, table } from "../index.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -290,6 +290,157 @@ describe("frontmatter and the doc shape", () => {
     expect(lists[0].kind).toBe("list");
   });
 });
+
+describe("typed cell read-back (T-SCRB)", () => {
+  // A transforming cell: `path` or `path#symbol` → a structured object, cached by the content
+  // plane's per-cell parse (T-SCTC) and read back here (T-SCRB). `Kind` is a plain enum (no
+  // transform); `Change` declares no cell, so it stays the raw cell string.
+  const Location = z.string().transform((raw) => {
+    const [path, symbol] = raw.split("#");
+    return symbol ? { path, symbol } : { path };
+  });
+  const c = contract({
+    body: sections({}, [
+      section("Files", {
+        content: table({
+          columns: ["Location", "Kind", "Change"],
+          cells: { Location, Kind: z.enum(["add", "modify", "delete"]) },
+        }),
+      }),
+    ]),
+  });
+  const src = [
+    "## Files",
+    "",
+    "| Location                 | Kind   | Change               |",
+    "| ------------------------ | ------ | -------------------- |",
+    "| src/core/leaves.ts#table | modify | make table() generic |",
+    "| src/core/types.ts        | modify | confirm the Row slot |",
+  ].join("\n");
+
+  test("a declared transforming cell reads back its parsed object, sourced from the cache", () => {
+    const doc = c.read(src, PATH);
+    const files = (doc.body as any).files as TableView;
+    // row 0: `path#symbol` → { path, symbol }
+    expect((files.rows[0] as any).Location).toEqual({
+      path: "src/core/leaves.ts",
+      symbol: "table",
+    });
+    expect((files.rows[0] as any).Location.path).toBe("src/core/leaves.ts");
+    // row 1: bare `path` → { path } (no symbol)
+    expect((files.rows[1] as any).Location).toEqual({ path: "src/core/types.ts" });
+  });
+
+  test("an undeclared column stays a raw string; a declared enum cell reads back its string", () => {
+    const doc = c.read(src, PATH);
+    const files = (doc.body as any).files as TableView;
+    expect((files.rows[0] as any).Change).toBe("make table() generic");
+    expect(typeof (files.rows[0] as any).Change).toBe("string");
+    expect((files.rows[0] as any).Kind).toBe("modify");
+  });
+
+  test("column()/find() see the typed value for a declared cell", () => {
+    const doc = c.read(src, PATH);
+    const files = (doc.body as any).files as TableView;
+    expect(files.column("Location" as any)).toEqual([
+      { path: "src/core/leaves.ts", symbol: "table" },
+      { path: "src/core/types.ts" },
+    ]);
+    expect((files.find((r: any) => r.Location.path === "src/core/types.ts") as any)?.Change).toBe(
+      "confirm the Row slot",
+    );
+  });
+
+  test("AC-5 — the typed value rides only on the model; the projected tree rows stay raw strings", () => {
+    const result = c.validate(src, PATH);
+    // Model: the row exposes the parsed object.
+    const files = (result.doc?.body as any).files as TableView;
+    expect((files.rows[0] as any).Location).toEqual({
+      path: "src/core/leaves.ts",
+      symbol: "table",
+    });
+    // Projection: the SAME table block's raw `rows` are untouched strings — the transform output
+    // rides on the sparse `typed(...)` overlay the model reads, never on `tree` (AC-5).
+    const block = result.tree.root.sections[0]?.blocks.find((b) => b.kind === "table");
+    expect(block?.kind).toBe("table");
+    if (block?.kind !== "table") throw new Error("expected a table block");
+    expect(block.rows[0]?.[0]).toBe("src/core/leaves.ts#table"); // raw cell, not the parsed object
+    expect(block.typed(0, "Location")).toEqual({ path: "src/core/leaves.ts", symbol: "table" });
+  });
+
+  test("AC-3 — a table with no declared cells reads back raw-string rows (string default)", () => {
+    const plain = contract({
+      body: sections({}, [section("Files", { content: table({ columns: ["File", "Kind"] }) })]),
+    });
+    const doc = plain.read("## Files\n\n| File | Kind |\n| - | - |\n| a.ts | add |\n", PATH);
+    const files = (doc.body as any).files as TableView;
+    expect(files.rows[0]).toEqual({ File: "a.ts", Kind: "add" });
+    expect(typeof (files.rows[0] as any).Kind).toBe("string");
+  });
+
+  test("AC-3 — an undeclared byAnchor table reads back raw-string rows", () => {
+    const c2 = contract({ body: sections({}, [section("Notes")]) });
+    const src2 = ["## Notes", "", "| Option | Note |", "| - | - |", "| A | slow |", "^extra"].join(
+      "\n",
+    );
+    const doc = c2.read(src2, PATH);
+    const t = (doc as any).byAnchor("extra") as TableView;
+    expect(t.rows[0]).toEqual({ Option: "A", Note: "slow" });
+    expect(typeof (t.rows[0] as any).Option).toBe("string");
+  });
+});
+
+// ── Type-level assertions (AC-2) ────────────────────────────────────────────────────
+// Compile-time proof (checked by `tsc --noEmit`; vitest ignores type aliases) that the row read
+// back through `read()` and `Infer` is `z.output<cells>` for a declared cell and `string` for an
+// undeclared column — the per-column literal inference, not merely a runtime assertion.
+type Equal<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
+type Expect<T extends true> = T;
+// Force reduction of the deferred conditional types the combinator generics carry, so `Equal`
+// compares the resolved row shape rather than an unevaluated `RowOf<...>` alias.
+type Resolve<T> = T extends infer U ? { [K in keyof U]: U[K] } : never;
+
+const LocationCell = z.string().transform((raw) => {
+  const [path, symbol] = raw.split("#");
+  return symbol ? { path, symbol } : { path };
+});
+const typedSpec = contract({
+  body: sections({}, [
+    section("Files", {
+      content: table({
+        columns: ["Location", "Kind", "Change"],
+        cells: { Location: LocationCell, Kind: z.enum(["add", "modify", "delete"]) },
+      }),
+    }),
+  ]),
+});
+
+// Through `read()`: `doc.body["Files"]` promotes to the typed `TableView<Row>`.
+type ReadRow = Resolve<
+  ReturnType<typeof typedSpec.read>["body"]["Files"] extends TableView<infer R> ? R : never
+>;
+// Through `Infer`: the same typed row.
+type InferRow = Resolve<
+  Infer<typeof typedSpec>["body"]["Files"] extends TableView<infer R> ? R : never
+>;
+
+// declared transforming cell → its parsed `z.output` (NOT a raw string)
+type _AC2_readLocation = Expect<Equal<ReadRow["Location"], z.output<typeof LocationCell>>>;
+type _AC2_inferLocation = Expect<Equal<InferRow["Location"], z.output<typeof LocationCell>>>;
+// undeclared column → raw string
+type _AC2_readChange = Expect<Equal<ReadRow["Change"], string>>;
+type _AC2_inferChange = Expect<Equal<InferRow["Change"], string>>;
+// the row is NOT the untyped `Record<string, string>` default — the typing actually flowed through
+type _AC2_notDefault = Expect<Equal<Equal<ReadRow, Record<string, string>>, false>>;
+
+// AC-3 (type level): a table with NO declared cells keeps the `Record<string, string>` default.
+const plainSpec = contract({
+  body: sections({}, [section("Files", { content: table({ columns: ["File", "Kind"] }) })]),
+});
+type PlainRow =
+  ReturnType<typeof plainSpec.read>["body"]["Files"] extends TableView<infer R> ? R : never;
+type _AC3_stringDefault = Expect<Equal<PlainRow, Record<string, string>>>;
 
 describe("AC-1 — the model is additive; reading doc never changes findings", () => {
   test("findings are identical whether or not doc is accessed", () => {
