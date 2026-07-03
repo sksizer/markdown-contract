@@ -80,16 +80,16 @@ regression-checked against real CLI/library output.
 | Location | Kind | Change |
 |---|---|---|
 | `sites/docs/src/content/docs/**` | new | generated catalog pages — category sections + per-example units. |
-| `sites/docs/src/content.config.ts` (loader) | modify | a content-collection loader that reads `docs/catalog/*.yaml`. |
-| `sites/docs/src/content/docs/index.(md\|mdx)` | modify | the data-driven landing (hero tour), superseding the T-SHEL interim landing. |
+| `sites/docs/src/content.config.ts` | modify | a content-collection loader that reads `docs/catalog/*.yaml`. |
+| `sites/docs/src/content/docs/index.md` | modify | the data-driven landing (hero tour), superseding the T-SHEL interim landing. |
 | `sites/docs/astro.config.mjs` | modify | populate the sidebar IA slots with the generated category pages. |
 | artifact regression check | new | render each `artifact` and diff against real CLI/library output. |
 
 ## Acceptance criteria
 
-- [ ] AC-1: Every catalog category renders as a section and every example renders with its
-  `artifact` and a link to its `builds_on` prerequisite — **generated from** `docs/catalog/*.yaml`,
-  not hand-copied.
+- [ ] AC-1: Every category in `docs/catalog/*.yaml` (8 files) renders as a section, and every
+  example entry in those files renders with its `artifact` and a link to its `builds_on`
+  prerequisite — **generated from** the YAML, not hand-copied.
 - [ ] AC-2: The data-driven landing presents a hero tour (one rank-1 example per category) and
   **supersedes** the interim [[T-SHEL-docs-landing-and-ia]] landing.
 - [ ] AC-3: The generated category pages sit in the sidebar as sub-groups of a **single
