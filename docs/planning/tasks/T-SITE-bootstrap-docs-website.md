@@ -2,7 +2,7 @@
 type: task
 schema_version: "5"
 id: T-SITE
-status: in-progress
+status: closed/done
 created: '2026-06-28'
 last_reviewed: '2026-07-03'
 related:
@@ -27,6 +27,10 @@ autonomy: supervised
 readiness_verified_at: '2026-07-03T16:59:12Z'
 prs:
   - https://github.com/sksizer/markdown-contract/pull/196
+completion_note: 'Shipped via #196: the catalog pages and data-driven landing
+  are generated from docs/catalog/*.yaml by scripts/generate.ts (superseding
+  the T-SHEL interim landing), and scripts/check-artifacts.ts regression-checks
+  every example artifact against the real library.'
 ---
 # Generate & publish the example catalog pages into the docs site
 
