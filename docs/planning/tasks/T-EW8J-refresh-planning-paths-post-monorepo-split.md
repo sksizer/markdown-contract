@@ -6,6 +6,7 @@ status: planning/draft
 created: '2026-07-02'
 related:
 - T-SCFX-structured-cells-fixture-scaffold
+- T-SCPP-cell-position-preservation
 tags: []
 need_human_review: false
 impact: medium
@@ -68,3 +69,19 @@ _TBD — receiver to fill before promoting from planning/draft._
 Spawned by /sdlc:spawn-task-pr on 2026-07-02 UTC from
 [[T-SCFX-structured-cells-fixture-scaffold]] in
 https://github.com/sksizer/markdown-contract.
+
+### Dedup search (spawn-from-post-mortem)
+
+Bullet: The task spec's file paths were stale (`src/core/*`, `tests/*`, and AC-6's `npm run *`) after the repo moved to a moon monorepo (`packages/core/*`, moon verbs); they had to be retargeted on `origin/main` before the readiness gate would resolve touchpoints. A periodic task-relevance sweep after a repo restructure would catch this class before pickup.
+Keywords searched: task-relevance, touchpoints, restructure, retargeted, readiness, monorepo, packages, periodic
+Excluded: T-SCPP-cell-position-preservation
+Top candidates (score / status / headline):
+
+- 46 / closed/done / T-HIL6-knip-dead-code — Add knip to detect unused files, exports, and dependencies
+- 30 / closed/done / T-WKSP-bun-workspace-split — Split the repo into a Bun workspace — `packages/core` (+ `apps/web` placeholder)
+- 25 / closed/done / T-SCFX-structured-cells-fixture-scaffold — Scaffold the structured-cells fixtures and enable gates (`cell-typed` / `list-typed` / `cell-pos`)
+- 20 / closed/done / T-U6W3-document-moon-npm-script-wrapping — Document that moon tasks must wrap npm scripts under moon's runtime-only node toolchain
+- 19 / closed/done / T-DAEM-daemon-and-json-api — `daemon` mode + a JSON API over the runner — the `apps/web` server face
+
+Decision: LINKED-EXISTING (T-EW8J-refresh-planning-paths-post-monorepo-split)
+Rationale: Overrode the script's SPAWNED. The keyword scorer under-ranked this task (score 0 — its own body predates the "task-relevance/touchpoints" vocabulary), but T-EW8J is a genuine near-duplicate: it already exists to refresh exactly the stale `src/…`/`tests/…`/`npm run` paths that the monorepo relocation left across the docs/planning corpus — the same friction this bullet reports. Linking here avoids spawning a duplicate Local sweep task; the bullet's "periodic sweep" framing informs T-EW8J's scope.
