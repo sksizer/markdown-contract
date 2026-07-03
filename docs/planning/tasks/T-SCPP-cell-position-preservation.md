@@ -33,7 +33,7 @@ Stop flattening away the byte positions a position-precise consumer needs. `flat
 |---|---|
 | `packages/core/src/core/projection.ts#flattenInline` | Flattens an inline subtree to plain text; an `inlineCode` contributes only its `value` — the backtick span (and its byte range) is lost. |
 | `packages/core/src/core/types.ts#SourcePos` | `SourcePos { line; col? }` — `col` is already optional (D-0014 C3 deferred it, non-breaking). |
-| `packages/core/src/core/types.ts` (`table` arm) | Carries `pos` (block line) and `rowPos(i)` (row line); no per-cell `col`, no inline-span record. |
+| `packages/core/src/core/types.ts` | The `table` arm carries `pos` (block line) and `rowPos(i)` (row line); no per-cell `col`, no inline-span record. |
 | `packages/core/src/core/projection.test.ts` | Peer tests for the projection (positions, flattening). |
 
 ## Proposed
