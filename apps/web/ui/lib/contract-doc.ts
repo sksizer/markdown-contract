@@ -27,8 +27,8 @@ export type ApplyFn = (mutate: (doc: Document) => void) => void;
 
 /** Where a contract's frontmatter fields live. */
 export const FRONTMATTER_FIELDS_PATH: DocPath = ["frontmatter", "fields"];
-/** Where a contract's body nodes live. */
-export const BODY_SECTIONS_PATH: DocPath = ["body", "sections"];
+/** The body ROOT level (nested levels live at [...node, "children"]). */
+export const BODY_PATH: DocPath = ["body"];
 /** Where a config's rules live. */
 export const RULES_PATH: DocPath = ["rules"];
 
@@ -107,13 +107,30 @@ export function renameMapKey(
   if (pair && isScalar(pair.key)) pair.key.value = newKey;
 }
 
-/** Move one item of a sequence (rules, body sections) to a new index. */
+/** Move one item of a sequence (rules, a level's body sections) to a new index. */
 export function moveSeqItem(doc: Document, seqPath: DocPath, from: number, to: number): void {
   const seq = doc.getIn(seqPath, true);
   if (!isSeq(seq)) return;
-  if (to < 0 || to >= seq.items.length || from === to) return;
+  if (from < 0 || from >= seq.items.length || to < 0 || to >= seq.items.length) return;
+  if (from === to) return;
   const [item] = seq.items.splice(from, 1);
   seq.items.splice(to, 0, item);
+}
+
+/**
+ * Move one item of a MAPPING (frontmatter fields, object sub-fields) to a new
+ * index by splicing `map.items` IN PLACE: each pair's key/value nodes — and
+ * the comments hanging off them — travel with the pair untouched. Indices are
+ * the mapping's own item order (what `Object.entries(toJS())` yields for the
+ * form's string keys).
+ */
+export function moveMapItem(doc: Document, mapPath: DocPath, from: number, to: number): void {
+  const map = doc.getIn(mapPath, true);
+  if (!isMap(map)) return;
+  if (from < 0 || from >= map.items.length || to < 0 || to >= map.items.length) return;
+  if (from === to) return;
+  const [pair] = map.items.splice(from, 1);
+  map.items.splice(to, 0, pair);
 }
 
 /** Append a node built from a plain JS value to a sequence, creating it if missing. */
@@ -225,62 +242,98 @@ export function readFields(root: Record<string, unknown>): FieldView[] {
   return Object.entries(fm.fields).map(([key, schema]) => ({ key, schema }));
 }
 
-/** The body level's knobs, plus whether body-root text rules exist (chip → YAML). */
-export interface BodyMetaView {
-  hasBody: boolean;
-  order: OrderMode | null;
-  allowUnknown: boolean;
-  /** body-root `requires:`/`forbids:` present — kept untouched, edit in YAML */
-  rootRules: boolean;
+/** body-root `requires:`/`forbids:` present — kept untouched, edit in YAML. */
+export function readBodyRootRules(root: Record<string, unknown>): boolean {
+  const body = root.body;
+  return isRecord(body) && ("requires" in body || "forbids" in body);
 }
 
-export function readBodyMeta(root: Record<string, unknown>): BodyMetaView {
-  const body = root.body;
-  if (!isRecord(body))
-    return { hasBody: false, order: null, allowUnknown: false, rootRules: false };
-  const order = body.order;
-  return {
-    hasBody: true,
-    order: order === "none" || order === "recognized-relative" || order === "strict" ? order : null,
-    allowUnknown: body.allowUnknown === true,
-    rootRules: "requires" in body || "forbids" in body,
-  };
+/**
+ * One nesting LEVEL of the body grammar as the form sees it — the body root
+ * or a node's `children`. Levels recurse: every level carries the same knobs
+ * and the same node vocabulary.
+ */
+export interface LevelView {
+  order: OrderMode | null;
+  allowUnknown: boolean;
+  sections: BodyNodeView[];
 }
 
 /** One body node as the form sees it — a tagged view over section / oneOf / gap. */
 export type BodyNodeView =
-  | { type: "section"; name: string; aliases: string[]; optional: boolean; extras: string[] }
-  | { type: "oneOf"; names: string[]; optional: boolean; extras: string[] }
+  | {
+      type: "section";
+      name: string;
+      aliases: string[];
+      optional: boolean;
+      extras: string[];
+      children: LevelView | null;
+    }
+  | {
+      type: "oneOf";
+      names: string[];
+      optional: boolean;
+      extras: string[];
+      children: LevelView | null;
+    }
   | {
       type: "gap";
       min: number | null;
       max: number | null;
       optional: boolean;
       extras: string[];
+      children: null;
     }
-  | { type: "unknown"; optional: boolean; extras: string[] };
+  | { type: "unknown"; optional: boolean; extras: string[]; children: null };
 
-export function readBodyNodes(root: Record<string, unknown>): BodyNodeView[] {
-  const body = root.body;
-  if (!isRecord(body) || !Array.isArray(body.sections)) return [];
-  return body.sections.map((node) => readBodyNode(node));
+/** The body ROOT level ({} for no body: empty sections, default knobs). */
+export function readBodyLevel(root: Record<string, unknown>): LevelView {
+  return readLevel(root.body);
+}
+
+function readLevel(value: unknown): LevelView {
+  const level = isRecord(value) ? value : {};
+  const order = level.order;
+  return {
+    order: order === "none" || order === "recognized-relative" || order === "strict" ? order : null,
+    allowUnknown: level.allowUnknown === true,
+    sections: Array.isArray(level.sections) ? level.sections.map((n) => readBodyNode(n)) : [],
+  };
+}
+
+/**
+ * A section/oneOf node's nested `children` level, or null when absent — or
+ * malformed (no `sections` list), in which case it stays a passthrough chip.
+ */
+function readChildren(node: Record<string, unknown>): LevelView | null {
+  const c = node.children;
+  if (!isRecord(c) || !Array.isArray(c.sections)) return null;
+  return readLevel(c);
 }
 
 function readBodyNode(node: unknown): BodyNodeView {
-  if (!isRecord(node)) return { type: "unknown", optional: false, extras: [] };
+  if (!isRecord(node)) return { type: "unknown", optional: false, extras: [], children: null };
   const optional = node.optional === true;
-  const extras = nodeExtras(node);
   if ("section" in node) {
+    const children = readChildren(node);
     return {
       type: "section",
       name: typeof node.section === "string" ? node.section : String(node.section),
       aliases: stringList(node.aliases),
       optional,
-      extras,
+      extras: nodeExtras(node, children !== null),
+      children,
     };
   }
   if ("oneOf" in node) {
-    return { type: "oneOf", names: stringList(node.oneOf), optional, extras };
+    const children = readChildren(node);
+    return {
+      type: "oneOf",
+      names: stringList(node.oneOf),
+      optional,
+      extras: nodeExtras(node, children !== null),
+      children,
+    };
   }
   if ("gap" in node) {
     const g = isRecord(node.gap) ? node.gap : {};
@@ -289,18 +342,23 @@ function readBodyNode(node: unknown): BodyNodeView {
       min: typeof g.min === "number" ? g.min : null,
       max: typeof g.max === "number" ? g.max : null,
       optional,
-      extras,
+      extras: nodeExtras(node, false),
+      children: null,
     };
   }
-  return { type: "unknown", optional, extras };
+  return { type: "unknown", optional, extras: nodeExtras(node, false), children: null };
 }
 
-/** The untouched-passthrough keys a node carries, as chip labels linking to YAML. */
-function nodeExtras(node: Record<string, unknown>): string[] {
+/**
+ * The untouched-passthrough keys a node carries, as chip labels linking to
+ * YAML. `children` only chips when the form can't edit it (malformed, or on a
+ * gap/unknown node) — an editable children level renders as a nested form.
+ */
+function nodeExtras(node: Record<string, unknown>, childrenEditable: boolean): string[] {
   const extras: string[] = [];
   if ("anchor" in node) extras.push("anchor");
   if ("content" in node) extras.push("content");
-  if ("children" in node) extras.push("children");
+  if ("children" in node && !childrenEditable) extras.push("children");
   if ("requires" in node || "forbids" in node) extras.push("rules");
   return extras;
 }
@@ -388,59 +446,95 @@ export function setSchemaKind(doc: Document, nodePath: DocPath, kind: FieldKind)
 }
 
 // ── kind: contract — MUTATE (body) ───────────────────────────────────────────────
+//
+// Every helper takes the LEVEL it operates on: `levelPath` is the level
+// mapping (BODY_PATH at the root, [...nodePath, "children"] below);
+// `sectionsPath` is that level's sections sequence ([...levelPath, "sections"]).
 
-/** `order` select: a mode sets it, null (engine default) removes the key. */
-export function setBodyOrder(doc: Document, order: OrderMode | null): void {
-  if (order === null) removeAt(doc, ["body", "order"]);
-  else doc.setIn(["body", "order"], order);
+/** A level's `order` select: a mode sets it, null (engine default) removes the key. */
+export function setLevelOrder(doc: Document, levelPath: DocPath, order: OrderMode | null): void {
+  if (order === null) removeAt(doc, [...levelPath, "order"]);
+  else doc.setIn([...levelPath, "order"], order);
 }
 
-export function setBodyAllowUnknown(doc: Document, on: boolean): void {
-  setFlag(doc, ["body", "allowUnknown"], on);
+export function setLevelAllowUnknown(doc: Document, levelPath: DocPath, on: boolean): void {
+  setFlag(doc, [...levelPath, "allowUnknown"], on);
 }
 
-export function addBodySection(doc: Document, name: string): void {
-  appendToSeq(doc, BODY_SECTIONS_PATH, { section: name });
+export function addBodySection(doc: Document, sectionsPath: DocPath, name: string): void {
+  appendToSeq(doc, sectionsPath, { section: name });
 }
 
-export function addBodyOneOf(doc: Document): void {
-  appendToSeq(doc, BODY_SECTIONS_PATH, { oneOf: [] });
+export function addBodyOneOf(doc: Document, sectionsPath: DocPath): void {
+  appendToSeq(doc, sectionsPath, { oneOf: [] });
 }
 
-export function removeBodyNode(doc: Document, index: number): void {
-  removeAt(doc, [...BODY_SECTIONS_PATH, index]);
+export function removeBodyNode(doc: Document, sectionsPath: DocPath, index: number): void {
+  removeAt(doc, [...sectionsPath, index]);
 }
 
-export function setSectionName(doc: Document, index: number, name: string): void {
-  doc.setIn([...BODY_SECTIONS_PATH, index, "section"], name);
+export function setSectionName(
+  doc: Document,
+  sectionsPath: DocPath,
+  index: number,
+  name: string,
+): void {
+  doc.setIn([...sectionsPath, index, "section"], name);
 }
 
-export function setSectionAliases(doc: Document, index: number, aliases: string[]): void {
-  const path = [...BODY_SECTIONS_PATH, index, "aliases"];
+export function setSectionAliases(
+  doc: Document,
+  sectionsPath: DocPath,
+  index: number,
+  aliases: string[],
+): void {
+  const path = [...sectionsPath, index, "aliases"];
   if (aliases.length === 0) removeAt(doc, path);
   else setStringList(doc, path, aliases);
 }
 
-export function setOneOfNames(doc: Document, index: number, names: string[]): void {
-  setStringList(doc, [...BODY_SECTIONS_PATH, index, "oneOf"], names);
+export function setOneOfNames(
+  doc: Document,
+  sectionsPath: DocPath,
+  index: number,
+  names: string[],
+): void {
+  setStringList(doc, [...sectionsPath, index, "oneOf"], names);
 }
 
-export function setNodeOptional(doc: Document, index: number, on: boolean): void {
-  setFlag(doc, [...BODY_SECTIONS_PATH, index, "optional"], on);
+export function setNodeOptional(
+  doc: Document,
+  sectionsPath: DocPath,
+  index: number,
+  on: boolean,
+): void {
+  setFlag(doc, [...sectionsPath, index, "optional"], on);
 }
 
 /** Set/clear a gap bound; a bare `gap:` (null value) is upgraded to a mapping first. */
 export function setGapBound(
   doc: Document,
+  sectionsPath: DocPath,
   index: number,
   bound: "min" | "max",
   value: number | undefined,
 ): void {
-  const gapPath = [...BODY_SECTIONS_PATH, index, "gap"];
+  const gapPath = [...sectionsPath, index, "gap"];
   if (!isMap(doc.getIn(gapPath, true))) doc.setIn(gapPath, doc.createNode({}));
   const path = [...gapPath, bound];
   if (value === undefined) removeAt(doc, path);
   else doc.setIn(path, value);
+}
+
+/**
+ * Grow a nested level under a section/oneOf node: `children: { sections: [] }`
+ * — LAZILY (never overwrites an existing `children`, and writes no `order` /
+ * `allowUnknown` keys until the user sets them).
+ */
+export function ensureChildren(doc: Document, nodePath: DocPath): void {
+  const path = [...nodePath, "children"];
+  if (doc.hasIn(path)) return;
+  doc.setIn(path, doc.createNode({ sections: [] }));
 }
 
 // ── Starter template ─────────────────────────────────────────────────────────────

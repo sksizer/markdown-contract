@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
  * ContractForm — the form face of a `*.contract.yaml` (kind: contract):
- * the frontmatter card (strict toggle + fields table of FieldRow) and the
- * body card (order / allowUnknown knobs + the ordered SectionRow list).
+ * the frontmatter card (strict toggle + the reorderable FieldRow list) and
+ * the body card (the recursive SectionLevel tree, root level = `body`).
  * All mutations flow through the Document API via `apply`; body-root
  * `requires`/`forbids` and anything else the form can't represent stay
  * untouched behind chips that link to YAML mode.
@@ -10,22 +10,20 @@
 import { computed, ref } from "vue";
 
 import FieldRow from "~/components/editor/FieldRow.vue";
-import SectionRow from "~/components/editor/SectionRow.vue";
+import SectionLevel from "~/components/editor/SectionLevel.vue";
+import { useDragReorder } from "~/components/editor/useDragReorder";
 import {
   type ApplyFn,
-  addBodyOneOf,
-  addBodySection,
   addField,
+  BODY_PATH,
   FRONTMATTER_FIELDS_PATH,
-  readBodyMeta,
-  readBodyNodes,
+  moveMapItem,
+  readBodyLevel,
+  readBodyRootRules,
   readFields,
   readStrict,
-  setBodyAllowUnknown,
-  setBodyOrder,
   setFrontmatterStrict,
 } from "~/lib/contract-doc";
-import { ORDER_MODES, type OrderMode } from "~/lib/contract-schema";
 
 const props = defineProps<{
   root: Record<string, unknown>;
@@ -36,8 +34,8 @@ const emit = defineEmits<(e: "edit-yaml") => void>();
 
 const strict = computed(() => readStrict(props.root));
 const fields = computed(() => readFields(props.root));
-const bodyMeta = computed(() => readBodyMeta(props.root));
-const nodes = computed(() => readBodyNodes(props.root));
+const bodyLevel = computed(() => readBodyLevel(props.root));
+const bodyRootRules = computed(() => readBodyRootRules(props.root));
 
 // ── frontmatter ──────────────────────────────────────────────────────────────────
 
@@ -45,6 +43,13 @@ function onStrict(event: Event): void {
   const on = (event.target as HTMLInputElement).checked;
   props.apply((doc) => setFrontmatterStrict(doc, on));
 }
+
+function moveField(from: number, to: number): void {
+  if (to < 0 || to >= fields.value.length) return;
+  props.apply((doc) => moveMapItem(doc, FRONTMATTER_FIELDS_PATH, from, to));
+}
+
+const fieldsDrag = useDragReorder(() => fields.value.length, moveField);
 
 const newFieldKey = ref("");
 const newFieldValid = computed(() => {
@@ -57,32 +62,6 @@ function onAddField(): void {
   const key = newFieldKey.value.trim();
   props.apply((doc) => addField(doc, FRONTMATTER_FIELDS_PATH, key));
   newFieldKey.value = "";
-}
-
-// ── body ─────────────────────────────────────────────────────────────────────────
-
-function onOrder(event: Event): void {
-  const value = (event.target as HTMLSelectElement).value;
-  const order = value === "" ? null : (value as OrderMode);
-  props.apply((doc) => setBodyOrder(doc, order));
-}
-
-function onAllowUnknown(event: Event): void {
-  const on = (event.target as HTMLInputElement).checked;
-  props.apply((doc) => setBodyAllowUnknown(doc, on));
-}
-
-const newSectionName = ref("");
-
-function onAddSection(): void {
-  const name = newSectionName.value.trim();
-  if (name === "") return;
-  props.apply((doc) => addBodySection(doc, name));
-  newSectionName.value = "";
-}
-
-function onAddOneOf(): void {
-  props.apply((doc) => addBodyOneOf(doc));
 }
 </script>
 
@@ -99,12 +78,18 @@ function onAddOneOf(): void {
       </header>
 
       <FieldRow
-        v-for="field in fields"
+        v-for="(field, i) in fields"
         :key="field.key"
-        :field-key="field.key"
+        :node-path="[...FRONTMATTER_FIELDS_PATH, field.key]"
         :schema="field.schema"
         :apply="props.apply"
+        :map-path="FRONTMATTER_FIELDS_PATH"
+        :field-key="field.key"
+        :drag="fieldsDrag"
+        :index="i"
+        :count="fields.length"
         @edit-yaml="emit('edit-yaml')"
+        @move="(delta) => moveField(i, i + delta)"
       />
       <p v-if="fields.length === 0" class="ctf__none">No frontmatter fields yet.</p>
 
@@ -122,23 +107,12 @@ function onAddOneOf(): void {
       </div>
     </section>
 
-    <!-- body -->
+    <!-- body: the recursive level tree, root level = `body` -->
     <section class="ctf__card">
       <header class="ctf__head">
         <h2 class="ctf__title">Body</h2>
-        <label class="field ctf__order">
-          <span class="field__label">order</span>
-          <select class="select" :value="bodyMeta.order ?? ''" @change="onOrder">
-            <option value="">(engine default)</option>
-            <option v-for="mode in ORDER_MODES" :key="mode" :value="mode">{{ mode }}</option>
-          </select>
-        </label>
-        <label class="ctf__flag">
-          <input type="checkbox" :checked="bodyMeta.allowUnknown" @change="onAllowUnknown" />
-          allow unknown sections
-        </label>
         <button
-          v-if="bodyMeta.rootRules"
+          v-if="bodyRootRules"
           class="ctf__chip"
           type="button"
           title="this body carries root-level requires/forbids — the form keeps them untouched"
@@ -148,30 +122,13 @@ function onAddOneOf(): void {
         </button>
       </header>
 
-      <SectionRow
-        v-for="(node, i) in nodes"
-        :key="i"
-        :node="node"
-        :index="i"
-        :count="nodes.length"
+      <SectionLevel
+        :level-path="BODY_PATH"
+        :level="bodyLevel"
+        :depth="0"
         :apply="props.apply"
         @edit-yaml="emit('edit-yaml')"
       />
-      <p v-if="nodes.length === 0" class="ctf__none">No body sections declared yet.</p>
-
-      <div class="ctf__add">
-        <input
-          v-model="newSectionName"
-          class="input ctf__add-key"
-          type="text"
-          placeholder="section heading…"
-          @keydown.enter.prevent="onAddSection"
-        />
-        <button class="btn" type="button" :disabled="newSectionName.trim() === ''" @click="onAddSection">
-          + Add section
-        </button>
-        <button class="btn" type="button" @click="onAddOneOf">+ Add one-of</button>
-      </div>
     </section>
 
     <p class="ctf__envelope">mcVersion 1 · kind contract — the envelope is managed automatically.</p>
@@ -212,11 +169,6 @@ function onAddOneOf(): void {
   font-size: 11.5px;
   color: var(--mc-text-muted);
   cursor: pointer;
-}
-.ctf__order {
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
 }
 .ctf__chip {
   appearance: none;

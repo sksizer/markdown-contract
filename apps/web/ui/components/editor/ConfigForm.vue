@@ -8,7 +8,9 @@
  */
 import { computed, reactive, ref } from "vue";
 
+import DragHandle from "~/components/editor/DragHandle.vue";
 import TagInput from "~/components/editor/TagInput.vue";
+import { useDragReorder } from "~/components/editor/useDragReorder";
 import {
   type ApplyFn,
   addContractsEntry,
@@ -121,9 +123,11 @@ function onAddRule(): void {
   props.apply((doc) => addRule(doc, ["**/*.md"], ref));
 }
 
-function onMoveRule(index: number, delta: number): void {
-  props.apply((doc) => moveSeqItem(doc, RULES_PATH, index, index + delta));
+function moveRule(from: number, to: number): void {
+  props.apply((doc) => moveSeqItem(doc, RULES_PATH, from, to));
 }
+
+const rulesDrag = useDragReorder(() => rules.value.length, moveRule);
 
 function onRemoveRule(index: number): void {
   props.apply((doc) => removeRule(doc, index));
@@ -200,8 +204,20 @@ function onRemoveRule(index: number): void {
         <p class="cf__hint">globs route files to a contract; first match wins, order matters</p>
       </header>
 
-      <div v-for="(rule, i) in rules" :key="i" class="cf__rule">
+      <div
+        v-for="(rule, i) in rules"
+        :key="i"
+        class="cf__rule"
+        :class="rulesDrag.rowClass(i)"
+        @dragover="rulesDrag.over(i, $event)"
+        @drop="rulesDrag.dropOn($event)"
+      >
         <header class="cf__rule-head">
+          <DragHandle
+            :label="`Drag to reorder rule ${i + 1}`"
+            @dragstart="rulesDrag.start(i, $event)"
+            @dragend="rulesDrag.end()"
+          />
           <span class="cf__rule-name">Rule {{ i + 1 }}</span>
           <span class="cf__rule-actions">
             <button
@@ -209,14 +225,14 @@ function onRemoveRule(index: number): void {
               type="button"
               :disabled="i === 0"
               aria-label="Move rule up"
-              @click="onMoveRule(i, -1)"
+              @click="moveRule(i, i - 1)"
             >↑</button>
             <button
               class="btn btn--ghost"
               type="button"
               :disabled="i === rules.length - 1"
               aria-label="Move rule down"
-              @click="onMoveRule(i, 1)"
+              @click="moveRule(i, i + 1)"
             >↓</button>
             <button
               class="btn btn--ghost btn--danger"
@@ -364,7 +380,7 @@ function onRemoveRule(index: number): void {
 .cf__rule-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
 }
 .cf__rule-name {
   font-size: 11px;
@@ -376,6 +392,7 @@ function onRemoveRule(index: number): void {
 .cf__rule-actions {
   display: flex;
   gap: 2px;
+  margin-left: auto;
 }
 .cf__contract {
   display: flex;
