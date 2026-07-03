@@ -2,15 +2,16 @@
   "compilerOptions": {
     "lib": ["ES2023"],
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "types": ["bun"],
+    "module": "Preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["@types/bun"]
   },
-  "include": ["src"]
+  "include": ["src", "scripts", "types"]
 }

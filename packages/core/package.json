@@ -25,6 +25,11 @@
       "types": "./dist/cli/index.d.ts",
       "import": "./dist/cli/index.js",
       "default": "./dist/cli/index.js"
+    },
+    "./cli/run": {
+      "types": "./dist/cli/run.d.ts",
+      "import": "./dist/cli/run.js",
+      "default": "./dist/cli/run.js"
     }
   },
   "bin": {

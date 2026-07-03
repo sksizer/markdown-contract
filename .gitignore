@@ -43,3 +43,9 @@ docs/.obsidian/
 # committed. npm stays canonical for the PUBLISHED artifact only (packages/core),
 # so a root package-lock.json must never be committed.
 /package-lock.json
+
+# Nuxt build outputs (apps/web/ui)
+.nuxt/
+.output/
+# Nuxt dev symlink (ui/dist -> .nuxt/dist)
+apps/web/ui/dist

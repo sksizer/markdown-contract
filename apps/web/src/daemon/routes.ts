@@ -22,7 +22,7 @@ import { existsSync } from "node:fs";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { VERSION, type CorpusConfig, runCorpus } from "markdown-contract";
+import { type CorpusConfig, runCorpus, VERSION } from "markdown-contract";
 import { loadConfigFile } from "markdown-contract/declarative";
 
 /** What the router needs from the server: the root untrusted vault paths resolve within. */
@@ -183,7 +183,9 @@ export async function resolveConfig(baseDir: string, configFlag?: string): Promi
   const mod = (await import(pathToFileURL(configPath).href)) as { default?: unknown };
   const config = mod.default;
   if (!config || typeof config !== "object" || !Array.isArray((config as CorpusConfig).rules)) {
-    throw new Error(`config ${configPath} must \`export default\` a CorpusConfig ({ rules: [...] })`);
+    throw new Error(
+      `config ${configPath} must \`export default\` a CorpusConfig ({ rules: [...] })`,
+    );
   }
   return config as CorpusConfig;
 }
