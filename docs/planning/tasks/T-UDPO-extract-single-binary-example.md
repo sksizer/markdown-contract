@@ -5,27 +5,28 @@ id: T-UDPO
 status: open/ready
 created: '2026-07-03'
 related:
-  - '[[M-0008-single-exec-distribution]]'
-  - '[[M-0009-local-web-ui-vault-dashboard]]'
-  - '[[D-0012-distribution-single-exec-and-web-ui]]'
-  - '[[C-0010-single-binary-and-vault-dashboard]]'
-  - '[[T-DAEM-daemon-and-json-api]]'
-  - '[[T-SPAE-spa-embed]]'
-  - '[[T-WEBU-nuxt-spa-ui]]'
-  - '[[T-BMTX-bun-compile-matrix]]'
-  - '[[T-DEMO-end-to-end-feasibility-demo]]'
-  - '[[T-UTKU-web-ui-prototype-review]]'
+- '[[M-0008-single-exec-distribution]]'
+- '[[M-0009-local-web-ui-vault-dashboard]]'
+- '[[D-0012-distribution-single-exec-and-web-ui]]'
+- '[[C-0010-single-binary-and-vault-dashboard]]'
+- '[[T-DAEM-daemon-and-json-api]]'
+- '[[T-SPAE-spa-embed]]'
+- '[[T-WEBU-nuxt-spa-ui]]'
+- '[[T-BMTX-bun-compile-matrix]]'
+- '[[T-DEMO-end-to-end-feasibility-demo]]'
+- '[[T-UTKU-web-ui-prototype-review]]'
 tags:
-  - distribution
-  - packaging
-  - single-binary
-  - examples
-  - bun
-  - prototype
+- distribution
+- packaging
+- single-binary
+- examples
+- bun
+- prototype
 need_human_review: false
 impact: high
 complexity: medium
 autonomy: supervised
+readiness_verified_at: '2026-07-03T23:38:41Z'
 ---
 # Extract the M-0008 single-binary prototype into examples/single-binary — minimal two-faces example
 
