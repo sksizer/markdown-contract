@@ -56,7 +56,8 @@ Catalog pages whose structure mirrors the data: each category → a docs section
 documented unit rendering its `artifact` verbatim; `builds_on` → an ordered ladder within each
 category with cross-linked prerequisites; a **data-driven landing** whose hero tour pulls the
 rank-1 example from each category, **superseding** the interim [[T-SHEL-docs-landing-and-ia]]
-landing. Pages are *generated from* `docs/catalog/*.yaml` (a Starlight / Astro content collection
+landing. In the sidebar, all eight category sections nest under a **single top-level
+"Examples" group** (per-category sub-groups), rather than eight top-level groups. Pages are *generated from* `docs/catalog/*.yaml` (a Starlight / Astro content collection
 reads the YAML — its schema is shaped for this by [[T-CTLG-example-catalog-finalize]]), not
 hand-copied, so they stay in sync with the data. Artifacts are wired so they can be
 regression-checked against real CLI/library output.
@@ -67,7 +68,9 @@ regression-checked against real CLI/library output.
 2. Generate one section per category and one unit per example (artifact verbatim, the `builds_on`
    ladder cross-linked) under `sites/docs/src/content/docs/`.
 3. Replace the interim landing ([[T-SHEL-docs-landing-and-ia]]) with the data-driven hero tour
-   (rank-1 per category) and populate the sidebar IA slots with the generated pages.
+   (rank-1 per category) and populate the sidebar with the generated pages — restructuring the
+   shell's eight top-level category slots into sub-groups under one top-level **"Examples"**
+   group.
 4. Add a check that renders each `artifact` and diffs it against real CLI/library output, so
    snippets stay honest. (The flagged snippet *corrections* are applied **in the data** by
    [[T-CTLG-example-catalog-finalize]], not here.)
@@ -89,8 +92,8 @@ regression-checked against real CLI/library output.
   not hand-copied.
 - [ ] AC-2: The data-driven landing presents a hero tour (one rank-1 example per category) and
   **supersedes** the interim [[T-SHEL-docs-landing-and-ia]] landing.
-- [ ] AC-3: The generated category pages fill the sidebar IA slots declared by the shell — no
-  orphan pages, and no empty slots left over from T-SHEL.
+- [ ] AC-3: The generated category pages sit in the sidebar as sub-groups of a **single
+  top-level "Examples" group** — no orphan pages, and no empty slots left over from T-SHEL.
 - [ ] AC-4: Each example `artifact` is regression-checked against real CLI/library output (a
   failing diff fails the check).
 - [ ] AC-5: The site builds via `moon run docs:build` with the generated pages included.
