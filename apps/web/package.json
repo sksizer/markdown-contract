@@ -3,5 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Placeholder for the markdown-contract web UI (D-0012 / M-0009). No implementation yet — this reserves the apps/web workspace slot so future UI work is an add, not a retool."
+  "description": "The markdown-contract web face (D-0012 / M-0009): the combined single-binary entry and the loopback daemon exposing a JSON API over the runner. The Nuxt SPA is a later add (T-WEBU).",
+  "bin": {
+    "markdown-contract": "./src/bin.ts"
+  },
+  "scripts": {
+    "daemon": "bun src/bin.ts daemon",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "markdown-contract": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.0"
+  }
 }

@@ -111,12 +111,28 @@ _Captured by /sdlc:task-work on 2026-07-02. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto + agent-manual — peer test asserts `Bun.serve({host:"0.0.0.0"})` throws; `lsof` confirmed the live daemon bound `127.0.0.1` (IPv4 LISTEN only) and `daemon --host 0.0.0.0` was refused (exit 1, nothing bound).
+- AC-2: auto + agent-manual — peer test pins the exact `{ findings, stats, exitCode }` JSON; `jq -S` diff confirmed `/api/validate .findings` is byte-identical to `markdown-contract validate --format json` over the same vault (config resolution in `routes.ts` mirrors `cli/run.ts`).
+- AC-3: agent-manual — `bun apps/web/src/bin.ts …` vs the core dist bin produced identical stdout+exit for `validate --format json`, `init <dir> --dry-run`, `--help`, an unknown verb, and no-args.
+- AC-4: auto — `apps/web/src/daemon/server.test.ts` boots on an ephemeral port under `bun test` and asserts the `/api/validate` JSON for `./fixtures/vault/` (5 pass / 0 fail).
+- AC-5: auto — grep confirmed no `packages/core/src` file references `apps/web`; `apps/web/src` imports core only via `markdown-contract`, `markdown-contract/cli`, `markdown-contract/declarative`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The `runCorpus` / `runCli` library seams made the "one binary, two faces" split clean: the daemon is a thin JSON shell over `runCorpus`, and delegation is a one-line `runCli` call plus the same write-streams-and-exit wrapper as the npm bin — no logic duplicated.
+- `bun test` on an ephemeral port (`port: 0`) gave a fast, hermetic peer test that exercises the real `Bun.serve` server end-to-end, and `jq -S` diffing the endpoint against the CLI made the AC-2 parity check objective rather than eyeballed.
+- The deterministic `task gap-report` pinpointed every stale citation by exact line and even named the relocated target, so the pre-gate citation correction was mechanical.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The `paths` claim resolver (and `gap-report`) false-positived on two genuinely-new files whose basename collides with exactly one existing file — `apps/web/moon.yml` (vs `packages/core/moon.yml`) and the originally-proposed `apps/web/src/daemon/api.ts` (vs `prototype/web-ui/types/api.ts`) — because it has no `kind: new` awareness and never cross-references the Files-to-touch `new` column. This is structural for config filenames: every new moon project's `moon.yml` will ALWAYS collide. It forced a citation reshape (moon row scoped to the `apps/web/` directory) and a rename (`api.ts` → `routes.ts`) purely to green the gate — `gap-report`/the `paths` resolver should suppress a same-basename "moved" finding when the cited path is declared `kind: new` in `## Files to touch`. → [[T-O66A-gap-report-honors-kind-new]]
+- Step 7's documented `quality run --diff-against-baseline` invocation omits `--baseline-dir`, so from the worktree it defaulted to the worktree's gitignored `.sdlc/quality-baselines/` and failed with "baseline not found" — the Step 3a baseline was captured in the MAIN repo's `.sdlc/`. Had to pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly — task-work Step 7 should thread the main-repo baseline dir (or `quality run` should resolve the baseline from the superproject when run in a worktree). → [[T-X9PO-task-work-step7-threads-baseline-dir]]
+- The task cited pre-`T-WKSP` paths (`src/…`) that the workspace split had relocated to `packages/core/src/…`; the gate flagged them and named the exact relocated target, but the fix was a manual pre-gate correction landed on `origin/main`. Since the resolver already resolves the unique same-basename relocation, an opt-in auto-apply (in `task-define`/`gap-report`) could land these one-match moves without a hand edit. → [[T-L7XL-gap-report-auto-applies-relocations]]
+- The project's `quality_checks:` cover only `core:*`, so `apps/web`'s `typecheck`/`test` were not gated — the implementer ran `bun test` + `web:typecheck` by hand. Now that `apps/web` carries real code, `sdlc.yaml` should add `web:typecheck` / `web:test` to the gate. → [[T-ASSW-gate-apps-web-typecheck-test]]
+
+### Spawned follow-up tasks
+
+- [[T-O66A-gap-report-honors-kind-new]] (https://github.com/sksizer/dev/pull/597) — spawned (Upstream-plugin, sdlc-meta): teach the `paths`/`gap-report` resolver `kind: new` awareness so genuinely-new same-basename files aren't reported as relocations.
+- [[T-X9PO-task-work-step7-threads-baseline-dir]] (https://github.com/sksizer/dev/pull/598) — spawned (Upstream-plugin, sdlc-meta): thread the main-repo (superproject) quality-baseline dir through task-work Step 7 so the worktree gate finds the captured baseline.
+- [[T-L7XL-gap-report-auto-applies-relocations]] (https://github.com/sksizer/dev/pull/599) — spawned (Upstream-plugin, sdlc-meta): opt-in auto-apply for unique same-basename path relocations the resolver already pinpoints.
+- [[T-ASSW-gate-apps-web-typecheck-test]] (https://github.com/sksizer/markdown-contract/pull/171) — spawned (Local): add `web:typecheck` / `web:test` to `sdlc.yaml` `quality_checks:` now that `apps/web` carries real code.
