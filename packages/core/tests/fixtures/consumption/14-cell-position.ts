@@ -6,9 +6,11 @@ import { loadSource } from "../../harness.js";
 // Position preservation: a transformed cell keeps its SOURCE geometry. `cellPos(row, col)` returns
 // the per-cell `SourcePos` (its own `col`, not just the row's line), and `inlineSpans(row, col)`
 // returns the ranges of the inline-code spans inside the cell — here each Location cell is a single
-// `` `path` `` inline-code span. Both accessors land with T-SCPP (they do NOT exist yet), so they
-// are reached only through `(doc.body as any)` / `(doc as any)` casts inside these lazy closures:
-// the fixture type-checks with `cell-pos` off and never executes until the component flips.
+// `` `path` `` inline-code span. Both accessors landed with T-SCPP (`TableView.cellPos` /
+// `Doc.inlineSpans`); they are still reached through `(doc.body as any)` / `(doc as any)` casts
+// because this navigates the dynamic dual-key model facade (`doc.body.files` is untyped there).
+// An inline span is `{ start, end, raw }` with mdast-native endpoints — `start` on the opening
+// backtick, `end` one column PAST the closing backtick — and `raw` the verbatim backticked source.
 //
 // `peerless`: position accessors are a typed-model surface v1 YAML does not express, so there is
 // no `.contract.yaml` twin for this fixture (see tests/yaml-parity.test.ts).
@@ -46,7 +48,9 @@ const c14: ConsumptionFixture = {
         // biome-ignore lint/suspicious/noExplicitAny: fixtures navigate the dynamic dual-key model facade
         return (doc as any).inlineSpans(files.rows[0], "Location");
       },
-      equals: [{ start: { line: 5, col: 3 }, end: { line: 5, col: 21 } }],
+      equals: [
+        { start: { line: 5, col: 3 }, end: { line: 5, col: 23 }, raw: "`src/core/leaves.ts`" },
+      ],
     },
   ],
 };

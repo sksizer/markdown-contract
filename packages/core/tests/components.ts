@@ -72,5 +72,5 @@ export const IMPLEMENTED: Record<Component, boolean> = {
   // Structured cells (D-0015) — flip order: cell-typed → list-typed → cell-pos.
   "cell-typed": false,
   "list-typed": false,
-  "cell-pos": false,
+  "cell-pos": true,
 };
