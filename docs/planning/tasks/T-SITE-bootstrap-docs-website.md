@@ -24,6 +24,7 @@ need_human_review: true
 impact: high
 complexity: large
 autonomy: supervised
+readiness_verified_at: '2026-07-03T16:59:12Z'
 ---
 # Generate & publish the example catalog pages into the docs site
 

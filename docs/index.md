@@ -64,7 +64,6 @@ Milestones are product releases; order is ascending `version`. Source:
 | Version | ID | Milestone |
 | --- | --- | --- |
 | — | [[M-0003-config-inference]] | Config inference & `init` scaffolding |
-| — | [[M-0005-monorepo-tooling]] | Monorepo tooling — a Bun workspace orchestrated by moon |
 | — | [[M-0010]] | Code quality tooling — coverage, lint, metrics, and package hygiene |
 
 **Deferred / emerging / obsoleted** — milestones not in effect today
@@ -75,6 +74,7 @@ Milestones are product releases; order is ascending `version`. Source:
 | `0.1.0` | [[M-0001-initial-contract-engine-and-cli]] | Initial release — the two-plane contract engine and CLI | closed/done |
 | — | [[M-0002-declarative-yaml-contracts-v1]] | Declarative YAML contracts — v1 loader, DSL, and meta-config | closed/done |
 | — | [[M-0004-declarative-text-constraints]] | Declarative text constraints — requires / forbids | closed/done |
+| — | [[M-0005-monorepo-tooling]] | Monorepo tooling — a Bun workspace orchestrated by moon | closed/done |
 | — | [[M-0006-documentation-site]] | Published documentation site | open/planned |
 | — | [[M-0007-example-use-case-catalog]] | Example use-case catalog — the categorized basis for the docs and marketing site | open/planned |
 | — | [[M-0008-single-exec-distribution]] | Single-binary prototype — one Bun executable: CLI + self-contained web-UI daemon | open/planned |
