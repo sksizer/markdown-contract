@@ -49,6 +49,24 @@ export interface SourcePos {
   col?: number;
 }
 
+/**
+ * One inline-code run's source span (C1 / T-SCPP). `flattenInline` collapses an `inlineCode`
+ * node to its bare `value` — the backtick delimiters and their byte range are lost — so a
+ * position-precise consumer (e.g. `scan-placeholders`, which must skip a `<T>` written as inline
+ * code) cannot tell inline code apart from prose in the flattened text. This overlay preserves it:
+ * emitted alongside the flattened cell / paragraph string, one span per inline-code run.
+ *
+ * `start` / `end` are the mdast node's NATIVE `position` endpoints (threaded through, not
+ * recomputed): `start` sits on the opening backtick; `end` is one column PAST the closing backtick
+ * (unist's half-open, end-exclusive convention). `raw` is the verbatim source slice between those
+ * offsets — the full backticked text, delimiters included — so multi-backtick spans round-trip exactly.
+ */
+export interface InlineSpan {
+  start: SourcePos;
+  end: SourcePos;
+  raw: string;
+}
+
 /** Options for `parse()` — additive dialects layered on top of the base (GFM + anchors + Obsidian). */
 export interface ParseOptions {
   /** Layers *further* dialects on top of the bundled base set; it does not switch the defaults on. */
@@ -100,6 +118,19 @@ export type BlockNode =
       /** C3/A3 — row index → source line */
       rowPos(i: number): SourcePos;
       /**
+       * C1 (T-SCPP) — the per-cell source position with `col` SET (full precision, not just the
+       * row line). `row` / `col` are 0-based body-row / column indices; `col` locates the cell's
+       * content start (the first inline child's source column). Additive: rides on a closure,
+       * never serializing onto the public `tree`.
+       */
+      cellPos(row: number, col: number): SourcePos;
+      /**
+       * C1 (T-SCPP) — the inline-code spans inside the cell at (`row`, `col`), in document order;
+       * `[]` when the cell has none. Each span carries the byte/column range + raw backticked text,
+       * so a consumer can recover what `flattenInline` collapsed away. Closure-backed, additive.
+       */
+      inlineSpans(row: number, col: number): InlineSpan[];
+      /**
        * A1 — the sparse typed overlay beside the raw `rows`. Returns the cached `z.output` of a
        * declared `cells` schema for the cell at (`row`, column-name `col`), or `undefined` when no
        * transform cached a value there (the common case — a plain-string table caches nothing).
@@ -114,7 +145,17 @@ export type BlockNode =
     }
   | { kind: "list"; ordered: boolean; items: ListItem[]; anchor?: string; pos: SourcePos }
   | { kind: "code"; lang: string | null; value: string; anchor?: string; pos: SourcePos }
-  | { kind: "paragraph"; text: string; anchor?: string; pos: SourcePos };
+  | {
+      kind: "paragraph";
+      text: string;
+      anchor?: string;
+      pos: SourcePos;
+      /**
+       * C1 (T-SCPP) — the inline-code spans in this paragraph, in document order (`[]` when none).
+       * The paragraph analogue of the table cell's `inlineSpans` — same closure-backed, additive overlay.
+       */
+      inlineSpans(): InlineSpan[];
+    };
 
 // ── Finding (C-0001 / D-0001 / proposed-shape §4) ───────────────────────────────
 
@@ -299,6 +340,12 @@ export interface TableView<Row = Record<string, string>> extends Iterable<Row> {
   column<K extends keyof Row>(name: K): Row[K][];
   find(p: (row: Row, i: number) => boolean): Row | undefined;
   rowPos(i: number): SourcePos;
+  /**
+   * C1 (T-SCPP) — the per-cell source position with `col` set, located by a `row` OBJECT (from
+   * `rows`) and a column `name`. Delegates to the projection's per-cell overlay; `{ line: 0 }`
+   * when the row / column is not found.
+   */
+  cellPos(row: Row, name: string): SourcePos;
 }
 
 export interface ListView extends Iterable<ListItem> {
@@ -384,6 +431,13 @@ export type Doc<F = unknown, B = unknown> = {
   frontmatter: F;
   body: B;
   byAnchor(id: string): BlockView | undefined;
+  /**
+   * C1 (T-SCPP) — the inline-code spans inside a table cell, located by a `row` OBJECT and a
+   * column `name`, resolved against whichever table in the document holds that row. `[]` when the
+   * cell has no inline code (or the row is not found). The doc-wide companion to
+   * `TableView.cellPos`, so a masking consumer can reach spans without first holding the table view.
+   */
+  inlineSpans(row: Record<string, string>, col: string): InlineSpan[];
 };
 
 /**
@@ -409,5 +463,6 @@ export type Infer<C> =
         frontmatter: F;
         body: B & SectionGroup;
         byAnchor(id: string): BlockView | undefined;
+        inlineSpans(row: Record<string, string>, col: string): InlineSpan[];
       }
     : never;

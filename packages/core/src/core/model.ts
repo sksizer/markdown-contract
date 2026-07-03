@@ -32,6 +32,7 @@ import type {
   Doc,
   DocTree,
   GapSpec,
+  InlineSpan,
   LeafSpec,
   ListView,
   OneOfSpec,
@@ -47,6 +48,9 @@ import type {
   TableView,
   ValidateCtx,
 } from "./types.js";
+
+/** The projection's table BlockNode — the shape `cellPos` / `inlineSpans` / `rows` ride on. */
+type TableBlock = Extract<BlockNode, { kind: "table" }>;
 
 // ── BlockNode → BlockView (the four-way union, discriminated on `.kind`) ──────────
 
@@ -77,6 +81,14 @@ function tableView(node: Extract<BlockNode, { kind: "table" }>): TableView {
     },
     rowPos(i) {
       return node.rowPos(i);
+    },
+    cellPos(row, name) {
+      // Locate the row OBJECT (from `rows`) and column NAME, then delegate to the projection's
+      // numeric per-cell overlay. `{ line: 0 }` when the row / column is unknown (C1 / T-SCPP).
+      const ri = rows.indexOf(row as Record<string, string>);
+      const ci = node.columns.indexOf(name);
+      if (ri < 0 || ci < 0) return { line: 0 };
+      return node.cellPos(ri, ci);
     },
     [Symbol.iterator](): Iterator<Record<string, string>> {
       return rows[Symbol.iterator]();
@@ -361,6 +373,15 @@ export function buildModel<F, B>(
     byAnchor(id: string): BlockView | undefined {
       return findAnchor(tree.root.sections, id);
     },
+    inlineSpans(row: Record<string, string>, col: string): InlineSpan[] {
+      // Doc-wide companion to `TableView.cellPos`: find the table holding `row` (by content — the
+      // doc holds no table view to `indexOf` against), then return that cell's inline-code spans.
+      const hit = tableForRow(tree.root.sections, row);
+      if (!hit) return [];
+      const ci = hit.node.columns.indexOf(col);
+      if (ci < 0) return [];
+      return hit.node.inlineSpans(hit.ri, ci);
+    },
   };
 }
 
@@ -373,4 +394,52 @@ function findAnchor(nodes: SectionNode[], id: string): BlockView | undefined {
     if (nested) return nested;
   }
   return undefined;
+}
+
+/**
+ * Locate the table block (and body-row index) holding a given row RECORD, depth-first. The doc's
+ * `inlineSpans` receives a plain `Record<string, string>` (e.g. `files.rows[0]`) with no back-link
+ * to its projection node, so we match by content — reconstructing each table's rows the same way
+ * `tableView` does and comparing on the record's keys. First match wins.
+ */
+function tableForRow(
+  nodes: SectionNode[],
+  row: Record<string, string>,
+): { node: TableBlock; ri: number } | undefined {
+  for (const node of nodes) {
+    for (const b of node.blocks) {
+      if (b.kind !== "table") continue;
+      const ri = rowIndexOf(b, row);
+      if (ri >= 0) return { node: b, ri };
+    }
+    const nested = tableForRow(node.sections, row);
+    if (nested) return nested;
+  }
+  return undefined;
+}
+
+/** The body-row index whose reconstructed record equals `target`, or `-1`. */
+function rowIndexOf(node: TableBlock, target: Record<string, string>): number {
+  const keys = Object.keys(target);
+  for (let ri = 0; ri < node.rows.length; ri++) {
+    const cells = node.rows[ri];
+    if (!cells) continue;
+    const built: Record<string, string> = {};
+    node.columns.forEach((c, i) => {
+      built[c] = cells[i] ?? "";
+    });
+    if (recordEqual(built, target, keys)) return ri;
+  }
+  return -1;
+}
+
+/** Shallow string-record equality over `keys` (both sides keyed identically by column name). */
+function recordEqual(
+  a: Record<string, string>,
+  b: Record<string, string>,
+  keys: string[],
+): boolean {
+  if (Object.keys(a).length !== keys.length) return false;
+  for (const k of keys) if (a[k] !== b[k]) return false;
+  return true;
 }
