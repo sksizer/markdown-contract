@@ -2,12 +2,12 @@
 import starlight from '@astrojs/starlight';
 import { defineConfig } from 'astro/config';
 
-// GitHub Pages project URL (repo: sksizer/markdown-contract). The live publish is
-// wired by T-PAGE; `site` + `base` are set now so links resolve under the project
-// path from the first build. See docs/planning/tasks/T-7UTE-astro-docs-site.md.
+// Published via Cloudflare Pages (direct upload of dist/), which serves at the
+// domain root — so no `base` path. Update `site` if the Pages project name or a
+// custom domain changes. (GitHub Pages was the original target — T-PAGE — but the
+// repo is private, so Pages can't be enabled.)
 export default defineConfig({
-	site: 'https://sksizer.github.io',
-	base: '/markdown-contract/',
+	site: 'https://markdown-contract-docs.pages.dev',
 	integrations: [
 		starlight({
 			title: 'markdown-contract',
