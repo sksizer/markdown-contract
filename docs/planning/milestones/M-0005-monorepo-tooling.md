@@ -3,7 +3,7 @@ type: milestone
 schema_version: '1'
 id: M-0005
 title: Monorepo tooling — a Bun workspace orchestrated by moon
-status: open/active
+status: closed/done
 created: '2026-06-28'
 related:
   - '[[D-0010-monorepo-tooling]]'
@@ -22,7 +22,7 @@ tags:
   - moon
   - bun
   - milestone
-need_human_review: true
+need_human_review: false
 ---
 
 # Monorepo tooling — a Bun workspace orchestrated by moon
