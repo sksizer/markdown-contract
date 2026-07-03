@@ -15,7 +15,9 @@ The landing page and the per-example pages are **generated, not hand-authored**
 (T-SITE): the `build`/`dev` scripts first run `bun scripts/generate.ts`, which
 renders the example catalog (`docs/catalog/*.yaml`) into pages under
 `src/content/docs/` (gitignored build artifacts; the YAML is the source of
-truth). The build also needs a **built `packages/core`** — the moon `docs:build`
+truth). The guide pages (`why.md`, `how-it-works.md`, `getting-started.md`) are
+the exception: hand-authored, committed under `src/content/docs/`, and edited
+directly. The build also needs a **built `packages/core`** — the moon `docs:build`
 task declares `deps: [core:build]` — because `scripts/check-artifacts.ts`
 regression-checks every example artifact against the real library. The site is
 therefore *not* buildable from `sites/docs/` in isolation: it needs the whole
