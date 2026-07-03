@@ -102,12 +102,20 @@ _Captured by /sdlc:task-work on 2026-07-03. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — inspected `.github/workflows/deploy-docs.yml`: builds via `bunx moon run docs:build`, publishes with `actions/deploy-pages@v4`, `permissions` grant `pages: write` + `id-token: write` (+ `contents: read`), `deploy` job uses the `github-pages` environment, triggered on `push` to `main` filtered to `apps/docs/**` plus `workflow_dispatch`. YAML parsed clean.
+- AC-2: agent-manual — the `build` job bootstraps with Bun (`oven-sh/setup-bun@v2`, `bun-version: 1.3.14`) + `bun install --frozen-lockfile` and builds through moon, mirroring `.github/workflows/ci.yml` (no `setup-node`/`npm`).
+- AC-3: deferred-user — billing-gated. GitHub Actions are billing-blocked, so the live publish cannot be run; the workflow file + README link + the documented one-time "Settings → Pages → Source: GitHub Actions" prerequisite are the reviewable deliverable. Once billing clears and Pages source is set, an operator must trigger the workflow and confirm the public URL (`https://sksizer.github.io/markdown-contract/`) serves the shell.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- Quality gate stayed green (`OK 5/5`, no new drift) — the change is CI-config + README only, so the `core:*` verbs were unaffected.
+- The existing `ci.yml` was a precise template for the Bun/moon bootstrap idiom (setup-bun pin, `bun install --frozen-lockfile`, proto toolchain cache), so the deploy workflow reused a proven, house-consistent shape rather than inventing one.
+- `astro.config.mjs` already carried the correct `site`/`base` from T-7UTE, so the config-confirmation touchpoint needed no edit — no churn.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 7's baseline-gated quality run failed first attempt with `baseline not found` — the baseline is written under the main repo's `.sdlc/quality-baselines/` (Step 3a) but the gate, run from the worktree, defaults `--baseline-dir` to the worktree's `.sdlc/`. Had to pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly. The task-work Step 7 invocation should either resolve the baseline dir against the main repo (superproject) automatically, or the skill prose should call out passing `--baseline-dir` explicitly when running the gate from inside a worktree. → [[T-W2TM-baseline-dir-resolves-from-superproject]]
+
+### Spawned follow-up tasks
+
+- [[T-W2TM-baseline-dir-resolves-from-superproject]] (https://github.com/sksizer/dev/pull/608) — task-work Step 7's baseline gate should resolve `--baseline-dir` against the superproject when run from a worktree (Upstream-plugin, spawned).
