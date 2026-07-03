@@ -23,6 +23,10 @@
  *   GET    /api/vaults/:id/check    → CheckResponse        (drift, via init --check)
  *   POST   /api/vaults/:id/init     → InitVaultResponse    (prototype addition: scaffold contracts)
  *   POST   /api/vaults/:id/watch    → WatchResponse        (prototype addition: toggle watching)
+ *   GET    /api/vaults/:id/config   → VaultConfigResponse  (prototype addition: read the config file)
+ *   PUT    /api/vaults/:id/config   → SaveVaultConfigResponse (prototype addition: replace the config file)
+ *   GET    /api/vaults/:id/config/files → ConfigFilesResponse (prototype addition: router + referenced contracts)
+ *   PUT    /api/vaults/:id/config/files → SaveConfigFileResponse (prototype addition: replace one file by relPath)
  *   GET    /api/events              → SseEvent stream      (SSE live status)
  */
 
@@ -257,6 +261,57 @@ export interface WatchRequest {
 export interface WatchResponse {
   id: string;
   watching: boolean;
+}
+
+/** GET /api/vaults/:id/config — the vault's contract config file, verbatim. */
+export interface VaultConfigResponse {
+  /** whether the config file exists on disk yet */
+  exists: boolean;
+  /** the file's bytes, verbatim ("" when it doesn't exist) */
+  raw: string;
+  /** daemon-side parse verdict: null = parses as a valid config; else the message */
+  parseError: string | null;
+}
+
+/** PUT /api/vaults/:id/config — replace the config file's contents. */
+export interface SaveVaultConfigRequest {
+  raw: string;
+}
+
+/** PUT /api/vaults/:id/config — saved; the vault re-validates in the background. */
+export interface SaveVaultConfigResponse {
+  ok: true;
+  vault: VaultStatus;
+}
+
+/** One editable contract file — the router config or a referenced *.contract.yaml. */
+export interface ConfigFileEntry {
+  /** path relative to the config file's directory; the router entry is its basename */
+  relPath: string;
+  /** "config" for the router file; "contract" for a referenced contract */
+  kind: "config" | "contract";
+  exists: boolean;
+  /** the file's bytes, verbatim ("" when it doesn't exist) */
+  raw: string;
+  /** daemon-side parse verdict for this file's kind: null = valid; else the message */
+  parseError: string | null;
+}
+
+/** GET /api/vaults/:id/config/files — the router + every contract file it references. */
+export interface ConfigFilesResponse {
+  files: ConfigFileEntry[];
+}
+
+/** PUT /api/vaults/:id/config/files — replace one file's contents by relPath. */
+export interface SaveConfigFileRequest {
+  relPath: string;
+  raw: string;
+}
+
+/** PUT /api/vaults/:id/config/files — saved; the vault re-validates in the background. */
+export interface SaveConfigFileResponse {
+  ok: true;
+  vault: VaultStatus;
 }
 
 /** Any non-2xx API response body. */

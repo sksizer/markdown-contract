@@ -10,11 +10,11 @@
  *     color, background, and a rank for ordering / "highest severity" math.
  *
  * Components bind these accent colors INLINE (e.g.
- * `:style="{ color: token.color, background: token.bg }"`) rather than adding new
- * CSS custom properties — the structural surface/border/text styling still comes
- * from the shared `--mc-*` vars in `assets/css/main.css`. The hex values here are
- * harmonized with that `--mc-*` palette but stated concretely so this module is
- * fully self-contained and portable into a future `apps/web`.
+ * `:style="{ color: token.color, background: token.bg }"`). Every `color`/`bg`
+ * is a `var(--mc-status-…)` / `var(--mc-sev-…)` REFERENCE, not a literal — the
+ * light and dark values live in `assets/css/main.css`, so the whole visual
+ * language follows `prefers-color-scheme` without any component changes. No hex
+ * literal is ever bound from this module.
  */
 import type { Finding, FindingLevel } from "../types";
 
@@ -51,40 +51,40 @@ export const statusTokens: Record<StatusKey, StatusToken> = {
     key: "green",
     label: "Green",
     description: "Validates clean — no findings, in sync.",
-    color: "#1a7f37",
-    bg: "#e8f5ec",
+    color: "var(--mc-status-green)",
+    bg: "var(--mc-status-green-bg)",
     icon: "✓",
   },
   findings: {
     key: "findings",
     label: "Findings",
     description: "Validation surfaced findings to review.",
-    color: "#9a6700",
-    bg: "#fff8e6",
+    color: "var(--mc-status-findings)",
+    bg: "var(--mc-status-findings-bg)",
     icon: "!",
   },
   drift: {
     key: "drift",
     label: "Drift",
     description: "Config or structure has drifted from the contract.",
-    color: "#8250df",
-    bg: "#f5f0ff",
+    color: "var(--mc-status-drift)",
+    bg: "var(--mc-status-drift-bg)",
     icon: "≠",
   },
   running: {
     key: "running",
     label: "Running",
     description: "A validation run is in progress.",
-    color: "#0a66c2",
-    bg: "#eaf3ff",
+    color: "var(--mc-status-running)",
+    bg: "var(--mc-status-running-bg)",
     icon: "◌",
   },
   error: {
     key: "error",
     label: "Error",
     description: "The run could not complete.",
-    color: "#d1242f",
-    bg: "#ffeef0",
+    color: "var(--mc-status-error)",
+    bg: "var(--mc-status-error-bg)",
     icon: "✕",
   },
 };
@@ -113,24 +113,24 @@ export const severityTokens: Record<SeverityKey, SeverityToken> = {
   error: {
     key: "error",
     label: "Error",
-    color: "#d1242f",
-    bg: "#ffeef0",
+    color: "var(--mc-sev-error)",
+    bg: "var(--mc-sev-error-bg)",
     icon: "✕",
     rank: 3,
   },
   warn: {
     key: "warn",
     label: "Warn",
-    color: "#9a6700",
-    bg: "#fff8e6",
+    color: "var(--mc-sev-warn)",
+    bg: "var(--mc-sev-warn-bg)",
     icon: "▲",
     rank: 2,
   },
   report: {
     key: "report",
     label: "Report",
-    color: "#0a66c2",
-    bg: "#eaf3ff",
+    color: "var(--mc-sev-report)",
+    bg: "var(--mc-sev-report-bg)",
     icon: "ⓘ",
     rank: 1,
   },

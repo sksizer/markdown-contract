@@ -12,17 +12,24 @@ import type { BunRequest } from "bun";
 import type {
   ApiError,
   CheckResponse,
+  ConfigFilesResponse,
   HealthResponse,
   InitVaultRequest,
   RegisterVaultRequest,
   RegisterVaultResponse,
   RemoveVaultResponse,
+  SaveConfigFileRequest,
+  SaveConfigFileResponse,
+  SaveVaultConfigRequest,
+  SaveVaultConfigResponse,
   ValidateResponse,
+  VaultConfigResponse,
   VaultDetailResponse,
   VaultListResponse,
   WatchRequest,
   WatchResponse,
 } from "../../types/api";
+import { ConfigError, listConfigFiles, readConfig, saveConfig, saveConfigFile } from "./config";
 import type { DaemonContext } from "./daemon";
 import { RegistryError } from "./registry";
 import { checkVault, initVault, RunError } from "./runs";
@@ -33,7 +40,7 @@ export function corsHeaders(req: Request): Record<string, string> {
   if (origin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
     return {
       "access-control-allow-origin": origin,
-      "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
+      "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
       "access-control-allow-headers": "content-type",
     };
   }
@@ -51,9 +58,10 @@ function fail(req: Request, status: number, error: string): Response {
   return json(req, { error } satisfies ApiError, status);
 }
 
-/** Map a thrown run/registry error to its HTTP shape (400 caller, 409 state, 500 bug). */
+/** Map a thrown run/registry/config error to its HTTP shape (400 caller, 409 state, 500 bug). */
 function failFrom(req: Request, err: unknown): Response {
   if (err instanceof RegistryError) return fail(req, 400, err.message);
+  if (err instanceof ConfigError) return fail(req, 400, err.message);
   if (err instanceof RunError) return fail(req, 409, err.message);
   return fail(req, 500, (err as Error).message ?? "internal error");
 }
@@ -166,6 +174,76 @@ export function buildRoutes(ctx: DaemonContext) {
           queueMicrotask(() => void ctx.revalidate(entry).catch(() => {}));
         }
         return json(req, outcome);
+      },
+    },
+
+    "/api/vaults/:id/config": {
+      GET: (req: IdRequest) => {
+        const entry = ctx.registry.get(req.params.id);
+        if (!entry) return fail(req, 404, `unknown vault: ${req.params.id}`);
+        try {
+          return json(req, readConfig(entry) satisfies VaultConfigResponse);
+        } catch (err) {
+          return failFrom(req, err);
+        }
+      },
+
+      PUT: async (req: IdRequest) => {
+        const entry = ctx.registry.get(req.params.id);
+        if (!entry) return fail(req, 404, `unknown vault: ${req.params.id}`);
+        let body: SaveVaultConfigRequest;
+        try {
+          body = (await req.json()) as SaveVaultConfigRequest;
+        } catch {
+          return fail(req, 400, "body must be JSON: { raw }");
+        }
+        if (typeof body?.raw !== "string") return fail(req, 400, "body must be JSON: { raw }");
+        try {
+          saveConfig(entry, body.raw);
+          // The config changed the vault's world — same choreography as registration:
+          // answer with the running status, re-validate in the background.
+          const vault = ctx.store.markRunning(entry);
+          queueMicrotask(() => void ctx.revalidate(entry).catch(() => {}));
+          return json(req, { ok: true, vault } satisfies SaveVaultConfigResponse);
+        } catch (err) {
+          return failFrom(req, err);
+        }
+      },
+    },
+
+    "/api/vaults/:id/config/files": {
+      GET: (req: IdRequest) => {
+        const entry = ctx.registry.get(req.params.id);
+        if (!entry) return fail(req, 404, `unknown vault: ${req.params.id}`);
+        try {
+          return json(req, listConfigFiles(entry) satisfies ConfigFilesResponse);
+        } catch (err) {
+          return failFrom(req, err);
+        }
+      },
+
+      PUT: async (req: IdRequest) => {
+        const entry = ctx.registry.get(req.params.id);
+        if (!entry) return fail(req, 404, `unknown vault: ${req.params.id}`);
+        let body: SaveConfigFileRequest;
+        try {
+          body = (await req.json()) as SaveConfigFileRequest;
+        } catch {
+          return fail(req, 400, "body must be JSON: { relPath, raw }");
+        }
+        if (typeof body?.relPath !== "string" || typeof body?.raw !== "string") {
+          return fail(req, 400, "body must be JSON: { relPath, raw }");
+        }
+        try {
+          saveConfigFile(entry, body.relPath, body.raw);
+          // A contract file changed the vault's world — same choreography as the
+          // config PUT: answer with the running status, re-validate in the background.
+          const vault = ctx.store.markRunning(entry);
+          queueMicrotask(() => void ctx.revalidate(entry).catch(() => {}));
+          return json(req, { ok: true, vault } satisfies SaveConfigFileResponse);
+        } catch (err) {
+          return failFrom(req, err);
+        }
       },
     },
 

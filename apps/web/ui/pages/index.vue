@@ -2,101 +2,41 @@
 /**
  * Dashboard — the all-vaults "are they all green?" home view (T-6RFC).
  *
- * Every registered vault as a status card (grid) or row (table) with its
- * at-a-glance state, a status-summary tally, a clickable status filter, a
- * refresh-all affordance, and a first-run empty state. Each card/row links
- * through to the per-vault detail screen.
+ * Every registered vault as a dense table row (default) or status card (grid),
+ * with the at-a-glance tally, a clickable status filter, refresh, and a
+ * first-run empty state. Rows link through to the per-vault detail screen.
  *
- * LIVE-WIRED (was: the mockApi seam): the list loads from the daemon's
- * `GET /api/vaults`, and `GET /api/events` (SSE) folds status changes into the
- * rows as they happen — a run finishing, a watch-triggered re-validation, a
- * vault erroring — without a refresh.
+ * Data comes from the SHARED useVaults store — one fetch, one app-wide SSE
+ * stream (the sidebar consumes the same rows); this page opens nothing itself.
  */
-import { computed, onMounted, ref, watch } from "vue";
-import { countByLevel } from "~/lib/findings";
-import { SEVERITY_ORDER, STATUS_ORDER, statusTokens, type StatusToken } from "~/design/tokens";
-import type { FindingLevel, SseEvent, VaultStatus, VaultStatusState } from "~/types";
-import { apiErrorMessage, useApi, useApiBase } from "~/composables/useApi";
-import { createEventStream, stateFromEvent } from "~/composables/useEventStream";
-import WatchIndicator from "~/components/WatchIndicator.vue";
+import { computed, ref } from "vue";
+
 import EmptyState from "~/components/kit/EmptyState.vue";
 import ErrorState from "~/components/kit/ErrorState.vue";
 import LoadingState from "~/components/kit/LoadingState.vue";
 import SeverityBadge from "~/components/kit/SeverityBadge.vue";
 import StatusBadge from "~/components/kit/StatusBadge.vue";
+import Toolbar from "~/components/kit/Toolbar.vue";
+import { useVaults } from "~/composables/useVaults";
+import { SEVERITY_ORDER, STATUS_ORDER, statusTokens, type StatusToken } from "~/design/tokens";
+import { countByLevel } from "~/lib/findings";
+import type { FindingLevel, VaultStatus, VaultStatusState } from "~/types";
 
 const props = defineProps<{
   layout?: "grid" | "table";
 }>();
 
-// ── the live data seam ───────────────────────────────────────────────────────────
-const api = useApi();
-const vaults = ref<VaultStatus[]>([]);
-const loading = ref(true);
-const loadError = ref("");
-
-async function loadVaults(): Promise<void> {
-  try {
-    vaults.value = (await api.listVaults()).vaults;
-    loadError.value = "";
-  } catch (err) {
-    loadError.value = apiErrorMessage(err);
-  } finally {
-    loading.value = false;
-  }
-}
+// ── the shared store (one fetch, one stream, app-wide) ──────────────────────────
+const { vaults, loading, loadError, refresh } = useVaults();
 
 /** The refresh-all affordance — re-pull the registry snapshot from the daemon. */
 function refreshAll(): void {
-  void loadVaults();
+  void refresh();
 }
 
-// ── live updates over SSE ────────────────────────────────────────────────────────
-const stream = createEventStream(useApiBase());
-const { watching, connection, eventCount } = stream;
-
-function toggleStream(): void {
-  if (watching.value) stream.stop();
-  else stream.start();
-}
-
-/** Fold one SSE event into the row it concerns (fresh object, per-state optionals resolved). */
-function applyEvent(row: VaultStatus, event: SseEvent): VaultStatus {
-  switch (event.type) {
-    case "status":
-      return { ...row, state: event.state, updatedAt: event.at };
-    case "validated": {
-      const { error: _err, ...rest } = row;
-      return { ...rest, state: stateFromEvent(event), result: event.result, updatedAt: event.at };
-    }
-    case "drift":
-      return { ...row, state: stateFromEvent(event), drift: event.drift, updatedAt: event.at };
-    case "error": {
-      const { result: _res, ...rest } = row;
-      return { ...rest, state: "error", error: { message: event.message }, updatedAt: event.at };
-    }
-  }
-}
-
-watch(
-  () => stream.lastEvent.value,
-  (event) => {
-    if (!event) return;
-    // An event about a vault we don't know = the registry changed elsewhere — re-pull.
-    if (!vaults.value.some((v) => v.id === event.vaultId)) {
-      void loadVaults();
-      return;
-    }
-    vaults.value = vaults.value.map((v) => (v.id === event.vaultId ? applyEvent(v, event) : v));
-  },
-);
-
-onMounted(() => {
-  void loadVaults();
-  stream.start();
-});
-
-const layout = computed<"grid" | "table">(() => props.layout ?? "grid");
+// ── layout: table reads like an app, so it is the default ───────────────────────
+// (named layoutMode so the local binding never shadows the `layout` prop)
+const layoutMode = ref<"grid" | "table">(props.layout ?? "table");
 
 // ── status filter (clickable legend chips) ───────────────────────────────────────
 type Filter = VaultStatusState | "all";
@@ -168,7 +108,7 @@ const stateCounts = computed<Record<VaultStatusState, number>>(() => {
 
 const allGreen = computed(() => total.value > 0 && stateCounts.value.green === total.value);
 
-/** The status summary line shown under the title — the at-a-glance tally. */
+/** The status summary shown beside the title — the at-a-glance tally. */
 const summaryLine = computed(() => {
   if (total.value === 0) return "No vaults registered yet.";
   const noun = total.value === 1 ? "vault" : "vaults";
@@ -181,217 +121,237 @@ const summaryLine = computed(() => {
 </script>
 
 <template>
-  <section class="db">
-    <header class="db__bar">
-      <div class="db__heading">
-        <h1 class="db__title">Vaults</h1>
-        <p class="db__summary" :class="{ 'db__summary--green': allGreen }">{{ summaryLine }}</p>
-      </div>
-      <div class="db__actions">
-        <WatchIndicator
-          :watching="watching"
-          :connection="connection"
-          :event-count="eventCount"
-          size="sm"
-          @toggle="toggleStream"
-        />
-        <a class="db__add" href="/register">+ Add vault</a>
-        <button class="db__refresh" type="button" @click="refreshAll">
-          <span aria-hidden="true">↻</span> Refresh all
+  <div class="db">
+    <Toolbar title="Vaults">
+      <template #meta>
+        <span class="db__summary" :class="{ 'db__summary--green': allGreen }">
+          {{ summaryLine }}
+        </span>
+      </template>
+
+      <div class="db__seg" role="group" aria-label="Layout">
+        <button
+          type="button"
+          class="db__seg-btn"
+          :class="{ 'db__seg-btn--on': layoutMode === 'table' }"
+          @click="layoutMode = 'table'"
+        >
+          Table
+        </button>
+        <button
+          type="button"
+          class="db__seg-btn"
+          :class="{ 'db__seg-btn--on': layoutMode === 'grid' }"
+          @click="layoutMode = 'grid'"
+        >
+          Grid
         </button>
       </div>
-    </header>
-
-    <!-- daemon unreachable / first load -->
-    <ErrorState
-      v-if="loadError"
-      title="Daemon unreachable"
-      :message="loadError"
-    />
-    <LoadingState v-else-if="loading" label="Loading vaults…" />
-
-    <!-- status legend / filter — also the per-state tally -->
-    <nav v-if="total > 0" class="db__legend" aria-label="Filter by status">
-      <button
-        type="button"
-        class="db__chip"
-        :class="{ 'db__chip--active': filter === 'all' }"
-        @click="filter = 'all'"
-      >
-        All <span class="db__chip-count">{{ total }}</span>
+      <button class="btn" type="button" @click="refreshAll">
+        <span aria-hidden="true">↻</span> Refresh
       </button>
-      <button
-        v-for="state in STATUS_ORDER"
-        :key="state"
-        type="button"
-        class="db__chip"
-        :class="{ 'db__chip--active': filter === state }"
-        :style="filter === state ? { color: statusTokens[state].color, background: statusTokens[state].bg } : {}"
-        @click="toggleFilter(state)"
-      >
-        {{ statusTokens[state].label }} <span class="db__chip-count">{{ stateCounts[state] }}</span>
-      </button>
-    </nav>
+      <NuxtLink class="btn btn--primary" to="/register">+ Add vault</NuxtLink>
+    </Toolbar>
 
-    <!-- first-run empty state -->
-    <EmptyState
-      v-if="!loading && !loadError && total === 0"
-      icon="∅"
-      title="No vaults registered"
-      message="Register a markdown tree and its contract to start tracking its status here."
-    >
-      <a class="db__add" href="/register">+ Add a vault</a>
-    </EmptyState>
+    <div class="page-body">
+      <!-- daemon unreachable / first load -->
+      <ErrorState v-if="loadError" title="Daemon unreachable" :message="loadError" />
+      <LoadingState v-else-if="loading" label="Loading vaults…" />
 
-    <!-- grid layout: a status card per vault -->
-    <div v-else-if="layout === 'grid'" class="db__grid">
-      <a
-        v-for="view in visibleViews"
-        :key="view.vault.id"
-        class="dcard"
-        :href="`/vault/${view.vault.id}`"
-        :style="{ borderTopColor: view.token.color }"
-      >
-        <header class="dcard__head">
-          <div class="dcard__id">
-            <h3 class="dcard__name">{{ view.vault.name }}</h3>
-            <code class="dcard__path">{{ view.vault.path }}</code>
-          </div>
-          <StatusBadge :status="view.vault.state" />
-        </header>
+      <template v-else>
+        <!-- status legend / filter — also the per-state tally -->
+        <nav v-if="total > 0" class="db__legend" aria-label="Filter by status">
+          <button
+            type="button"
+            class="db__chip"
+            :class="{ 'db__chip--active': filter === 'all' }"
+            @click="filter = 'all'"
+          >
+            All <span class="db__chip-count">{{ total }}</span>
+          </button>
+          <button
+            v-for="state in STATUS_ORDER"
+            :key="state"
+            type="button"
+            class="db__chip"
+            :class="{ 'db__chip--active': filter === state }"
+            :style="filter === state ? { color: statusTokens[state].color, background: statusTokens[state].bg } : {}"
+            @click="toggleFilter(state)"
+          >
+            {{ statusTokens[state].label }}
+            <span class="db__chip-count">{{ stateCounts[state] }}</span>
+          </button>
+        </nav>
 
-        <div class="dcard__body">
-          <p v-if="view.vault.state === 'error'" class="dcard__error">{{ view.errorMessage }}</p>
-          <LoadingState
-            v-else-if="view.vault.state === 'running'"
-            variant="inline"
-            label="Validating…"
-          />
-          <p v-else-if="view.vault.state === 'drift'" class="dcard__drift">
-            <span class="dcard__drift-count">{{ view.driftCount }}</span>
-            drift{{ view.driftCount === 1 ? "" : "s" }} from contract
-          </p>
-          <div v-else class="dcard__levels">
-            <template v-if="view.hasFindings">
-              <SeverityBadge
-                v-for="lc in view.levels"
-                :key="lc.level"
-                :level="lc.level"
-                :count="lc.count"
-              />
-            </template>
-            <span v-else class="dcard__clean">No findings</span>
-          </div>
+        <!-- first-run empty state -->
+        <EmptyState
+          v-if="total === 0"
+          icon="∅"
+          title="No vaults registered"
+          message="Register a markdown tree and its contract to start tracking its status here."
+        >
+          <NuxtLink class="btn btn--primary" to="/register">+ Add a vault</NuxtLink>
+        </EmptyState>
+
+        <!-- table layout (default): a dense row per vault -->
+        <div v-else-if="layoutMode === 'table'" class="db__tablewrap">
+          <table class="db__table">
+            <thead>
+              <tr>
+                <th scope="col">Vault</th>
+                <th scope="col">Status</th>
+                <th scope="col">Detail</th>
+                <th scope="col">Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="view in visibleViews" :key="view.vault.id" class="db__row">
+                <td class="db__cell-name" :style="{ borderLeftColor: view.token.color }">
+                  <NuxtLink class="db__row-link" :to="`/vault/${view.vault.id}`">
+                    {{ view.vault.name }}
+                  </NuxtLink>
+                  <code class="db__row-path">{{ view.vault.path }}</code>
+                </td>
+                <td><StatusBadge :status="view.vault.state" size="sm" /></td>
+                <td class="db__cell-detail">
+                  <span v-if="view.vault.state === 'error'" class="db__error">
+                    {{ view.errorMessage }}
+                  </span>
+                  <LoadingState
+                    v-else-if="view.vault.state === 'running'"
+                    variant="inline"
+                    label="Validating…"
+                  />
+                  <span v-else-if="view.vault.state === 'drift'" class="db__drift">
+                    <span class="db__drift-count">{{ view.driftCount }}</span>
+                    drift{{ view.driftCount === 1 ? "" : "s" }}
+                  </span>
+                  <span v-else-if="view.hasFindings" class="db__levels-inline">
+                    <SeverityBadge
+                      v-for="lc in view.levels"
+                      :key="lc.level"
+                      :level="lc.level"
+                      :count="lc.count"
+                    />
+                  </span>
+                  <span v-else class="db__clean">No findings</span>
+                </td>
+                <td class="db__cell-updated">{{ view.updated }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <footer class="dcard__foot">
-          <span class="dcard__updated">{{ view.updated }}</span>
-          <span class="dcard__view">View →</span>
-        </footer>
-      </a>
-    </div>
+        <!-- grid layout: a status card per vault -->
+        <div v-else class="db__grid">
+          <NuxtLink
+            v-for="view in visibleViews"
+            :key="view.vault.id"
+            class="dcard"
+            :to="`/vault/${view.vault.id}`"
+            :style="{ borderTopColor: view.token.color }"
+          >
+            <header class="dcard__head">
+              <div class="dcard__id">
+                <h3 class="dcard__name">{{ view.vault.name }}</h3>
+                <code class="dcard__path">{{ view.vault.path }}</code>
+              </div>
+              <StatusBadge :status="view.vault.state" size="sm" />
+            </header>
 
-    <!-- table layout: a dense row per vault -->
-    <table v-else class="db__table">
-      <thead>
-        <tr>
-          <th scope="col">Vault</th>
-          <th scope="col">Status</th>
-          <th scope="col">Detail</th>
-          <th scope="col">Updated</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="view in visibleViews" :key="view.vault.id" class="db__row">
-          <td class="db__cell-name" :style="{ borderLeftColor: view.token.color }">
-            <a class="db__row-link" :href="`/vault/${view.vault.id}`">{{ view.vault.name }}</a>
-            <code class="db__row-path">{{ view.vault.path }}</code>
-          </td>
-          <td><StatusBadge :status="view.vault.state" size="sm" /></td>
-          <td class="db__cell-detail">
-            <span v-if="view.vault.state === 'error'" class="dcard__error">{{ view.errorMessage }}</span>
-            <LoadingState
-              v-else-if="view.vault.state === 'running'"
-              variant="inline"
-              label="Validating…"
-            />
-            <span v-else-if="view.vault.state === 'drift'" class="dcard__drift">
-              <span class="dcard__drift-count">{{ view.driftCount }}</span>
-              drift{{ view.driftCount === 1 ? "" : "s" }}
-            </span>
-            <span v-else-if="view.hasFindings" class="db__levels-inline">
-              <SeverityBadge
-                v-for="lc in view.levels"
-                :key="lc.level"
-                :level="lc.level"
-                :count="lc.count"
+            <div class="dcard__body">
+              <p v-if="view.vault.state === 'error'" class="db__error">{{ view.errorMessage }}</p>
+              <LoadingState
+                v-else-if="view.vault.state === 'running'"
+                variant="inline"
+                label="Validating…"
               />
-            </span>
-            <span v-else class="dcard__clean">No findings</span>
-          </td>
-          <td class="db__cell-updated">{{ view.updated }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </section>
+              <p v-else-if="view.vault.state === 'drift'" class="db__drift">
+                <span class="db__drift-count">{{ view.driftCount }}</span>
+                drift{{ view.driftCount === 1 ? "" : "s" }} from contract
+              </p>
+              <div v-else class="dcard__levels">
+                <template v-if="view.hasFindings">
+                  <SeverityBadge
+                    v-for="lc in view.levels"
+                    :key="lc.level"
+                    :level="lc.level"
+                    :count="lc.count"
+                  />
+                </template>
+                <span v-else class="db__clean">No findings</span>
+              </div>
+            </div>
+
+            <footer class="dcard__foot">
+              <span class="dcard__updated">{{ view.updated }}</span>
+              <span class="dcard__view">View →</span>
+            </footer>
+          </NuxtLink>
+        </div>
+      </template>
+    </div>
+  </div>
 </template>
 
 <style scoped>
 .db {
   display: flex;
   flex-direction: column;
-  gap: var(--mc-gap);
-}
-.db__bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.db__title {
-  margin: 0;
-  font-size: 1.4rem;
+  min-height: 100%;
 }
 .db__summary {
-  margin: 4px 0 0;
+  font-size: 12px;
   color: var(--mc-text-muted);
-  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .db__summary--green {
-  color: var(--mc-pass);
+  color: var(--mc-status-green);
   font-weight: 600;
 }
-.db__refresh {
+
+/* segmented table/grid toggle */
+.db__seg {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--mc-text);
-  background: var(--mc-surface);
   border: 1px solid var(--mc-border);
   border-radius: var(--mc-radius);
+  overflow: hidden;
+}
+.db__seg-btn {
+  appearance: none;
+  height: 26px;
+  padding: 0 9px;
+  font-family: var(--mc-font);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--mc-text-muted);
+  background: transparent;
+  border: none;
   cursor: pointer;
 }
-.db__refresh:hover {
-  border-color: var(--mc-report);
-  color: var(--mc-report);
+.db__seg-btn + .db__seg-btn {
+  border-left: 1px solid var(--mc-border);
+}
+.db__seg-btn--on {
+  color: var(--mc-text);
+  background: var(--mc-active);
 }
 
 /* status legend / filter chips */
 .db__legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 .db__chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  font-size: 0.78rem;
+  gap: 5px;
+  padding: 2px 9px;
+  font-family: var(--mc-font);
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--mc-text-muted);
   background: var(--mc-surface);
@@ -399,131 +359,69 @@ const summaryLine = computed(() => {
   border-radius: 999px;
   cursor: pointer;
 }
+.db__chip:hover {
+  border-color: var(--mc-border-strong);
+}
 .db__chip--active {
   border-color: currentColor;
+  color: var(--mc-text);
 }
 .db__chip-count {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
-.db__actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.db__add {
-  display: inline-block;
-  text-decoration: none;
-  padding: 8px 14px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--mc-report);
-  background: var(--mc-report-bg);
-  border: 1px solid var(--mc-report);
-  border-radius: var(--mc-radius);
-  cursor: pointer;
-}
 
-/* grid */
-.db__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--mc-gap);
-}
-.dcard {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  color: var(--mc-text);
-  text-decoration: none;
-  background: var(--mc-surface);
-  border: 1px solid var(--mc-border);
-  border-top-width: 4px;
-  border-radius: var(--mc-radius);
-}
-.dcard:hover {
-  border-color: var(--mc-text-muted);
-}
-.dcard__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-.dcard__name {
+/* shared row detail bits */
+.db__error {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 12px;
+  color: var(--mc-status-error);
 }
-.dcard__path {
-  color: var(--mc-text-muted);
-  font-size: 0.82rem;
-}
-.dcard__body {
-  min-height: 28px;
-}
-.dcard__levels {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-.dcard__clean {
-  font-size: 0.82rem;
+.db__drift {
+  margin: 0;
+  font-size: 12px;
   color: var(--mc-text-muted);
 }
-.dcard__error {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--mc-error);
-}
-.dcard__drift {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--mc-text-muted);
-}
-.dcard__drift-count {
+.db__drift-count {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--mc-text);
 }
-.dcard__foot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.78rem;
+.db__clean {
+  font-size: 12px;
   color: var(--mc-text-muted);
-}
-.dcard__view {
-  font-weight: 600;
-  color: var(--mc-report);
 }
 
 /* table */
-.db__table {
-  width: 100%;
-  border-collapse: collapse;
+.db__tablewrap {
+  overflow-x: auto;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
   border-radius: var(--mc-radius);
-  overflow: hidden;
-  font-size: 0.88rem;
+}
+.db__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
 }
 .db__table th {
   text-align: left;
-  padding: 10px 14px;
-  font-size: 0.7rem;
+  padding: 6px 10px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--mc-text-muted);
   border-bottom: 1px solid var(--mc-border);
+  white-space: nowrap;
 }
 .db__table td {
-  padding: 12px 14px;
+  padding: 7px 10px;
   border-bottom: 1px solid var(--mc-border);
   vertical-align: middle;
+}
+.db__row:hover td {
+  background: var(--mc-hover);
 }
 .db__row:last-child td {
   border-bottom: none;
@@ -533,31 +431,86 @@ const summaryLine = computed(() => {
 }
 .db__row-link {
   font-weight: 600;
+  color: var(--mc-text);
   text-decoration: none;
 }
 .db__row-link:hover {
+  color: var(--mc-accent);
   text-decoration: underline;
 }
 .db__row-path {
   display: block;
-  margin-top: 2px;
-  color: var(--mc-text-muted);
-  font-size: 0.78rem;
+  margin-top: 1px;
+  color: var(--mc-text-faint);
+  font-size: 11px;
 }
 .db__levels-inline {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
 .db__cell-updated {
   color: var(--mc-text-muted);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  font-size: 11.5px;
 }
 
-@media (max-width: 640px) {
-  .db__bar {
-    align-items: flex-start;
-  }
+/* grid */
+.db__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--mc-gap);
+}
+.dcard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  color: var(--mc-text);
+  text-decoration: none;
+  background: var(--mc-surface);
+  border: 1px solid var(--mc-border);
+  border-top-width: 3px;
+  border-radius: var(--mc-radius);
+}
+.dcard:hover {
+  border-color: var(--mc-border-strong);
+}
+.dcard__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.dcard__name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+.dcard__path {
+  color: var(--mc-text-faint);
+  font-size: 11px;
+  word-break: break-all;
+}
+.dcard__body {
+  min-height: 22px;
+}
+.dcard__levels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+.dcard__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--mc-text-muted);
+}
+.dcard__view {
+  font-weight: 600;
+  color: var(--mc-accent);
 }
 </style>

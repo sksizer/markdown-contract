@@ -1,41 +1,143 @@
 /*
- * Global base + design tokens for the prototype.
+ * Global base + design tokens + the app-wide controls layer.
  *
- * Only base/reset + CSS custom properties live here; every component styles
- * itself with `<style scoped>` and references these tokens, so the components
- * stay portable (they can graft into a future apps/web without dragging a global
- * stylesheet of component classes along). Storybook imports this file in
- * `.storybook/preview.ts` so stories get the same tokens.
+ * Three layers live here — everything else stays in `<style scoped>`:
+ *
+ *   1. TOKENS — semantic CSS custom properties (surfaces, text, accent, the
+ *      status/severity palette), defined for light and overridden wholesale in
+ *      `@media (prefers-color-scheme: dark)`. `design/tokens.ts` binds the
+ *      status/severity accents inline as `var(--mc-status-…)` / `var(--mc-sev-…)`
+ *      references, so this file is the ONLY place a color literal exists.
+ *   2. BASE — reset, app-density typography (13px system-ui), focus rings.
+ *   3. CONTROLS — the small shared control classes every page reuses so all
+ *      interactive chrome looks identical: `.btn` (+ `--primary` / `--danger` /
+ *      `--ghost`), `.input`, `.select`, `.field` / `.field__label`, and the
+ *      `.page-body` content-pane wrapper. Component-specific LAYOUT still
+ *      belongs in each component's scoped styles.
  */
+
+/* ── 1. Tokens ─────────────────────────────────────────────────────────────── */
+
 :root {
   --mc-font:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mc-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
-  --mc-bg: #f6f7f9;
+  /* surfaces */
+  --mc-bg: #f4f4f6;
   --mc-surface: #ffffff;
-  --mc-border: #e2e5ea;
-  --mc-text: #1f2430;
-  --mc-text-muted: #6b7280;
+  --mc-surface-2: #ececef; /* inset wells: code blocks, input troughs, hovers */
+  --mc-sidebar: #e9e9ed;
+  --mc-border: #d9d9de;
+  --mc-border-strong: #b9bac2;
+  --mc-hover: rgba(20, 22, 28, 0.06);
+  --mc-active: rgba(20, 22, 28, 0.1);
 
-  /* finding-level + status accents */
-  --mc-error: #d1242f;
-  --mc-error-bg: #ffeef0;
-  --mc-warn: #9a6700;
-  --mc-warn-bg: #fff8e6;
-  --mc-report: #0a66c2;
-  --mc-report-bg: #eaf3ff;
-  --mc-pass: #1a7f37;
-  --mc-pass-bg: #e8f5ec;
-  --mc-fail: #d1242f;
-  --mc-fail-bg: #ffeef0;
+  /* text */
+  --mc-text: #1d1e22;
+  --mc-text-muted: #64656d;
+  --mc-text-faint: #8f9098;
 
-  --mc-radius: 8px;
-  --mc-gap: 16px;
+  /* accent + focus */
+  --mc-accent: #0a66c2;
+  --mc-accent-hover: #085aab;
+  --mc-on-accent: #ffffff;
+  --mc-focus: #0a66c2;
+
+  /* vault status accents (bound inline via design/tokens.ts) */
+  --mc-status-green: #1a7f37;
+  --mc-status-green-bg: #e3f2e8;
+  --mc-status-findings: #955d00;
+  --mc-status-findings-bg: #f8efd7;
+  --mc-status-drift: #7a4fd0;
+  --mc-status-drift-bg: #efe9fb;
+  --mc-status-running: #0a66c2;
+  --mc-status-running-bg: #e2eefa;
+  --mc-status-error: #cf222e;
+  --mc-status-error-bg: #fbe9ea;
+
+  /* finding severity accents (bound inline via design/tokens.ts) */
+  --mc-sev-error: #cf222e;
+  --mc-sev-error-bg: #fbe9ea;
+  --mc-sev-warn: #955d00;
+  --mc-sev-warn-bg: #f8efd7;
+  --mc-sev-report: #0a66c2;
+  --mc-sev-report-bg: #e2eefa;
+
+  /* legacy aliases (older scoped styles reference these) */
+  --mc-error: var(--mc-sev-error);
+  --mc-error-bg: var(--mc-sev-error-bg);
+  --mc-warn: var(--mc-sev-warn);
+  --mc-warn-bg: var(--mc-sev-warn-bg);
+  --mc-report: var(--mc-sev-report);
+  --mc-report-bg: var(--mc-sev-report-bg);
+  --mc-pass: var(--mc-status-green);
+  --mc-pass-bg: var(--mc-status-green-bg);
+  --mc-fail: var(--mc-sev-error);
+  --mc-fail-bg: var(--mc-sev-error-bg);
+
+  --mc-radius: 6px;
+  --mc-gap: 12px;
+  --mc-shadow-overlay: 0 8px 24px rgba(15, 16, 20, 0.18);
 }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* surfaces */
+    --mc-bg: #1e1f24;
+    --mc-surface: #26272d;
+    --mc-surface-2: #2e2f36;
+    --mc-sidebar: #191a1f;
+    --mc-border: #36373f;
+    --mc-border-strong: #4c4d56;
+    --mc-hover: rgba(255, 255, 255, 0.06);
+    --mc-active: rgba(255, 255, 255, 0.1);
+
+    /* text */
+    --mc-text: #e7e7ec;
+    --mc-text-muted: #a0a1ab;
+    --mc-text-faint: #74757e;
+
+    /* accent + focus */
+    --mc-accent: #4c8fe0;
+    --mc-accent-hover: #66a1e8;
+    --mc-on-accent: #ffffff;
+    --mc-focus: #539bf5;
+
+    /* vault status accents */
+    --mc-status-green: #57ab5a;
+    --mc-status-green-bg: #1f3226;
+    --mc-status-findings: #c69026;
+    --mc-status-findings-bg: #342a13;
+    --mc-status-drift: #b083f0;
+    --mc-status-drift-bg: #2d2440;
+    --mc-status-running: #539bf5;
+    --mc-status-running-bg: #1c2f47;
+    --mc-status-error: #e5534b;
+    --mc-status-error-bg: #3d2224;
+
+    /* finding severity accents */
+    --mc-sev-error: #e5534b;
+    --mc-sev-error-bg: #3d2224;
+    --mc-sev-warn: #c69026;
+    --mc-sev-warn-bg: #342a13;
+    --mc-sev-report: #539bf5;
+    --mc-sev-report-bg: #1c2f47;
+
+    --mc-shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ── 2. Base ───────────────────────────────────────────────────────────────── */
 
 * {
   box-sizing: border-box;
+}
+
+html,
+body,
+#__nuxt {
+  height: 100%;
 }
 
 html,
@@ -46,17 +148,132 @@ body {
 
 body {
   font-family: var(--mc-font);
+  font-size: 13px;
+  line-height: 1.45;
   color: var(--mc-text);
   background: var(--mc-bg);
-  line-height: 1.45;
+  /* the app frame owns all scrolling — the body never scrolls */
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
 a {
-  color: var(--mc-report);
+  color: var(--mc-accent);
 }
 
 code {
   font-family: var(--mc-mono);
   font-size: 0.92em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--mc-focus);
+  outline-offset: 1px;
+}
+
+/* ── 3. Controls ───────────────────────────────────────────────────────────── */
+
+/* Compact 28px button. Also valid on <NuxtLink>/<a>. */
+.btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  font-family: var(--mc-font);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--mc-text);
+  background: var(--mc-surface);
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+}
+.btn:hover:not(:disabled) {
+  background: var(--mc-surface-2);
+  border-color: var(--mc-border-strong);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn--primary {
+  color: var(--mc-on-accent);
+  background: var(--mc-accent);
+  border-color: var(--mc-accent);
+}
+.btn--primary:hover:not(:disabled) {
+  background: var(--mc-accent-hover);
+  border-color: var(--mc-accent-hover);
+}
+.btn--danger {
+  color: var(--mc-status-error);
+}
+.btn--danger:hover:not(:disabled) {
+  background: var(--mc-status-error-bg);
+  border-color: var(--mc-status-error);
+}
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+}
+.btn--ghost:hover:not(:disabled) {
+  background: var(--mc-hover);
+  border-color: transparent;
+}
+
+/* Compact text/select inputs. */
+.input,
+.select {
+  appearance: none;
+  height: 28px;
+  padding: 0 8px;
+  font-family: var(--mc-font);
+  font-size: 12.5px;
+  color: var(--mc-text);
+  background: var(--mc-surface);
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius);
+}
+textarea.input {
+  height: auto;
+  padding: 6px 8px;
+  line-height: 1.5;
+  font-family: var(--mc-mono);
+  resize: vertical;
+}
+.input::placeholder {
+  color: var(--mc-text-faint);
+}
+.input[aria-invalid="true"] {
+  border-color: var(--mc-sev-error);
+}
+
+/* Stacked-tight form primitive: a label over its control. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--mc-text-muted);
+}
+
+/* The content region every page renders under its <Toolbar>. */
+.page-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mc-gap);
+  flex: 1;
+  padding: 14px 18px 32px;
+  min-width: 0;
 }

@@ -10,15 +10,14 @@
  * modal dialog.
  *
  * Pure presentational: data in via props, registry mutations emitted out
- * (`register` / `update` / `remove` / `update:vaults`); new vaults are minted
- * through the documented `mockApi.registerVault` POST /api/vaults seam. Status
- * accents are bound INLINE from `statusTokens` (design/tokens.ts); structural
- * styling uses the shared `--mc-*` vars. No Nuxt imports, nothing from the engine.
+ * (`register` / `update` / `remove` / `update:vaults`). Controls use the global
+ * `.btn` / `.input` / `.field` classes from assets/css/main.css; status accents
+ * come from `statusTokens` via StatusBadge.
  */
 import { computed, reactive, ref, watch } from "vue";
-import StatusBadge from "./kit/StatusBadge.vue";
-import { statusTokens } from "../design/tokens";
+
 import type { RegisterVaultRequest, VaultStatus } from "../types";
+import StatusBadge from "./kit/StatusBadge.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -100,9 +99,7 @@ const showErrors = computed(() => props.eagerValidation || attempted.value);
 const isValid = computed(() => Object.keys(errors.value).length === 0);
 
 // ── Derived view state ───────────────────────────────────────────────────────
-const editingVault = computed(
-  () => registry.value.find((v) => v.id === editingId.value) ?? null,
-);
+const editingVault = computed(() => registry.value.find((v) => v.id === editingId.value) ?? null);
 const formTitle = computed(() =>
   editingId.value ? `Edit ${editingVault.value?.name ?? "vault"}` : "Add vault",
 );
@@ -125,12 +122,10 @@ function submit(): void {
   if (editingId.value) {
     const id = editingId.value;
     registry.value = registry.value.map((v) =>
-      v.id === id
-        ? { ...v, name, path, configPath: effectiveConfig(path, draft.configPath) }
-        : v,
+      v.id === id ? { ...v, name, path, configPath: effectiveConfig(path, draft.configPath) } : v,
     );
-    const updated = registry.value.find((v) => v.id === id)!;
-    emit("update", updated);
+    const updated = registry.value.find((v) => v.id === id);
+    if (updated) emit("update", updated);
     emit("update:vaults", registry.value);
   } else {
     const req: RegisterVaultRequest = {
@@ -192,8 +187,7 @@ function removeVault(id: string): void {
       <button
         v-if="variant === 'modal'"
         type="button"
-        class="vf__add"
-        :style="{ backgroundColor: statusTokens.green.color }"
+        class="btn btn--primary"
         @click="openAdd"
       >
         Add vault
@@ -213,8 +207,8 @@ function removeVault(id: string): void {
           <span class="vf__config">{{ v.configPath }}</span>
         </div>
         <div class="vf__rowactions">
-          <button type="button" class="vf__btn" @click="startEdit(v)">Edit</button>
-          <button type="button" class="vf__btn vf__btn--danger" @click="removeVault(v.id)">
+          <button type="button" class="btn" @click="startEdit(v)">Edit</button>
+          <button type="button" class="btn btn--danger" @click="removeVault(v.id)">
             Remove
           </button>
         </div>
@@ -240,11 +234,11 @@ function removeVault(id: string): void {
       <form class="vf__form" @submit.prevent="submit">
         <h3 class="vf__form-title">{{ formTitle }}</h3>
 
-        <label class="vf__field">
-          <span class="vf__fieldlabel">Name</span>
+        <label class="field">
+          <span class="field__label">Name</span>
           <input
             v-model="draft.name"
-            class="vf__input"
+            class="input"
             type="text"
             placeholder="Team Handbook"
             :aria-invalid="showErrors && !!errors.name"
@@ -254,17 +248,16 @@ function removeVault(id: string): void {
             class="vf__error"
             role="alert"
             data-test="vf-error-name"
-            :style="{ color: statusTokens.error.color }"
           >
             {{ errors.name }}
           </p>
         </label>
 
-        <label class="vf__field">
-          <span class="vf__fieldlabel">Path</span>
+        <label class="field">
+          <span class="field__label">Path</span>
           <input
             v-model="draft.path"
-            class="vf__input"
+            class="input"
             type="text"
             placeholder="~/vaults/my-vault"
             :aria-invalid="showErrors && !!errors.path"
@@ -274,19 +267,18 @@ function removeVault(id: string): void {
             class="vf__error"
             role="alert"
             data-test="vf-error-path"
-            :style="{ color: statusTokens.error.color }"
           >
             {{ errors.path }}
           </p>
         </label>
 
-        <label class="vf__field">
-          <span class="vf__fieldlabel">
+        <label class="field">
+          <span class="field__label">
             Config path <span class="vf__optional">(optional)</span>
           </span>
           <input
             v-model="draft.configPath"
-            class="vf__input"
+            class="input"
             type="text"
             placeholder="markdown-contract.yaml"
             :aria-invalid="showErrors && !!errors.configPath"
@@ -296,7 +288,6 @@ function removeVault(id: string): void {
             class="vf__error"
             role="alert"
             data-test="vf-error-config"
-            :style="{ color: statusTokens.error.color }"
           >
             {{ errors.configPath }}
           </p>
@@ -307,17 +298,13 @@ function removeVault(id: string): void {
         </p>
 
         <div class="vf__actions">
-          <button
-            type="submit"
-            class="vf__submit"
-            :style="{ backgroundColor: statusTokens.green.color }"
-          >
+          <button type="submit" class="btn btn--primary">
             {{ submitLabel }}
           </button>
           <button
             v-if="variant === 'modal' || editingId"
             type="button"
-            class="vf__btn"
+            class="btn"
             @click="cancel"
           >
             Cancel
@@ -343,19 +330,21 @@ function removeVault(id: string): void {
 }
 .vf__title {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 14px;
+  font-weight: 650;
 }
 .vf__count {
-  margin: 2px 0 0;
-  font-size: 0.82rem;
+  margin: 1px 0 0;
+  font-size: 11.5px;
   color: var(--mc-text-muted);
 }
 
 /* Registry list */
 .vf__empty {
   margin: 0;
-  padding: 18px;
+  padding: 14px;
   text-align: center;
+  font-size: 12px;
   color: var(--mc-text-muted);
   background: var(--mc-surface);
   border: 1px dashed var(--mc-border);
@@ -367,13 +356,13 @@ function removeVault(id: string): void {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .vf__row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: 10px;
+  padding: 7px 10px;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
   border-radius: var(--mc-radius);
@@ -381,68 +370,29 @@ function removeVault(id: string): void {
 .vf__rowmain {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
   flex: 1 1 auto;
 }
 .vf__name {
-  font-size: 0.95rem;
+  font-size: 12.5px;
 }
 .vf__path {
   font-family: var(--mc-mono);
-  font-size: 0.8rem;
+  font-size: 11px;
   color: var(--mc-text-muted);
   word-break: break-all;
 }
 .vf__config {
   font-family: var(--mc-mono);
-  font-size: 0.72rem;
-  color: var(--mc-text-muted);
+  font-size: 10.5px;
+  color: var(--mc-text-faint);
   word-break: break-all;
 }
 .vf__rowactions {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   flex: 0 0 auto;
-}
-
-/* Buttons */
-.vf__btn {
-  font: inherit;
-  font-size: 0.82rem;
-  padding: 5px 10px;
-  background: var(--mc-surface);
-  color: var(--mc-text);
-  border: 1px solid var(--mc-border);
-  border-radius: 6px;
-  cursor: pointer;
-}
-.vf__btn:hover {
-  background: var(--mc-bg);
-}
-.vf__btn:focus-visible {
-  outline: 2px solid var(--mc-report);
-  outline-offset: 1px;
-}
-.vf__btn--danger {
-  color: var(--mc-fail);
-  border-color: var(--mc-fail);
-}
-.vf__add,
-.vf__submit {
-  font: inherit;
-  font-weight: 700;
-  font-size: 0.85rem;
-  padding: 8px 14px;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.vf__add:focus-visible,
-.vf__submit:focus-visible {
-  outline: 2px solid var(--mc-text);
-  outline-offset: 2px;
 }
 
 /* Form */
@@ -450,59 +400,36 @@ function removeVault(id: string): void {
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
   border-radius: var(--mc-radius);
-  padding: 16px;
+  padding: 12px 14px;
 }
 .vf__form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 .vf__form-title {
   margin: 0;
-  font-size: 1rem;
-}
-.vf__field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.vf__fieldlabel {
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 650;
 }
 .vf__optional {
   font-weight: 400;
-  color: var(--mc-text-muted);
-}
-.vf__input {
-  font: inherit;
-  font-size: 0.9rem;
-  padding: 8px 10px;
-  background: var(--mc-bg);
-  color: var(--mc-text);
-  border: 1px solid var(--mc-border);
-  border-radius: 6px;
-}
-.vf__input:focus-visible {
-  outline: 2px solid var(--mc-report);
-  outline-offset: 1px;
-}
-.vf__input[aria-invalid="true"] {
-  border-color: var(--mc-error);
+  color: var(--mc-text-faint);
 }
 .vf__error {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 11.5px;
   font-weight: 600;
+  color: var(--mc-sev-error);
 }
 .vf__note {
   margin: 0;
-  font-size: 0.78rem;
-  color: var(--mc-text-muted);
+  font-size: 11.5px;
+  color: var(--mc-text-faint);
 }
 .vf__actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
@@ -510,7 +437,7 @@ function removeVault(id: string): void {
 .vf__overlay {
   position: fixed;
   inset: 0;
-  background: rgba(31, 36, 48, 0.45);
+  background: rgba(15, 16, 20, 0.45);
   z-index: 10;
 }
 .vf__formwrap--modal {
@@ -524,8 +451,8 @@ function removeVault(id: string): void {
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
   border-radius: var(--mc-radius);
-  padding: 20px;
+  padding: 16px;
   z-index: 11;
-  box-shadow: 0 12px 40px rgba(31, 36, 48, 0.25);
+  box-shadow: var(--mc-shadow-overlay);
 }
 </style>

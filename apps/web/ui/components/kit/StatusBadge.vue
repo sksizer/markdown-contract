@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * StatusBadge — a rounded pill that names one of the five vault states
+ * StatusBadge — a compact, flat pill that names one of the five vault states
  * (green / findings / drift / running / error) with its icon + label.
  *
  * Pure presentational: status in via props, accent colors bound INLINE from
- * `statusTokens` (the design/tokens.ts source of truth); structural styling uses
- * the shared `--mc-*` vars. No Nuxt imports.
+ * `statusTokens` (design/tokens.ts — `var(--mc-status-…)` references, so the
+ * badge follows light/dark automatically). No Nuxt imports.
  */
 import { computed } from "vue";
 import { type StatusKey, statusTokens } from "../../design/tokens";
@@ -40,20 +40,20 @@ const text = computed(() => props.label ?? token.value.label);
 .sb {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  gap: 4px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   border-radius: 999px;
   white-space: nowrap;
 }
 .sb--md {
-  font-size: 0.75rem;
-  padding: 4px 10px;
+  font-size: 11px;
+  padding: 2px 8px;
 }
 .sb--sm {
-  font-size: 0.66rem;
-  padding: 2px 8px;
-  gap: 4px;
+  font-size: 10px;
+  padding: 1px 6px;
+  gap: 3px;
 }
 .sb__icon {
   font-weight: 700;

@@ -5,14 +5,14 @@
  *
  * PURE PRESENTATIONAL. It owns no stream: `watching` / `connection` / `eventCount`
  * come in via props and the toggle button emits a bare `toggle` for the parent to
- * act on. The stream itself lives in the page/story (see `../mocks/event-stream`)
- * and is wired to this component. Accent colors are bound INLINE from
- * `statusTokens`; structural styling uses the shared `--mc-*` vars. No Nuxt imports.
+ * act on. The stream itself lives in the shell (the app layout binds the ONE
+ * shared useVaults stream to this). Accent colors are bound INLINE from
+ * `statusTokens` (`var(--mc-status-…)` references). No Nuxt imports.
  */
 import { computed } from "vue";
 
-import { statusTokens } from "../design/tokens";
 import type { ConnectionState } from "../composables/useEventStream";
+import { statusTokens } from "../design/tokens";
 
 const props = withDefaults(
   defineProps<{
@@ -27,7 +27,7 @@ const props = withDefaults(
   { eventCount: 0, size: "md" },
 );
 
-const emit = defineEmits<{ (e: "toggle"): void }>();
+const emit = defineEmits<(e: "toggle") => void>();
 
 /** Connection → its label, accent color, and whether the dot should pulse. */
 const conn = computed<{ label: string; color: string; pulse: boolean }>(() => {
@@ -50,7 +50,9 @@ const toggleAccent = computed(() =>
   props.watching ? { color: statusTokens.green.color, borderColor: statusTokens.green.color } : {},
 );
 
-const countLabel = computed(() => `${props.eventCount} ${props.eventCount === 1 ? "event" : "events"}`);
+const countLabel = computed(
+  () => `${props.eventCount} ${props.eventCount === 1 ? "event" : "events"}`,
+);
 </script>
 
 <template>
@@ -88,70 +90,65 @@ const countLabel = computed(() => `${props.eventCount} ${props.eventCount === 1 
 
 <style scoped>
 .wi {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 6px 12px;
-  background: var(--mc-surface);
-  border: 1px solid var(--mc-border);
-  border-radius: 999px;
+  gap: 8px;
+  font-size: 12px;
+  min-width: 0;
 }
 .wi--sm {
-  gap: 10px;
-  padding: 4px 10px;
-  font-size: 0.78rem;
+  gap: 7px;
+  font-size: 11.5px;
 }
 
 /* Toggle button */
 .wi__toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  font: inherit;
-  font-weight: 700;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  font-family: var(--mc-font);
+  font-size: inherit;
+  font-weight: 600;
   color: var(--mc-text-muted);
-  background: var(--mc-bg);
+  background: transparent;
   border: 1px solid var(--mc-border);
-  border-radius: 999px;
+  border-radius: var(--mc-radius);
   cursor: pointer;
+  white-space: nowrap;
   transition:
     color 0.15s ease,
     border-color 0.15s ease,
     background 0.15s ease;
 }
 .wi__toggle:hover {
-  background: var(--mc-surface);
-}
-.wi__toggle--on {
-  background: var(--mc-surface);
+  background: var(--mc-hover);
 }
 .wi__toggle-glyph {
   font-size: 0.72em;
   line-height: 1;
-}
-.wi--sm .wi__toggle {
-  padding: 3px 10px;
 }
 
 /* Connection indicator */
 .wi__conn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   font-weight: 600;
+  white-space: nowrap;
 }
 .wi__dot {
   position: relative;
   flex: 0 0 auto;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: currentColor;
 }
 .wi--sm .wi__dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 .wi__dot::after {
   content: "";
@@ -170,9 +167,12 @@ const countLabel = computed(() => `${props.eventCount} ${props.eventCount === 1 
 
 /* Event count */
 .wi__count {
-  color: var(--mc-text-muted);
-  font-size: 0.82em;
+  color: var(--mc-text-faint);
+  font-size: 0.92em;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @keyframes wi-pulse {

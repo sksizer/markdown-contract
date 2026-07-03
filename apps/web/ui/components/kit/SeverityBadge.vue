@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
- * SeverityBadge — a small badge naming one finding severity (error / warn /
+ * SeverityBadge — a small flat badge naming one finding severity (error / warn /
  * report) with its icon, label, and an optional count.
  *
  * Pure presentational: level in via props, accent colors bound INLINE from
- * `severityTokens` (design/tokens.ts). No Nuxt imports.
+ * `severityTokens` (design/tokens.ts — `var(--mc-sev-…)` references). No Nuxt
+ * imports.
  */
 import { computed } from "vue";
 import { type SeverityKey, severityTokens } from "../../design/tokens";
@@ -30,12 +31,12 @@ const token = computed(() => severityTokens[props.level]);
 .seb {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  padding: 2px 8px;
-  border-radius: 6px;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 1px 6px;
+  border-radius: 4px;
   white-space: nowrap;
 }
 .seb__icon {
@@ -43,6 +44,7 @@ const token = computed(() => severityTokens[props.level]);
 }
 .seb__count {
   font-variant-numeric: tabular-nums;
+  font-weight: 700;
   padding-left: 4px;
   border-left: 1px solid currentColor;
   opacity: 0.85;

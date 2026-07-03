@@ -71,7 +71,8 @@ export function createEventStream(base: string): EventStream {
     };
     source.onerror = () => {
       // EventSource auto-reconnects; reflect the gap without tearing down.
-      connection.value = source && source.readyState === EventSource.CLOSED ? "error" : "connecting";
+      connection.value =
+        source && source.readyState === EventSource.CLOSED ? "error" : "connecting";
     };
   }
 

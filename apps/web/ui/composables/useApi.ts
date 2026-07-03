@@ -10,12 +10,17 @@
  */
 import type {
   CheckResponse,
+  ConfigFilesResponse,
   InitVaultRequest,
   InitVaultResponse,
   RegisterVaultRequest,
   RegisterVaultResponse,
   RemoveVaultResponse,
+  SaveConfigFileRequest,
+  SaveConfigFileResponse,
+  SaveVaultConfigResponse,
   ValidateResponse,
+  VaultConfigResponse,
   VaultDetailResponse,
   VaultListResponse,
   WatchResponse,
@@ -50,6 +55,19 @@ export function useApi() {
       $fetch<WatchResponse>(`${base}/api/vaults/${id}/watch`, {
         method: "POST",
         body: { watching },
+      }),
+    getConfig: (id: string) => $fetch<VaultConfigResponse>(`${base}/api/vaults/${id}/config`),
+    saveConfig: (id: string, raw: string) =>
+      $fetch<SaveVaultConfigResponse>(`${base}/api/vaults/${id}/config`, {
+        method: "PUT",
+        body: { raw },
+      }),
+    getConfigFiles: (id: string) =>
+      $fetch<ConfigFilesResponse>(`${base}/api/vaults/${id}/config/files`),
+    saveConfigFile: (id: string, body: SaveConfigFileRequest) =>
+      $fetch<SaveConfigFileResponse>(`${base}/api/vaults/${id}/config/files`, {
+        method: "PUT",
+        body,
       }),
   };
 }

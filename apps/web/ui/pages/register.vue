@@ -3,15 +3,19 @@
  * Manage vaults — hosts the prototype's VaultForm (T-5QJV) wired to the live
  * registry routes: register → POST /api/vaults, remove → DELETE /api/vaults/:id,
  * edit → remove + re-register (the prototype daemon has no PATCH). After every
- * mutation the list re-seeds from the daemon, so what the form shows is always
- * the durable registry, not an optimistic copy.
+ * mutation the list re-seeds from the daemon AND the shared useVaults store
+ * refreshes, so the sidebar/dashboard reflect the change immediately.
  */
 import { onMounted, ref } from "vue";
-import type { RegisterVaultRequest, VaultStatus } from "~/types";
-import { apiErrorMessage, useApi } from "~/composables/useApi";
+
 import VaultForm from "~/components/VaultForm.vue";
+import Toolbar from "~/components/kit/Toolbar.vue";
+import { apiErrorMessage, useApi } from "~/composables/useApi";
+import { useVaults } from "~/composables/useVaults";
+import type { RegisterVaultRequest, VaultStatus } from "~/types";
 
 const api = useApi();
+const { refresh: refreshShared } = useVaults();
 const vaults = ref<VaultStatus[]>([]);
 const error = ref("");
 
@@ -21,6 +25,7 @@ async function reload(): Promise<void> {
   } catch (err) {
     error.value = apiErrorMessage(err);
   }
+  void refreshShared();
 }
 
 async function onRegister(req: RegisterVaultRequest): Promise<void> {
@@ -58,35 +63,46 @@ onMounted(() => void reload());
 </script>
 
 <template>
-  <section class="reg">
-    <a class="reg__back" href="/">← All vaults</a>
-    <p v-if="error" class="reg__error">{{ error }}</p>
-    <VaultForm :vaults="vaults" @register="onRegister" @update="onUpdate" @remove="onRemove" />
-  </section>
+  <div class="reg">
+    <Toolbar title="Add vault">
+      <template #meta>
+        <span class="reg__hint">register a markdown tree and its contract</span>
+      </template>
+    </Toolbar>
+
+    <div class="page-body">
+      <p v-if="error" class="reg__error" role="alert">{{ error }}</p>
+      <div class="reg__col">
+        <VaultForm :vaults="vaults" @register="onRegister" @update="onUpdate" @remove="onRemove" />
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
 .reg {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  min-height: 100%;
 }
-.reg__back {
-  align-self: flex-start;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
+.reg__hint {
+  font-size: 12px;
+  color: var(--mc-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.reg__back:hover {
-  text-decoration: underline;
+.reg__col {
+  max-width: 720px;
 }
 .reg__error {
   margin: 0;
-  padding: 10px 14px;
-  font-size: 0.85rem;
-  color: var(--mc-fail);
-  background: var(--mc-error-bg, #ffeef0);
-  border: 1px solid var(--mc-fail);
+  max-width: 720px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--mc-status-error);
+  background: var(--mc-status-error-bg);
+  border: 1px solid var(--mc-status-error);
   border-radius: var(--mc-radius);
 }
 </style>

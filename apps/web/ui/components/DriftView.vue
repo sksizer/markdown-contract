@@ -54,13 +54,29 @@ const KIND_GROUP: Record<DriftKind, GroupKey> = {
 
 /**
  * The local visual language for the three groups (analogous to FindingsList's
- * LEVEL_LABEL). Accent hexes are harmonized with the `--mc-*` palette but stated
- * concretely and bound INLINE, so this component stays self-contained.
+ * LEVEL_LABEL). Accents are `var(--mc-status-…)` references bound INLINE —
+ * added reads green, removed reads error-red, changed reads drift-purple — so
+ * the view follows the light/dark palette in assets/css/main.css.
  */
 const GROUP: Record<GroupKey, { label: string; glyph: string; color: string; bg: string }> = {
-  added: { label: "Added", glyph: "+", color: "#1a7f37", bg: "#e8f5ec" },
-  removed: { label: "Removed", glyph: "−", color: "#d1242f", bg: "#ffeef0" },
-  changed: { label: "Changed", glyph: "~", color: "#8250df", bg: "#f5f0ff" },
+  added: {
+    label: "Added",
+    glyph: "+",
+    color: "var(--mc-status-green)",
+    bg: "var(--mc-status-green-bg)",
+  },
+  removed: {
+    label: "Removed",
+    glyph: "−",
+    color: "var(--mc-status-error)",
+    bg: "var(--mc-status-error-bg)",
+  },
+  changed: {
+    label: "Changed",
+    glyph: "~",
+    color: "var(--mc-status-drift)",
+    bg: "var(--mc-status-drift-bg)",
+  },
 };
 
 interface Classified {
@@ -94,7 +110,9 @@ const counts = computed<Record<GroupKey, number>>(() => ({
 const summary = computed(() => {
   if (inSync.value) return "No drift — the committed contract matches the corpus.";
   const total = props.drift.entries.length;
-  const parts = GROUP_ORDER.filter((g) => counts.value[g] > 0).map((g) => `${counts.value[g]} ${g}`);
+  const parts = GROUP_ORDER.filter((g) => counts.value[g] > 0).map(
+    (g) => `${counts.value[g]} ${g}`,
+  );
   return `${total} change${total === 1 ? "" : "s"} — ${parts.join(" · ")}`;
 });
 </script>
@@ -202,28 +220,29 @@ const summary = computed(() => {
 .dv {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 .dv__head {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 .dv__title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 13px;
+  font-weight: 650;
 }
 .dv__vault {
-  margin: 2px 0 0;
-  font-size: 0.82rem;
+  margin: 1px 0 0;
+  font-size: 11.5px;
   color: var(--mc-text-muted);
 }
 .dv__summary {
   margin: 0;
   color: var(--mc-text-muted);
-  font-size: 0.9rem;
+  font-size: 12px;
 }
 
 /* unified list */
@@ -233,15 +252,15 @@ const summary = computed(() => {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .dv__row {
   display: flex;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 6px 10px;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
-  border-left-width: 4px;
+  border-left-width: 3px;
   border-radius: var(--mc-radius);
 }
 
@@ -251,12 +270,12 @@ const summary = computed(() => {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.66rem;
+  gap: 4px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
   white-space: nowrap;
 }
 .dv__glyph {
@@ -275,27 +294,29 @@ const summary = computed(() => {
 }
 .dv__kind {
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: 11.5px;
 }
 .dv__target {
   color: var(--mc-text-muted);
   font-family: var(--mc-mono);
+  font-size: 11px;
 }
 .dv__detail {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
+  font-size: 12px;
 }
 
 /* split columns */
 .dv__split {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 .dv__col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 10px;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
   border-radius: var(--mc-radius);
@@ -309,6 +330,7 @@ const summary = computed(() => {
 .dv__col-count {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+  font-size: 12px;
   color: var(--mc-text-muted);
 }
 .dv__col-list {
@@ -317,48 +339,55 @@ const summary = computed(() => {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .dv__col-item {
-  padding: 8px 10px;
-  background: var(--mc-bg);
+  padding: 6px 8px;
+  background: var(--mc-surface-2);
   border: 1px solid var(--mc-border);
-  border-left-width: 4px;
+  border-left-width: 3px;
   border-radius: var(--mc-radius);
 }
 .dv__col-empty {
   margin: 0;
-  color: var(--mc-text-muted);
-  font-size: 0.85rem;
+  color: var(--mc-text-faint);
+  font-size: 11.5px;
 }
 
 /* advisory diagnostics */
 .dv__warnings {
-  padding: 12px 14px;
-  background: var(--mc-warn-bg);
+  padding: 8px 12px;
+  background: var(--mc-sev-warn-bg);
   border: 1px solid var(--mc-border);
   border-radius: var(--mc-radius);
 }
 .dv__warnings-title {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 10.5px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--mc-warn);
+  letter-spacing: 0.05em;
+  color: var(--mc-sev-warn);
 }
 .dv__warnings-note {
-  margin: 4px 0 8px;
-  font-size: 0.82rem;
+  margin: 2px 0 6px;
+  font-size: 11.5px;
   color: var(--mc-text-muted);
 }
 .dv__warnings-list {
   margin: 0;
-  padding-left: 18px;
+  padding-left: 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 .dv__warning {
-  font-size: 0.88rem;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .dv__split {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

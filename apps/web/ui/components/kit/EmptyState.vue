@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * EmptyState — a first-class "nothing here yet" panel (AC-3).
+ * EmptyState — a first-class "nothing here yet" surface (AC-3), centered in
+ * whatever pane hosts it.
  *
  * Sensible defaults so it reads as an empty state out of the box; pass `title` /
  * `message` / `icon` to tailor the copy, and use the default slot for an action
@@ -36,29 +37,30 @@ withDefaults(
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
-  gap: 8px;
-  padding: 40px 24px;
-  background: var(--mc-surface);
-  border: 1px dashed var(--mc-border);
-  border-radius: var(--mc-radius);
+  gap: 4px;
+  margin: auto 0;
+  padding: 48px 24px;
   color: var(--mc-text-muted);
 }
 .es__icon {
-  font-size: 2rem;
+  font-size: 22px;
   line-height: 1;
-  color: var(--mc-text-muted);
+  color: var(--mc-text-faint);
 }
 .es__title {
-  margin: 4px 0 0;
-  font-size: 1.05rem;
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  font-weight: 650;
   color: var(--mc-text);
 }
 .es__message {
   margin: 0;
-  max-width: 42ch;
+  font-size: 12.5px;
+  max-width: 46ch;
 }
 .es__action {
-  margin-top: 8px;
+  margin-top: 10px;
 }
 </style>

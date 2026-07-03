@@ -3,7 +3,7 @@
  * LoadingState — a first-class loading / running surface (AC-3), themed with the
  * `running` status token color.
  *
- *   - `spinner`  — an animated CSS ring + label (the default).
+ *   - `spinner`  — an animated CSS ring + label, centered in the pane (default).
  *   - `skeleton` — `rows` shimmer placeholder bars.
  *   - `inline`   — a small inline spinner + label, for tight spaces.
  *
@@ -47,56 +47,55 @@ const rowList = computed(() => Array.from({ length: Math.max(1, props.rows) }, (
 <style scoped>
 .ls__spinner {
   display: inline-block;
-  width: 28px;
-  height: 28px;
-  border: 3px solid var(--mc-border);
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--mc-border);
   border-radius: 50%;
   animation: ls-spin 0.8s linear infinite;
 }
 .ls__spinner--sm {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-width: 2px;
 }
 .ls__label {
   color: var(--mc-text-muted);
-  font-size: 0.9rem;
+  font-size: 12.5px;
 }
 
 .ls--spinner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 40px 24px;
-  background: var(--mc-surface);
-  border: 1px solid var(--mc-border);
-  border-radius: var(--mc-radius);
+  justify-content: center;
+  gap: 10px;
+  margin: auto 0;
+  padding: 48px 24px;
 }
 
 .ls--inline {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ls--skeleton {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px;
+  gap: 8px;
+  padding: 12px;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
   border-radius: var(--mc-radius);
 }
 .ls__bar {
-  height: 14px;
-  border-radius: 6px;
+  height: 12px;
+  border-radius: 4px;
   background: linear-gradient(
     90deg,
-    var(--mc-bg) 25%,
+    var(--mc-surface-2) 25%,
     var(--mc-border) 37%,
-    var(--mc-bg) 63%
+    var(--mc-surface-2) 63%
   );
   background-size: 400% 100%;
   animation: ls-shimmer 1.4s ease infinite;

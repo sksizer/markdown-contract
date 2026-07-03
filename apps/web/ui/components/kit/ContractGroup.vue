@@ -10,9 +10,9 @@
  * children (design/tokens.ts). No Nuxt imports.
  */
 import { computed } from "vue";
+import { SEVERITY_ORDER } from "../../design/tokens";
 import { countByLevel } from "../../lib/findings";
 import type { Finding } from "../../types";
-import { SEVERITY_ORDER } from "../../design/tokens";
 import FindingRow from "./FindingRow.vue";
 import SeverityBadge from "./SeverityBadge.vue";
 import StatusBadge from "./StatusBadge.vue";
@@ -62,8 +62,8 @@ const presentLevels = computed(() => SEVERITY_ORDER.filter((level) => counts.val
 .cg {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+  gap: 8px;
+  padding: 10px 12px;
   background: var(--mc-surface);
   border: 1px solid var(--mc-border);
   border-radius: var(--mc-radius);
@@ -72,35 +72,36 @@ const presentLevels = computed(() => SEVERITY_ORDER.filter((level) => counts.val
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 .cg__title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 13px;
+  font-weight: 650;
 }
 .cg__subtitle {
-  margin: 2px 0 0;
-  font-size: 0.82rem;
+  margin: 1px 0 0;
+  font-size: 11.5px;
   color: var(--mc-text-muted);
 }
 .cg__tally {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
   align-items: center;
 }
 .cg__list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .cg__clean {
   margin: 0;
-  padding: 12px 14px;
+  padding: 8px 10px;
+  font-size: 12px;
   color: var(--mc-text-muted);
-  background: var(--mc-pass-bg);
-  border: 1px solid var(--mc-border);
+  background: var(--mc-status-green-bg);
   border-radius: var(--mc-radius);
 }
 </style>
