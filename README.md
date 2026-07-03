@@ -8,8 +8,8 @@ the daemon-web UI prototype) live under `apps/`; websites — including the
 documentation site — live under `sites/`.
 
 **Documentation:** <https://markdown-contract-docs.pages.dev/> — the
-[`sites/docs`](sites/docs/) Starlight site, published to Cloudflare Pages
-(`moon run docs:build`, then `wrangler pages deploy sites/docs/dist`).
+[`sites/docs`](sites/docs/) Starlight site, auto-deployed to Cloudflare Pages on
+push to `main` (build settings: [`sites/docs/README.md`](sites/docs/README.md)).
 
 ## Layout
 
