@@ -1,26 +1,24 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-0MVN
 status: closed/done
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0010]]'
+  - "[[M-0010 Quality Tooling]]"
 tags:
-- quality
-- lint
-- format
-- biome
-- complexity
+  - quality
+  - lint
+  - format
+  - biome
+  - complexity
 need_human_review: false
 impact: medium
 complexity: medium
-last_reviewed: '2026-07-02'
+last_reviewed: 2026-07-02
 prs:
-- https://github.com/sksizer/markdown-contract/pull/169
-completion_note: 'Shipped via #169. Final M-0010 quality-tooling task: repo-wide Biome
-  format/lint pass, complexity gate promoted to error (ceiling 46), biome ci wired
-  into CI.'
+  - https://github.com/sksizer/markdown-contract/pull/169
+completion_note: "Shipped via #169. Final M-0010 quality-tooling task: repo-wide Biome format/lint pass, complexity gate promoted to error (ceiling 46), biome ci wired into CI."
 ---
 # Adopt Biome for lint, format, and per-function complexity gating
 
@@ -111,7 +109,7 @@ and the complexity rule is promoted from `warn` to a real ceiling.
 
 ## Discovery context
 
-Surfaced while planning [[M-0010]] code-quality tooling. Biome was chosen over
+Surfaced while planning [[M-0010 Quality Tooling]] code-quality tooling. Biome was chosen over
 ESLint+Prettier / oxlint for a one-tool lint+format+complexity pass that fits the
 Bun/moon/TS stack. The scaffold landed immediately; this task carries the disruptive
 application + gate.

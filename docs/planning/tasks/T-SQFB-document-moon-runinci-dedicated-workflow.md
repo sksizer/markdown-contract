@@ -1,13 +1,13 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-SQFB
 status: planning/backlog
-created: '2026-07-01'
+created: 2026-07-01
 related:
-- '[[M-0010]]'
+  - "[[M-0010 Quality Tooling]]"
 tags:
-- quality
+  - quality
 need_human_review: false
 impact: low
 complexity: small

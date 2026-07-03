@@ -1,36 +1,19 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-77ST
 status: planning/needs-definition
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0010]]'
+  - "[[M-0010 Quality Tooling]]"
 depends_on:
-- '[[T-0MVN]]'
+  - "[[T-0MVN]]"
 tags:
-- quality
+  - quality
 need_human_review: false
 impact: medium
 complexity: small
-definition_gap: 'The spec is stale against the current toolchain and has a malformed
-  touchpoint table, so it is not implementation-ready. (1) The "Files to touch" package.json
-  row contains unescaped || pipe characters inside inline code (guarded || true),
-  which breaks the markdown table parser: it is read as a 5-cell row and flagged as
-  an empty-table-cell placeholder. Escape the pipes or rephrase. (2) The "Today" table
-  references files that do not resolve: biome.json is actually biome.jsonc at the
-  repo root, and the verbatim fixtures moved from tests/**/*.md to packages/core/tests/**/*.md
-  in the Bun-workspace split (T-WKSP). (3) More broadly, the whole spec (Today/Proposed/Approach/Files-to-touch
-  and AC-1/AC-4/AC-5) is written for an npm project (npm install, npm run typecheck,
-  npm run test, package-lock.json, a prepare script fired by npm install, a root moon.yml,
-  ci.yml running npx moon run) but the repo is a Bun + moon workspace: bun install
-  from bun.lock, quality gates run via bunx moon run core:typecheck / core:test /
-  core:lint, moon.yml lives in packages/core/, sdlc.yaml worktree_init is bun install,
-  and CI runs bunx moon run :build :typecheck :coverage :lint. The pre-push gate,
-  the hook-arming mechanism, and the lockfile/AC wording all need re-grounding in
-  Bun/moon before pickup. The lefthook.yml and .editorconfig Today rows are expected-absent
-  new files; the T-0MVN dependency is already closed/done, so Biome (biome.jsonc)
-  is a live gate.'
+definition_gap: 'The spec is stale against the current toolchain and has a malformed touchpoint table, so it is not implementation-ready. (1) The "Files to touch" package.json row contains unescaped || pipe characters inside inline code (guarded || true), which breaks the markdown table parser: it is read as a 5-cell row and flagged as an empty-table-cell placeholder. Escape the pipes or rephrase. (2) The "Today" table references files that do not resolve: biome.json is actually biome.jsonc at the repo root, and the verbatim fixtures moved from tests/**/*.md to packages/core/tests/**/*.md in the Bun-workspace split (T-WKSP). (3) More broadly, the whole spec (Today/Proposed/Approach/Files-to-touch and AC-1/AC-4/AC-5) is written for an npm project (npm install, npm run typecheck, npm run test, package-lock.json, a prepare script fired by npm install, a root moon.yml, ci.yml running npx moon run) but the repo is a Bun + moon workspace: bun install from bun.lock, quality gates run via bunx moon run core:typecheck / core:test / core:lint, moon.yml lives in packages/core/, sdlc.yaml worktree_init is bun install, and CI runs bunx moon run :build :typecheck :coverage :lint. The pre-push gate, the hook-arming mechanism, and the lockfile/AC wording all need re-grounding in Bun/moon before pickup. The lefthook.yml and .editorconfig Today rows are expected-absent new files; the T-0MVN dependency is already closed/done, so Biome (biome.jsonc) is a live gate.'
 ---
 # Add lefthook pre-commit hooks and EditorConfig
 

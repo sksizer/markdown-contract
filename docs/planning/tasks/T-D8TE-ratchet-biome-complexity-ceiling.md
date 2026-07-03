@@ -1,18 +1,18 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-D8TE
 status: planning/backlog
-created: '2026-07-02'
+created: 2026-07-02
 related:
-- '[[M-0010]]'
-- '[[T-0MVN-biome-lint-format]]'
+  - "[[M-0010 Quality Tooling]]"
+  - "[[T-0MVN-biome-lint-format]]"
 tags:
-- quality
-- lint
-- complexity
-- biome
-- tech-debt
+  - quality
+  - lint
+  - complexity
+  - biome
+  - tech-debt
 need_human_review: false
 impact: low
 complexity: medium

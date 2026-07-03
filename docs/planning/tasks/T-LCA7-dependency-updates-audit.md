@@ -1,20 +1,20 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-LCA7
 status: closed/done
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0010]]'
+  - "[[M-0010 Quality Tooling]]"
 tags:
-- quality
+  - quality
 need_human_review: false
 impact: medium
 complexity: small
-last_reviewed: '2026-07-01'
+last_reviewed: 2026-07-01
 prs:
-- https://github.com/sksizer/markdown-contract/pull/138
-completion_note: 'Shipped via #138.'
+  - https://github.com/sksizer/markdown-contract/pull/138
+completion_note: "Shipped via #138."
 ---
 # Add Dependabot updates and a dependency-audit CI step
 

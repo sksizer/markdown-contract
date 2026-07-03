@@ -1,20 +1,20 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-L77L
 status: closed/done
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0010]]'
+  - "[[M-0010 Quality Tooling]]"
 tags:
-- quality
+  - quality
 need_human_review: false
 impact: medium
 complexity: small
-last_reviewed: '2026-07-02'
+last_reviewed: 2026-07-02
 prs:
-- https://github.com/sksizer/markdown-contract/pull/144
-completion_note: 'Shipped via #144.'
+  - https://github.com/sksizer/markdown-contract/pull/144
+completion_note: "Shipped via #144."
 ---
 # Validate published-package hygiene with publint and are-the-types-wrong
 
