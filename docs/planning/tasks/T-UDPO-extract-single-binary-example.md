@@ -57,7 +57,7 @@ minimal artifact instead of a moving product app.
 | `apps/web/types/api.ts` | The wire contract both faces bind to (adopted from the design prototype via T-D7X1); the example needs only its validate/health subset |
 | `apps/web/src/daemon/registry.ts` | M-0009 business logic (multi-vault registry) — stays behind, NOT extracted; likewise `sse.ts`, `watcher.ts`, `runs.ts`, `status.ts`, `config.ts`, `api.ts` |
 | `apps/web/ui/components/kit/` | The minimal findings-rendering component set (`FindingRow`, `SeverityBadge`, `StatusBadge`, `Empty/Error/LoadingState`, …) adopted from the design prototype — the subset the example's one page needs |
-| `apps/web/ui/pages/vault/[id]/edit.vue` | Contract-editor surface — M-0009 scope, marks how far past "minimal" `apps/web` has grown |
+| `apps/web/ui/components/editor/` | Contract-editor surface (and its `pages/vault/[id]/edit.vue` route) — M-0009 scope, marks how far past "minimal" `apps/web` has grown |
 | `apps/daemon-web-prototype/` | Mock-driven Storybook design harness (no engine imports, no daemon); source of the kit components, `design/tokens.ts`, and the "Boundary — read this first" README pattern |
 | `package.json` | Root bun workspace globs: `packages/*`, `apps/*`, `sites/*` — no `examples/*` |
 | `.moon/workspace.yml` | Explicit moon project map (`core`, `web`, `docs`) — the example must be registered to get moon tasks and CI coverage |
