@@ -31,10 +31,10 @@ Stop flattening away the byte positions a position-precise consumer needs. `flat
 
 | Location | Role today |
 |---|---|
-| `src/core/projection.ts#flattenInline` | Flattens an inline subtree to plain text; an `inlineCode` contributes only its `value` — the backtick span (and its byte range) is lost. |
-| `src/core/types.ts#SourcePos` | `SourcePos { line; col? }` — `col` is already optional (D-0014 C3 deferred it, non-breaking). |
-| `src/core/types.ts` (`table` arm) | Carries `pos` (block line) and `rowPos(i)` (row line); no per-cell `col`, no inline-span record. |
-| `src/core/projection.test.ts` | Peer tests for the projection (positions, flattening). |
+| `packages/core/src/core/projection.ts#flattenInline` | Flattens an inline subtree to plain text; an `inlineCode` contributes only its `value` — the backtick span (and its byte range) is lost. |
+| `packages/core/src/core/types.ts#SourcePos` | `SourcePos { line; col? }` — `col` is already optional (D-0014 C3 deferred it, non-breaking). |
+| `packages/core/src/core/types.ts` (`table` arm) | Carries `pos` (block line) and `rowPos(i)` (row line); no per-cell `col`, no inline-span record. |
+| `packages/core/src/core/projection.test.ts` | Peer tests for the projection (positions, flattening). |
 
 ## Proposed
 
@@ -70,21 +70,21 @@ for (const m of tbl.rows[row][col].matchAll(/<[^>]*>/g)) {
 
 ## Approach
 
-1. Define the `InlineSpan { start: SourcePos; end: SourcePos; raw: string }` type in `src/core/types.ts`; add `cellPos(row, col)` and `inlineSpans(row, col)` to the `table` arm of `BlockNode`, and an inline-span accessor to the paragraph arm.
-2. In `src/core/projection.ts`, change `flattenInline` (or its caller) to emit, alongside the flattened string, the inline-code spans for the subtree — deciding between threading mdast `inlineCode.position` offsets and recomputing against the flattened text, and recording the choice in the task's closeout note.
+1. Define the `InlineSpan { start: SourcePos; end: SourcePos; raw: string }` type in `packages/core/src/core/types.ts`; add `cellPos(row, col)` and `inlineSpans(row, col)` to the `table` arm of `BlockNode`, and an inline-span accessor to the paragraph arm.
+2. In `packages/core/src/core/projection.ts`, change `flattenInline` (or its caller) to emit, alongside the flattened string, the inline-code spans for the subtree — deciding between threading mdast `inlineCode.position` offsets and recomputing against the flattened text, and recording the choice in the task's closeout note.
 3. Populate `cellPos(row, col)` with `col` set for table cells (using the column's start offset within the row), and attach the per-cell / per-paragraph `inlineSpans`.
 4. Keep `pos`, `rowPos(i)`, `anchor`, raw `rows`, and the flattened cell/paragraph text byte-identical; the new accessors are purely additive.
-5. Flip `cell-pos` to `true` in `tests/components.ts`, un-skip the position fixtures, and add peer tests in `src/core/projection.test.ts` asserting `cellPos(...).col` precision and `inlineSpans(...)` ranges (including a cell with multiple inline-code runs and a cell with none).
+5. Flip `cell-pos` to `true` in `packages/core/tests/components.ts`, un-skip the position fixtures, and add peer tests in `packages/core/src/core/projection.test.ts` asserting `cellPos(...).col` precision and `inlineSpans(...)` ranges (including a cell with multiple inline-code runs and a cell with none).
 
 ## Files to touch
 
 | Location | Kind | Change |
 |---|---|---|
-| `src/core/types.ts` | modify | Add `InlineSpan`; add `cellPos(row, col)` + `inlineSpans(row, col)` to the `table` arm and an inline-span accessor to the paragraph arm of `BlockNode` |
-| `src/core/projection.ts` | modify | Record inline-code spans in `flattenInline`'s replacement; set per-cell `col`; attach the overlays |
-| `src/core/projection.test.ts` | modify | Peer tests for `cellPos(...).col` and `inlineSpans(...)` ranges (multi-span, zero-span cells) |
-| `tests/components.ts` | modify | Flip `cell-pos` to `true` |
-| `tests/fixtures/consumption/` | modify | Un-skip the position-preservation fixtures gated by `cell-pos` |
+| `packages/core/src/core/types.ts` | modify | Add `InlineSpan`; add `cellPos(row, col)` + `inlineSpans(row, col)` to the `table` arm and an inline-span accessor to the paragraph arm of `BlockNode` |
+| `packages/core/src/core/projection.ts` | modify | Record inline-code spans in `flattenInline`'s replacement; set per-cell `col`; attach the overlays |
+| `packages/core/src/core/projection.test.ts` | modify | Peer tests for `cellPos(...).col` and `inlineSpans(...)` ranges (multi-span, zero-span cells) |
+| `packages/core/tests/components.ts` | modify | Flip `cell-pos` to `true` |
+| `packages/core/tests/fixtures/consumption/` | modify | Un-skip the position-preservation fixtures gated by `cell-pos` |
 
 ## Acceptance criteria
 
@@ -93,7 +93,7 @@ for (const m of tbl.rows[row][col].matchAll(/<[^>]*>/g)) {
 - [ ] AC-3: Paragraphs expose the analogous inline-span accessor.
 - [ ] AC-4: Existing `pos`, `rowPos(i)`, raw `rows`, and the flattened cell/paragraph text are byte-identical to before; the accessors are additive only.
 - [ ] AC-5: `cell-pos` is `true` and the position fixtures run and pass; no previously-passing fixture or golden changes.
-- [ ] AC-6: `npm run build`, `npm run test`, and `npm run typecheck` pass.
+- [ ] AC-6: The project quality checks pass — `bunx moon run core:build`, `bunx moon run core:typecheck`, `bunx moon run core:test` (and `bunx moon run core:lint`).
 
 ## Out of scope
 
