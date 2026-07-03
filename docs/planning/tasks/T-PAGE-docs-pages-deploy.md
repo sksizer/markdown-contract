@@ -2,9 +2,9 @@
 type: task
 schema_version: '5'
 id: T-PAGE
-status: open/ready
+status: in-progress
 created: '2026-06-30'
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-03'
 related:
 - '[[M-0006-documentation-site]]'
 - '[[D-0010-monorepo-tooling]]'
@@ -93,3 +93,19 @@ limit needs to be increased"), so any new workflow will not execute until that i
 - Depends on [[T-7UTE-astro-docs-site]] (a buildable `apps/docs`). **Blocked at publish time by
   GitHub Actions billing** — author and review now, deploy when it clears. Governed by
   [[D-0010-monorepo-tooling]] (Bun-bootstrapped CI through moon).
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-03. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
