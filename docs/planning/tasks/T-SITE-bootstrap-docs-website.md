@@ -1,30 +1,32 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-SITE
 status: in-progress
 created: '2026-06-28'
 last_reviewed: '2026-07-03'
 related:
-- '[[M-0006-documentation-site]]'
-- '[[M-0007-example-use-case-catalog]]'
-- '[[D-0010-monorepo-tooling]]'
-- '[[D-0012-distribution-single-exec-and-web-ui]]'
+  - "[[M-0006-documentation-site]]"
+  - "[[M-0007-example-use-case-catalog]]"
+  - "[[D-0010-monorepo-tooling]]"
+  - "[[D-0012-distribution-single-exec-and-web-ui]]"
 depends_on:
-- '[[T-7UTE-astro-docs-site]]'
-- '[[T-SHEL-docs-landing-and-ia]]'
-- '[[T-CTLG-example-catalog-finalize]]'
+  - "[[T-7UTE-astro-docs-site]]"
+  - "[[T-SHEL-docs-landing-and-ia]]"
+  - "[[T-CTLG-example-catalog-finalize]]"
 tags:
-- docs
-- website
-- marketing
-- moon
-- examples
+  - docs
+  - website
+  - marketing
+  - moon
+  - examples
 need_human_review: true
 impact: high
 complexity: large
 autonomy: supervised
 readiness_verified_at: '2026-07-03T16:59:12Z'
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/196
 ---
 # Generate & publish the example catalog pages into the docs site
 
