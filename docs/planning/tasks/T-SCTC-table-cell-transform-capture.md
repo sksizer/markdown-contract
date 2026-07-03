@@ -130,12 +130,28 @@ _Captured by /sdlc:task-work on 2026-07-02. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `packages/core/src/core/content.test.ts` ("a transform cell caches its parsed output"; a no-transform column reports `typed(...) === undefined`).
+- AC-2: auto — cached from the existing `res` inside `validateTable`'s single per-cell `safeParse` loop (no second Zod pass / traversal); confirmed by code inspection and by the failing-transform test still emitting exactly one finding.
+- AC-3: auto — `packages/core/src/core/projection.test.ts` asserts raw `rows` unchanged and the overlay empty before any write; the full golden/consumption corpus passed unchanged, so `rowPos`/`pos`/`anchor` are untouched.
+- AC-4: auto — `content.test.ts` ("a failing transform caches nothing and still emits one `content/table/cell` finding") asserts the finding shape (id + row line) and `typed(...) === undefined` for that cell.
+- AC-5: auto — `content.test.ts` injects a sentinel value and asserts `JSON.stringify(node)` / `JSON.stringify(tree)` do not contain it while `typed()` returns it; the store is a closure-local `Map`, not an enumerable property.
+- AC-6: auto — `sdlc quality run` reported `OK 5/5` (build, typecheck, lint, test, package-check); the baseline-gated re-run reported `OK 5/5` with zero new drift; no golden/snapshot changes.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The additive design kept the change tiny — ~10 lines across three source files. The `safeParse` per cell already existed; only its discarded `res.data` needed capturing, so there was no new pass to introduce or reconcile.
+- Backing the overlay with a closure-captured `Map` made AC-5 (never on the public `tree`) fall out for free — no serialization guard or `tree`-shape carve-out was needed; a sentinel test proved it.
+- The baseline-gated quality gate ran clean end-to-end (0 pre-existing findings at the base SHA, 0 new drift), so Step 7 gave an unambiguous `OK 5/5` with no triage.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Task cited `src/core/...` paths that had moved to `packages/core/src/core/...` in a monorepo restructure, yet the readiness gate's `paths` claim-resolver did not flag them (the `path#symbol` citation shape and non-unique basenames slip past it) — task-work had to hand the implementer corrected paths out-of-band — the `paths` claim-resolver should detect a `path#symbol` citation whose file moved under a new directory prefix (a repo-wide `refresh-planning-paths-post-monorepo-split` task already owns fixing the docs themselves). → [[T-HYSY-paths-resolver-detects-moved-path-symbol]]
+- Step 3b's `preflight_permissions.ts` reported hard gaps (`bun`, `node`, `Write`, `Edit`) that did not reflect the actually-permissive dispatched sandbox (every `bun run` and file write succeeded) — in an autonomous dispatch there is no interactive `/config` grant, so the exit-1 had to be judged a false positive — the probe should reconcile against effective harness permissions (or downgrade to advisory) when run in a dispatched/non-interactive context. → [[T-TBL1-preflight-permissions-reconcile-dispatch-context]]
+- A direct `git push origin HEAD:main` for the optional task-body relevance edit was denied by the auto-mode classifier while the sanctioned `--commit-on main` tooling (ensure-ready / start-task, which push via a `bun run` subprocess) passed — no automation change warranted (the classifier's PR-review intent is correct); noted only so future runs fold relevance edits into the reviewed feature branch rather than a standalone main push.
+- The spec's example comment implies projected raw rows retain inline-code backticks, but `flattenInline` strips them (existing tested behavior) — no code impact; a task-doc authoring nuance to correct when the paths refresh touches this file.
+
+### Spawned follow-up tasks
+
+- [[T-HYSY-paths-resolver-detects-moved-path-symbol]] (https://github.com/sksizer/dev/pull/606) — spawned (Upstream-plugin, `sdlc`): the readiness gate's `paths` claim-resolver should flag a `path#symbol` citation whose file moved under a new directory prefix.
+- [[T-TBL1-preflight-permissions-reconcile-dispatch-context]] (https://github.com/sksizer/dev/pull/607) — spawned (Upstream-plugin, `sdlc`): Step 3b's `preflight_permissions.ts` probe should reconcile against effective permissions (or be advisory) in a dispatched/non-interactive context.
+- The classifier-blocked-push note and the backtick-stripping task-doc nuance were reviewed and skipped — both are explicitly marked as needing no automation change.

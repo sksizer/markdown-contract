@@ -99,6 +99,16 @@ export type BlockNode =
       rows: string[][];
       /** C3/A3 — row index → source line */
       rowPos(i: number): SourcePos;
+      /**
+       * A1 — the sparse typed overlay beside the raw `rows`. Returns the cached `z.output` of a
+       * declared `cells` schema for the cell at (`row`, column-name `col`), or `undefined` when no
+       * transform cached a value there (the common case — a plain-string table caches nothing).
+       * Populated by the content plane's EXISTING per-cell `safeParse` pass; it rides on a closure,
+       * not an enumerable property, so it never serializes onto the public `tree`.
+       */
+      typed(row: number, col: string): unknown | undefined;
+      /** Internal writer — the content plane caches a successful cell `safeParse`'s output here. */
+      setTyped(row: number, col: string, value: unknown): void;
       anchor?: string;
       pos: SourcePos;
     }

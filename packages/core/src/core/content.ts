@@ -52,9 +52,9 @@ interface ZodIssue {
   format?: string;
 }
 
-/** The runtime face of a zod schema: `safeParse` plus the issue stream on failure. */
+/** The runtime face of a zod schema: `safeParse` plus the parsed `data` / issue stream. */
 interface RuntimeZod {
-  safeParse(value: unknown): { success: boolean; error?: { issues: ZodIssue[] } };
+  safeParse(value: unknown): { success: boolean; data?: unknown; error?: { issues: ZodIssue[] } };
 }
 
 /** Cast a placeholder `ZodType` to its real runtime face (the `ZodType` swap is T-6PV4's). */
@@ -281,7 +281,11 @@ function validateTable(
       node.rows.forEach((row, i) => {
         const value = row[colIdx] ?? "";
         const res = zod.safeParse(value);
-        if (!res.success) {
+        if (res.success) {
+          // A1 — keep the parsed output (previously discarded) and cache it on the table node's
+          // sparse typed overlay, from this SAME `safeParse` (no second Zod pass / traversal).
+          node.setTyped(i, col, res.data);
+        } else {
           out.push(
             ctx.finding({
               id: "content/table/cell",
