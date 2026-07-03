@@ -112,12 +112,23 @@ _Captured by /sdlc:task-work on 2026-07-03. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `bunx moon run core:test`; `cellPos(row, col).col` precision asserted by the projection peer test and consumption fixture c14 (`cellPos(files.rows[0], "Location").col === 3`).
+- AC-2: auto — `bunx moon run core:test`; `projection.test.ts` peer tests cover a single-run cell, a multi-run cell (spans in document order), and a zero-run cell (empty array); each `InlineSpan` carries `{ start, end, raw }`.
+- AC-3: auto — `bunx moon run core:test`; paragraph-arm `inlineSpans()` peer-tested for populated and empty cases.
+- AC-4: auto — `bunx moon run core:test`; overlays ride on additive method closures (same pattern as `rowPos`/`typed`); every other consumption/validation/inference fixture and golden is byte-identical and still green, which is what pins `pos`/`rowPos`/raw `rows`/flattened text unchanged.
+- AC-5: auto — `cell-pos` flipped to `true` in `packages/core/tests/components.ts`; fixture c14 executes and passes; c12/c13 correctly remain skipped; no other fixture/golden changed.
+- AC-6: auto — `bunx moon run core:build`, `core:typecheck`, `core:lint`, `core:test`, `core:package-check` all pass (`OK 5/5`), and the branch introduces zero new drift vs the origin/main baseline.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The scaffold from the closed dependency T-SCFX (the gated c14 fixture + the `cell-pos` component flag) made the target unambiguous: flip the flag, make the fixture green.
+- The additive method-closure pattern already used by `rowPos`/`typed` extended cleanly to `cellPos`/`inlineSpans`, so no existing projection output changed — the whole rest of the corpus stayed byte-identical and green with no edits.
+- The baseline-gated quality gate ran clean (0 new drift, 0 pre-existing) once pointed at the right baseline directory.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- `sdlc quality run --line` reports a false FAIL on `core:lint` — the plugin's quality runner (`plugin/lib/services/quality/run-checks.ts`, `runOneSilent`) captures each verb's piped stdout with Node's default `maxBuffer` (1 MiB), and `bunx moon run core:lint` emits ~1.06 MiB of ANSI output for the repo's ~306 pre-existing biome `noNonNullAssertion` warnings, overflowing the buffer. `--log` mode (inherited stdio) and `biome ci .` both exit 0. Fix: raise/remove `maxBuffer` in `runOneSilent`, or stream the child output instead of buffering.
+- Running Step 7's `sdlc quality run --diff-against-baseline` from inside the worktree defaults `--baseline-dir` to `<worktree>/.sdlc/quality-baselines`, but Step 3a captured the baseline under the main repo's `.sdlc/`. The gate errored `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly. The task-work skill should either capture into the worktree or always pass `--baseline-dir` on the gate side.
+- The task spec's file paths were stale (`src/core/*`, `tests/*`, and AC-6's `npm run *`) after the repo moved to a moon monorepo (`packages/core/*`, moon verbs); they had to be retargeted on `origin/main` before the readiness gate would resolve touchpoints. A periodic task-relevance sweep after a repo restructure would catch this class before pickup.
+- The deterministic touchpoint resolver (`sdlc task gap-report`) treats a `## Today` Location cell of the form `` `path` (`table` arm)`` as a single path and reports `file-missing`, even though the file exists and the parenthetical is a human annotation. The Today row had to be reshaped (annotation moved to the Role column) to pass the gate. The resolver could strip a trailing parenthetical annotation, or the gate could resolve the first backticked token as the path.
+- `Doc.inlineSpans(rowObj, name)` resolves the holding table by matching row CONTENT rather than object identity, because model row objects are plain `Record<string,string>` with no back-link to their projection node (and must stay clean for other fixtures' deep-equality). It works and is self-contained, but is an asymmetry vs `TableView.cellPos`, which has the table in hand. A future typed-row handle carrying its source coordinates would remove the content-match heuristic.
