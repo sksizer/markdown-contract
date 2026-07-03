@@ -1,28 +1,28 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-SCTC
-status: in-progress
-created: 2026-06-30
+status: closed/done
+created: '2026-06-30'
 related:
-  - "[[M-0011-structured-cells]]"
-  - "[[D-0015-structured-cells]]"
-  - "[[D-0002-projection-and-dialect]]"
+- '[[M-0011-structured-cells]]'
+- '[[D-0015-structured-cells]]'
+- '[[D-0002-projection-and-dialect]]'
 depends_on:
-  - "[[T-SCFX-structured-cells-fixture-scaffold]]"
+- '[[T-SCFX-structured-cells-fixture-scaffold]]'
 tags:
-  - structured-cells
-  - content-plane
-  - projection
-  - typed-model
+- structured-cells
+- content-plane
+- projection
+- typed-model
 need_human_review: false
 impact: high
 complexity: medium
 autonomy: supervised
-last_reviewed: 2026-07-02
-readiness_verified_at: 2026-07-02T20:04:21Z
+last_reviewed: '2026-07-02'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/182
+- https://github.com/sksizer/markdown-contract/pull/182
+completion_note: 'Shipped via #182.'
 ---
 # Keep the transform output at validate-time and cache it on the projection table node
 
