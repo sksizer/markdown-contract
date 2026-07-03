@@ -45,8 +45,13 @@ jobs:
       # doubling it. :lint is the biome ci gate (format + lint + import
       # organization, T-0MVN). lint-docs is a moon task too, but runInCI:false
       # because it validates mid-edit planning docs; see packages/core/moon.yml.
+      #
+      # example-single-binary:test is named EXPLICITLY (T-UDPO): the example's
+      # peer suite runs under `bun test` (Bun.serve is Bun-only), so it cannot
+      # ride :coverage, and a bare :test would also re-run core's vitest suite
+      # (already subsumed by :coverage). Its :typecheck rides the shared tag.
       - name: Run build, typecheck, test+coverage, and lint via moon
-        run: bunx moon run :build :typecheck :coverage :lint
+        run: bunx moon run :build :typecheck :coverage :lint example-single-binary:test
 
       - name: Upload coverage report
         if: always()

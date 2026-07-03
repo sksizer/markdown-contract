@@ -1,0 +1,6 @@
+# Build outputs (the compiled binary and the generated SPA) — never committed.
+dist/
+ui/.output/
+ui/.nuxt/
+ui/dist
+node_modules/

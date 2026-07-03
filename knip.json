@@ -23,6 +23,11 @@
       "entry": ["src/daemon/index.ts", "src/**/*.test.ts"],
       "project": ["src/**/*.ts", "scripts/**/*.ts", "types/**/*.ts"],
       "ignoreDependencies": ["vue", "vue-tsc"]
+    },
+    "examples/single-binary": {
+      "entry": ["src/bin.ts", "src/**/*.test.ts", "scripts/gen-assets.ts"],
+      "project": ["src/**/*.ts", "scripts/**/*.ts", "types/**/*.ts"],
+      "ignoreDependencies": ["vue", "vue-tsc"]
     }
   },
   "ignoreWorkspaces": ["apps/daemon-web-prototype"],
