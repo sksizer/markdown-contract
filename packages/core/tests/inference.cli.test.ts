@@ -90,7 +90,9 @@ suite("markdown-contract init (CLI)", () => {
     // The scaffold (config + per-contract files) lands under the --out target.
     expect(existsSync(join(outDir, "markdown-contract.yaml"))).toBe(true);
     expect(existsSync(join(outDir, "contracts"))).toBe(true);
-    expect(readdirSync(join(outDir, "contracts")).some((f) => f.endsWith(".contract.yaml"))).toBe(true);
+    expect(readdirSync(join(outDir, "contracts")).some((f) => f.endsWith(".contract.yaml"))).toBe(
+      true,
+    );
 
     // cwd is left completely untouched by the run.
     expect(existsSync(join(cwd, "markdown-contract.yaml"))).toBe(false);
@@ -107,7 +109,8 @@ suite("markdown-contract init (CLI)", () => {
     expect(clean.code).toBe(0);
 
     // Mutate a doc so it drifts from the inferred shape (drop a required section).
-    const drifted = "---\ntitle: Alpha rollout\nstatus: open\n---\n\n## Summary\n\nNo other sections.\n";
+    const drifted =
+      "---\ntitle: Alpha rollout\nstatus: open\n---\n\n## Summary\n\nNo other sections.\n";
     writeFileSync(join(dir, "alpha.md"), drifted);
     const after = await runCli(["init", dir, "--check"], { cwd: dir });
     expect(after.code).toBe(1);
@@ -123,11 +126,17 @@ suite("markdown-contract init (CLI)", () => {
   test("--include / --exclude scope which files feed inference", async () => {
     const dir = stageVault("09-root-and-subdirs");
 
-    const included = await runCli(["init", dir, "--meta", "--include", "guides/**/*.md", "--dry-run"], { cwd: dir });
+    const included = await runCli(
+      ["init", dir, "--meta", "--include", "guides/**/*.md", "--dry-run"],
+      { cwd: dir },
+    );
     expect(included.code).toBe(0);
     expect(included.stdout).toContain("guides");
 
-    const excluded = await runCli(["init", dir, "--meta", "--exclude", "reference/**/*.md", "--dry-run"], { cwd: dir });
+    const excluded = await runCli(
+      ["init", dir, "--meta", "--exclude", "reference/**/*.md", "--dry-run"],
+      { cwd: dir },
+    );
     expect(excluded.code).toBe(0);
     expect(excluded.stdout).not.toContain("reference");
   });
@@ -167,7 +176,9 @@ suite("markdown-contract validate — run summary (T-RUNS)", () => {
     expect(r.code).toBe(0); // accept-by-construction — a clean run
 
     // The run summary shows even on a clean run, and precedes the findings report.
-    expect(r.stdout).toMatch(/^Scanned \d+ files?; \d+ matched across \d+ contracts?, \d+ unmatched/);
+    expect(r.stdout).toMatch(
+      /^Scanned \d+ files?; \d+ matched across \d+ contracts?, \d+ unmatched/,
+    );
     expect(r.stdout).toContain("No findings.");
     expect(r.stdout.indexOf("Scanned")).toBeLessThan(r.stdout.indexOf("No findings."));
   });
@@ -200,7 +211,10 @@ suite("markdown-contract init — heading key-collision (T-KCOL)", () => {
     // escape as an uncaught ContractBuildError stack trace from the self-check; now it is a clean
     // exit-2 diagnostic naming the file.
     const dir = freshVault();
-    writeFileSync(join(dir, "both.md"), "## Schedule For today\n\nx\n\n## Schedule For Today\n\nx\n");
+    writeFileSync(
+      join(dir, "both.md"),
+      "## Schedule For today\n\nx\n\n## Schedule For Today\n\nx\n",
+    );
     const r = await runCli(["init", dir, "--meta", "--force"], { cwd: dir });
     expect(r.code).toBe(2);
     expect(r.stderr).toContain("both.md");

@@ -1,4 +1,4 @@
-import { contract, sections, section, requires } from "../../../src/index.js";
+import { contract, requires, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
 import { loadSource } from "../../harness.js";
 
@@ -19,7 +19,9 @@ const v25: ValidationFixture = {
     contract({
       body: sections({ order: "recognized-relative", allowUnknown: true }, [
         section("Failure modes", {
-          rules: [requires([{ regex: "LEASE-(CONFLICT|MISSING) ref=", note: "lease failure markers" }])],
+          rules: [
+            requires([{ regex: "LEASE-(CONFLICT|MISSING) ref=", note: "lease failure markers" }]),
+          ],
         }),
       ]),
     }),

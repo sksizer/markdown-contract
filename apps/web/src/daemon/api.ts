@@ -32,6 +32,7 @@ import type {
 import { ConfigError, listConfigFiles, readConfig, saveConfig, saveConfigFile } from "./config";
 import type { DaemonContext } from "./daemon";
 import { RegistryError } from "./registry";
+import { handleValidate } from "./routes";
 import { checkVault, initVault, RunError } from "./runs";
 
 /** Reflect localhost/127.0.0.1 origins (the Nuxt dev server); everything else gets nothing. */
@@ -79,6 +80,16 @@ export function buildRoutes(ctx: DaemonContext) {
           pid: process.pid,
           registryPath: ctx.registry.path,
         } satisfies HealthResponse),
+    },
+
+    // The T-DAEM stateless surface, kept live through this daemon: validate an
+    // arbitrary (jailed) path without registering it — delegates to ./routes.
+    "/api/validate": {
+      POST: async (req: Request) => {
+        const res = await handleValidate(req, { root: process.cwd() });
+        for (const [k, v] of Object.entries(corsHeaders(req))) res.headers.set(k, v);
+        return res;
+      },
     },
 
     "/api/events": {

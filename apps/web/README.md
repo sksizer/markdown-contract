@@ -11,6 +11,13 @@ executable that is
   `Bun.serve` hosting the vault dashboard (the Nuxt SPA, embedded into the
   executable) and the JSON API over the engine.
 
+Relation to the landed **T-DAEM** skeleton: main's `src/daemon/server.ts` +
+`routes.ts` (health + stateless `POST /api/validate`, with their peer tests and
+fixtures) remain in place, and the stateless `/api/validate` route is mounted
+in this daemon's route table too, so the T-DAEM API surface stays live through
+the full prototype. `src/bin.ts` boots this prototype's daemon (the registry /
+SSE / watcher one); unifying the two server modules is a follow-up.
+
 ```
 markdown-contract validate docs/ --format sarif     # CLI face
 markdown-contract daemon --open                     # daemon face → http://127.0.0.1:4319
@@ -41,6 +48,8 @@ apps/web/
                       #   prototype/web-ui/types/api.ts (T-D7X1); daemon + UI both bind to it
   src/bin.ts          # combined entry, the `bun build --compile` target
   src/daemon/         # registry / status / runs / sse / watcher / static / api / daemon
+                      #   + config (contract-file read/write for the editor UI)
+                      #   + server / routes (the landed T-DAEM skeleton, kept intact)
                       #   (+ peer *.test.ts, `bun test src`)
   src/daemon/assets.gen.ts  # GENERATED embed manifest (committed as an empty stub)
   scripts/gen-assets.ts     # rewrites assets.gen.ts from ui/.output/public

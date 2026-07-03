@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 
 import type { RunResult, VaultRegistryEntry } from "../../types/api";
-import { stateFromDrift, stateFromRun, StatusStore } from "./status";
+import { StatusStore, stateFromDrift, stateFromRun } from "./status";
 
 const entry: VaultRegistryEntry = {
   id: "vault-docs",

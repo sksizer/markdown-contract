@@ -49,9 +49,7 @@ const c08: ConsumptionFixture = {
       label: "pm.sections.section('Friction and automation gaps').text() — .section() accessor",
       get: (doc) =>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (doc.body as any).postMortem.sections
-          .section?.("Friction and automation gaps")
-          .text(),
+        (doc.body as any).postMortem.sections.section?.("Friction and automation gaps").text(),
       equals: "The lease heartbeat needed a manual nudge once.",
     },
     {

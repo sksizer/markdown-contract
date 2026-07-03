@@ -79,6 +79,7 @@ Milestones are product releases; order is ascending `version`. Source:
 | — | [[M-0007-example-use-case-catalog]] | Example use-case catalog — the categorized basis for the docs and marketing site | open/planned |
 | — | [[M-0008-single-exec-distribution]] | Single-binary prototype — one Bun executable: CLI + self-contained web-UI daemon | open/planned |
 | — | [[M-0009-local-web-ui-vault-dashboard]] | Local web UI & vault dashboard — the bundled daemon surface | open/planned |
+| — | [[M-0011-structured-cells]] | Structured cells — typed transforms, typed read-back, position preservation | open/planned |
 
 ## Features
 
@@ -124,6 +125,7 @@ link inline; single-file ADRs transclude their `^summary`.
 
 | Decision | Summary |
 | --- | --- |
+| [D-0016 · example suite](./planning/decisions/D-0016-per-node-source-fidelity/) |  |
 | [[D-0001-finding-model]] | ![[D-0001-finding-model#^summary]] |
 | [[D-0002-projection-and-dialect]] | ![[D-0002-projection-and-dialect#^summary]] |
 | [[D-0003-structure-plane]] | ![[D-0003-structure-plane#^summary]] |
@@ -141,6 +143,7 @@ link inline; single-file ADRs transclude their `^summary`.
 | Decision | Summary | Status |
 | --- | --- | --- |
 | [[D-0012-distribution-single-exec-and-web-ui]] | ![[D-0012-distribution-single-exec-and-web-ui#^summary]] | open/proposed |
+| [[D-0016-per-node-source-fidelity]] | ![[D-0016-per-node-source-fidelity#^summary]] | open/proposed |
 
 ## Technical capabilities
 

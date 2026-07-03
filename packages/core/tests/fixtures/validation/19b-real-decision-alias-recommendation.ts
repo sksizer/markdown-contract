@@ -1,13 +1,5 @@
-import {
-  contract,
-  sections,
-  section,
-  optional,
-  oneOf,
-  gap,
-  maxWords,
-} from "../../../src/index.js";
 import { z } from "zod";
+import { contract, gap, maxWords, oneOf, optional, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
 import { loadSource } from "../../harness.js";
 

@@ -15,9 +15,12 @@
 bun:
   version: '1.3.14'
 
-# Node runs the test/coverage gate: vitest executes under Node so the run doubles
-# as the Node-compatibility gate for the runtime-neutral published library. Pin a
-# concrete 20.x (matches packages/core engines.node ">=20" and the Bun setup in
-# CI) so every machine and CI runner resolves the identical runtime.
+# Node runs the test/coverage gate: vitest executes under Node, exercising the
+# runtime-neutral published library on real Node. Pinned to 22.12.0 — the floor
+# the Astro docs site (apps/docs) requires. The published library keeps a broader
+# engines.node ">=20": raising engines to ">=22" makes proto try to auto-provision
+# the newest Node (not the pinned one) for the bun-toolchain tasks and fail, so the
+# engines floor stays put. Concrete pin so every machine/CI runner resolves the
+# identical runtime.
 node:
-  version: '20.20.2'
+  version: '22.12.0'

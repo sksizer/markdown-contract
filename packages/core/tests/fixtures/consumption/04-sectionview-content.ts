@@ -13,9 +13,7 @@ const c04: ConsumptionFixture = {
   source: loadSource(import.meta.url, "./04-sectionview-content.md"),
   build: () =>
     contract({
-      body: sections({}, [
-        section("Summary", { anchor: "summary", content: maxWords(120) }),
-      ]),
+      body: sections({}, [section("Summary", { anchor: "summary", content: maxWords(120) })]),
     }),
   reads: [
     {

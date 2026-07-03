@@ -7,9 +7,8 @@
  */
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-
-import { code, contract, list, maxWords, section, sections, table } from "../index.js";
 import type { Finding } from "../index.js";
+import { code, contract, list, maxWords, section, sections, table } from "../index.js";
 
 const CTX = { path: "fixture.md" };
 
@@ -107,6 +106,111 @@ describe("table leaf", () => {
     const ids = find(c, src).map((f) => f.id);
     expect(ids).toContain("structure/block-kind");
     expect(ids.some((id) => id.startsWith("content/"))).toBe(false);
+  });
+});
+
+// ── Table typed-cell cache (T-SCTC) ───────────────────────────────────────────────
+// `validateTable` keeps a cell transform's parsed output (previously discarded) and caches it
+// on the table node's sparse overlay, reachable via `node.typed(row, col)` — the runtime
+// substrate the model layer (T-SCRB) reads. The raw `rows` stay verbatim.
+
+describe("table typed-cell cache", () => {
+  // A transform cell: "path" or "path#symbol" → { path, symbol? }.
+  const Location = z.string().transform((s, ctx) => {
+    const m = /^([^#]+)(?:#(.+))?$/.exec(s.trim());
+    if (!m) {
+      ctx.addIssue({ code: "custom", message: "expected ‘path’ or ‘path#symbol’" });
+      return z.NEVER;
+    }
+    return { path: m[1]!, ...(m[2] ? { symbol: m[2] } : {}) };
+  });
+
+  const filesWithLocation = contract({
+    body: sections({}, [
+      section("Files", {
+        content: table({
+          columns: ["Location", "Kind", "Change"], // "Change" declares no cell → no transform
+          cells: { Location, Kind: z.enum(["new", "modify", "delete"]) },
+        }),
+      }),
+    ]),
+  });
+
+  /** The projected table `BlockNode` for the first section's first block. */
+  function tableNode(c: ReturnType<typeof contract>, source: string) {
+    const node = c.validate(source, CTX).tree.root.sections[0]!.blocks[0]!;
+    if (node.kind !== "table") throw new Error("expected a table block");
+    return node;
+  }
+
+  test("a transform cell caches its parsed output, retrievable via typed(row, col)", () => {
+    const src = [
+      "## Files",
+      "",
+      "| Location | Kind | Change |",
+      "| --- | --- | --- |",
+      "| src/core/content.ts#validateTable | modify | keep res.data |",
+    ].join("\n");
+    const node = tableNode(filesWithLocation, src);
+    // The transform cell's `z.output` is cached beside the raw rows.
+    expect(node.typed(0, "Location")).toEqual({
+      path: "src/core/content.ts",
+      symbol: "validateTable",
+    });
+    // Raw rows retained verbatim — the overlay is additive, not a replacement.
+    expect(node.rows[0]).toEqual(["src/core/content.ts#validateTable", "modify", "keep res.data"]);
+  });
+
+  test("a column with no declared cell reports typed(...) === undefined", () => {
+    const src = [
+      "## Files",
+      "",
+      "| Location | Kind | Change |",
+      "| --- | --- | --- |",
+      "| src/a.ts | modify | tidy |",
+    ].join("\n");
+    const node = tableNode(filesWithLocation, src);
+    expect(node.typed(0, "Change")).toBeUndefined(); // "Change" declares no cell → nothing cached
+    expect(node.typed(9, "Location")).toBeUndefined(); // an out-of-range row is undefined too
+  });
+
+  test("a failing transform caches nothing and still emits one content/table/cell finding", () => {
+    const src = [
+      "## Files", // 1
+      "", // 2
+      "| Location | Kind | Change |", // 3
+      "| --- | --- | --- |", // 4
+      "| #no-path | modify | oops |", // 5 row 0 — Location transform rejects (starts with #)
+    ].join("\n");
+    const res = filesWithLocation.validate(src, CTX);
+    // Exactly one cell finding, pinned to the offending row's line (A3 remap preserved).
+    expect(shape(res.findings)).toEqual([{ id: "content/table/cell", line: 5 }]);
+    // Nothing cached for the failed cell.
+    const node = res.tree.root.sections[0]!.blocks[0]!;
+    if (node.kind !== "table") throw new Error("expected a table block");
+    expect(node.typed(0, "Location")).toBeUndefined();
+  });
+
+  test("the cached output rides only on the accessor, never on the serialized tree", () => {
+    // The transform injects a sentinel that appears NOWHERE in the raw source, so finding it in
+    // a serialized `tree` would mean the typed overlay leaked onto the public surface.
+    const Tagged = z.string().transform((s) => ({ raw: s, tag: "CLOSURE_ONLY_9f3a" }));
+    const c = contract({
+      body: sections({}, [
+        section("Files", {
+          content: table({ columns: ["Location"], cells: { Location: Tagged } }),
+        }),
+      ]),
+    });
+    const src = ["## Files", "", "| Location |", "| --- |", "| src/a.ts |"].join("\n");
+    const { tree } = c.validate(src, CTX);
+    const node = tree.root.sections[0]!.blocks[0]!;
+    if (node.kind !== "table") throw new Error("expected a table block");
+    // Reachable by CALLING the accessor…
+    expect(node.typed(0, "Location")).toEqual({ raw: "src/a.ts", tag: "CLOSURE_ONLY_9f3a" });
+    // …but not serialized onto the node or the wider tree.
+    expect(JSON.stringify(node)).not.toContain("CLOSURE_ONLY_9f3a");
+    expect(JSON.stringify(tree)).not.toContain("CLOSURE_ONLY_9f3a");
   });
 });
 

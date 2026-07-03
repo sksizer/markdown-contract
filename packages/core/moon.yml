@@ -17,6 +17,16 @@
 layer: 'library'
 language: 'typescript'
 
+# Authoring rule (T-U6W3): moon v2's runtime-only toolchains do NOT put
+# node_modules/.bin on PATH, so a task must invoke its runner explicitly — never
+# a bare `tsc`/`vitest`/`biome`. On the `bun` toolchain (build, typecheck,
+# package-check, lint) use `bun run <script>`: `bun run` puts .bin on PATH so the
+# tool bin resolves. On the `node` toolchain (test, coverage, lint-deps) use
+# `npm run <script>` — NOT `bun run`: npm ships with Node, puts .bin on PATH, AND
+# runs the script under the real Node runtime. Keep `test`/`coverage` on the node
+# toolchain on purpose — that run is the Node-compatibility gate for the
+# runtime-neutral published library, so vitest must execute under Node; moving
+# them onto bun would run vitest under Bun and defeat the gate.
 tasks:
   # `bun run build` (= tsc -p tsconfig.build.json) → emits dist/. Runs on the bun
   # toolchain; `bun run` puts node_modules/.bin on PATH so tsc resolves. dist/ is
@@ -143,5 +153,21 @@ tasks:
     inputs:
       - 'dist/**/*'
       - 'package.json'
+    options:
+      cache: true
+
+  # `biome ci .` (via check:ci script) — the format + lint + import-organization
+  # gate (T-0MVN). CI mode = no writes. Config is the shared root biome.jsonc.
+  # BUN toolchain so `bun run` puts node_modules/.bin on PATH and the biome bin
+  # resolves. A real CI gate — rides the shared moon run list in ci.yml. Run with
+  # `moon run core:lint`.
+  lint:
+    command: 'bun run check:ci'
+    toolchain: 'bun'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'package.json'
+      - '/biome.jsonc'
     options:
       cache: true

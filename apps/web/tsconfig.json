@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
+    "lib": ["ES2023"],
     "target": "ES2022",
     "module": "Preserve",
     "moduleResolution": "bundler",
     "moduleDetection": "force",
     "strict": true,
     "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "noEmit": true,

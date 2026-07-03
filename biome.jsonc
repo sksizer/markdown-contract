@@ -1,0 +1,57 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": ["**", "!**/dist", "!**/coverage", "!bun.lockb"]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        // Per-function cognitive-complexity gate (T-0MVN). Enforced at "error" so
+        // `biome ci` blocks NEW regressions, with the ceiling pinned to 46 = the
+        // current maximum in the codebase (declarative/text.ts). 16 functions
+        // already exceed biome's default of 15; they are tracked for a follow-up
+        // refactor and deliberately NOT touched in this behavior-preserving
+        // reformat — the gate stops the worst function from getting worse.
+        "noExcessiveCognitiveComplexity": {
+          "level": "error",
+          "options": { "maxAllowedComplexity": 46 }
+        }
+      },
+      // noExplicitAny (104 sites) and noNonNullAssertion (185 sites) are pervasive
+      // in the parser/AST + Zod code and are kept relaxed at "warn" deliberately
+      // (non-blocking) rather than refactored in this pass.
+      "suspicious": {
+        "noExplicitAny": "warn"
+      },
+      "style": {
+        "noNonNullAssertion": "warn"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}

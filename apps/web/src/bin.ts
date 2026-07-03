@@ -13,6 +13,8 @@
  * Like core's bin, this wrapper is the only `process.exit` owner on the CLI
  * path; the daemon path never exits on its own (foreground until signaled).
  */
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 
 import { runCli } from "markdown-contract/cli";
@@ -88,4 +90,10 @@ async function main(): Promise<void> {
   process.exit(code);
 }
 
-void main();
+// Run only when executed as the bin (not on import) — the Node-standard ESM entry
+// check, matching `packages/core/src/cli/index.ts`, so importing this module never
+// boots a server or exits the process.
+const entryUrl = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : "";
+if (import.meta.url === entryUrl) {
+  void main();
+}

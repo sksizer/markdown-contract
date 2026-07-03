@@ -34,8 +34,11 @@ import type {
   Table,
   Yaml,
 } from "mdast";
+import remarkFrontmatter from "remark-frontmatter";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
 import { isMap, isSeq, parseDocument } from "yaml";
-
 import { extractTrailingAnchor, isStandaloneAnchor } from "./dialect/index.js";
 import { bodyAfterFrontmatter } from "./frontmatter.js";
 import type {
@@ -46,11 +49,6 @@ import type {
   SectionNode,
   SourcePos,
 } from "./types.js";
-
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkGfm from "remark-gfm";
-import remarkFrontmatter from "remark-frontmatter";
 
 // ── mdast → SourcePos ───────────────────────────────────────────────────────────
 
@@ -158,12 +156,30 @@ function projectTable(node: Table): {
   );
   const rowLines = dataRows.map((row) => posOf(row));
 
+  // A1 — the sparse typed overlay. A closure-captured store (NOT an enumerable property on the
+  // block) so `typed`/`setTyped` are the only way in and the cache never serializes onto the
+  // public `tree`. Nested `Map<row, Map<col, value>>` keys by column NAME safely — a delimiter
+  // join would collide when a column name itself contains the delimiter. Starts empty; the
+  // content plane's per-cell `safeParse` pass fills it (a plain-string table leaves it empty).
+  const typedStore = new Map<number, Map<string, unknown>>();
+
   const block: Extract<BlockNode, { kind: "table" }> = {
     kind: "table",
     columns,
     rows,
     rowPos(i: number): SourcePos {
       return rowLines[i] ?? { line: 0 };
+    },
+    typed(row: number, col: string): unknown | undefined {
+      return typedStore.get(row)?.get(col);
+    },
+    setTyped(row: number, col: string, value: unknown): void {
+      let byCol = typedStore.get(row);
+      if (byCol === undefined) {
+        byCol = new Map<string, unknown>();
+        typedStore.set(row, byCol);
+      }
+      byCol.set(col, value);
     },
     pos: posOf(node),
   };
@@ -402,10 +418,7 @@ function offsetToLine(text: string, offset: number): number {
 
 // ── parse() — the public entry point ─────────────────────────────────────────────
 
-const PROCESSOR = unified()
-  .use(remarkParse)
-  .use(remarkGfm)
-  .use(remarkFrontmatter, ["yaml"]);
+const PROCESSOR = unified().use(remarkParse).use(remarkGfm).use(remarkFrontmatter, ["yaml"]);
 
 /**
  * Parse raw markdown (frontmatter + body) into a positioned `DocTree`.

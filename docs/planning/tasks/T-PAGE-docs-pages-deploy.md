@@ -66,7 +66,7 @@ limit needs to be increased"), so any new workflow will not execute until that i
 |---|---|---|
 | `.github/workflows/deploy-docs.yml` | new | Bun-bootstrapped Pages workflow: `moon run docs:build` → upload-pages-artifact → deploy-pages. |
 | `README.md` | modify | Link to the published documentation URL. |
-| `apps/docs/astro.config.mjs` | maybe | Confirm `base`/`site` match the Pages project URL. |
+| `apps/docs/astro.config.mjs` | modify | Confirm `base`/`site` match the Pages project URL. |
 
 ## Acceptance criteria
 

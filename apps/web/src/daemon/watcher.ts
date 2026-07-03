@@ -7,7 +7,7 @@
  * Scope: only markdown and contract-config changes trigger (`.md`, `.yaml`,
  * `.yml`); `.git`, `node_modules`, and dotfile trees are ignored.
  */
-import { watch, type FSWatcher } from "node:fs";
+import { type FSWatcher, watch } from "node:fs";
 
 /** Quiet window after the last event before a vault's re-run fires. */
 const DEBOUNCE_MS = 300;

@@ -52,9 +52,9 @@ interface ZodIssue {
   format?: string;
 }
 
-/** The runtime face of a zod schema: `safeParse` plus the issue stream on failure. */
+/** The runtime face of a zod schema: `safeParse` plus the parsed `data` / issue stream. */
 interface RuntimeZod {
-  safeParse(value: unknown): { success: boolean; error?: { issues: ZodIssue[] } };
+  safeParse(value: unknown): { success: boolean; data?: unknown; error?: { issues: ZodIssue[] } };
 }
 
 /** Cast a placeholder `ZodType` to its real runtime face (the `ZodType` swap is T-6PV4's). */
@@ -181,13 +181,28 @@ function validateLeaf(
 
   switch (leaf.kind) {
     case "table":
-      validateTable(block as Extract<BlockNode, { kind: "table" }>, leaf.config as TableConfig, ctx, out);
+      validateTable(
+        block as Extract<BlockNode, { kind: "table" }>,
+        leaf.config as TableConfig,
+        ctx,
+        out,
+      );
       break;
     case "list":
-      validateList(block as Extract<BlockNode, { kind: "list" }>, leaf.config as ListConfig, ctx, out);
+      validateList(
+        block as Extract<BlockNode, { kind: "list" }>,
+        leaf.config as ListConfig,
+        ctx,
+        out,
+      );
       break;
     case "code":
-      validateCode(block as Extract<BlockNode, { kind: "code" }>, leaf.config as CodeConfig, ctx, out);
+      validateCode(
+        block as Extract<BlockNode, { kind: "code" }>,
+        leaf.config as CodeConfig,
+        ctx,
+        out,
+      );
       break;
     case "paragraph":
       validateParagraph(
@@ -266,7 +281,11 @@ function validateTable(
       node.rows.forEach((row, i) => {
         const value = row[colIdx] ?? "";
         const res = zod.safeParse(value);
-        if (!res.success) {
+        if (res.success) {
+          // A1 — keep the parsed output (previously discarded) and cache it on the table node's
+          // sparse typed overlay, from this SAME `safeParse` (no second Zod pass / traversal).
+          node.setTyped(i, col, res.data);
+        } else {
           out.push(
             ctx.finding({
               id: "content/table/cell",
@@ -450,7 +469,8 @@ function frontmatterMessage(issue: ZodIssue, id: string, data: unknown): string 
       // zod v4 literal/enum mismatch — `values` is the allowed set (one entry for a literal).
       const values = Array.isArray(issue.values) ? issue.values : [];
       if (values.length === 1) return `${at} must be ‘${String(values[0])}’`;
-      if (values.length > 1) return `${at} must be one of ${values.map((v) => `‘${String(v)}’`).join(", ")}`;
+      if (values.length > 1)
+        return `${at} must be one of ${values.map((v) => `‘${String(v)}’`).join(", ")}`;
       return `${at} has an invalid value`;
     }
     case "invalid_type": {
@@ -471,7 +491,9 @@ function frontmatterMessage(issue: ZodIssue, id: string, data: unknown): string 
     case "custom":
       // a `.refine()` / `.superRefine()` predicate speaks its own rule — keep its message,
       // field-qualified when it addresses a key, verbatim when it is document-level.
-      return field && issue.message ? `${at}: ${issue.message}` : (issue.message ?? `${at} is invalid`);
+      return field && issue.message
+        ? `${at}: ${issue.message}`
+        : (issue.message ?? `${at} is invalid`);
     default:
       // an unhandled code: lead with the field but keep Zod's detail rather than discard it.
       return field

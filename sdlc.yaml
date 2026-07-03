@@ -5,6 +5,7 @@ lease_authority: origin
 quality_checks:
   - bunx moon run core:build
   - bunx moon run core:typecheck
+  - bunx moon run core:lint
   - bunx moon run core:test
   - bunx moon run core:package-check
 worktree_init:

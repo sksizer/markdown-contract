@@ -76,7 +76,9 @@ describe("matchText — count occurrences and pin each hit's source position", (
     });
 
     test("off: an exact single-space occurrence still matches", () => {
-      expect(matchText("a widget protocol b", { pattern: "widget protocol", normalize: false })).toEqual({
+      expect(
+        matchText("a widget protocol b", { pattern: "widget protocol", normalize: false }),
+      ).toEqual({
         count: 1,
         positions: [{ line: 1, col: 3 }],
       });
@@ -158,7 +160,14 @@ describe("buildTextFindings — requires / forbids / count, positioned per D-001
     const spec: TextMatchSpec = { pattern: "outcome" };
     const match = matchText("the outcome is clear", spec);
     expect(
-      buildTextFindings({ kind: "requires", spec, match, scopeKey: "summary", scopePos: { line: 6, col: 1 }, ctx }),
+      buildTextFindings({
+        kind: "requires",
+        spec,
+        match,
+        scopeKey: "summary",
+        scopePos: { line: 6, col: 1 },
+        ctx,
+      }),
     ).toEqual([]);
   });
 
@@ -225,7 +234,14 @@ describe("buildTextFindings — requires / forbids / count, positioned per D-001
     const spec: TextMatchSpec = { pattern: "na", min: 1, max: 1 };
     const match = matchText("na na", spec);
     expect(
-      buildTextFindings({ kind: "requires", spec, match, scopeKey: "doc", scopePos: { line: 1, col: 1 }, ctx }),
+      buildTextFindings({
+        kind: "requires",
+        spec,
+        match,
+        scopeKey: "doc",
+        scopePos: { line: 1, col: 1 },
+        ctx,
+      }),
     ).toEqual([
       {
         id: synthesizeTextId("count", "doc", spec),
@@ -240,7 +256,14 @@ describe("buildTextFindings — requires / forbids / count, positioned per D-001
   test("count shortfall (requires min ≥ 2) → text/count 'expected at least M'", () => {
     const spec: TextMatchSpec = { pattern: "na", min: 2 };
     const match = matchText("na", spec);
-    const f = buildTextFindings({ kind: "requires", spec, match, scopeKey: "doc", scopePos: { line: 1, col: 1 }, ctx })[0]!;
+    const f = buildTextFindings({
+      kind: "requires",
+      spec,
+      match,
+      scopeKey: "doc",
+      scopePos: { line: 1, col: 1 },
+      ctx,
+    })[0]!;
     expect(f.id).toBe(synthesizeTextId("count", "doc", spec));
     expect(f.message).toBe('"na" found 1 times, expected at least 2');
   });
@@ -248,7 +271,14 @@ describe("buildTextFindings — requires / forbids / count, positioned per D-001
   test("forbids with a positive max → text/count when the cap is exceeded", () => {
     const spec: TextMatchSpec = { pattern: "na", max: 2 };
     const match = matchText("na na na", spec);
-    const f = buildTextFindings({ kind: "forbids", spec, match, scopeKey: "doc", scopePos: { line: 1, col: 1 }, ctx })[0]!;
+    const f = buildTextFindings({
+      kind: "forbids",
+      spec,
+      match,
+      scopeKey: "doc",
+      scopePos: { line: 1, col: 1 },
+      ctx,
+    })[0]!;
     expect(f.id).toBe(synthesizeTextId("count", "doc", spec));
     expect(f.message).toBe('"na" found 3 times, expected at most 2');
   });

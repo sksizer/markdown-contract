@@ -17,7 +17,7 @@ import { pathToFileURL } from "node:url";
 import { runCli } from "./run.js";
 
 // Surface the testable core as the cli module's public API (consumed by ./index.test.ts).
-export { runCli, type CliResult } from "./run.js";
+export { type CliResult, runCli } from "./run.js";
 
 /**
  * The thin exit wrapper — the SINGLE `process.exit` site. Runs the pure core, writes

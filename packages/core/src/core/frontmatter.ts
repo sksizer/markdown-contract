@@ -1,7 +1,7 @@
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkFrontmatter from "remark-frontmatter";
 import type { Root, Yaml } from "mdast";
+import remarkFrontmatter from "remark-frontmatter";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
 
 // Minimal recognizer: same frontmatter extension parse() uses (remark-frontmatter
 // wraps micromark-extension-frontmatter), without the gfm/section/wikilink projection.

@@ -9,15 +9,16 @@
  * v1 covers the frontmatter + structure + content planes as pure declarative YAML. The code
  * escape hatch (`$ref`) and cross-cutting rules are deferred (D-0008 § Out of scope).
  */
-export { loadContract, loadContractFile, compileContractObject } from "./load.js";
+
 export { loadConfig, loadConfigFile } from "./config.js";
 export { DeclarativeError } from "./errors.js";
-export type { DeclarativeDoc } from "./parse.js";
-// Config inference (D-0009): the `init` pipeline that scaffolds a tight-but-accepting config.
-export { inferConfig } from "./infer.js";
 export type {
   InferOptions,
+  InferResult,
   InferredContract,
   InferredFile,
-  InferResult,
 } from "./infer.js";
+// Config inference (D-0009): the `init` pipeline that scaffolds a tight-but-accepting config.
+export { inferConfig } from "./infer.js";
+export { compileContractObject, loadContract, loadContractFile } from "./load.js";
+export type { DeclarativeDoc } from "./parse.js";

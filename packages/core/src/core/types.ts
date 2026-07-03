@@ -99,6 +99,16 @@ export type BlockNode =
       rows: string[][];
       /** C3/A3 — row index → source line */
       rowPos(i: number): SourcePos;
+      /**
+       * A1 — the sparse typed overlay beside the raw `rows`. Returns the cached `z.output` of a
+       * declared `cells` schema for the cell at (`row`, column-name `col`), or `undefined` when no
+       * transform cached a value there (the common case — a plain-string table caches nothing).
+       * Populated by the content plane's EXISTING per-cell `safeParse` pass; it rides on a closure,
+       * not an enumerable property, so it never serializes onto the public `tree`.
+       */
+      typed(row: number, col: string): unknown | undefined;
+      /** Internal writer — the content plane caches a successful cell `safeParse`'s output here. */
+      setTyped(row: number, col: string, value: unknown): void;
       anchor?: string;
       pos: SourcePos;
     }
@@ -138,8 +148,17 @@ export interface Finding {
 
 export type BlockKind = "table" | "list" | "code" | "paragraph";
 
-/** A content leaf — a structural kind-gate (checked first) plus a content Zod schema over the node. */
-export interface LeafSpec {
+/**
+ * A content leaf — a structural kind-gate (checked first) plus a content Zod schema over the node.
+ *
+ * `Row` is a phantom (never present at runtime) carrying the leaf's typed read-back shape — for a
+ * `table(...)` leaf, the row a transforming `cells` map projects to (`z.output` per cell, e.g. a
+ * `Location` cell that `.transform()`s a string into `{ path, symbol? }`). `table()` is generic
+ * over its `cells` map so its return type surfaces that row here; the real per-column literal
+ * wiring into `Infer` / `TableView<Row>` lands in T-SCRB. Defaults to `unknown`, so a bare
+ * `LeafSpec` (and the non-table leaves) are unchanged.
+ */
+export interface LeafSpec<Row = unknown> {
   kind: BlockKind;
   schema: ZodType;
   /**
@@ -148,6 +167,8 @@ export interface LeafSpec {
    * `kind`; this carries everything else through untouched.
    */
   config?: unknown;
+  /** phantom — the typed row a transforming `cells` map reads back to; never present at runtime. */
+  readonly _row?: Row;
 }
 
 /** `order` and `allowUnknown` are independent knobs over a level's content model. */
@@ -382,10 +403,11 @@ export type Doc<F = unknown, B = unknown> = {
  * refinement is left as deliberate future work; `B & SectionGroup` keeps `Infer` correct and
  * navigable in the meantime.
  */
-export type Infer<C> = C extends Contract<infer F, infer B>
-  ? {
-      frontmatter: F;
-      body: B & SectionGroup;
-      byAnchor(id: string): BlockView | undefined;
-    }
-  : never;
+export type Infer<C> =
+  C extends Contract<infer F, infer B>
+    ? {
+        frontmatter: F;
+        body: B & SectionGroup;
+        byAnchor(id: string): BlockView | undefined;
+      }
+    : never;

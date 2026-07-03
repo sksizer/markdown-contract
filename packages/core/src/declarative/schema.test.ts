@@ -49,7 +49,9 @@ describe("compileSchema — the closed vocabulary → Zod", () => {
   });
 
   it("optional / default / nullable wrappers", () => {
-    expect(compileSchema({ type: "string", optional: true }).safeParse(undefined).success).toBe(true);
+    expect(compileSchema({ type: "string", optional: true }).safeParse(undefined).success).toBe(
+      true,
+    );
     expect(
       compileSchema({ type: "array", of: { type: "string" }, default: [] }).safeParse(undefined),
     ).toMatchObject({ success: true, data: [] });
@@ -90,7 +92,9 @@ describe("compileSchema — the closed vocabulary → Zod", () => {
 
   it("rejects an unknown format with a helpful message", () => {
     expect(() => compileSchema({ type: "string", format: "iban" })).toThrow(DeclarativeError);
-    expect(() => compileSchema({ type: "string", format: "iban" })).toThrow(/unsupported string format/);
+    expect(() => compileSchema({ type: "string", format: "iban" })).toThrow(
+      /unsupported string format/,
+    );
   });
 
   it("rejects the deferred $ref code escape hatch", () => {

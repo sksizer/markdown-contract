@@ -13,6 +13,10 @@ import c08 from "./08-nested-subsections.js";
 import c09 from "./09-unknown-sections.js";
 import c10 from "./10-contracterror-door.js";
 import c11 from "./11-real-task-consumed.js";
+import c12 from "./12-typed-row-transform.js";
+import c13 from "./13-typed-list-items.js";
+import c14 from "./14-cell-position.js";
+import c15 from "./15-no-transform-parity.js";
 
 export const consumptionFixtures: ConsumptionFixture[] = [
   c01,
@@ -26,4 +30,8 @@ export const consumptionFixtures: ConsumptionFixture[] = [
   c09,
   c10,
   c11,
+  c12,
+  c13,
+  c14,
+  c15,
 ];

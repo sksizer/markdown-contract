@@ -1,13 +1,6 @@
 import { describe, expect, test } from "vitest";
-
+import { blocksOfKind, findSection, sectionForLine, sectionSpans, sectionsAt } from "./navigate.js";
 import { parse } from "./projection.js";
-import {
-  blocksOfKind,
-  findSection,
-  sectionForLine,
-  sectionSpans,
-  sectionsAt,
-} from "./navigate.js";
 
 // navigate.ts holds the section-lookup primitives consumers build on `root.sections`.
 // Each case parses a small document and reads back exactly what the helper returns.

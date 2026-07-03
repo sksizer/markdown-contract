@@ -1,5 +1,5 @@
-import { contract, section, sections } from "../../../src/index.js";
 import { z } from "zod";
+import { contract, section, sections } from "../../../src/index.js";
 import type { ConsumptionFixture } from "../../harness.js";
 import { loadSource } from "../../harness.js";
 

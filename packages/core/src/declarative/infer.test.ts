@@ -4,17 +4,16 @@
  * direct, fast assertions over the model an in-memory vault produces — base-type frontmatter,
  * required/optional split, order detection, the strict flag, naming, and the emitted YAML.
  */
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { parse } from "yaml";
-
-import { compileContractObject } from "./load.js";
-import { inferConfig } from "./infer.js";
 import type { InferredContract } from "./infer.js";
+import { inferConfig } from "./infer.js";
+import { compileContractObject } from "./load.js";
 
 let root: string;
 
@@ -28,7 +27,11 @@ function file(rel: string, body: string): void {
 /** The single contract's `def`, typed loosely for direct property reads. */
 function def(c: InferredContract): {
   frontmatter?: { strict?: boolean; fields?: Record<string, Record<string, unknown>> };
-  body?: { order?: string; allowUnknown?: boolean; sections?: Array<{ section: string; aliases?: string[]; optional?: boolean }> };
+  body?: {
+    order?: string;
+    allowUnknown?: boolean;
+    sections?: Array<{ section: string; aliases?: string[]; optional?: boolean }>;
+  };
 } {
   return c.def as never;
 }
@@ -188,12 +191,16 @@ describe("inferConfig — const string-length cap (T-2CSL)", () => {
 
   it("pins a uniform short string as const", () => {
     repeat(3, "label", "draft"); // 5 chars, uniform across 3 docs (clears the floor) → const
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.label).toEqual({ const: "draft" });
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.label).toEqual({
+      const: "draft",
+    });
   });
 
   it("a uniform string longer than the cap falls through to a plain string", () => {
     repeat(3, "note", `"${"x".repeat(65)}"`); // 65 > default cap 64
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.note).toEqual({ type: "string" });
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.note).toEqual({
+      type: "string",
+    });
   });
 
   it("the cap is inclusive: a string of exactly the cap length is still const", () => {
@@ -204,9 +211,10 @@ describe("inferConfig — const string-length cap (T-2CSL)", () => {
 
   it("--max-const-len 0 disables string const; numeric const is untouched", () => {
     for (let i = 0; i < 3; i++) file(`f${i}.md`, "---\ns: hi\nn: 5\n---\n\n## S\n\nx\n");
-    const fields = def(inferConfig(root, { maxConstStringLength: 0 }).contracts[0]!).frontmatter!.fields!;
+    const fields = def(inferConfig(root, { maxConstStringLength: 0 }).contracts[0]!).frontmatter!
+      .fields!;
     expect(fields.s).toEqual({ type: "string" }); // every non-empty string is over a 0 cap
-    expect(fields.n).toEqual({ const: 5 });        // the cap is string-only
+    expect(fields.n).toEqual({ const: 5 }); // the cap is string-only
   });
 
   it("excludes a field from enum when any observed value is over the cap", () => {
@@ -215,7 +223,9 @@ describe("inferConfig — const string-length cap (T-2CSL)", () => {
       const v = i % 2 === 0 ? "short" : `"${"y".repeat(70)}"`;
       file(`g${i}.md`, `---\ntag: ${v}\n---\n\n## S\n\nx\n`);
     }
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.tag).toEqual({ type: "string" });
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.tag).toEqual({
+      type: "string",
+    });
   });
 });
 
@@ -226,22 +236,31 @@ describe("inferConfig — min-const-examples floor (T-3MCE)", () => {
 
   it("does not pin a uniform field seen in fewer than 3 docs (default floor)", () => {
     repeat(2, "kind", "policy"); // uniform, but only 2 examples < 3
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.kind).toEqual({ type: "string" });
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.kind).toEqual({
+      type: "string",
+    });
   });
 
   it("pins a uniform field once seen in exactly 3 docs (the boundary)", () => {
     repeat(3, "kind", "policy");
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.kind).toEqual({ const: "policy" });
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.kind).toEqual({
+      const: "policy",
+    });
   });
 
   it("a uniform date below the floor falls to format, not const", () => {
     repeat(2, "created", "2026-06-21");
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.created).toEqual({ type: "string", format: "date" });
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.created).toEqual({
+      type: "string",
+      format: "date",
+    });
   });
 
   it("--min-const-examples 1 pins on a single example", () => {
     repeat(1, "kind", "policy");
-    expect(def(inferConfig(root, { minConstExamples: 1 }).contracts[0]!).frontmatter!.fields!.kind).toEqual({ const: "policy" });
+    expect(
+      def(inferConfig(root, { minConstExamples: 1 }).contracts[0]!).frontmatter!.fields!.kind,
+    ).toEqual({ const: "policy" });
   });
 });
 
@@ -249,14 +268,21 @@ describe("inferConfig — nullable fields (accept-by-construction)", () => {
   it("an all-null field infers a nullable string placeholder (not a bare string that rejects null)", () => {
     file("a.md", "---\nparent: null\n---\n\n## S\n\nx\n");
     file("b.md", "---\nparent: null\n---\n\n## S\n\nx\n");
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.parent).toEqual({ type: "string", nullable: true });
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.parent).toEqual({
+      type: "string",
+      nullable: true,
+    });
   });
 
   it("a field mixing null and non-null infers the non-null type, marked nullable", () => {
     file("a.md", "---\nn: 1\n---\n\n## S\n\nx\n");
     file("b.md", "---\nn: null\n---\n\n## S\n\nx\n");
     // 'n' is present in both files (one null) → required; the non-null value is a number.
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.n).toEqual({ type: "number", int: true, nullable: true });
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.n).toEqual({
+      type: "number",
+      int: true,
+      nullable: true,
+    });
   });
 });
 

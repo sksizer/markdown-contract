@@ -7,7 +7,9 @@ import type { Finding } from "./types.js";
 // finding() factory lives on Ctx — see registry.ts; the standalone finding() export stays a
 // stub until the validate plane assembles findings.)
 
-const findings: Finding[] = [{ id: "frontmatter/enum", level: "error", path: "x.md", message: "bad status" }];
+const findings: Finding[] = [
+  { id: "frontmatter/enum", level: "error", path: "x.md", message: "bad status" },
+];
 
 describe("ContractError — the failure read() throws", () => {
   test("is an Error named ContractError that carries the findings as data", () => {
@@ -18,7 +20,9 @@ describe("ContractError — the failure read() throws", () => {
   });
 
   test("its default message counts the findings", () => {
-    expect(new ContractError(findings).message).toBe("contract validation failed with 1 finding(s)");
+    expect(new ContractError(findings).message).toBe(
+      "contract validation failed with 1 finding(s)",
+    );
   });
 
   test("a custom message is used verbatim", () => {

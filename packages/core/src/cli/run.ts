@@ -16,15 +16,15 @@ import { stringify as stringifyYaml } from "yaml";
 
 import {
   compileContractObject,
+  type InferOptions,
+  type InferResult,
+  type InferredContract,
+  type InferredFile,
   inferConfig,
   loadConfigFile,
   loadContractFile,
-  type InferOptions,
-  type InferredContract,
-  type InferredFile,
-  type InferResult,
 } from "../declarative/index.js";
-import { runCorpus, type CorpusConfig } from "../runner/index.js";
+import { type CorpusConfig, runCorpus } from "../runner/index.js";
 import { formatHuman, formatJson, formatRunSummary, formatSarif } from "./format.js";
 
 const USAGE = [
@@ -59,6 +59,40 @@ export interface CliResult {
 }
 
 /**
+ * `parseArgs` over the CLI flag schema — extracted so `runCli` can name its exact
+ * return type (`ReturnType<typeof parseCliArgs>`) instead of relying on an implicit
+ * `any` for the `parsed` binding.
+ */
+function parseCliArgs(argv: string[]) {
+  return parseArgs({
+    args: argv,
+    options: {
+      format: { type: "string", default: "human" }, // human | json | sarif
+      config: { type: "string" },
+      contract: { type: "string", multiple: true }, // a YAML contract (repeatable for pairs)
+      path: { type: "string", multiple: true }, // the target dir paired with each --contract
+      glob: { type: "string", multiple: true }, // include filter (alias of --include), relative to run root
+      include: { type: "string", multiple: true }, // include filter, relative to run root
+      exclude: { type: "string", multiple: true }, // exclude filter, relative to run root
+      help: { type: "boolean", short: "h" },
+      // `init` flags (D-0009 § The CLI surface).
+      meta: { type: "boolean" }, // emit a meta-config + per-dir contracts (default: single)
+      depth: { type: "string" }, // directory cut for --meta (default 1; 0 == single)
+      relax: { type: "boolean" }, // loosen generation toward a permissive floor
+      inline: { type: "boolean" }, // one self-contained config instead of contracts/ files
+      out: { type: "string" }, // where to write (default: cwd)
+      force: { type: "boolean" }, // overwrite an existing config (default: refuse)
+      "dry-run": { type: "boolean" }, // print the would-be files to stdout; write nothing
+      check: { type: "boolean" }, // verify an existing config still accepts the tree
+      "infer-bounds": { type: "boolean" }, // opt into pattern / min / max inference
+      "max-const-len": { type: "string" }, // cap: strings longer than this never become const/enum
+      "min-const-examples": { type: "string" }, // floor: a uniform scalar needs >= n docs to become const
+    },
+    allowPositionals: true,
+  });
+}
+
+/**
  * The pure, testable CLI core. Parses `argv` (everything after `node bin`), loads the
  * config, runs the corpus, formats the findings, and returns the exit code plus the
  * captured stdout/stderr. NEVER calls `process.exit` and NEVER writes to real streams.
@@ -67,42 +101,18 @@ export interface CliResult {
  * error (unknown command, bad/missing config, unsupported config extension, bad
  * `--format`). The `2` cases are raised here; `0`/`1` come straight from `runCorpus`.
  */
-export async function runCli(
-  argv: string[],
-  opts?: { cwd?: string },
-): Promise<CliResult> {
+export async function runCli(argv: string[], opts?: { cwd?: string }): Promise<CliResult> {
   const cwd = opts?.cwd ?? process.cwd();
 
-  let parsed;
+  let parsed: ReturnType<typeof parseCliArgs>;
   try {
-    parsed = parseArgs({
-      args: argv,
-      options: {
-        format: { type: "string", default: "human" }, // human | json | sarif
-        config: { type: "string" },
-        contract: { type: "string", multiple: true }, // a YAML contract (repeatable for pairs)
-        path: { type: "string", multiple: true }, // the target dir paired with each --contract
-        glob: { type: "string", multiple: true }, // include filter (alias of --include), relative to run root
-        include: { type: "string", multiple: true }, // include filter, relative to run root
-        exclude: { type: "string", multiple: true }, // exclude filter, relative to run root
-        help: { type: "boolean", short: "h" },
-        // `init` flags (D-0009 § The CLI surface).
-        meta: { type: "boolean" }, // emit a meta-config + per-dir contracts (default: single)
-        depth: { type: "string" }, // directory cut for --meta (default 1; 0 == single)
-        relax: { type: "boolean" }, // loosen generation toward a permissive floor
-        inline: { type: "boolean" }, // one self-contained config instead of contracts/ files
-        out: { type: "string" }, // where to write (default: cwd)
-        force: { type: "boolean" }, // overwrite an existing config (default: refuse)
-        "dry-run": { type: "boolean" }, // print the would-be files to stdout; write nothing
-        check: { type: "boolean" }, // verify an existing config still accepts the tree
-        "infer-bounds": { type: "boolean" }, // opt into pattern / min / max inference
-        "max-const-len": { type: "string" }, // cap: strings longer than this never become const/enum
-        "min-const-examples": { type: "string" }, // floor: a uniform scalar needs >= n docs to become const
-      },
-      allowPositionals: true,
-    });
+    parsed = parseCliArgs(argv);
   } catch (err) {
-    return { code: 2, stdout: "", stderr: `markdown-contract: ${(err as Error).message}\n${USAGE}` };
+    return {
+      code: 2,
+      stdout: "",
+      stderr: `markdown-contract: ${(err as Error).message}\n${USAGE}`,
+    };
   }
 
   const { values, positionals } = parsed;
@@ -118,7 +128,11 @@ export async function runCli(
   }
 
   if (command !== "validate") {
-    return { code: 2, stdout: "", stderr: `markdown-contract: unknown command "${command}"\n${USAGE}` };
+    return {
+      code: 2,
+      stdout: "",
+      stderr: `markdown-contract: unknown command "${command}"\n${USAGE}`,
+    };
   }
 
   const format = values.format ?? "human";
@@ -137,10 +151,18 @@ export async function runCli(
   // The contract binding comes from EITHER an inline `--contract` (one binary, config-less
   // parameterization — D-0008 § CLI parameterization) OR a `--config` file, never both.
   if (contracts.length > 0 && values.config !== undefined) {
-    return { code: 2, stdout: "", stderr: `markdown-contract: use either --contract or --config, not both\n${USAGE}` };
+    return {
+      code: 2,
+      stdout: "",
+      stderr: `markdown-contract: use either --contract or --config, not both\n${USAGE}`,
+    };
   }
   if (contracts.length === 0 && paths.length > 0) {
-    return { code: 2, stdout: "", stderr: `markdown-contract: --path requires a matching --contract\n${USAGE}` };
+    return {
+      code: 2,
+      stdout: "",
+      stderr: `markdown-contract: --path requires a matching --contract\n${USAGE}`,
+    };
   }
 
   // Resolve the run root (the runner's cwd) and the `CorpusConfig`. Both inline and
@@ -159,7 +181,11 @@ export async function runCli(
   }
 
   if (!existsSync(runRoot)) {
-    return { code: 2, stdout: "", stderr: `markdown-contract: path not found: ${pathArg ?? runRoot}` };
+    return {
+      code: 2,
+      stdout: "",
+      stderr: `markdown-contract: path not found: ${pathArg ?? runRoot}`,
+    };
   }
 
   // Global glob pre-filter (relative to the run root), applied in EVERY mode incl.
@@ -187,7 +213,10 @@ export async function runCli(
       ? formatJson(result.findings)
       : format === "sarif"
         ? formatSarif(result.findings)
-        : `${formatRunSummary(result.stats, config.rules.map((r) => r.name))}\n\n${formatHuman(result.findings)}`;
+        : `${formatRunSummary(
+            result.stats,
+            config.rules.map((r) => r.name),
+          )}\n\n${formatHuman(result.findings)}`;
 
   return { code: result.exitCode, stdout, stderr: "" };
 }
@@ -237,7 +266,11 @@ const INIT_CONFIG_NAME = "markdown-contract.yaml";
  */
 function runInit(cwd: string, roots: string[], flags: InitFlags): CliResult {
   if (roots.length === 0) {
-    return { code: 2, stdout: "", stderr: `markdown-contract: init needs at least one <dir>\n${USAGE}` };
+    return {
+      code: 2,
+      stdout: "",
+      stderr: `markdown-contract: init needs at least one <dir>\n${USAGE}`,
+    };
   }
 
   // --depth parses to a non-negative integer; a bad value is a usage error.
@@ -245,7 +278,11 @@ function runInit(cwd: string, roots: string[], flags: InitFlags): CliResult {
   if (flags.depth !== undefined) {
     depth = Number(flags.depth);
     if (!Number.isInteger(depth) || depth < 0) {
-      return { code: 2, stdout: "", stderr: `markdown-contract: --depth must be a non-negative integer (got '${flags.depth}')` };
+      return {
+        code: 2,
+        stdout: "",
+        stderr: `markdown-contract: --depth must be a non-negative integer (got '${flags.depth}')`,
+      };
     }
   }
 
@@ -254,7 +291,11 @@ function runInit(cwd: string, roots: string[], flags: InitFlags): CliResult {
   if (flags["max-const-len"] !== undefined) {
     maxConstStringLength = Number(flags["max-const-len"]);
     if (!Number.isInteger(maxConstStringLength) || maxConstStringLength < 0) {
-      return { code: 2, stdout: "", stderr: `markdown-contract: --max-const-len must be a non-negative integer (got '${flags["max-const-len"]}')` };
+      return {
+        code: 2,
+        stdout: "",
+        stderr: `markdown-contract: --max-const-len must be a non-negative integer (got '${flags["max-const-len"]}')`,
+      };
     }
   }
 
@@ -263,7 +304,11 @@ function runInit(cwd: string, roots: string[], flags: InitFlags): CliResult {
   if (flags["min-const-examples"] !== undefined) {
     minConstExamples = Number(flags["min-const-examples"]);
     if (!Number.isInteger(minConstExamples) || minConstExamples < 1) {
-      return { code: 2, stdout: "", stderr: `markdown-contract: --min-const-examples must be an integer >= 1 (got '${flags["min-const-examples"]}')` };
+      return {
+        code: 2,
+        stdout: "",
+        stderr: `markdown-contract: --min-const-examples must be an integer >= 1 (got '${flags["min-const-examples"]}')`,
+      };
     }
   }
 
@@ -362,7 +407,11 @@ function runInitCheck(
   for (const root of absRoots) {
     const configPath = resolve(root, INIT_CONFIG_NAME);
     if (!existsSync(configPath)) {
-      return { code: 2, stdout: "", stderr: `markdown-contract: no config to --check at ${configPath}` };
+      return {
+        code: 2,
+        stdout: "",
+        stderr: `markdown-contract: no config to --check at ${configPath}`,
+      };
     }
     let result: ReturnType<typeof runCorpus>;
     try {
@@ -372,7 +421,9 @@ function runInitCheck(
     }
     const errors = result.findings.filter((f) => f.level === "error");
     if (errors.length > 0) hadError = true;
-    lines.push(`check ${root}: ${errors.length === 0 ? "clean" : `${errors.length} error finding(s) — drifted`}`);
+    lines.push(
+      `check ${root}: ${errors.length === 0 ? "clean" : `${errors.length} error finding(s) — drifted`}`,
+    );
   }
   return { code: hadError ? 1 : 0, stdout: lines.join("\n"), stderr: "" };
 }
@@ -440,7 +491,9 @@ function selfCheck(
       try {
         rules.push({ include: c.include, contract: compileContractObject(c.def) });
       } catch (err) {
-        errors.push(`${root}: contract '${c.name}' (${c.include.join(", ")}) failed to compile — ${(err as Error).message}`);
+        errors.push(
+          `${root}: contract '${c.name}' (${c.include.join(", ")}) failed to compile — ${(err as Error).message}`,
+        );
         compileFailed = true;
       }
     }
@@ -468,7 +521,11 @@ function renderDryRun(files: InferredFile[], results: InferResult[]): string {
 }
 
 /** Render the post-write human summary: groups/files, any warnings, and the self-check verdict. */
-function renderSummary(results: InferResult[], files: InferredFile[], selfCheckErrors: string[]): string {
+function renderSummary(
+  results: InferResult[],
+  files: InferredFile[],
+  selfCheckErrors: string[],
+): string {
   const groups = results.reduce((n, r) => n + r.contracts.length, 0);
   const warnings = results.flatMap((r) => r.warnings);
   const lines = [
@@ -520,7 +577,10 @@ function buildInlineConfig(
       );
     }
     const runRoot = pathArg ? resolve(cwd, pathArg) : cwd;
-    return { config: { rules: [{ include: ["**/*.md"], contract: load(contracts[0]!) }] }, runRoot };
+    return {
+      config: { rules: [{ include: ["**/*.md"], contract: load(contracts[0]!) }] },
+      runRoot,
+    };
   }
 
   // Paired routing: `validate --contract a.yaml --path d1 --contract b.yaml --path d2`.

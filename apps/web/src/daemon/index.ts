@@ -7,11 +7,12 @@
 //   sse      — the live-status wire
 //   watcher  — debounced recursive file watching
 //   static   — embedded/disk SPA serving
-export { DEFAULT_PORT, startDaemon, type DaemonContext, type DaemonOptions } from "./daemon";
-export { defaultRegistryPath, Registry, RegistryError, slugId } from "./registry";
-export { StatusStore, stateFromDrift, stateFromRun } from "./status";
-export { checkVault, findingToDrift, initVault, RunError, validateVault } from "./runs";
+
 export { ConfigError, listConfigFiles, readConfig, saveConfig, saveConfigFile } from "./config";
-export { SseHub, type SseEventInput } from "./sse";
-export { isRelevantChange, VaultWatcher } from "./watcher";
+export { type DaemonContext, type DaemonOptions, DEFAULT_PORT, startDaemon } from "./daemon";
+export { defaultRegistryPath, Registry, RegistryError, slugId } from "./registry";
+export { checkVault, findingToDrift, initVault, RunError, validateVault } from "./runs";
+export { type SseEventInput, SseHub } from "./sse";
 export { hasUi, serveStatic } from "./static";
+export { StatusStore, stateFromDrift, stateFromRun } from "./status";
+export { isRelevantChange, VaultWatcher } from "./watcher";

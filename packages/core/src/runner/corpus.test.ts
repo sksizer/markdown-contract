@@ -12,19 +12,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
-
+import { extractVaultRefs } from "../core/dialect/index.js";
 import {
+  type Contract,
   contract,
+  type DocTree,
   docRule,
+  type Finding,
   optional,
   section,
   sections,
-  type Contract,
-  type DocTree,
-  type Finding,
 } from "../core/index.js";
-import { extractVaultRefs } from "../core/dialect/index.js";
-import { compileMatcher, runCorpus, type CorpusConfig } from "./corpus.js";
+import { type CorpusConfig, compileMatcher, runCorpus } from "./corpus.js";
 
 /** Lay down a tiny corpus in a fresh temp dir and return its absolute root. */
 function vault(files: Record<string, string>): string {
@@ -165,7 +164,12 @@ describe("runCorpus — docRule findings aggregate across documents into finding
           const body = doc.body as { section(name: string): unknown };
           return body.section("Summary")
             ? []
-            : [ctx.finding({ id: "doc/needs-summary", message: "a doc needs a ## Summary section" })];
+            : [
+                ctx.finding({
+                  id: "doc/needs-summary",
+                  message: "a doc needs a ## Summary section",
+                }),
+              ];
         }),
         docRule("doc/has-owner", (doc, ctx) => {
           const body = doc.body as { section(name: string): unknown };
