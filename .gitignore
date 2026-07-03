@@ -34,6 +34,14 @@ sites/docs/node_modules/
 sites/docs/dist/
 sites/docs/.astro/
 
+# sites/docs — generated catalog pages (T-SITE): rendered from docs/catalog/*.yaml
+# by sites/docs/scripts/generate.ts. The YAML is the single source of truth; the
+# emitted pages (including the landing) are build artifacts, never hand-edited.
+sites/docs/src/content/docs/index.md
+sites/docs/src/content/docs/examples/
+# scratch dir of the artifact regression check (sites/docs/scripts/check-artifacts.ts)
+sites/docs/.artifact-check/
+
 # Obsidian local vault config (docs/ is opened as a personal vault)
 docs/.obsidian/
 # Obsidian "Bases" view definitions (personal, generated locally)

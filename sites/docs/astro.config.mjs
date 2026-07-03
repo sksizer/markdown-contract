@@ -11,32 +11,36 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'markdown-contract',
-			// Sidebar information architecture: the M-0007 example-catalog category
-			// slots. Each group mirrors one catalog category (label — key); the
-			// groups are declared but hold no pages (items: []) at this bare-shell
-			// stage. T-SITE / M-0007 drop the generated per-category pages into
-			// these slots once the catalog data (docs/catalog/*.yaml) is finalized —
-			// so those tasks add pages into a defined structure rather than editing
-			// an empty config. The leading Overview group links the hand-authored
-			// landing page (T-SHEL).
+			// Sidebar information architecture (T-SITE): one top-level "Examples"
+			// group holding the eight M-0007 catalog categories as sub-groups, in
+			// curriculum-spine order (rung 1 → 8). Each sub-group autogenerates from
+			// the pages `scripts/generate.ts` renders out of docs/catalog/*.yaml
+			// into src/content/docs/examples/<category>/ (ordered by per-page
+			// `sidebar.order` = the example's rank; the category overview is 0).
+			// The leading Overview group links the generated landing page.
 			sidebar: [
 				{ label: 'Overview', items: [{ label: 'Introduction', link: '/' }] },
-				// cli — CLI Quickstart: Validate from the Terminal
-				{ label: 'CLI Quickstart', items: [] },
-				// inference-init — Scaffold and Guard: init, Inference, and Drift Checks
-				{ label: 'Scaffold & Guard', items: [] },
-				// declarative-yaml — Declarative YAML: Contracts and Corpus Config, No Code
-				{ label: 'Declarative YAML', items: [] },
-				// validation-planes — Authoring Contracts in Code: Structure, Content, and Custom Rules
-				{ label: 'Contracts in Code', items: [] },
-				// consume-as-data — Consume as Typed Data: Reading the Document as a Model
-				{ label: 'Consume as Data', items: [] },
-				// dialect — Dialect: Anchors, Wikilinks, and Vault References
-				{ label: 'Dialect', items: [] },
-				// embed-and-ci — Embed and Automate: the Runner Library and CI Gates
-				{ label: 'Embed & Automate', items: [] },
-				// real-world-schemas — Real-World Schemas: Document Templates and Cross-Document Governance
-				{ label: 'Real-World Schemas', items: [] },
+				{
+					label: 'Examples',
+					items: [
+						// cli — CLI Quickstart: Validate from the Terminal
+						{ label: 'CLI Quickstart', items: [{ autogenerate: { directory: 'examples/cli' } }] },
+						// inference-init — Scaffold and Guard: init, Inference, and Drift Checks
+						{ label: 'Scaffold & Guard', items: [{ autogenerate: { directory: 'examples/inference-init' } }] },
+						// declarative-yaml — Declarative YAML: Contracts and Corpus Config, No Code
+						{ label: 'Declarative YAML', items: [{ autogenerate: { directory: 'examples/declarative-yaml' } }] },
+						// validation-planes — Authoring Contracts in Code: Structure, Content, and Custom Rules
+						{ label: 'Contracts in Code', items: [{ autogenerate: { directory: 'examples/validation-planes' } }] },
+						// consume-as-data — Consume as Typed Data: Reading the Document as a Model
+						{ label: 'Consume as Data', items: [{ autogenerate: { directory: 'examples/consume-as-data' } }] },
+						// dialect — Dialect: Anchors, Wikilinks, and Vault References
+						{ label: 'Dialect', items: [{ autogenerate: { directory: 'examples/dialect' } }] },
+						// embed-and-ci — Embed and Automate: the Runner Library and CI Gates
+						{ label: 'Embed & Automate', items: [{ autogenerate: { directory: 'examples/embed-and-ci' } }] },
+						// real-world-schemas — Real-World Schemas: Document Templates and Cross-Document Governance
+						{ label: 'Real-World Schemas', items: [{ autogenerate: { directory: 'examples/real-world-schemas' } }] },
+					],
+				},
 			],
 		}),
 	],

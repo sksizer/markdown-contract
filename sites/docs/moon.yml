@@ -2,27 +2,49 @@
 #
 # The `docs` project (mapped to 'sites/docs' in .moon/workspace.yml) — the Astro +
 # Starlight documentation site (M-0006, D-0010). A workspace sibling of the
-# published library (packages/core); never published to npm. This is the shell:
-# an empty-but-wired content collection and declared-but-empty sidebar IA. The
-# landing/IA content lands in T-SHEL; the site publishes to Cloudflare Pages
+# published library (packages/core); never published to npm. The example-catalog
+# pages and the landing are GENERATED from docs/catalog/*.yaml at the repo root
+# by scripts/generate.ts (T-SITE); the site publishes to Cloudflare Pages
 # (see sites/README.md).
 
 layer: 'application'
 language: 'typescript'
 
 tasks:
-  # `bun run build` (= astro build) → emits the static site to dist/. Runs on the
-  # bun toolchain; `bun run` puts node_modules/.bin on PATH so the astro bin
+  # `bun run build` (= bun run generate && astro build) → regenerates the catalog
+  # pages from docs/catalog/*.yaml, then emits the static site to dist/. Runs on
+  # the bun toolchain; `bun run` puts node_modules/.bin on PATH so the astro bin
   # resolves. dist/ is the declared output, so a no-change re-run is a cache hit.
   build:
     command: 'bun run build'
     toolchain: 'bun'
     inputs:
       # content.config.ts lives at src/content.config.ts, so src/**/* covers it.
+      # (The generated pages under src/content/docs/ are gitignored and rebuilt
+      # by the generate step; the catalog YAML and the generator are the real
+      # inputs that must invalidate the cache.)
       - 'src/**/*'
       - 'public/**/*'
+      - 'scripts/**/*'
       - 'astro.config.mjs'
       - 'tsconfig.json'
       - 'package.json'
+      # the catalog data lives at the REPO root (workspace-relative input)
+      - '/docs/catalog/*.yaml'
     outputs:
       - 'dist'
+
+  # Artifact regression check (T-SITE AC-4): verifies each SHIPPED catalog
+  # example's `artifact` against the real CLI / library build so the published
+  # snippets stay honest. See scripts/check-artifacts.ts for the exact
+  # verification level each artifact_kind gets. Exits non-zero on any
+  # unexpected failure (or stale known-failure entry), so CI can gate on it.
+  check-artifacts:
+    command: 'bun run check-artifacts'
+    toolchain: 'bun'
+    deps:
+      - 'core:build'
+    inputs:
+      - 'scripts/**/*'
+      - 'package.json'
+      - '/docs/catalog/*.yaml'

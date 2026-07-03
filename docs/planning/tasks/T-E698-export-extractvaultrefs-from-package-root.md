@@ -6,6 +6,7 @@ status: planning/draft
 created: '2026-06-30'
 related:
 - T-CDIA-catalog-dialect
+- T-SITE-bootstrap-docs-website
 tags:
 - api
 - dialect
@@ -119,3 +120,16 @@ Top candidates (score / status / headline):
   - 16 / open/ready / T-7UTE-astro-docs-site — Stand up an Astro + Starlight documentation site for markdown-contract
 Decision: SPAWNED (override of the script's LINKED-EXISTING → T-CDYL-catalog-declarative-yaml).
 Rationale: The top candidate T-CDYL scored on shared catalog/declarative vocabulary, not on the actual gap. T-CDYL finalizes the declarative-yaml catalog *category*; it does not touch the package-root export surface. No existing task exports `extractVaultRefs` / `VaultRef` from `src/index.ts`, and [[T-L77L-package-publish-hygiene]] explicitly scopes *out* changing the `exports` map. Genuinely new work.
+
+### Dedup search (spawn-from-post-mortem)
+
+Bullet: The artifact check surfaced 5 genuine catalog data bugs: DIALECT-03/07/08/10 import `extractVaultRefs` from `"markdown-contract"` but the package root never re-exports it (export chain stops at the internal dialect barrel), and EMBED-AND-CI-01 calls `sections()` with no arguments against a two-required-arg signature — catalog data corrections (or a deliberate `extractVaultRefs` public export) owned by the catalog side.
+Keywords searched: markdown-contract, extractvaultrefs, two-required-arg, embed-and-ci-01, corrections, dialect-03, re-exports, deliberate
+Excluded: T-SITE-bootstrap-docs-website
+Top candidates (score / status / headline):
+  - 43 / planning/draft / T-E698-export-extractvaultrefs-from-package-root — Export `extractVaultRefs` and the `VaultRef` type from the package root barrel
+  - 11 / closed/done / T-CDIA-catalog-dialect — Finalize the Dialect catalog category as verified YAML (`dialect`)
+  - 7 / closed/superseded / T-AE0J-moon-build-system — Adopt the moon (moonrepo) task runner to wrap and cache the build, typecheck, and test workflows
+  - 7 / closed/done / T-DAEM-daemon-and-json-api — `daemon` mode + a JSON API over the runner — the `apps/web` server face
+  - 6 / closed/done / T-5GLB-collapse-redundant-include-globs — Collapse the dogfood config's redundant two-entry include globs to one `**/`-prefixed glob — and lock the relied-upon root-matching semantics with a peer test
+Decision: LINKED-EXISTING T-E698-export-extractvaultrefs-from-package-root

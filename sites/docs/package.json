@@ -3,16 +3,25 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Astro + Starlight documentation site for markdown-contract (M-0006). Builds as a moon project on the bun toolchain to static output. Shell only \u2014 landing/IA content lands in T-SHEL, the Pages deploy in T-PAGE.",
+  "description": "Astro + Starlight documentation site for markdown-contract (M-0006). Builds as a moon project on the bun toolchain to static output. The example-catalog pages and landing are generated from docs/catalog/*.yaml (T-SITE); the Pages deploy is T-PAGE.",
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro build",
+    "dev": "bun run generate && astro dev",
+    "start": "bun run dev",
+    "build": "bun run generate && astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "generate": "bun scripts/generate.ts",
+    "check-artifacts": "bun scripts/check-artifacts.ts"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.41.2",
     "astro": "^7.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "markdown-contract": "workspace:*",
+    "typescript": "^5.7.2",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
   }
 }
