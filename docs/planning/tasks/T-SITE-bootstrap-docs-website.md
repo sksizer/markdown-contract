@@ -2,9 +2,9 @@
 type: task
 schema_version: '5'
 id: T-SITE
-status: planning/draft
+status: in-progress
 created: '2026-06-28'
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-03'
 related:
 - '[[M-0006-documentation-site]]'
 - '[[M-0007-example-use-case-catalog]]'
@@ -113,3 +113,19 @@ regression-checked against real CLI/library output.
 Depends on [[T-7UTE-astro-docs-site]] (the shell), [[T-SHEL-docs-landing-and-ia]] (the IA slots +
 the interim landing it supersedes), and [[T-CTLG-example-catalog-finalize]] (the
 `docs/catalog/*.yaml` data it renders). Governed by [[D-0010-monorepo-tooling]].
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-03. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
