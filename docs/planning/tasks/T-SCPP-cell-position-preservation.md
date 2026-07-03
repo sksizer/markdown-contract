@@ -1,26 +1,28 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-SCPP
 status: in-progress
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0011-structured-cells]]'
-- '[[D-0015-structured-cells]]'
-- '[[D-0002-projection-and-dialect]]'
-- '[[DR-0002-typed-consumption]]'
+  - "[[M-0011-structured-cells]]"
+  - "[[D-0015-structured-cells]]"
+  - "[[D-0002-projection-and-dialect]]"
+  - "[[DR-0002-typed-consumption]]"
 depends_on:
-- '[[T-SCFX-structured-cells-fixture-scaffold]]'
+  - "[[T-SCFX-structured-cells-fixture-scaffold]]"
 tags:
-- structured-cells
-- projection
-- position-preservation
+  - structured-cells
+  - projection
+  - position-preservation
 need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-last_reviewed: '2026-07-03'
-readiness_verified_at: '2026-07-03T03:24:06Z'
+last_reviewed: 2026-07-03
+readiness_verified_at: 2026-07-03T03:24:06Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/187
 ---
 # Preserve per-cell `col` and inline-code byte spans on the projection (axis C1)
 
