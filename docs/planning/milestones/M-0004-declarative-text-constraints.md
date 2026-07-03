@@ -2,7 +2,7 @@
 type: milestone
 schema_version: '1'
 id: M-0004
-status: open/active
+status: closed/done
 title: Declarative text constraints — requires / forbids
 created: '2026-06-28'
 related:
@@ -75,15 +75,15 @@ Decomposed into the task set below (minted as `T-*` docs). Fixtures come **first
 
 ## Success criteria
 
-- [ ] A section-scoped `requires` / `forbids` block compiles to a node-local `rule` and a body-root block to a `docRule`, producing `text/*` findings identical to the equivalent hand-written predicate.
-- [ ] The closed match-spec vocabulary (`pattern` / `regex` / `normalize` / `ignoreCase` / `min` / `max` / `id` / `note` / `level`) is validated; a malformed entry is a `DeclarativeError`.
-- [ ] A `requires` miss positions at the section heading (section scope) or document-level (body root); a `forbids` hit positions at the offending line; counts report `found N times, expected …`.
-- [ ] Each entry's finding carries its own stable id — synthesized from scope + pattern, overridable via `id` — so individual requirements are addressable as distinct SARIF `ruleId`s.
-- [ ] Duplicate entries and literal `requires` / `forbids` contradictions (and `max < min`) are rejected at compile time.
-- [ ] `requires` is presence and `forbids` is absence: a `requires` entry with `max: 0` (or `max < min`) is rejected.
-- [ ] A `*.contract.yaml` with `requires` / `forbids` yields the same findings as its TS-authored equivalent on a shared fixture, and at least one in-repo contract dogfoods the feature.
-- [ ] The text-constraint fixtures are authored up front and gated (`text-api` / `text-yaml` in `IMPLEMENTED`), greening slice-by-slice as each component lands, with zero left skipped at milestone close.
-- [ ] The engine (`src/core` validate/structure/content) needs no change beyond the new `text/*` plane registration; imports stay one-way.
+- [x] A section-scoped `requires` / `forbids` block compiles to a node-local `rule` and a body-root block to a `docRule`, producing `text/*` findings identical to the equivalent hand-written predicate.
+- [x] The closed match-spec vocabulary (`pattern` / `regex` / `normalize` / `ignoreCase` / `min` / `max` / `id` / `note` / `level`) is validated; a malformed entry is a `DeclarativeError`.
+- [x] A `requires` miss positions at the section heading (section scope) or document-level (body root); a `forbids` hit positions at the offending line; counts report `found N times, expected …`.
+- [x] Each entry's finding carries its own stable id — synthesized from scope + pattern, overridable via `id` — so individual requirements are addressable as distinct SARIF `ruleId`s.
+- [x] Duplicate entries and literal `requires` / `forbids` contradictions (and `max < min`) are rejected at compile time.
+- [x] `requires` is presence and `forbids` is absence: a `requires` entry with `max: 0` (or `max < min`) is rejected.
+- [x] A `*.contract.yaml` with `requires` / `forbids` yields the same findings as its TS-authored equivalent on a shared fixture, and at least one in-repo contract dogfoods the feature.
+- [x] The text-constraint fixtures are authored up front and gated (`text-api` / `text-yaml` in `IMPLEMENTED`), greening slice-by-slice as each component lands, with zero left skipped at milestone close.
+- [x] The engine (`src/core` validate/structure/content) needs no change beyond the new `text/*` plane registration; imports stay one-way.
 
 ## Dependencies
 
@@ -98,3 +98,7 @@ Decomposed into the task set below (minted as `T-*` docs). Fixtures come **first
 - [[D-0001-finding-model]] — the findings a compiled text constraint emits.
 - [[DR-0005-validate-sdlc-corpus]] — the concrete driver this unblocks.
 - Fixture `tests/fixtures/validation/17-node-level-custom-rule.ts` — the hand-written shape this promotes to a declarative attribute.
+
+## Closeout
+
+Closed 2026-07-02. All eight member tasks shipped and closed (markdown-contract PRs #65, #66, #71, #87, #95, #92, #83, #77). Verified against the code at close: `text-api` / `text-yaml` both enabled with zero skipped `text-*` fixtures, YAML⇄TS parity green over fixtures 22–25, `DocRule.run` receiving the projected tree for line-exact whole-document positions (T-5LHY), and the dogfood `requires` in `contracts/decision.contract.yaml` validating cleanly against every live decision doc. The intentionally deferred items (`when` / `require` predicate DSL, `anyOf` disjunction, `$ref` escape hatch, link/inline constraints, repair/autofix) are captured as [[B-L7EN-deferred-m-0004-text-constraint-follow-ups-when-require]]; the `invariants.yaml` migration stays with [[DR-0005-validate-sdlc-corpus]].
