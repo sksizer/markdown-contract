@@ -4,7 +4,8 @@
 # Starlight documentation site (M-0006, D-0010). A workspace sibling of the
 # published library (packages/core); never published to npm. This is the shell:
 # an empty-but-wired content collection and declared-but-empty sidebar IA. The
-# landing/IA content lands in T-SHEL, the GitHub Pages deploy in T-PAGE.
+# landing/IA content lands in T-SHEL; the site publishes to Cloudflare Pages
+# (see sites/README.md).
 
 layer: 'application'
 language: 'typescript'

@@ -7,9 +7,9 @@ Bun workspace for **markdown-contract**. The publishable library + CLI lives in
 the daemon-web UI prototype) live under `apps/`; websites — including the
 documentation site — live under `sites/`.
 
-**Documentation:** <https://sksizer.github.io/markdown-contract/> — the
-[`sites/docs`](sites/docs/) Starlight site, published to GitHub Pages by
-[`.github/workflows/deploy-docs.yml`](.github/workflows/deploy-docs.yml).
+**Documentation:** <https://markdown-contract-docs.pages.dev/> — the
+[`sites/docs`](sites/docs/) Starlight site, published to Cloudflare Pages
+(`moon run docs:build`, then `wrangler pages deploy sites/docs/dist`).
 
 ## Layout
 
@@ -18,7 +18,7 @@ documentation site — live under `sites/`.
 | `packages/core` | The `markdown-contract` npm library + CLI. Runtime-neutral; the canonical published artifact. See [`packages/core/README.md`](packages/core/README.md). |
 | `apps/web` | The single-binary prototype (D-0012 "one binary, two faces"): CLI + localhost daemon serving the vault dashboard. See [`apps/web/README.md`](apps/web/README.md). |
 | `apps/daemon-web-prototype` | Nuxt + Storybook UI prototype of the daemon's vault dashboard. Mock data only; not a moon project. See [`apps/daemon-web-prototype/README.md`](apps/daemon-web-prototype/README.md). |
-| `sites/docs` | Astro + Starlight documentation site (M-0006). Private; never published. See [`sites/docs/README.md`](sites/docs/README.md). |
+| `sites/docs` | Astro + Starlight documentation site (M-0006), published to Cloudflare Pages; never published to npm. See [`sites/docs/README.md`](sites/docs/README.md). |
 | `docs/`, `contracts/` | Project planning docs and their contracts. |
 | `provenance/d0014/` | The originating ADR: proposed shape + decision log. |
 
