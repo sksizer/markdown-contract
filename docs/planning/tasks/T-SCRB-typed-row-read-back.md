@@ -32,11 +32,11 @@ Surface the cached transform output (from `T-SCTC`) as a **typed** row read-back
 
 | Location | Role today |
 |---|---|
-| `src/core/model.ts#tableView` | Builds each row as `Record<string, string>` straight off `node.rows`; ignores any cached typed output. |
-| `src/core/types.ts#TableView` | `TableView<Row = Record<string, string>>` — string default; no path carries `z.output<cells>`. |
-| `src/core/types.ts#Infer` | Docstring **defers** per-column literal `Row` inference (`B & SectionGroup` keeps it navigable meanwhile). |
-| `src/core/leaves.ts#table` | `table()` is generic over its `cells` map after `T-SCFX`'s stub, but the literal types don't reach `read()`. |
-| `tests/fixtures/consumption/` | Typed-row fixtures authored by `T-SCFX`, skipped under `cell-typed: false`. |
+| `packages/core/src/core/model.ts#tableView` | Builds each row as `Record<string, string>` straight off `node.rows`; ignores any cached typed output. |
+| `packages/core/src/core/types.ts#TableView` | `TableView<Row = Record<string, string>>` — string default; no path carries `z.output<cells>`. |
+| `packages/core/src/core/types.ts#Infer` | Docstring **defers** per-column literal `Row` inference (`B & SectionGroup` keeps it navigable meanwhile). |
+| `packages/core/src/core/leaves.ts#table` | `table()` is generic over its `cells` map after `T-SCFX`'s stub, but the literal types don't reach `read()`. |
+| `packages/core/tests/fixtures/consumption/` | Typed-row fixtures authored by `T-SCFX`, skipped under `cell-typed: false`. |
 
 ## Proposed
 
@@ -109,23 +109,23 @@ for (const r of plainDoc.body.filesToTouch) {
 
 ## Approach
 
-1. In `src/core/model.ts#tableView`, build each row by reading `node.typed(r, col)` when defined and falling back to `cells[c] ?? ""` otherwise; the row map becomes `Record<string, unknown>` internally, typed as `Row` at the boundary.
-2. In `src/core/leaves.ts`, finalize `table<C extends Record<string, ZodType>>` so the `cells` map's literal types are captured, and define the `RowOf<Cols, C>` mapped type (declared cells → `z.output<C[K]>`, undeclared → `string`).
+1. In `packages/core/src/core/model.ts#tableView`, build each row by reading `node.typed(r, col)` when defined and falling back to `cells[c] ?? ""` otherwise; the row map becomes `Record<string, unknown>` internally, typed as `Row` at the boundary.
+2. In `packages/core/src/core/leaves.ts`, finalize `table<C extends Record<string, ZodType>>` so the `cells` map's literal types are captured, and define the `RowOf<Cols, C>` mapped type (declared cells → `z.output<C[K]>`, undeclared → `string`).
 3. Thread the typed `Row` through `section()` → `sections()` so a declared table's view type reaches the contract's `body` shape; keep the dual-key `SectionGroup` index able to host the typed `TableView` key without widening to `unknown`.
-4. Finalize the per-column inference in `src/core/types.ts#Infer` (replacing the deferred-future-work note) so `Infer<Contract>` yields the typed `Row`; keep `TableView<Row = Record<string, string>>`'s default.
-5. Flip `cell-typed` to `true` in `tests/components.ts` and un-skip the typed-row fixtures; assert both the runtime value (`row.Location.path`) and the static type (a type-level expectation, per the repo's typing-test convention).
-6. Add peer unit tests in `src/core/model.test.ts`: typed declared cell, raw undeclared column, string default for an undeclared/`byAnchor` table.
+4. Finalize the per-column inference in `packages/core/src/core/types.ts#Infer` (replacing the deferred-future-work note) so `Infer<Contract>` yields the typed `Row`; keep `TableView<Row = Record<string, string>>`'s default.
+5. Flip `cell-typed` to `true` in `packages/core/tests/components.ts` and un-skip the typed-row fixtures; assert both the runtime value (`row.Location.path`) and the static type (a type-level expectation, per the repo's typing-test convention).
+6. Add peer unit tests in `packages/core/src/core/model.test.ts`: typed declared cell, raw undeclared column, string default for an undeclared/`byAnchor` table.
 
 ## Files to touch
 
 | Location | Kind | Change |
 |---|---|---|
-| `src/core/model.ts` | modify | `tableView` reads `node.typed(...)` with raw-string fallback; rows typed as `Row` |
-| `src/core/leaves.ts` | modify | Finalize `table<C>` literal-type capture + the `RowOf<Cols, C>` mapped type |
-| `src/core/types.ts` | modify | Finalize `Infer` per-column inference; `TableView<Row>` carries the typed `Row`, default unchanged |
-| `src/core/model.test.ts` | modify | Peer tests for typed declared cells, raw undeclared columns, string default |
-| `tests/components.ts` | modify | Flip `cell-typed` to `true` |
-| `tests/fixtures/consumption/` | modify | Un-skip the typed-row fixtures gated by `cell-typed` |
+| `packages/core/src/core/model.ts` | modify | `tableView` reads `node.typed(...)` with raw-string fallback; rows typed as `Row` |
+| `packages/core/src/core/leaves.ts` | modify | Finalize `table<C>` literal-type capture + the `RowOf<Cols, C>` mapped type |
+| `packages/core/src/core/types.ts` | modify | Finalize `Infer` per-column inference; `TableView<Row>` carries the typed `Row`, default unchanged |
+| `packages/core/src/core/model.test.ts` | modify | Peer tests for typed declared cells, raw undeclared columns, string default |
+| `packages/core/tests/components.ts` | modify | Flip `cell-typed` to `true` |
+| `packages/core/tests/fixtures/consumption/` | modify | Un-skip the typed-row fixtures gated by `cell-typed` |
 
 ## Acceptance criteria
 
