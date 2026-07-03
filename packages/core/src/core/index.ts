@@ -38,6 +38,8 @@ export {
   section,
   sections,
 } from "./grammar.js";
+// The typed table-row read-back shape (T-SCRB): declared cells → `z.output`, undeclared → `string`.
+export type { RowOf } from "./leaves.js";
 // Content leaves:
 export { code, list, maxWords, table } from "./leaves.js";
 // Out-of-model entry:

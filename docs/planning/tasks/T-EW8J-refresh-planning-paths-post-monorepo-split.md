@@ -7,6 +7,7 @@ created: '2026-07-02'
 related:
 - T-SCFX-structured-cells-fixture-scaffold
 - T-SCPP-cell-position-preservation
+- T-SCRB-typed-row-read-back
 tags: []
 need_human_review: false
 impact: medium
@@ -85,3 +86,17 @@ Top candidates (score / status / headline):
 
 Decision: LINKED-EXISTING (T-EW8J-refresh-planning-paths-post-monorepo-split)
 Rationale: Overrode the script's SPAWNED. The keyword scorer under-ranked this task (score 0 — its own body predates the "task-relevance/touchpoints" vocabulary), but T-EW8J is a genuine near-duplicate: it already exists to refresh exactly the stale `src/…`/`tests/…`/`npm run` paths that the monorepo relocation left across the docs/planning corpus — the same friction this bullet reports. Linking here avoids spawning a duplicate Local sweep task; the bullet's "periodic sweep" framing informs T-EW8J's scope.
+
+### Dedup search (spawn-from-post-mortem)
+
+Bullet: Task touchpoints referenced the pre-monorepo `src/core/*` / `tests/*` paths; a monorepo migration had relocated everything under `packages/core/` on `origin/main` after the task was authored, so the readiness gate failed until the paths were retargeted — a sibling task (T-SCPP) hit the identical drift. A migration that relocates a package root should sweep open task touchpoints (a path-rewrite pass over `docs/planning/tasks/`) so downstream pickups don't each re-discover the same stale-path gate failure.
+Keywords searched: pre-monorepo, path-rewrite, touchpoints, re-discover, referenced, everything, retargeted, downstream
+Excluded: T-SCRB-typed-row-read-back
+Top candidates (score / status / headline):
+  - 5 / closed/done / T-U6W3-document-moon-npm-script-wrapping — Document that moon tasks must wrap npm scripts under moon's runtime-only node toolchain
+  - 4 / closed/done / T-FMSP-frontmatter-split-primitive — Frontmatter/body split — a pure splitter retained on the `parse()` result
+  - 4 / closed/done / T-L77L-package-publish-hygiene — Validate published-package hygiene with publint and are-the-types-wrong
+  - 3 / open/ready / T-SCDF-structured-cells-dogfood — Dogfood structured cells on a realistic worked contract and close the milestone
+  - 2 / closed/done / T-2HF6-projection-engine — Implement the projection — one parse into a positioned DocTree, GFM + invariants, and the resolved Obsidian dialect
+Decision: LINKED-EXISTING → T-EW8J-refresh-planning-paths-post-monorepo-split
+Rationale: The script decided SPAWNED — its keyword extraction picked hyphenated tokens (pre-monorepo, path-rewrite, touchpoints, …) that don't lexically overlap this task's body, so keyword scoring did not surface it. Overridden to LINKED-EXISTING by hand: this task IS the proposed fix — a one-shot repo-wide sweep of docs/planning/ that rewrites the packages/core monorepo-relocation's stale `src/…` / `tests/…` paths — so the T-SCRB post-mortem's path-rewrite-sweep bullet is a duplicate ask, linked here from [[T-SCRB-typed-row-read-back]] rather than re-spawned.

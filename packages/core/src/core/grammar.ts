@@ -11,6 +11,7 @@
  */
 import { toCamelKey } from "./camel.js";
 import type {
+  BodyOf,
   Contract,
   ContractDef,
   Ctx,
@@ -20,6 +21,7 @@ import type {
   Finding,
   GapSpec,
   LevelOpts,
+  NamesTupleOf,
   OneOfSpec,
   OptionalSpec,
   Rule,
@@ -27,6 +29,7 @@ import type {
   SectionOpts,
   SectionSeq,
   SectionSpec,
+  SectionValue,
   Spec,
   ValidateCtx,
 } from "./types.js";
@@ -72,10 +75,19 @@ export function contract<F, B>(def: ContractDef<F, B>): Contract<F, B> {
  * Bundle an ordered `Spec[]` (with level options) into a body grammar. Runs the build-time
  * `contract/key-collision` guard: two declared sibling names that collapse to the same
  * camelCase key are rejected at construction (D-0003 / proposed-shape §6).
+ *
+ * Generic over the spec TUPLE (a `const` type parameter, T-SCRB) so it infers the typed body
+ * {@link BodyOf} — each declared section's exact heading name keyed to its typed value (a promoted
+ * `TableView<Row>` for a sole `content: table(...)` slot, else `SectionView`) — which threads
+ * through `contract()` into `read()`'s `Doc.body` and `Infer`. Passing an ordinary `Spec[]` keeps
+ * working; the typing is additive.
  */
-export function sections<B>(opts: LevelOpts, specs: Spec[]): SectionSeq<B> {
+export function sections<const S extends readonly Spec[]>(
+  opts: LevelOpts,
+  specs: S,
+): SectionSeq<BodyOf<S>> {
   assertNoKeyCollision(specs);
-  return { __brand: "SectionSeq", opts, specs };
+  return { __brand: "SectionSeq", opts, specs } as SectionSeq<BodyOf<S>>;
 }
 
 /**
@@ -111,14 +123,20 @@ function unwrapInner(spec: Spec): SectionSpec | OneOfSpec | GapSpec {
   return spec.kind === "optional" ? unwrapInner((spec as OptionalSpec).spec) : spec;
 }
 
-/** Declare a required section by name, or by an alias set (`string[]`). */
-export function section(name: string | string[], opts?: SectionOpts): Spec {
-  const spec: SectionSpec = {
-    kind: "section",
-    names: Array.isArray(name) ? name : [name],
-    ...(opts ? { opts } : {}),
-  };
-  return spec;
+/**
+ * Declare a required section by name, or by an alias set (`string[]`). Generic (T-SCRB) over the
+ * name(s) and the `SectionOpts` so its result carries the typed value the section's dual-key key
+ * binds — a promoted `TableView<Row>` when its sole `content` is a `table(...)` leaf (the `Row`
+ * derived from that table's `columns` / `cells`), else `SectionView`. Defaults keep a bare
+ * `section("Name")` unchanged and assignable wherever a `Spec` is expected.
+ */
+export function section<
+  const Names extends string | readonly string[],
+  const O extends SectionOpts = SectionOpts,
+>(name: Names, opts?: O): SectionSpec<SectionValue<O>, NamesTupleOf<Names>> {
+  const names: string[] = Array.isArray(name) ? [...name] : [name as string];
+  const spec: SectionSpec = { kind: "section", names, ...(opts ? { opts } : {}) };
+  return spec as unknown as SectionSpec<SectionValue<O>, NamesTupleOf<Names>>;
 }
 
 /** Mark a `Spec` optional. */

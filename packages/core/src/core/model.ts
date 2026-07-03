@@ -19,9 +19,11 @@
  *     `byAnchor(id)`, nested dual-key `sections`;
  *   - `doc.byAnchor(id)` — doc-wide anchor lookup → a `.kind`-discriminated `BlockView`.
  *
- * Rows stay string-valued at runtime (`Record<string, string>` keyed by column name); the
- * *typing* of rows / section keys is `Infer`'s job (deliberately top-level only — see
- * `types.ts`). The model is **additive**: the validator never consults it (AC-1).
+ * A table row is keyed by column name; a declared transforming `cells` schema reads its cell back
+ * as the CACHED transform output (`node.typed(...)`, T-SCTC's overlay), an undeclared / no-transform
+ * cell stays the raw string (T-SCRB). The *static typing* of rows / section keys is `Infer`'s job
+ * (top-level). The model is **additive**: the validator never consults it, and the typed value
+ * rides only here — the projected `tree` rows stay raw strings (AC-1).
  */
 import { toCamelKey } from "./camel.js";
 import type {
@@ -55,22 +57,28 @@ type TableBlock = Extract<BlockNode, { kind: "table" }>;
 // ── BlockNode → BlockView (the four-way union, discriminated on `.kind`) ──────────
 
 /**
- * A `TableView` over a projected table block. Rows are the dynamic `Record<string, string>`
- * keyed by column name; `Infer`'s `TableView<Row>` types them statically for declared tables,
- * but at runtime every cell stays a string.
+ * A `TableView` over a projected table block. Each row is keyed by column name; a cell reads back
+ * the CACHED transform output when a declared `cells` schema produced one (`node.typed(row, col)`,
+ * the sparse overlay T-SCTC filled from the content plane's per-cell `safeParse`), falling back to
+ * the RAW cell string otherwise — so a declared transforming cell (e.g. `Location` → `{ path,
+ * symbol? }`) reads back the parsed object while an undeclared / no-transform column stays a string
+ * (T-SCRB, AC-1/AC-3). The typed value flows ONLY through this model; `node.rows` (the projected
+ * tree) is untouched and stays raw strings (AC-5). `Infer`'s `TableView<Row>` types the rows
+ * statically for a declared table; at runtime the row map is `Record<string, unknown>`.
  */
 function tableView(node: Extract<BlockNode, { kind: "table" }>): TableView {
-  const rows: Record<string, string>[] = node.rows.map((cells) => {
-    const row: Record<string, string> = {};
+  const rows: Record<string, unknown>[] = node.rows.map((cells, r) => {
+    const row: Record<string, unknown> = {};
     node.columns.forEach((col, i) => {
-      row[col] = cells[i] ?? "";
+      const typed = node.typed(r, col);
+      row[col] = typed !== undefined ? typed : (cells[i] ?? "");
     });
     return row;
   });
   const view: TableView = {
     kind: "table",
     columns: node.columns,
-    rows,
+    rows: rows as Record<string, string>[],
     rowCount: rows.length,
     pos: node.pos,
     column(name) {
@@ -91,7 +99,7 @@ function tableView(node: Extract<BlockNode, { kind: "table" }>): TableView {
       return node.cellPos(ri, ci);
     },
     [Symbol.iterator](): Iterator<Record<string, string>> {
-      return rows[Symbol.iterator]();
+      return rows[Symbol.iterator]() as Iterator<Record<string, string>>;
     },
   };
   return view;

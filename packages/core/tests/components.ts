@@ -70,7 +70,7 @@ export const IMPLEMENTED: Record<Component, boolean> = {
   "text-api": true,
   "text-yaml": true,
   // Structured cells (D-0015) — flip order: cell-typed → list-typed → cell-pos.
-  "cell-typed": false,
+  "cell-typed": true,
   "list-typed": false,
   "cell-pos": true,
 };

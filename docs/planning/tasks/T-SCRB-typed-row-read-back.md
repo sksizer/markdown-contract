@@ -154,12 +154,31 @@ _Captured by /sdlc:task-work on 2026-07-03. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — fixture `12-typed-row-transform` (now active under `cell-typed`) + `model.test.ts` "declared transforming cell reads back its parsed object, sourced from the cache"; `tableView` reads `node.typed(row, col)` with a raw-string fallback, no transform re-run.
+- AC-2: auto — type-level `Equal`/`Expect`/`Resolve` assertions in `model.test.ts` over the row from both `read()`'s `Doc.body` and `Infer<...>`; proven non-vacuous with a negative control.
+- AC-3: auto — `table()` no-cells overload returns `LeafSpec<Record<string, string>>`; runtime tests for a no-declared-cells table and a `byAnchor` table plus a type-level `PlainRow` assertion.
+- AC-4: auto — `cell-typed` flipped to `true`; full suite 676 passed / 2 skipped, no previously-passing fixture changed.
+- AC-5: auto — `model.test.ts` asserts the model row is the parsed object while `tree(...).blocks.rows[0][0]` stays the raw string; only `tableView` (model construction) changed, `node.rows` never mutated.
+- AC-6: auto — `bunx moon run core:{build,typecheck,test}` all green under the baseline-gated quality gate (`OK 5/5`).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The task's `## Approach` mapped almost 1:1 onto the implementation; the T-SCTC `node.typed(row, col)` cache overlay was ready to read with no rework needed on the dependency side.
+- The baseline-gated quality gate (`OK 5/5`) caught formatting/lint drift and confirmed zero new drift against `origin/main`.
+- A negative-control type assertion proved the AC-2 type-level test actually narrows (non-vacuous), rather than silently passing.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Task touchpoints referenced the pre-monorepo `src/core/*` / `tests/*` paths; a monorepo migration had relocated everything under `packages/core/` on `origin/main` after the task was authored, so the readiness gate failed until the paths were retargeted — a sibling task (T-SCPP) hit the identical drift. A migration that relocates a package root should sweep open task touchpoints (a path-rewrite pass over `docs/planning/tasks/`) so downstream pickups don't each re-discover the same stale-path gate failure. → [[T-EW8J-refresh-planning-paths-post-monorepo-split]]
+- zod v4 `z.output<ZodEnum<...>>` resolves to `string`, not the literal union, so the AC-2 type test had to anchor on a `.transform()` cell (distinct object output) rather than enum-literal narrowing — a task spec that assumes enum-literal read-back should note the zod-version behavior up front. → [[T-6YLA-doc-zod-enum-output-string-caveat]]
+- Strict `Equal<>` type-equality false-negatived on the deferred `RowOf<...>` conditional types; a `Resolve<>` homomorphic-mapped-type wrapper was needed to force reduction before comparison — a shared conditional-safe type-equality helper would save rediscovering this each time a row type is conditional-heavy. → [[T-MUDE-conditional-safe-type-equality-helper]]
+- New typed overloads on `table()` rejected the declarative loader's dynamic `table()` call (built with the placeholder `ZodType`) until a third runtime/dynamic overload was added — adding generic overloads to a combinator should include a check against dynamic/loader call sites, not only literal ones. → [[T-83FP-guard-table-overloads-dynamic-callsite]]
+- moon served a stale cached `core:test` (main path, wrong skip count) on the first gate run, gating against cache rather than the worktree until cache invalidation — worktree-scoped gate runs should force-invalidate or bypass moon's cache to avoid gating on stale results. → [[T-NMNY-worktree-gate-bypass-moon-cache]]
+
+### Spawned follow-up tasks
+
+- [[T-EW8J-refresh-planning-paths-post-monorepo-split]] — linked (dedup override); the packages/core stale-path sweep is already this task's remit
+- [[T-6YLA-doc-zod-enum-output-string-caveat]] (https://github.com/sksizer/markdown-contract/pull/188) — spawned; document the zod v4 enum-output-is-string caveat for cell read-back
+- [[T-MUDE-conditional-safe-type-equality-helper]] (https://github.com/sksizer/markdown-contract/pull/189) — spawned; shared conditional-safe type-equality test helper
+- [[T-83FP-guard-table-overloads-dynamic-callsite]] (https://github.com/sksizer/markdown-contract/pull/190) — spawned; guard combinator overloads against the declarative loader's dynamic call site
+- [[T-NMNY-worktree-gate-bypass-moon-cache]] (https://github.com/sksizer/markdown-contract/pull/191) — spawned; worktree-scoped gate runs bypass moon's stale cache

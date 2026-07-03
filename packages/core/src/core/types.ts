@@ -237,11 +237,19 @@ export interface SectionOpts {
  */
 export type Spec = SectionSpec | OptionalSpec | OneOfSpec | GapSpec;
 
-export interface SectionSpec {
+/**
+ * A declared section slot. Generic (T-SCRB) over the typed value its dual-key key binds (`Value`)
+ * and its declared heading name(s) (`Names`) so `sections()` can infer a typed body from the spec
+ * array; both default to the untyped shape, so a bare `SectionSpec` is unchanged and every
+ * existing call site keeps working. The phantom `_value` never exists at runtime.
+ */
+export interface SectionSpec<Value = unknown, Names extends readonly string[] = string[]> {
   readonly kind: "section";
   /** a single name, or an alias set */
-  readonly names: string[];
+  readonly names: Names;
   readonly opts?: SectionOpts;
+  /** phantom — the typed value this section's key binds (a `TableView<Row>` or `SectionView`); never at runtime */
+  readonly _value?: Value;
 }
 export interface OptionalSpec {
   readonly kind: "optional";
@@ -440,28 +448,74 @@ export type Doc<F = unknown, B = unknown> = {
   inlineSpans(row: Record<string, string>, col: string): InlineSpan[];
 };
 
+/** Collapse a union into an intersection — merges each section spec's body-key contribution. */
+export type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
+  ? I
+  : never;
+
+/**
+ * The typed value a declared section's dual-key key binds (T-SCRB). A section whose sole `content`
+ * is a single transforming `table(...)` leaf PROMOTES to that table's typed `TableView<Row>` (the
+ * "heading is the table" case, §6 — `Row` being `RowOf<cols, cells>`); every other section (prose,
+ * a non-table leaf, a `content` record, or no content) binds its `SectionView`.
+ */
+export type SectionValue<O> = O extends { content: infer Ct }
+  ? Ct extends LeafSpec<infer Row>
+    ? unknown extends Row
+      ? SectionView
+      : TableView<Row>
+    : SectionView
+  : SectionView;
+
+/**
+ * One section spec's contribution to the typed body: each of its declared heading name(s) keyed to
+ * the value that name binds. A spec whose names are not literal (a dynamic `string` name) or a
+ * non-`section` spec (`optional` / `oneOf` / `gap`) contributes nothing — those read back through
+ * `.section(name)`, not a statically-typed key.
+ */
+export type BodyEntry<Sp> =
+  Sp extends SectionSpec<infer Value, infer Names>
+    ? string extends Names[number]
+      ? Record<never, never>
+      : { [K in Names[number]]: Value }
+    : Record<never, never>;
+
+/**
+ * The typed body a `sections([...])` grammar infers (T-SCRB): each declared section's exact heading
+ * name keyed to the value it binds (a promoted `TableView<Row>` or a `SectionView`), beside the
+ * always-present dual-key members (`unknown`, `.section(name)`). This is the per-section / per-column
+ * literal inference `Infer`'s docstring once deferred — a declared table's `cells` reach a typed
+ * `Row` here. Undeclared / dynamic access still goes through `.section(name)`.
+ */
+export type BodyOf<S extends readonly Spec[]> = UnionToIntersection<BodyEntry<S[number]>> & {
+  unknown: SectionView[];
+  section(name: string): SectionView | undefined;
+};
+
+/** Normalize a `section()` name argument (a single name or an alias set) to a names tuple. */
+export type NamesTupleOf<Names extends string | readonly string[]> = Names extends readonly string[]
+  ? Names
+  : [Names];
+
 /**
  * The inference entry point — a contract's typed model. For a `Contract<F, B>`, `Infer<C>`
- * resolves to the runtime `Doc` shape: the frontmatter type `F` (from the frontmatter Zod),
- * the body grammar's inferred type `B` intersected with the dual-key `SectionGroup` surface
- * (so a consumer always has exact-bracket / `.section()` / `unknown` access alongside whatever
- * typed keys `B` carries), and the doc-wide `byAnchor`.
+ * resolves to the runtime `Doc` shape: the frontmatter type `F` (from the frontmatter Zod), the
+ * body grammar's inferred type `B`, and the doc-wide `byAnchor`.
  *
- * SCOPE (deliberate, pragmatic). `Infer` is sound and useful at the TOP level — it gives
- * consumers `frontmatter`, dual-key `body` access, and `byAnchor`. It does NOT yet perform
- * per-section / per-column LITERAL inference: mapping each declared section name to its own
- * typed `SectionView` key, or each declared table's `cells` to a typed `Row`, would require
- * reworking the `sections` / `section` / `table` combinators to carry literal types through
- * their generics — a large, separate effort out of proportion to this surface, and one the
- * consumption fixtures (which navigate via `(doc.body as any)`) do not depend on. That literal
- * refinement is left as deliberate future work; `B & SectionGroup` keeps `Infer` correct and
- * navigable in the meantime.
+ * As of T-SCRB, `B` (built by `sections([...])` via {@link BodyOf}) carries the per-section /
+ * per-column literal inference: each declared section's exact heading name keys to its typed value,
+ * and a declared table's `cells` reach a typed `TableView<Row>` (`row.Location` reads back the
+ * parsed object; an undeclared column stays `string`). So `Infer<C>["body"]` returns `B` directly
+ * when it is a typed body group; a contract with a non-inferred / opaque `B` (`unknown`) falls back
+ * to the navigable `SectionGroup` surface, as before.
  */
 export type Infer<C> =
   C extends Contract<infer F, infer B>
     ? {
         frontmatter: F;
-        body: B & SectionGroup;
+        body: unknown extends B ? SectionGroup : B;
         byAnchor(id: string): BlockView | undefined;
         inlineSpans(row: Record<string, string>, col: string): InlineSpan[];
       }
