@@ -21,6 +21,7 @@ impact: high
 complexity: large
 autonomy: supervised
 last_reviewed: '2026-06-30'
+readiness_verified_at: '2026-07-03T03:22:32Z'
 ---
 # Thread `z.output<cells>` to a typed `TableView` row read-back through `read()` and `Infer`
 
