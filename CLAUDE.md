@@ -44,3 +44,10 @@ code and tests must follow.
   loaded via `loadSource(import.meta.url, "./<file>.md")` (see `tests/harness.ts`).
   The bytes are used **verbatim** (no trailing-newline normalization) so
   position-pinned findings stay exact.
+
+## Commit & PR authorship
+
+- Author commits as `SK Sizer <kelly@sizerllc.com>` (the repo's git config default).
+- Never name Claude / Claude Code / any AI as author or co-author.
+- No `Co-Authored-By:` or session trailers in commit messages.
+- No "Generated with Claude Code" footer or session links in PR bodies.
