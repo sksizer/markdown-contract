@@ -6,6 +6,10 @@ Bun workspace for **markdown-contract**. The publishable library + CLI lives in
 [`packages/core`](packages/core/); [`apps/web`](apps/web/) is a placeholder for
 the future web UI (D-0012 / M-0009).
 
+**Documentation:** <https://sksizer.github.io/markdown-contract/> — the
+[`apps/docs`](apps/docs/) Starlight site, published to GitHub Pages by
+[`.github/workflows/deploy-docs.yml`](.github/workflows/deploy-docs.yml).
+
 ## Layout
 
 | Path | Role |
