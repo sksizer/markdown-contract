@@ -1,4 +1,4 @@
-# Build / tooling artifacts for the standalone prototype.
+# Build / tooling artifacts for the daemon-web prototype.
 # (Root .gitignore already ignores node_modules/ and dist/ globally; this adds
 #  the Nuxt + Storybook output dirs so they never get committed from here.)
 node_modules/

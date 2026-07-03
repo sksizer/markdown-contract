@@ -27,12 +27,12 @@ coverage/
 .moon/cache
 .moon/docker
 
-# apps/docs — Astro + Starlight site build artifacts (T-7UTE). node_modules/ and
+# sites/docs — Astro + Starlight site build artifacts (T-7UTE). node_modules/ and
 # dist/ are already covered by the global patterns above; listed explicitly per
 # AC-4, and .astro/ (Astro's generated cache/types dir) is the load-bearing add.
-apps/docs/node_modules/
-apps/docs/dist/
-apps/docs/.astro/
+sites/docs/node_modules/
+sites/docs/dist/
+sites/docs/.astro/
 
 # Obsidian local vault config (docs/ is opened as a personal vault)
 docs/.obsidian/

@@ -1,6 +1,6 @@
-# web-ui prototype (`@markdown-contract/web-ui-prototype`)
+# daemon-web prototype (`@markdown-contract/daemon-web-prototype`)
 
-A **standalone Nuxt 3 SPA + Storybook** prototype for the markdown-contract
+A **Nuxt 3 SPA + Storybook** prototype for the markdown-contract
 **local vault dashboard** (the product concept from decision
 [[D-0012-distribution-single-exec-and-web-ui]]): it tracks managed "vaults"
 (markdown trees) and shows each one's validation status.
@@ -27,10 +27,11 @@ distribution work. It is **not** production and **not** the binary:
   API routes, no `server/` dir, no single-exec embedding. (Nuxt uses Nitro
   *internally* only as its build packager; the app itself declares no server
   routes and depends on no daemon.)
-- **Not wired into the workspace.** It has its own `package.json`, its own
-  `node_modules`, and its own `tsconfig.json`. It is **not** a `moon` project and
-  is **not** in the repo-root `npm` workspaces; the repo-root `npm run test` /
-  `npm run typecheck` never see it.
+- **A workspace member, but not a gated project.** It resolves through the root
+  `bun.lock` like every other workspace package, but it is **not** a `moon`
+  project: it defines no moon tasks, so CI's `moon run :build :typecheck
+  :coverage` never sees it. Its own `tsconfig.json` extends only
+  `./.nuxt/tsconfig.json` (no repo-root ref).
 
 The real engine wiring (routing the UI through `runCorpus` / a real backend) is
 **deferred** behind the review gate [[T-UTKU-web-ui-prototype-review]]; only after
@@ -40,29 +41,28 @@ that gate does a real `apps/web` adopt these components.
 
 ## Run it
 
-From `prototype/web-ui/`:
+Install once from the **repo root** (the prototype resolves through the root
+`bun.lock` like every other workspace member), then run scripts from
+`apps/daemon-web-prototype/`:
 
 ```bash
-npm install            # isolated install (own node_modules)
+bun install            # from the repo root — resolves the whole workspace
 
-npm run storybook      # Storybook harness  → http://localhost:6006
-npm run dev            # Nuxt SPA app shell → http://localhost:3000
+# from apps/daemon-web-prototype/:
+bun run storybook      # Storybook harness  → http://localhost:6006
+bun run dev            # Nuxt SPA app shell → http://localhost:3000
 
-npm run build-storybook   # static Storybook build → storybook-static/
-npm run generate          # static SPA build       → .output/public/  (ssr: false)
-npm run typecheck         # nuxt prepare + vue-tsc --noEmit
+bun run build-storybook   # static Storybook build → storybook-static/
+bun run generate          # static SPA build       → .output/public/  (ssr: false)
+bun run typecheck         # nuxt prepare + vue-tsc --noEmit
 ```
-
-> First `npm install` here uses `legacy-peer-deps` (see `.npmrc`) because the Nuxt
-> and Storybook toolchains pull overlapping-but-not-identical `vite` peer ranges
-> into one sandbox install. This is scoped to `prototype/web-ui/` only.
 
 ---
 
 ## Layout
 
 ```
-prototype/web-ui/
+apps/daemon-web-prototype/
   package.json          # private prototype package; dev + storybook scripts
   nuxt.config.ts        # ssr: false (SPA); no modules, no server/ dir
   tsconfig.json         # extends ./.nuxt/tsconfig.json only (no repo-root ref)

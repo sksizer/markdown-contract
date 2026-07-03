@@ -1,6 +1,6 @@
-// Standalone prototype Nuxt config — SPA only, deliberately minimal.
+// Prototype Nuxt config — SPA only, deliberately minimal.
 //
-// Boundary (see README): this app imports NOTHING from the repo engine (`src/`),
+// Boundary (see README): this app imports NOTHING from the engine (`packages/core`),
 // defines NO server/ dir and NO Nitro API routes, and is NOT the single binary
 // (M-0008-single-exec-distribution / T-SPAE-spa-embed). It runs on mock data only.
 export default defineNuxtConfig({

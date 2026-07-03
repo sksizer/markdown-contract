@@ -17,7 +17,7 @@ bun:
 
 # Node runs the test/coverage gate: vitest executes under Node, exercising the
 # runtime-neutral published library on real Node. Pinned to 22.12.0 — the floor
-# the Astro docs site (apps/docs) requires. The published library keeps a broader
+# the Astro docs site (sites/docs) requires. The published library keeps a broader
 # engines.node ">=20": raising engines to ">=22" makes proto try to auto-provision
 # the newest Node (not the pinned one) for the bun-toolchain tasks and fail, so the
 # engines floor stays put. Concrete pin so every machine/CI runner resolves the

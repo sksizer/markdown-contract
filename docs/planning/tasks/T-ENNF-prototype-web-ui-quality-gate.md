@@ -11,18 +11,18 @@ need_human_review: false
 impact: medium
 complexity: small
 ---
-# Gate prototype/web-ui with a typecheck quality verb wired into sdlc.yaml
+# Gate apps/daemon-web-prototype with a typecheck quality verb wired into sdlc.yaml
 
 ## Goal
 
 This repo's formal quality gate (`npm run test` / `npm run typecheck`) does not
-cover `prototype/web-ui/`, so the prototype's TypeScript ships ungated. Closing
+cover `apps/daemon-web-prototype/`, so the prototype's TypeScript ships ungated. Closing
 that gap — surfaced by [[T-D7X1-web-ui-mock-api-shapes]] in
 `git@github.com:sksizer/markdown-contract.git` — means adding a prototype-scoped
 typecheck verb wired into `sdlc.yaml` so the gate typechecks the prototype
 automatically rather than relying on an ad-hoc isolated tsconfig.
 
-> Root quality (npm run test / npm run typecheck) does not cover prototype/web-ui/ — the root tsconfig.json includes only src/tests, so the prototype's TS is ungated by the formal quality gate; verification needed an ad-hoc isolated tsconfig. Add a prototype-scoped quality verb (a vue-tsc / nuxt prepare moon task) wired into sdlc.yaml so the prototype is typechecked automatically by the gate next time.
+> Root quality (npm run test / npm run typecheck) does not cover apps/daemon-web-prototype/ — the root tsconfig.json includes only src/tests, so the prototype's TS is ungated by the formal quality gate; verification needed an ad-hoc isolated tsconfig. Add a prototype-scoped quality verb (a vue-tsc / nuxt prepare moon task) wired into sdlc.yaml so the prototype is typechecked automatically by the gate next time.
 >
 > — [[T-D7X1-web-ui-mock-api-shapes]]
 

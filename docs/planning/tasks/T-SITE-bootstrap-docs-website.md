@@ -34,7 +34,7 @@ autonomy: supervised
 
 ## Goal
 
-Render the example catalog as pages **into the existing `apps/docs` shell**
+Render the example catalog as pages **into the existing `sites/docs` shell**
 ([[T-7UTE-astro-docs-site]] scaffold + [[T-SHEL-docs-landing-and-ia]] interim landing), driven by
 the structured catalog data (`docs/catalog/*.yaml`) finalized by
 [[T-CTLG-example-catalog-finalize]]. This is the **page-generation** half of M-0006: it does
@@ -44,7 +44,7 @@ version.
 
 ## Today
 
-The `apps/docs` shell is scaffolded ([[T-7UTE-astro-docs-site]]) with an interim hand-authored
+The `sites/docs` shell is scaffolded ([[T-7UTE-astro-docs-site]]) with an interim hand-authored
 landing and empty IA slots ([[T-SHEL-docs-landing-and-ia]]); no catalog pages render yet. The
 catalog is being finalized from `docs/example-catalog.md` into structured `docs/catalog/*.yaml`
 data by [[T-CTLG-example-catalog-finalize]] (8 categories, the example-entry schema) — the input
@@ -65,7 +65,7 @@ regression-checked against real CLI/library output.
 
 1. Read `docs/catalog/*.yaml` into the Astro / Starlight content collection.
 2. Generate one section per category and one unit per example (artifact verbatim, the `builds_on`
-   ladder cross-linked) under `apps/docs/src/content/docs/`.
+   ladder cross-linked) under `sites/docs/src/content/docs/`.
 3. Replace the interim landing ([[T-SHEL-docs-landing-and-ia]]) with the data-driven hero tour
    (rank-1 per category) and populate the sidebar IA slots with the generated pages.
 4. Add a check that renders each `artifact` and diffs it against real CLI/library output, so
@@ -76,10 +76,10 @@ regression-checked against real CLI/library output.
 
 | Location | Kind | Change |
 |---|---|---|
-| `apps/docs/src/content/docs/**` | new | generated catalog pages — category sections + per-example units. |
-| `apps/docs/src/content.config.ts` (loader) | modify | a content-collection loader that reads `docs/catalog/*.yaml`. |
-| `apps/docs/src/content/docs/index.(md\|mdx)` | modify | the data-driven landing (hero tour), superseding the T-SHEL interim landing. |
-| `apps/docs/astro.config.mjs` | modify | populate the sidebar IA slots with the generated category pages. |
+| `sites/docs/src/content/docs/**` | new | generated catalog pages — category sections + per-example units. |
+| `sites/docs/src/content.config.ts` (loader) | modify | a content-collection loader that reads `docs/catalog/*.yaml`. |
+| `sites/docs/src/content/docs/index.(md\|mdx)` | modify | the data-driven landing (hero tour), superseding the T-SHEL interim landing. |
+| `sites/docs/astro.config.mjs` | modify | populate the sidebar IA slots with the generated category pages. |
 | artifact regression check | new | render each `artifact` and diff against real CLI/library output. |
 
 ## Acceptance criteria
@@ -97,7 +97,7 @@ regression-checked against real CLI/library output.
 
 ## Out of scope
 
-- Standing up the `apps/docs` project / moon registration — [[T-7UTE-astro-docs-site]].
+- Standing up the `sites/docs` project / moon registration — [[T-7UTE-astro-docs-site]].
 - The interim hand-authored landing + IA slots — [[T-SHEL-docs-landing-and-ia]].
 - Finalizing the catalog data and applying the flagged snippet corrections —
   [[T-CTLG-example-catalog-finalize]].

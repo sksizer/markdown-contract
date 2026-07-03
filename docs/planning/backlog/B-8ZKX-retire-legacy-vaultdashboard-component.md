@@ -10,10 +10,10 @@ tags:
 ---
 # Retire or reconcile the legacy `VaultDashboard` component now that `pages/index.vue` is the dashboard
 
-T-6RFC rebuilt the all-vaults dashboard directly into `prototype/web-ui/pages/index.vue`
+T-6RFC rebuilt the all-vaults dashboard directly into `apps/daemon-web-prototype/pages/index.vue`
 on the five-state `VaultStatus` model (green / findings / drift / running / error,
 via `mockApi.listVaults()`). Before that, `pages/index.vue` was a thin scaffold that
-rendered `prototype/web-ui/components/VaultDashboard.vue` — an earlier dashboard built
+rendered `apps/daemon-web-prototype/components/VaultDashboard.vue` — an earlier dashboard built
 on the older two-state `VaultSummary` / `result.exitCode` model.
 
 After T-6RFC the page no longer imports `VaultDashboard.vue`, so that component is now

@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://moonrepo.dev/schemas/project.json
 #
-# The `docs` project (mapped to 'apps/docs' in .moon/workspace.yml) — the Astro +
+# The `docs` project (mapped to 'sites/docs' in .moon/workspace.yml) — the Astro +
 # Starlight documentation site (M-0006, D-0010). A workspace sibling of the
 # published library (packages/core); never published to npm. This is the shell:
 # an empty-but-wired content collection and declared-but-empty sidebar IA. The
