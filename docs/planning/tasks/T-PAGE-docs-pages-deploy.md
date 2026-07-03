@@ -20,6 +20,7 @@ need_human_review: true
 impact: medium
 complexity: small
 autonomy: supervised
+readiness_verified_at: '2026-07-03T02:25:22Z'
 ---
 # Wire the GitHub Pages deploy workflow for `apps/docs` (moon/Bun build → Pages)
 
