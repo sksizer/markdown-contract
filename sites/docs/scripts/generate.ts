@@ -9,10 +9,11 @@
  *     tour (the rank-1 example of each category), superseding the T-SHEL interim landing.
  *   - `src/content/docs/examples/<category>/index.md` — one overview page per category
  *     (the ladder: every example in rank order).
- *   - `src/content/docs/examples/<category>/<id>.md` — one page per example: what it
- *     demonstrates, the artifact verbatim in a fenced block, its `builds_on` prerequisite
- *     link, and the API surfaces it exercises. Planned examples carry a `Planned` badge
- *     and an aside; they are excluded from the artifact regression check.
+ *   - `src/content/docs/examples/<category>/<id>.md` — one page per example, structured
+ *     as: what it demonstrates (+ its `builds_on` prerequisite link), how it's done (a
+ *     kind-aware framing line and the artifact verbatim in a fenced block), and the API
+ *     surfaces it exercises. Planned examples carry a `Planned` badge and an aside; they
+ *     are excluded from the artifact regression check.
  *
  * Sidebar ordering comes from per-page `sidebar.order` frontmatter (= the example's
  * rank; the category overview is 0), consumed by the `autogenerate` groups declared in
@@ -41,6 +42,14 @@ const FENCE_LANG: Record<CatalogExample["artifact_kind"], string> = {
 	code: "ts",
 	yaml: "yaml",
 	mixed: "text",
+};
+
+/** Per-kind framing: how the artifact is implemented and where its result shows. */
+const KIND_FRAMING: Record<CatalogExample["artifact_kind"], string> = {
+	cli: "A terminal session: the command as you'd run it, followed by the output it prints; trailing comments note the exit status.",
+	code: "A TypeScript program against the library API; inline comments show the resulting values and behavior.",
+	yaml: "The declarative YAML artifact, verbatim — no code required.",
+	mixed: "Commands, code, and output together; comments mark which is which.",
 };
 
 /** Site path of an example page. */
@@ -99,14 +108,20 @@ function examplePage(
 	return [
 		frontmatter(fm),
 		"",
+		"## What it demonstrates",
+		"",
 		example.demonstrates,
 		"",
 		...(planned ? [PLANNED_ASIDE, ""] : []),
 		buildsOnLine,
 		"",
+		"## How it's done",
+		"",
+		KIND_FRAMING[example.artifact_kind],
+		"",
 		fence(example.artifact, FENCE_LANG[example.artifact_kind]),
 		"",
-		"### Surfaces exercised",
+		"## Surfaces exercised",
 		"",
 		surfaces,
 		"",
@@ -129,7 +144,8 @@ function categoryIndexPage(category: CatalogCategory): string {
 		frontmatter(fm),
 		"",
 		"Each example builds on the one before it — read the ladder in order, or jump",
-		"to the rung you need.",
+		"to the rung you need. Every shipped artifact is regression-checked against the",
+		"real CLI and library output.",
 		"",
 		rows,
 		"",
@@ -140,75 +156,66 @@ function landingPage(catalog: CatalogCategory[]): string {
 	const fm = {
 		title: "markdown-contract",
 		description:
-			"Validate and consume markdown-as-data — declare a per-type contract and get both validation findings and a typed model from a single parse.",
+			"Validate markdown against per-type contracts and read it back as typed data — findings with source positions and a typed model, from one parse.",
 	};
 
 	const tour = catalog
-		.map((cat) => {
+		.map((cat, i) => {
 			const first = cat.examples[0];
 			if (first?.rank !== 1) {
 				throw new Error(`${cat.category}: no rank-1 example for the hero tour`);
 			}
-			return [
-				`### [${cat.title}](/examples/${cat.category}/)`,
-				"",
-				first.demonstrates,
-				"",
-				`Start at [${first.id}: ${first.name}](${examplePath(cat.category, first.id)}), then climb the ${cat.examples.length}-rung ladder.`,
-			].join("\n");
+			return `${i + 1}. **[${cat.title}](/examples/${cat.category}/)** — ${cat.examples.length} rungs, starting with [${first.id}: ${first.name}](${examplePath(cat.category, first.id)}).`;
 		})
-		.join("\n\n");
+		.join("\n");
 
 	return [
 		frontmatter(fm),
 		"",
-		"Markdown is the cheapest durable format a team will actually keep writing. The",
-		"moment you also want to *trust* its structure or *read it as data*, you reach for",
-		"ad-hoc regex, a bespoke linter, or a heavyweight CMS. **markdown-contract** is the",
-		"missing middle: declare a per-type **contract** and get back both **validation**",
-		"(structural and content findings with source positions) and a **typed model** you",
-		"can read — from one parse.",
+		"Teams keep decision records, runbooks, and planning docs in markdown — but",
+		"nothing guarantees those documents keep the shape your team and tooling rely on.",
+		"**markdown-contract** lets you declare a **contract** per document type",
+		"(frontmatter fields, section structure, table shapes, custom rules) and gives",
+		"you back two things from one parse:",
+		"",
+		"- **Validation** — findings with `path:line` positions, as human text, JSON, or",
+		"  SARIF, with CI-ready exit codes.",
+		"- **A typed model** — the contract that *checks* a document also *types* it:",
+		"  `doc.frontmatter.status`, `doc.body.summary.text()`, iterable typed table rows.",
+		"",
+		"```ts",
+		'import { contract, sections, section } from "markdown-contract";',
+		'import { z } from "zod";',
+		"",
+		"const decision = contract({",
+		'  frontmatter: z.object({ status: z.enum(["proposed", "accepted"]) }),',
+		'  body: sections({ allowUnknown: true }, [section("Summary"), section("Decision")]),',
+		"});",
+		"",
+		'decision.validate(src, { path: "D-0001.md" }); // findings with path:line positions',
+		'decision.read(src, { path: "D-0001.md" });     // typed Doc: frontmatter + body model',
+		"```",
+		"",
+		"Contracts can also be pure YAML — no code at all — and a declarative config maps",
+		"directories and globs to contracts, so validating a whole docs tree is",
+		"configuration. See [Getting started](/getting-started/).",
+		"",
+		"## Start here",
+		"",
+		"- [Why markdown-contract](/why/) — the gap it fills and the design drivers.",
+		"- [How it works](/how-it-works/) — one parse, three validation planes, one",
+		"  finding shape, and the typed model.",
+		"- [Getting started](/getting-started/) — validate a folder from the terminal,",
+		"  then author a contract in YAML or TypeScript.",
 		"",
 		"## Learn it by example",
 		"",
-		`The [example catalog](/examples/${catalog[0]?.category}/) is a curriculum: eight ladders, each a sequence of small,`,
-		"runnable examples where every rung builds on the one before it. Start anywhere:",
+		"The example catalog is a curriculum: eight short ladders of small, runnable",
+		"examples, each rung building on the one before it. Every shipped artifact is",
+		"regression-checked against the real CLI and library, so what you read is what",
+		"the tool actually does.",
 		"",
 		tour,
-		"",
-		"## Markdown as data",
-		"",
-		"Validation and consumption are the same contract. The contract that *checks* a",
-		"document also *types* it: `validate()` returns findings, `read()` returns a typed",
-		"model. The engine is generic and reusable — not welded to any one corpus. A",
-		"declarative `dir → contract` config validates an arbitrary tree, and the engine",
-		"carries no repo knowledge.",
-		"",
-		"## Three cooperating planes",
-		"",
-		"markdown-contract does its work through three mechanisms over one parse:",
-		"",
-		"- **Structure** — a regular tree grammar over sections *and* block kinds.",
-		"- **Content** — Zod over each block's data.",
-		"- **Rules** — a named-rule registry for cross-node / cross-file constraints.",
-		"",
-		"Schema languages and tree grammars are formally incomparable (Murata), so we never",
-		"force one to do the other's job.",
-		"",
-		"## Getting started",
-		"",
-		"The publishable library and CLI live in `packages/core`. From a checkout of the",
-		"[source repository](https://github.com/sksizer/markdown-contract):",
-		"",
-		"```sh",
-		"bun install                                  # resolve the workspace",
-		"bunx moon run core:build                     # tsc → packages/core/dist",
-		"bunx moon run core:test                      # vitest under Node",
-		"bunx moon run :build :typecheck :coverage    # what CI runs",
-		"```",
-		"",
-		"For package layout, packaging, and the full toolchain, see the",
-		"[`packages/core` README](https://github.com/sksizer/markdown-contract/blob/main/packages/core/README.md).",
 		"",
 	].join("\n");
 }

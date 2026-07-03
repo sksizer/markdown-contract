@@ -17,9 +17,18 @@ export default defineConfig({
 			// the pages `scripts/generate.ts` renders out of docs/catalog/*.yaml
 			// into src/content/docs/examples/<category>/ (ordered by per-page
 			// `sidebar.order` = the example's rank; the category overview is 0).
-			// The leading Overview group links the generated landing page.
+			// The leading Overview group links the generated landing page plus the
+			// hand-authored guide pages (committed, not generated).
 			sidebar: [
-				{ label: 'Overview', items: [{ label: 'Introduction', link: '/' }] },
+				{
+					label: 'Overview',
+					items: [
+						{ label: 'Introduction', link: '/' },
+						{ label: 'Why markdown-contract', link: '/why/' },
+						{ label: 'How it works', link: '/how-it-works/' },
+						{ label: 'Getting started', link: '/getting-started/' },
+					],
+				},
 				{
 					label: 'Examples',
 					items: [

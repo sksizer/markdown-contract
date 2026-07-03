@@ -3,7 +3,7 @@ type: milestone
 schema_version: '1'
 id: M-0007
 title: Example use-case catalog — the categorized basis for the docs and marketing site
-status: open/planned
+status: closed/done
 created: '2026-06-28'
 tasks:
   - '[[T-CTLG-example-catalog-finalize]]'
@@ -60,6 +60,13 @@ data (`docs/catalog/<category>.yaml`) and to publish it ([[M-0006-documentation-
 
 ## Summary
 
+- **Closed 2026-07-03.** All 14 member tasks shipped: the catalog umbrella
+  ([[T-CTLG-example-catalog-finalize]]) with its eight per-category children —
+  all eight `docs/catalog/<key>.yaml` files exist, corrections applied, and every
+  shipped artifact is regression-checked against the real CLI/library by the
+  site's `check-artifacts` gate — plus the five follow-up test tasks from the
+  coverage review. The site (M-0006) publishes the catalog at
+  <https://markdown-contract-docs.pages.dev/>.
 - **How it was built.** A multi-agent workflow generated the catalog: four creative lenses
   (library-surface / user-journey / teaching-curriculum / novel-applications) proposed
   competing category schemes **in parallel**; a synthesis step chose the organizing axis
@@ -189,31 +196,31 @@ Each child extracts its category from `docs/example-catalog.md` into
 `docs/catalog/<key>.yaml`, applies the flagged corrections, and verifies every
 sketch against real CLI/library output:
 
-- [ ] `cli` — [[T-CCLI-catalog-cli]]
-- [ ] `inference-init` — [[T-CINF-catalog-inference-init]]
-- [ ] `declarative-yaml` — [[T-CDYL-catalog-declarative-yaml]]
-- [ ] `validation-planes` — [[T-CVPL-catalog-validation-planes]]
-- [ ] `consume-as-data` — [[T-CCON-catalog-consume-as-data]]
-- [ ] `dialect` — [[T-CDIA-catalog-dialect]]
-- [ ] `embed-and-ci` — [[T-CEMB-catalog-embed-and-ci]]
-- [ ] `real-world-schemas` — [[T-CRWS-catalog-real-world-schemas]]
+- [x] `cli` — [[T-CCLI-catalog-cli]]
+- [x] `inference-init` — [[T-CINF-catalog-inference-init]]
+- [x] `declarative-yaml` — [[T-CDYL-catalog-declarative-yaml]]
+- [x] `validation-planes` — [[T-CVPL-catalog-validation-planes]]
+- [x] `consume-as-data` — [[T-CCON-catalog-consume-as-data]]
+- [x] `dialect` — [[T-CDIA-catalog-dialect]]
+- [x] `embed-and-ci` — [[T-CEMB-catalog-embed-and-ci]]
+- [x] `real-world-schemas` — [[T-CRWS-catalog-real-world-schemas]]
 
 ### Recommended new tests (the coverage gaps)
 
 The review flagged 10 test-worthy gaps, grouped into five follow-up tasks:
 
-- [ ] [[T-ROUT-runcorpus-first-match-routing]] — first-match precedence + per-rule exclude in `runCorpus`
-- [ ] [[T-DRAG-docrule-runcorpus-aggregation]] — docRule findings aggregate through `runCorpus` into `exitCode`
-- [ ] [[T-DREF-dialect-referential-integrity]] — dead in-doc anchors + dangling vault wikilinks
-- [ ] [[T-DANF-dialect-anchor-fragment-edges]] — section-id `byAnchor` negative + `#^anchor` fragment value
-- [ ] [[T-IOUT-init-out-placement]] — `init --out` scaffold placement
+- [x] [[T-ROUT-runcorpus-first-match-routing]] — first-match precedence + per-rule exclude in `runCorpus`
+- [x] [[T-DRAG-docrule-runcorpus-aggregation]] — docRule findings aggregate through `runCorpus` into `exitCode`
+- [x] [[T-DREF-dialect-referential-integrity]] — dead in-doc anchors + dangling vault wikilinks
+- [x] [[T-DANF-dialect-anchor-fragment-edges]] — section-id `byAnchor` negative + `#^anchor` fragment value
+- [x] [[T-IOUT-init-out-placement]] — `init --out` scaffold placement
 
 ### Build & publish the site (M-0006)
 
-- [ ] Generating and publishing the catalog pages into the docs-site shell is
+- [x] Generating and publishing the catalog pages into the docs-site shell is
   [[T-SITE-bootstrap-docs-website]], now a member of [[M-0006-documentation-site]]
   — it depends on the Astro shell [[T-7UTE-astro-docs-site]] and consumes the
-  `docs/catalog/*.yaml` produced above.
+  `docs/catalog/*.yaml` produced above. (Shipped via #196; M-0006 closed 2026-07-03.)
 
 ## Out of scope
 
@@ -245,9 +252,10 @@ The review flagged 10 test-worthy gaps, grouped into five follow-up tasks:
   wikilink validation, in-doc dead-anchor checks) are compositions the engine *allows* but
   doesn't ship as fixtures — open question whether to promote any to supported, tested
   features beyond documenting them.
-- **Milestone status.** Marked `open/planned`: the catalog content is drafted (extracted to
-  `docs/example-catalog.md`) and its axis/boundaries/follow-up split are human-reviewed
-  (done 2026-06-28); the member tasks are queued but none started.
+- **Milestone status.** Closed 2026-07-03: all 14 member tasks are `closed/done`
+  (the catalog umbrella and its eight children, plus the five coverage follow-up
+  test tasks). Originally marked `open/planned` when the content was drafted and
+  human-reviewed (2026-06-28) with the member tasks queued.
 - **Milestone number.** Numbered `M-0007` in the settled delivery order: it follows the docs-site
   milestone (which it supplies with content) and precedes single-exec distribution. `version`
   is intentionally unset, consistent with the other open milestones.
