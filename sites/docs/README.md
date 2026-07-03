@@ -7,7 +7,7 @@ markdown-contract (M-0006). A workspace sibling of the published library
 Builds as a moon project on the **bun** toolchain to static output:
 
 ```sh
-moon run docs:build   # -> apps/docs/dist/ (static site, root index.html)
+moon run docs:build   # -> sites/docs/dist/ (static site, root index.html)
 ```
 
 This is the **shell**: an empty-but-wired content collection

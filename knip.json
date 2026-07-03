@@ -25,6 +25,7 @@
       "ignoreDependencies": ["vue", "vue-tsc"]
     }
   },
+  "ignoreWorkspaces": ["apps/daemon-web-prototype"],
   "ignoreDependencies": [],
   "ignoreBinaries": []
 }

@@ -43,14 +43,14 @@ A live, published docs site — the public face of the project — building from
 
 ## Success criteria
 
-- `apps/docs` builds as a **moon project** on the Bun toolchain — the shell scaffolded by [[T-7UTE-astro-docs-site]] (`moon run docs:build` emits a static site).
+- `sites/docs` builds as a **moon project** on the Bun toolchain — the shell scaffolded by [[T-7UTE-astro-docs-site]] (`moon run docs:build` emits a static site).
 - The site publishes a **bare shell off the catalog critical path**: a hand-authored landing / overview page (what markdown-contract is) plus the sidebar IA slots ([[T-SHEL-docs-landing-and-ia]]).
 - The example-catalog pages are **generated from the catalog data** (`docs/catalog/*.yaml`) into those slots — superseding the interim landing with the data-driven version ([[T-SITE-bootstrap-docs-website]], consuming [[M-0007-example-use-case-catalog]] via [[T-CTLG-example-catalog-finalize]]).
 - A GitHub Pages deploy workflow builds via moon and publishes the site ([[T-PAGE-docs-pages-deploy]]). **The live publish is gated on GitHub Actions billing**; the milestone reaches "builds + workflow authored + green locally" independently and flips to "published to a public URL" once billing clears.
 
 ## Notes
 
-- **Builds as a moon `apps/docs` project** (not a standalone site) — scaffolded by [[T-7UTE-astro-docs-site]], which depends on the workspace split [[T-WKSP-bun-workspace-split]] (M-0005, not yet landed).
+- **Builds as a moon `sites/docs` project** (not a standalone site) — scaffolded by [[T-7UTE-astro-docs-site]], which depends on the workspace split [[T-WKSP-bun-workspace-split]] (M-0005, not yet landed).
 - **Four tasks, in sequence:** [[T-7UTE-astro-docs-site]] scaffolds the shell → [[T-SHEL-docs-landing-and-ia]] adds the interim hand-authored landing + IA slots (publishable early, off the catalog critical path) → [[T-SITE-bootstrap-docs-website]] generates the data-driven catalog pages into those slots (consuming `docs/catalog/*.yaml` from [[T-CTLG-example-catalog-finalize]]) and supersedes the interim landing → [[T-PAGE-docs-pages-deploy]] wires the GitHub Pages deploy (after the scaffold).
 - **Publishing is blocked on GitHub Actions billing** — isolated to [[T-PAGE-docs-pages-deploy]]'s publish step. The scaffold, the bare-shell landing, the catalog page-generation, and even the deploy *workflow file* can all be built / authored / reviewed now; only the live GitHub Pages deploy waits for billing to clear.
 - **Example content is M-0007's job; publishing it is this milestone's.** This milestone delivers the site *shell* ([[T-7UTE-astro-docs-site]]) and the page-generation work ([[T-SITE-bootstrap-docs-website]], a member here); the catalog *content* it renders is finalized under [[M-0007-example-use-case-catalog]] as `docs/catalog/*.yaml`.

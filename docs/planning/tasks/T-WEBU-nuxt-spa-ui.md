@@ -28,7 +28,7 @@ definition_gap: The spec has stale/ambiguous path citations that fail the readin
   reword that row so it does not assert a present-day file. Six cited component/config
   paths (`apps/web/nuxt.config.ts`, `apps/web/app/app.vue`, `apps/web/app/pages/index.vue`,
   `apps/web/app/components/FindingsList.vue`, `app/pages/index.vue`, and the daemon
-  `api.ts`) each collide by basename with an existing file under `prototype/web-ui/`,
+  `api.ts`) each collide by basename with an existing file under `apps/daemon-web-prototype/`,
   so the readiness gate reads them as relocated citations; the spec must reconcile
   the relationship to that existing prototype (reuse/adapt vs. build fresh) and disambiguate
   the new-file paths. Finally, AC-3's universal quantifier 'lists each finding's id,

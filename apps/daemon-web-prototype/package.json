@@ -1,9 +1,9 @@
 {
-  "name": "@markdown-contract/web-ui-prototype",
+  "name": "@markdown-contract/daemon-web-prototype",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Standalone Nuxt 3 SPA + Storybook prototype for the markdown-contract local vault dashboard. Mock-data only; imports nothing from the engine (src/).",
+  "description": "Nuxt 3 SPA + Storybook prototype for the markdown-contract local vault dashboard (the daemon web UI). Mock-data only; imports nothing from the engine (packages/core).",
   "engines": {
     "node": ">=18"
   },

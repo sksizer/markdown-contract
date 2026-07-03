@@ -1,4 +1,4 @@
-# Deploy the Astro docs site (apps/docs) to GitHub Pages.
+# Deploy the Astro docs site (sites/docs) to GitHub Pages.
 #
 # ONE-TIME MANUAL PREREQUISITE (not automated here): a repo admin must set
 #   Settings → Pages → Build and deployment → Source: "GitHub Actions"
@@ -7,7 +7,7 @@
 #
 # Bun-bootstrapped and builds through moon, mirroring .github/workflows/ci.yml
 # (D-0010): checkout → setup-bun → bun install → moon toolchain cache →
-# `bunx moon run docs:build` (emits apps/docs/dist) → upload-pages-artifact →
+# `bunx moon run docs:build` (emits sites/docs/dist) → upload-pages-artifact →
 # deploy-pages.
 
 name: Deploy docs
@@ -16,7 +16,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/docs/**'
+      - 'sites/docs/**'
   workflow_dispatch: {}
 
 # Least-privilege token for Pages: the deploy needs to write Pages and mint an
@@ -68,15 +68,15 @@ jobs:
         uses: actions/configure-pages@v5
 
       # Single task source of truth: build the docs site through moon (task def
-      # lives in apps/docs/moon.yml; the `docs:build` task runs `astro build` on
-      # the bun toolchain and emits apps/docs/dist).
+      # lives in sites/docs/moon.yml; the `docs:build` task runs `astro build` on
+      # the bun toolchain and emits sites/docs/dist).
       - name: Build docs site
         run: bunx moon run docs:build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/docs/dist
+          path: sites/docs/dist
 
   deploy:
     needs: build
