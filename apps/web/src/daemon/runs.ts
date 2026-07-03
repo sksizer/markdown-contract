@@ -11,7 +11,9 @@
 import { existsSync } from "node:fs";
 
 import { runCorpus } from "markdown-contract";
-import { runCli } from "markdown-contract/cli";
+// `/cli/run`, not `/cli` — see the note in src/bin.ts (the bin wrapper
+// self-executes inside a bun-compiled bundle).
+import { runCli } from "markdown-contract/cli/run";
 import { loadConfigFile } from "markdown-contract/declarative";
 
 import type {

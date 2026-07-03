@@ -17,7 +17,12 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 
-import { runCli } from "markdown-contract/cli";
+// `/cli/run` (the pure module), NOT `/cli` (the self-executing bin wrapper):
+// under `bun build --compile` every bundled module sees import.meta.url equal
+// to the executable path, so the bin wrapper's "am I the entry?" guard
+// false-positives, runs core's main() with our argv, and process.exit()s the
+// daemon out from under us.
+import { runCli } from "markdown-contract/cli/run";
 
 import { DEFAULT_PORT, startDaemon } from "./daemon";
 
