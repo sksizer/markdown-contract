@@ -60,10 +60,25 @@ A few forces shaped how the library works:
 - **Not a formatter.** Line length, wrapping, whitespace, and table padding
   belong to a formatter. markdown-contract asserts *presence and shape*, never
   placement and whitespace.
-- **Not a CMS or site generator.** Your files stay plain markdown in your
-  repo; markdown-contract only validates and reads them.
-- **Not a template engine.** Contracts validate documents (including your
-  scaffolding templates); they never generate content.
+- **Not a CMS or site generator — but a foundation one could sit on.** Your
+  files stay plain markdown in your repo; markdown-contract only validates and
+  reads them, and it has no interest in managing or publishing content. That
+  said, a CMS needs three operations over a document type — *create* a
+  conforming starting point, *validate* edits, and *read* the result into a
+  typed model — and markdown-contract already delivers the last two from a
+  single contract. That same contract is the natural source of the first, so a
+  CMS's "new document", save-time validation, and typed reads could all rest on
+  markdown-contract without those three ever drifting apart.
+- **Not a template engine — but it could be the basis for one.** Contracts
+  validate documents (including your scaffolding templates); they never
+  generate *content*. They do, however, declare a document's *shape* — its
+  frontmatter fields, its sections in order, its table columns — and that
+  declaration can be walked to emit an empty-but-valid **skeleton**: the
+  headings in the right order, a frontmatter block with starter values, a
+  table's header row. Generating that stub is the exact dual of the `init`
+  command, which already infers a contract *from* a folder of documents.
+  Emitting *shape* (never prose) is the core of a template engine, and a
+  contract already carries everything such a scaffolder would need.
 
 Next: [How it works](/how-it-works/) for the technical approach, or
 [Getting started](/getting-started/) to run it.
