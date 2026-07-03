@@ -112,4 +112,8 @@ _Captured by /sdlc:task-work on 2026-07-03. PR: pending._
 
 ### Friction and automation gaps
 
-- Step 7's baseline-gated quality run failed first attempt with `baseline not found` — the baseline is written under the main repo's `.sdlc/quality-baselines/` (Step 3a) but the gate, run from the worktree, defaults `--baseline-dir` to the worktree's `.sdlc/`. Had to pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly. The task-work Step 7 invocation should either resolve the baseline dir against the main repo (superproject) automatically, or the skill prose should call out passing `--baseline-dir` explicitly when running the gate from inside a worktree.
+- Step 7's baseline-gated quality run failed first attempt with `baseline not found` — the baseline is written under the main repo's `.sdlc/quality-baselines/` (Step 3a) but the gate, run from the worktree, defaults `--baseline-dir` to the worktree's `.sdlc/`. Had to pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly. The task-work Step 7 invocation should either resolve the baseline dir against the main repo (superproject) automatically, or the skill prose should call out passing `--baseline-dir` explicitly when running the gate from inside a worktree. → [[T-W2TM-baseline-dir-resolves-from-superproject]]
+
+### Spawned follow-up tasks
+
+- [[T-W2TM-baseline-dir-resolves-from-superproject]] (https://github.com/sksizer/dev/pull/608) — task-work Step 7's baseline gate should resolve `--baseline-dir` against the superproject when run from a worktree (Upstream-plugin, spawned).
