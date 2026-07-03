@@ -61,45 +61,45 @@ interface Result {
 	notes: string[];
 }
 
-function main(): number {
-	rmSync(SCRATCH_DIR, { recursive: true, force: true });
-	const catalog = loadCatalog();
-	const help = loadHelpSurface(CLI_PATH);
+const verdict = (id: string, kind: string, errors: string[]): Result => ({
+	id,
+	kind,
+	status: errors.length ? "fail" : "pass",
+	notes: errors,
+});
 
+const skipped = (id: string, kind: string, note: string): Result => ({
+	id,
+	kind,
+	status: "skip",
+	notes: [note],
+});
+
+/** Dispatch every catalog example to its kind's checker; `code` runs as one batch. */
+function collectResults(help: ReturnType<typeof loadHelpSurface>): Result[] {
 	const results: Result[] = [];
 	const codeBatch: { id: string; artifact: string }[] = [];
 
-	for (const category of catalog) {
+	for (const category of loadCatalog()) {
 		for (const example of category.examples) {
 			const { id, artifact, artifact_kind: kind } = example;
 			if (isPlanned(example)) {
-				results.push({ id, kind, status: "skip", notes: ["planned — capability not shipped"] });
-				continue;
-			}
-			switch (kind) {
-				case "cli": {
-					const errors = checkCliArtifact(artifact, help, true);
-					results.push({ id, kind, status: errors.length ? "fail" : "pass", notes: errors });
-					break;
-				}
-				case "yaml": {
-					const errors = checkYamlArtifact(artifact, resolve(SCRATCH_DIR, id.toLowerCase()), help);
-					results.push({ id, kind, status: errors.length ? "fail" : "pass", notes: errors });
-					break;
-				}
-				case "code":
-					codeBatch.push({ id, artifact });
-					break;
-				case "mixed": {
-					const commands = checkCliArtifact(artifact, help, false);
-					const hasCommand = /(^|\n)\s*(\$\s+)?(npx\s+|bunx\s+)?markdown-contract\s/.test(artifact);
-					results.push(
-						hasCommand
-							? { id, kind, status: commands.length ? "fail" : "pass", notes: commands }
-							: { id, kind, status: "skip", notes: ["mixed artifact with no command line — not machine-verified"] },
-					);
-					break;
-				}
+				results.push(skipped(id, kind, "planned — capability not shipped"));
+			} else if (kind === "cli") {
+				results.push(verdict(id, kind, checkCliArtifact(artifact, help, true)));
+			} else if (kind === "yaml") {
+				results.push(
+					verdict(id, kind, checkYamlArtifact(artifact, resolve(SCRATCH_DIR, id.toLowerCase()), help)),
+				);
+			} else if (kind === "code") {
+				codeBatch.push({ id, artifact });
+			} else {
+				const hasCommand = /(^|\n)\s*(\$\s+)?(npx\s+|bunx\s+)?markdown-contract\s/.test(artifact);
+				results.push(
+					hasCommand
+						? verdict(id, kind, checkCliArtifact(artifact, help, false))
+						: skipped(id, kind, "mixed artifact with no command line — not machine-verified"),
+				);
 			}
 		}
 	}
@@ -107,36 +107,36 @@ function main(): number {
 	// One TS program for all code snippets (fast, and diagnostics stay per-file).
 	const codeFailures = checkCodeArtifacts(codeBatch, resolve(SCRATCH_DIR, "code"));
 	for (const { id } of codeBatch) {
-		const errors = codeFailures.get(id) ?? [];
-		results.push({ id, kind: "code", status: errors.length ? "fail" : "pass", notes: errors });
+		results.push(verdict(id, "code", codeFailures.get(id) ?? []));
 	}
+	return results;
+}
 
-	// Reconcile against the known-failures baseline.
-	const known = new Map(KNOWN_FAILURES.map((k) => [k.id, k.reason]));
-	const unexpected: Result[] = [];
-	const tolerated: Result[] = [];
-	const stale: string[] = [];
-	for (const r of results) {
-		if (r.status !== "fail") {
-			if (known.has(r.id)) stale.push(r.id);
-			continue;
-		}
-		(known.has(r.id) ? tolerated : unexpected).push(r);
-	}
-
-	const counts = {
-		pass: results.filter((r) => r.status === "pass").length,
-		skip: results.filter((r) => r.status === "skip").length,
+/** Split failures by the known-failures baseline; flag stale (now-passing) entries. */
+function reconcile(results: Result[]): { unexpected: Result[]; tolerated: Result[]; stale: string[] } {
+	const known = new Set(KNOWN_FAILURES.map((k) => k.id));
+	const failures = results.filter((r) => r.status === "fail");
+	return {
+		unexpected: failures.filter((r) => !known.has(r.id)),
+		tolerated: failures.filter((r) => known.has(r.id)),
+		stale: results.filter((r) => r.status !== "fail" && known.has(r.id)).map((r) => r.id),
 	};
+}
+
+function report(
+	results: Result[],
+	{ unexpected, tolerated, stale }: ReturnType<typeof reconcile>,
+): void {
+	const reasons = new Map(KNOWN_FAILURES.map((k) => [k.id, k.reason]));
+	const passed = results.filter((r) => r.status === "pass").length;
+	const skips = results.filter((r) => r.status === "skip");
 	console.log(
-		`check-artifacts: ${results.length} artifact(s) — ${counts.pass} passed, ` +
-			`${tolerated.length} known failure(s), ${unexpected.length} unexpected failure(s), ${counts.skip} skipped`,
+		`check-artifacts: ${results.length} artifact(s) — ${passed} passed, ` +
+			`${tolerated.length} known failure(s), ${unexpected.length} unexpected failure(s), ${skips.length} skipped`,
 	);
-	for (const r of results.filter((x) => x.status === "skip")) {
-		console.log(`  SKIP ${r.id} [${r.kind}] — ${r.notes.join("; ")}`);
-	}
+	for (const r of skips) console.log(`  SKIP ${r.id} [${r.kind}] — ${r.notes.join("; ")}`);
 	for (const r of tolerated) {
-		console.log(`  KNOWN-FAIL ${r.id} [${r.kind}] — ${known.get(r.id)}`);
+		console.log(`  KNOWN-FAIL ${r.id} [${r.kind}] — ${reasons.get(r.id)}`);
 		for (const n of r.notes) console.log(`    ${n}`);
 	}
 	for (const r of unexpected) {
@@ -146,9 +146,15 @@ function main(): number {
 	for (const id of stale) {
 		console.error(`  STALE known-failure entry: ${id} now passes — remove it from known-failures.ts`);
 	}
+}
 
+function main(): number {
 	rmSync(SCRATCH_DIR, { recursive: true, force: true });
-	return unexpected.length > 0 || stale.length > 0 ? 1 : 0;
+	const results = collectResults(loadHelpSurface(CLI_PATH));
+	const outcome = reconcile(results);
+	report(results, outcome);
+	rmSync(SCRATCH_DIR, { recursive: true, force: true });
+	return outcome.unexpected.length > 0 || outcome.stale.length > 0 ? 1 : 0;
 }
 
 process.exit(main());

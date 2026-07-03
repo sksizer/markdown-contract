@@ -146,7 +146,7 @@ function landingPage(catalog: CatalogCategory[]): string {
 	const tour = catalog
 		.map((cat) => {
 			const first = cat.examples[0];
-			if (!first || first.rank !== 1) {
+			if (first?.rank !== 1) {
 				throw new Error(`${cat.category}: no rank-1 example for the hero tour`);
 			}
 			return [
