@@ -1,29 +1,31 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-UTKU
 status: in-progress
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0009-local-web-ui-vault-dashboard]]'
-- '[[C-0010-single-binary-and-vault-dashboard]]'
-- '[[D-0012-distribution-single-exec-and-web-ui]]'
+  - "[[M-0009-local-web-ui-vault-dashboard]]"
+  - "[[C-0010-single-binary-and-vault-dashboard]]"
+  - "[[D-0012-distribution-single-exec-and-web-ui]]"
 depends_on:
-- '[[T-6RFC-web-ui-vault-dashboard]]'
-- '[[T-4CUI-web-ui-vault-detail-findings]]'
-- '[[T-5QJV-web-ui-vault-registry]]'
-- '[[T-HHLC-web-ui-drift-view]]'
-- '[[T-0P0U-web-ui-live-status-sse]]'
+  - "[[T-6RFC-web-ui-vault-dashboard]]"
+  - "[[T-4CUI-web-ui-vault-detail-findings]]"
+  - "[[T-5QJV-web-ui-vault-registry]]"
+  - "[[T-HHLC-web-ui-drift-view]]"
+  - "[[T-0P0U-web-ui-live-status-sse]]"
 tags:
-- web-ui
-- prototype
-- review
+  - web-ui
+  - prototype
+  - review
 need_human_review: false
 impact: high
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-07-01T05:08:08Z'
-last_reviewed: '2026-07-01'
+readiness_verified_at: 2026-07-01T05:08:08Z
+last_reviewed: 2026-07-01
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/134
 ---
 # Prototype review & decide-after gate
 
@@ -39,7 +41,7 @@ decision.
 
 | Location | Role today |
 |---|---|
-| `prototype/web-ui/` | the assembled prototype + Storybook variants from the surface tasks, ready to review |
+| `apps/daemon-web-prototype/` | the assembled prototype + Storybook variants from the surface tasks, ready to review |
 | `docs/planning/milestones/M-0009-local-web-ui-vault-dashboard.md` | the milestone this review's verdict feeds back into |
 
 ## Proposed
@@ -63,7 +65,7 @@ stable JSON API ([[T-D7X1-web-ui-mock-api-shapes]]) must expose for that.
 | Location | Kind | Change |
 |---|---|---|
 | `docs/planning/milestones/M-0009-local-web-ui-vault-dashboard.md` | modify | record the review verdict + decide-after recommendation |
-| `prototype/web-ui/REVIEW.md` | new | chosen variants, IA verdict, gap list |
+| `apps/daemon-web-prototype/REVIEW.md` | new | chosen variants, IA verdict, gap list |
 
 ## Acceptance criteria
 
@@ -89,7 +91,7 @@ _Captured by /sdlc:task-work on 2026-07-01. PR: pending._
 
 ### Acceptance criteria coverage
 
-- AC-1: agent-manual — authored `prototype/web-ui/REVIEW.md` §1 (chosen-variant
+- AC-1: agent-manual — authored `apps/daemon-web-prototype/REVIEW.md` §1 (chosen-variant
   table + per-surface rationale) and §2 (end-to-end IA verdict); presence
   grep-verified. The variant judgments themselves are deferred-user.
 - AC-2: agent-manual — `REVIEW.md` §3 gap list with an explicit "Deferred

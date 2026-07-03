@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-L77L
-status: open/ready
+status: closed/done
 created: '2026-06-30'
 related:
 - '[[M-0010]]'
@@ -11,6 +11,10 @@ tags:
 need_human_review: false
 impact: medium
 complexity: small
+last_reviewed: '2026-07-02'
+prs:
+- https://github.com/sksizer/markdown-contract/pull/144
+completion_note: 'Shipped via #144.'
 ---
 # Validate published-package hygiene with publint and are-the-types-wrong
 
@@ -35,10 +39,10 @@ downstream consumer can actually resolve them.
 
 | Location | Role today |
 |---|---|
-| `package.json` | Declares the published surface — `exports` (`.` → `dist/index.js` + `dist/index.d.ts`; `./declarative` → `dist/declarative/index.js` + `.d.ts`), `bin` (`markdown-contract` → `dist/cli/index.js`), `main`/`types`, `"type":"module"`, `"sideEffects":false`, `files:["dist"]`. No script lints any of this. |
-| `tsconfig.build.json` | The build config (`tsc -p tsconfig.build.json`): `declaration: true`, `declarationMap: true`, `outDir: dist`, `rootDir: src` — emits the hand-rolled `.d.ts` next to each `.js` under `dist/`. Nothing verifies those `.d.ts` resolve for consumers. |
-| `moon.yml` | Single task source of truth — wraps the npm scripts as cached moon tasks (`build`, `typecheck`, `test`, `coverage`, `lint-docs`). `lint-docs` is the precedent: `deps: ['build']` so the build output (`dist/`, the gitignored artifact these tools must lint) is fresh before it runs. No package-hygiene task exists. |
-| `package.json#scripts` | Thin pass-throughs moon wraps (`build`, `typecheck`, `test`, `coverage`, `lint:docs`). No `lint:package` / type-resolution script. |
+| `packages/core/package.json` | Declares the published surface — `exports` (`.` → `dist/index.js` + `dist/index.d.ts`; `./declarative` → `dist/declarative/index.js` + `.d.ts`), `bin` (`markdown-contract` → `dist/cli/index.js`), `main`/`types`, `"type":"module"`, `"sideEffects":false`, `files:["dist"]`. No script lints any of this. |
+| `packages/core/tsconfig.build.json` | The build config (`tsc -p tsconfig.build.json`): `declaration: true`, `declarationMap: true`, `outDir: dist`, `rootDir: src` — emits the hand-rolled `.d.ts` next to each `.js` under `dist/`. Nothing verifies those `.d.ts` resolve for consumers. |
+| `packages/core/moon.yml` | Single task source of truth — wraps the npm scripts as cached moon tasks (`build`, `typecheck`, `test`, `coverage`, `lint-docs`). `lint-docs` is the precedent: `deps: ['build']` so the build output (`dist/`, the gitignored artifact these tools must lint) is fresh before it runs. No package-hygiene task exists. |
+| `packages/core/package.json#scripts` | Thin pass-throughs moon wraps (`build`, `typecheck`, `test`, `coverage`, `lint:docs`). No `lint:package` / type-resolution script. |
 | `.github/workflows/ci.yml` | CI gate — runs `npx moon run :build :typecheck :coverage` on every PR and push to `main`. Does not check packaging or type resolution. |
 | `sdlc.yaml#quality_checks` | Local task-work gate list (`npm run test`, `npm run typecheck`). No package-hygiene entry. |
 
@@ -109,9 +113,9 @@ this validates the package shape, it does not ship it.
 
 | Location | Kind | Change |
 |---|---|---|
-| `package.json` | modify | Add `publint` + `@arethetypeswrong/cli` devDeps; add `lint:package`, `check:types`, and combined `package-check` scripts. |
-| `package-lock.json` | modify | Lockfile updated by `npm install` for the two new devDeps (committed; CI installs via `npm ci`). |
-| `moon.yml` | modify | Add a cached `package-check` task wrapping `npm run package-check` with `deps: ['build']` (mirrors `lint-docs`). |
+| `packages/core/package.json` | modify | Add `publint` + `@arethetypeswrong/cli` devDeps; add `lint:package`, `check:types`, and combined `package-check` scripts. |
+| `bun.lock` | modify | Root workspace lockfile updated when the two new devDeps are installed (committed; CI installs from it). |
+| `packages/core/moon.yml` | modify | Add a cached `package-check` task wrapping `npm run package-check` with `deps: ['build']` (mirrors `lint-docs`). |
 | `.github/workflows/package-quality.yml` | new | Dedicated CI workflow running `npx moon run :package-check` on every PR and push to `main` (recommended path; keeps `ci.yml`'s shared `moon run` line untouched). |
 | `.github/workflows/ci.yml` | modify | Only if the alternative is chosen: extend the `moon run` task list to include `:package-check`. (Skipped under the recommended dedicated-workflow path.) |
 | `sdlc.yaml` | modify | Add `moon run :package-check` to `quality_checks` (additive). |
@@ -169,3 +173,76 @@ type-checks its source and gates coverage, but nothing validates the
 *published* package — the dual-entry `exports` map, `bin`, and hand-rolled
 `.d.ts` that downstream consumers actually resolve — which is precisely the
 shape publint and are-the-types-wrong exist to protect.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-01. PR: pending._
+
+### Acceptance criteria coverage
+
+- AC-1: auto — `packages/core/package.json` declares `@arethetypeswrong/cli`
+  `^0.18.4` and `publint` `^0.3.21` in devDependencies and exposes
+  `lint:package` / `check:types` / `package-check`; the root `bun.lock` (the
+  Bun-workspace lockfile — the spec's "package-lock.json" maps to it) reflects
+  both. Verified by inspection and a frozen `bun install` (0 changes).
+- AC-2: auto — `bunx moon run core:package-check` runs publint → `All good!`,
+  0 errors, exit 0 on the built package.
+- AC-3: auto — `attw --pack . --profile esm-only` passes both entry points
+  (`.` and `./declarative`) 🟢 for `node16 (ESM)` and `bundler`; node10 /
+  node16-cjs are ignored by the `esm-only` profile (intended for this ESM-only
+  package). No `--ignore-rules` or exports restructuring needed; exit 0.
+- AC-4: auto — `moon run core:package-check` from a clean tree builds `dist/`
+  first (via `deps: ['build']`), then runs publint + attw, exit 0.
+- AC-5: agent-manual — dedicated `.github/workflows/package-quality.yml`
+  gates on every PR and push to `main`; a deliberately broken `exports`
+  target (`./declarative` types → nonexistent file) made publint report
+  `Errors: 1` and `package-check` exit 1, and the revert restored `All good!`
+  / exit 0. The break was not committed. (deferred-user: the GitHub Actions
+  run itself is only observable once the PR is open — please confirm the
+  Package Quality check appears and is green.)
+- AC-6: auto — `sdlc.yaml` `quality_checks` includes
+  `bunx moon run core:package-check`; exercised by the Step 7 gate reporting
+  `OK 4/4`.
+
+### What worked
+
+- The existing moon `lint-docs` task was a near-exact template — the
+  `deps: ['build']` "lint the fresh built artifact" pattern dropped straight
+  onto `package-check`, so wiring the cached moon task was mechanical.
+- publint and attw both passed first-try against the current `exports`/`bin`
+  shape — no exports restructuring and no `--ignore-rules` were needed. The
+  `esm-only` profile correctly classified the node10 / CJS `require()`
+  resolutions as intended rather than as failures.
+- The baseline-gated Step 7 run reported `OK 4/4` with zero new drift,
+  cleanly isolating this branch's additions from the origin/main baseline.
+- `npm pack --dry-run` from `packages/core` stayed clean (159 files, no
+  `workspace:*` refs), so the T-WKSP published-artifact baseline held.
+
+### Friction and automation gaps
+
+Per the PR-consolidation directive, follow-ups are captured on this branch as
+backlog docs / links to existing backlog items — no separate follow-up PRs.
+
+- Spec prose was npm-flavored (`npm install`, `package-lock.json`, `npx
+  publint`, `npm run build`) while the repo is a Bun workspace, so every
+  command had to be translated to `bun` / `bunx moon`. The #136 re-point
+  fixed the Today table and Files-to-touch (`bun.lock`) but left `## Approach`
+  and the ACs in npm terms — the readiness gate passed structurally without
+  catching the contradiction. Already captured:
+  [[B-BUNZ-readiness-crosscheck-package-manager-layout]] (readiness gate
+  should cross-check task-referenced package-manager verbs/lockfiles against
+  the actual repo layout).
+- Step 7's baseline lookup failed from the worktree — it resolved
+  `<worktree>/.sdlc/quality-baselines/` instead of the superproject's dir,
+  requiring an explicit `--baseline-dir` pointing at the main repo. Already
+  captured: [[B-HVL1-worktree-quality-baseline-dir-resolution]].
+- Step 3b's permissions probe reported false-positive gaps
+  (`Bash(bun:*)` / `Bash(npm:*)` / `Write` / `Edit`) that did not reflect the
+  live harness grants — every one of those verbs worked throughout the run.
+  Already captured: [[B-PFPB-permissions-probe-false-positive]].
+- The locally-available proto bun binaries (both the 1.3.12 PATH shim and the
+  pinned 1.3.14) write a `"configVersion": 0` line into `bun.lock` that the
+  canonical CI bun (oven-sh setup-bun 1.3.14 + `--frozen-lockfile`) neither
+  writes nor requires — so a fresh local install dirties the lock with a field
+  that must be manually stripped to keep the committed lockfile frozen-clean.
+  New: [[B-L0CK-bun-lock-configversion-churn-from-local-proto-bun]].

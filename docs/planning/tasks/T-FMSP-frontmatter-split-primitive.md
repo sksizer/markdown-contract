@@ -1,23 +1,26 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-FMSP
-status: open/ready
-created: 2026-06-30
+status: closed/done
+created: '2026-06-30'
 related:
-  - "[[T-2HF6-projection-engine]]"
-  - "[[B-FM20-frontmatter-2-0-api]]"
+- '[[T-2HF6-projection-engine]]'
+- '[[B-FM20-frontmatter-2-0-api]]'
 depends_on: []
 tags:
-  - engine
-  - frontmatter
-  - api
-  - dx
+- engine
+- frontmatter
+- api
+- dx
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-last_reviewed: 2026-06-30
+last_reviewed: '2026-07-01'
+prs:
+- https://github.com/sksizer/markdown-contract/pull/139
+completion_note: 'Shipped via #139.'
 ---
 # Frontmatter/body split — a pure splitter retained on the `parse()` result
 
@@ -46,9 +49,14 @@ captured separately as [[B-FM20-frontmatter-2-0-api]]; they are out of scope her
 
 | Location | Role today |
 |---|---|
-| `src/core/projection.ts:417` (`parse`) | Splits frontmatter from body via `remark-frontmatter`, builds `frontmatter` (`buildFrontmatter`, `:332`) + the section projection, then returns `DocTree` — **discarding the body slice it just computed** |
-| `src/core/types.ts:58` (`DocTree`) | Exposes `frontmatter {raw,data,pos,lineForPath} \| null` + `root: SectionNode` + `mdast` — **no verbatim `body` string**; the body is only available structurally |
-| consumers (`sksizer/dev`) | `@lib/util/frontmatter` hand-rolls a `---`-fence regex for exactly this split; `markdown_extract.sectionBody` slices verbatim source by hand for the same "the projection flattens, I need the bytes" reason |
+| `packages/core/src/core/projection.ts#parse` | Splits frontmatter from body via `remark-frontmatter`, builds `frontmatter` (`buildFrontmatter`) + the section projection, then returns `DocTree` — **discarding the body slice it just computed** |
+| `packages/core/src/core/types.ts#DocTree` | Exposes `frontmatter {raw,data,pos,lineForPath} \| null` + `root: SectionNode` + `mdast` — **no verbatim `body` string**; the body is only available structurally |
+
+Downstream consumers motivating this live in an **external** repo (`sksizer/dev`),
+not this codebase, so they are not local touchpoints: `@lib/util/frontmatter`
+hand-rolls a `---`-fence regex for exactly this split, and
+`markdown_extract.sectionBody` slices verbatim source by hand for the same "the
+projection flattens, I need the bytes" reason (see Discovery context).
 
 ## Proposed
 
@@ -92,7 +100,7 @@ doc ends at the closing fence). `body` is byte-exact (no trim / re-serialize).
 
 ## Approach
 
-1. Add `splitFrontmatter(md) => { raw, body }` in `src/core/frontmatter.ts`,
+1. Add `splitFrontmatter(md) => { raw, body }` in `packages/core/src/core/frontmatter.ts`,
    recognizing the block with `micromark-extension-frontmatter`. `raw` =
    fences-stripped inter-fence text (or null); `body` = the verbatim source after
    the closing fence's line terminator (or the whole input when no frontmatter).
@@ -101,7 +109,7 @@ doc ends at the closing fence). `body` is byte-exact (no trim / re-serialize).
    `lineForPath` on the existing parse path.
 3. Export `splitFrontmatter` from the core barrel and the package-root `index.ts`;
    add `body: string` to the `DocTree` type.
-4. Peer unit tests (`src/core/frontmatter.test.ts`): no frontmatter, normal doc,
+4. Peer unit tests (`packages/core/src/core/frontmatter.test.ts`): no frontmatter, normal doc,
    empty frontmatter block, body byte-preservation (CRLF; a body that itself
    contains `---`); plus a `parse()` test asserting `parse(md).body ===
    splitFrontmatter(md).body` and `(parse(md).frontmatter?.raw ?? null) ===
@@ -111,12 +119,12 @@ doc ends at the closing fence). `body` is byte-exact (no trim / re-serialize).
 
 | Location | Kind | Change |
 |---|---|---|
-| `src/core/frontmatter.ts` | new | the pure `splitFrontmatter` splitter (`{ raw, body }`) |
-| `src/core/frontmatter.test.ts` | new | peer unit test — input→output + body byte-preservation |
-| `src/core/projection.ts` | modify | `parse()` calls `splitFrontmatter` and sets `DocTree.body` |
-| `src/core/types.ts` | modify | add `body: string` to `DocTree` |
-| `src/core/index.ts` | modify | re-export `splitFrontmatter` from the core barrel |
-| `src/index.ts` | modify | add `splitFrontmatter` to the package-root named re-export list |
+| `packages/core/src/core/frontmatter.ts` | new | the pure `splitFrontmatter` splitter (`{ raw, body }`) |
+| `packages/core/src/core/frontmatter.test.ts` | new | peer unit test — input→output + body byte-preservation |
+| `packages/core/src/core/projection.ts` | modify | `parse()` calls `splitFrontmatter` and sets `DocTree.body` |
+| `packages/core/src/core/types.ts` | modify | add `body: string` to `DocTree` |
+| `packages/core/src/core/index.ts` | modify | re-export `splitFrontmatter` from the core barrel |
+| `packages/core/src/index.ts` | modify | add `splitFrontmatter` to the package-root named re-export list |
 
 ## Acceptance criteria
 
@@ -149,3 +157,26 @@ doc ends at the closing fence). `body` is byte-exact (no trim / re-serialize).
   2.0 design ([[B-FM20-frontmatter-2-0-api]]). Sibling analysis of `sksizer/dev`
   #518 / #520 confirmed the same "I need the verbatim source the projection
   flattened" theme at the section and table-cell layers. Filed 2026-06-30.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-01. PR: pending._
+
+### Acceptance criteria coverage
+
+- AC-1: auto — `packages/core/src/core/frontmatter.test.ts` "pure { raw, body } split" cases assert `splitFrontmatter` returns `{ raw, body }` from a pure split (the minimal `FRONTMATTER_PROCESSOR` runs no YAML parse and no section/wikilink projection); exported from the package root. Verified by `core:test`.
+- AC-2: auto — the "parse() agreement" describe asserts `parse(md).body === splitFrontmatter(md).body` and `(parse(md).frontmatter?.raw ?? null) === splitFrontmatter(md).raw` across 6 inputs; `parse()` reuses the shared `bodyAfterFrontmatter` helper off its own `yamlNode` (no second scan). Verified by `core:test`.
+- AC-3: auto — no-frontmatter case asserts `body === md`; the `---`-in-body and CRLF cases assert verbatim preservation; the reconstruction case asserts `"---\n" + raw + "\n---\n" + body === md`. Verified by `core:test`.
+- AC-4: auto — recognition matches `parse()` by construction (same `remark-frontmatter`, which wraps `micromark-extension-frontmatter`); the parse()-agreement equalities confirm the `raw`/`body` boundaries coincide with the mdast `yaml` node, and the body-with-`---` case confirms only the leading block counts. Verified by `core:test`.
+- AC-5: auto — `bunx moon run core:build core:typecheck core:test` reported `OK 3/3`; the peer test covers the no-frontmatter / present / empty (`---\n---`) / body-preservation cases.
+
+### What worked
+
+- The design was fully de-risked before implementation: an empirical probe of the mdast `yaml` node's `position.end.offset` across all edge cases (no trailing newline, empty block, doc-ends-at-fence, `---`-in-body, CRLF) nailed the exact body-slice algorithm, so the implementation landed in a single pass with zero rework.
+- Reusing `remark-frontmatter` (already a direct dep) as the recognizer — rather than reaching for the transitive `micromark-extension-frontmatter` — meant "agrees with `parse()` by construction" required **no** new dependency.
+- The baseline-gated quality gate ran green (`OK 3/3`) with zero new drift once the baseline-dir was pointed at the superproject.
+
+### Friction and automation gaps
+
+- Step 3b's permissions probe reported false-positive gaps (`bun`, `Write`, `Edit` "missing") that directly contradicted the live sandbox, where every `bun run`, `Write`, and `Edit` succeeded — forcing a proceed-anyway judgment call. **Already filed** as [[B-PFPB-permissions-probe-false-positive]] (make the probe self-falsifying, or downgrade unconfirmed gaps to a non-blocking note); no new backlog doc created.
+- Step 7's documented `sdlc quality run --diff-against-baseline` invocation omits `--baseline-dir`, so from the worktree it looked for the baseline under `<worktree>/.sdlc/quality-baselines/` while Step 3a wrote it to the **main repo's** `.sdlc/quality-baselines/`; the gate aborted with `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly. **Already filed** as [[B-HVL1-worktree-quality-baseline-dir-resolution]] (make capture and gate agree on one directory in the worktree case); no new backlog doc created.

@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-LCA7
-status: open/ready
+status: closed/done
 created: '2026-06-30'
 related:
 - '[[M-0010]]'
@@ -11,6 +11,10 @@ tags:
 need_human_review: false
 impact: medium
 complexity: small
+last_reviewed: '2026-07-01'
+prs:
+- https://github.com/sksizer/markdown-contract/pull/138
+completion_note: 'Shipped via #138.'
 ---
 # Add Dependabot updates and a dependency-audit CI step
 
@@ -32,7 +36,7 @@ tree (canonical per D-0006) and the action pins are kept current manually.
 | Location | Role today |
 |---|---|
 | `package.json` | Declares `dependencies` / `devDependencies`; its `scripts` block is the thin pass-through layer the wrap pattern builds on. No `audit` script exists, and no Dependabot config maintains these deps. |
-| `package-lock.json` | The committed lockfile CI installs from (`npm ci`); it pins the resolved tree but is never scanned against an advisory database. |
+| `bun.lock` | The committed root workspace lockfile CI installs from; it pins the resolved tree but is never scanned against an advisory database. |
 | `.github/workflows/ci.yml` | CI runs `npx moon run :build :typecheck :coverage` on pull requests and pushes to `main`; no step scans dependencies for known vulnerabilities, and its `moon run` task list is the one genuine M-0010 coordination point. |
 | `.github/workflows/` | Holds only `ci.yml` today — room for a single-purpose, parallel-safe audit workflow that runs in its own file without touching the shared CI job. |
 
@@ -135,3 +139,28 @@ Surfaced while planning M-0010 quality tooling: package hygiene needs both a way
 to keep dependencies and CI action pins current (Dependabot) and a gate that
 fails the build on known-vulnerable dependencies (an audit step). Neither exists
 in the repo today.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-01. PR: pending._
+
+### Acceptance criteria coverage
+
+- AC-1: auto — `.github/dependabot.yml` parses as valid YAML (via the `yaml` package); two `updates` entries — `package-ecosystem: npm` and `package-ecosystem: github-actions`, both `directory: "/"` with `schedule.interval: "weekly"`.
+- AC-2: auto — the npm entry's `groups` map has a `dev-dependencies` group (`development`, minor+patch) and a `production-minor-patch` group (`production`, minor+patch); majors stay ungrouped. `open-pull-requests-limit: 5`.
+- AC-3: agent-manual — `bun audit --audit-level=high` empirically exits `1` on a high/critical advisory (tested `ms@0.7.0` high + `minimist@0.0.8` critical in a throwaway tree) and `0` on the clean tree; the workflow runs `bun install --frozen-lockfile` + `bun run audit`. These are the Bun-workspace equivalents of the spec's npm-era `npm ci` / `npm audit --audit-level=high` — there is no `package-lock.json` post workspace-split (the committed lockfile is `bun.lock`).
+- AC-4: auto — the HIGH threshold and block decision are documented in `audit.yml`'s header comment; the additive `audit` script (`bun audit --audit-level=high`) reproduces the gate locally (`bun run audit` exits 0 on the clean tree).
+- AC-5: agent-manual — verified the exit-code semantics directly: a deliberately-vulnerable tree (`ms` high + `minimist` critical) turns `bun audit --audit-level=high` red (exit 1); the clean tree exits 0. Notably, bare `bun audit` (no `--audit-level`) exits 0 even with critical vulns, so the `--audit-level=high` flag is load-bearing — documented in the workflow.
+- AC-6: auto — `git show --stat` on the two implementation commits confirms only `.github/dependabot.yml`, `.github/workflows/audit.yml`, and `package.json` (additive `scripts.audit`) changed; `.github/workflows/ci.yml` and every `moon.yml` are untouched.
+
+### What worked
+
+- The task-work "IMPORTANT LAYOUT" note steered the npm→bun adaptation cleanly, and the existing Bun-workspace `ci.yml` (`oven-sh/setup-bun@v2`, `bun install --frozen-lockfile`, pin `1.3.14`) was an exact template for `audit.yml` to mirror.
+- `bun audit --audit-level=high` maps 1:1 onto the intended "block high/critical, tolerate low/moderate" gate; verifying the exit-code semantics empirically *before* implementation meant the workflow was correct on the first pass.
+- Baseline-gated quality (`OK 3/3`, no new drift) confirmed the CI/config additions did not perturb the `packages/core` build/typecheck/test.
+
+### Friction and automation gaps
+
+- The task doc's Proposed/Approach/Files-to-touch/AC sections still literally prescribe `npm ci` / `npm audit` / `package-lock.json` / `actions/setup-node`, but `package-lock.json` was deleted in the Bun-workspace split — the shipped gate correctly uses `bun audit` / `bun.lock` / `setup-bun`. The readiness gate (`task gap-report` → `has_gaps: false`) and the relevance check are structural (they confirm sections are present, not that referenced tooling/files still exist), so the npm↔bun drift went unflagged — a relevance/readiness heuristic that cross-checks task-referenced lockfiles and package-manager verbs against the actual repo layout would have surfaced it. (Backlog doc committed on this branch.)
+- Step 7's `quality run --diff-against-baseline` defaults `--baseline-dir` to the *worktree's* `.sdlc/quality-baselines/`, but Step 3a captured the baseline into the *main repo's* `.sdlc/` (each worktree has its own `.sdlc/`). The gate errored `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — task-work should point Step 7's `--baseline-dir` at the main repo by default (or capture the baseline into a worktree-visible location). (Backlog doc committed on this branch.)
+- The Step 3b permission preflight probe false-positived on this Bun-canonical repo: it reported `bun` / `node` / `Write` / `Edit` as "missing" despite the session granting them, and warned on `npm` (present only in the task's npm-era prose). On a Bun-canonical repo the `npm` mention is a red herring — proceeded past the probe as designed. (Minor; noted here, not spawned.)

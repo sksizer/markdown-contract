@@ -15,9 +15,9 @@ complexity: small
 
 ## Goal
 
-The `prototype/web-ui` Storybook `stories` glob covers only `components/**`, so a
+The `apps/daemon-web-prototype` Storybook `stories` glob covers only `components/**`, so a
 page-level story under `pages/` requires editing the shared
-`prototype/web-ui/.storybook/main.ts` — a shared-file touch that screen-level
+`apps/daemon-web-prototype/.storybook/main.ts` — a shared-file touch that screen-level
 tasks don't anticipate in their "Files to touch". The fix is to glob `pages/**`
 up front in the prototype scaffold (or to note the required glob edit in
 screen-task specs) so page-level stories load without a shared-file change.

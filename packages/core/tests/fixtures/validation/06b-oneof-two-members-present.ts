@@ -1,0 +1,34 @@
+import { contract, oneOf, sections } from "../../../src/index.js";
+import type { ValidationFixture } from "../../harness.js";
+import { loadSource } from "../../harness.js";
+
+// Provenance: validation/06b-oneof-two-members-present.md
+// Two distinct members of one oneOf set both present → an ambiguous slot. The
+// finding id (reuse structure/duplicate-section vs mint a dedicated id) is
+// under-specified and invented, so only `id` is pinned.
+const v06b: ValidationFixture = {
+  id: "v06b",
+  title: "Two alias members both present",
+  component: "structure",
+  path: "note.md",
+  build: () =>
+    contract({
+      body: sections({ order: "recognized-relative", allowUnknown: true }, [
+        oneOf(["Goal", "Goal / Problem statement"]),
+      ]),
+    }),
+  cases: [
+    {
+      label: "pass — exactly one alias member present",
+      source: loadSource(import.meta.url, "./06b-oneof-two-members-present.pass.md"),
+      findings: [],
+    },
+    {
+      label: "fail — both alias spellings present",
+      source: loadSource(import.meta.url, "./06b-oneof-two-members-present.fail.md"),
+      findings: [{ id: "structure/duplicate-section" }],
+    },
+  ],
+};
+
+export default v06b;

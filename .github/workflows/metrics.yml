@@ -1,0 +1,79 @@
+# Code metrics report (scc — boyter/scc, "Sloc, Cloc and Code").
+#
+# Report-only visibility surface: installs a pinned scc release and runs it over
+# the packages/core/src tree on every push to main and every pull request,
+# emitting a lines-of-code / comment / blank / cyclomatic-complexity table plus a
+# COCOMO cost estimate. It NEVER gates the build — scc has no native threshold
+# support and no step here asserts on anything scc prints, so it cannot fail on a
+# LOC or complexity value. It complements (does not replace) Biome's per-function
+# noExcessiveCognitiveComplexity rule (T-0MVN, a gate over a DIFFERENT metric:
+# cognitive, per-function) and the coverage gate (T-79GV, execution ratios):
+# neither of those counts lines of code or produces a repo-wide cyclomatic
+# aggregate.
+#
+# Why a dedicated workflow rather than the shared ci.yml `moon run` list:
+#   The `bunx moon run :build :typecheck :coverage` line in ci.yml is the one
+#   genuine coordination point across the concurrent M-0010 tasks. A dedicated
+#   workflow keeps that shared line untouched and adds no contention on it —
+#   mirroring the sibling knip.yml / audit.yml / package-quality.yml side-gate
+#   pattern. scc is a single Go binary, not an npm package, so there is no
+#   bun/moon toolchain step here: the pinned release binary is downloaded
+#   straight from the scc GitHub release.
+#
+# The scc version is pinned in ONE place — the SCC_VERSION env below — so the
+# reported numbers are reproducible across runs. Bump it there.
+name: Code Metrics
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  SCC_VERSION: v3.5.0
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Install the pinned scc release binary directly. The release asset name
+      # carries no version (scc_Linux_x86_64.tar.gz); the tag in the URL is the
+      # pin. Extract just the `scc` binary onto PATH via $GITHUB_PATH.
+      - name: Install scc
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL "https://github.com/boyter/scc/releases/download/${SCC_VERSION}/scc_Linux_x86_64.tar.gz" \
+            | tar -xz -C "$HOME/.local/bin" scc
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      # Human-readable table into the job's Step Summary, fenced so it renders
+      # monospaced. `scc --ci` is the CI-friendly ASCII output: per-language
+      # Files / Lines / Blanks / Comments / Code / Complexity + the COCOMO block.
+      - name: Write metrics table to step summary
+        run: |
+          {
+            echo "### Code metrics — packages/core/src (scc ${SCC_VERSION})"
+            echo ""
+            echo '```'
+            scc --ci packages/core/src
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Machine-readable per-file JSON report for diffing / automation later.
+      - name: Generate JSON metrics report
+        run: scc --format json --by-file -o scc-report.json packages/core/src
+
+      # Report-only: upload the JSON as a build artifact. No step asserts on any
+      # scc value, so the workflow cannot fail on a LOC or complexity number.
+      - name: Upload metrics report
+        uses: actions/upload-artifact@v7
+        with:
+          name: code-metrics
+          path: scc-report.json
+          if-no-files-found: warn

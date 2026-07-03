@@ -114,7 +114,7 @@ The surfaces the prototype must cover (the "all UI aspects" this milestone hamme
 - [ ] **Storybook is the harness**, and every component/screen ships **≥2 named variants** for comparison.
 - [ ] Every surface in the inventory above is prototyped (dashboard, vault detail + findings, register/manage, drift, live-status/SSE), across all status states (`green` / `findings` / `drift` / `running` / `error`) and the empty/first-run state.
 - [ ] The mock payload shapes match the [[D-0012-distribution-single-exec-and-web-ui]] §D3 route sketch and stand as the proposed stable API seam.
-- [x] The review gate records the chosen variant per surface, an IA verdict, a gap list (incl. deferred history/settings surfaces), and a go/no-go recommendation on extending M-0009 — linked back into this milestone. → `prototype/web-ui/REVIEW.md` ([[T-UTKU-web-ui-prototype-review]]); verdict below.
+- [x] The review gate records the chosen variant per surface, an IA verdict, a gap list (incl. deferred history/settings surfaces), and a go/no-go recommendation on extending M-0009 — linked back into this milestone. → `apps/daemon-web-prototype/REVIEW.md` ([[T-UTKU-web-ui-prototype-review]]); verdict below.
 - [ ] Human review of the prototype direction and the decide-after recommendation.
 
 ## Review verdict (decide-after gate)
@@ -122,7 +122,7 @@ The surfaces the prototype must cover (the "all UI aspects" this milestone hamme
 The decide-after gate ([[T-UTKU-web-ui-prototype-review]]) is complete. The full
 review — chosen variant per surface, the end-to-end IA verdict, the gap list
 (including the deferred history/trends and settings surfaces), and the API-seam
-requirements for a real daemon — lives at **`prototype/web-ui/REVIEW.md`**.
+requirements for a real daemon — lives at **`apps/daemon-web-prototype/REVIEW.md`**.
 
 **Chosen variants:** routed `pages/index.vue` dashboard (Grid default, Table as
 a density toggle; the legacy `VaultDashboard` is rejected); vault-detail
@@ -151,7 +151,7 @@ that depend on the single-exec track ([[M-0008-single-exec-distribution]] /
 review's chosen variants and gap list. The API seam must additionally expose
 `PUT`/`DELETE /api/vaults/:id` (registry edit/remove) and explicit contract
 identity on findings before the registry and detail surfaces are real. See
-`prototype/web-ui/REVIEW.md` §5.
+`apps/daemon-web-prototype/REVIEW.md` §5.
 
 ## Risks / open questions
 

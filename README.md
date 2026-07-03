@@ -1,80 +1,79 @@
-# markdown-contract
+# markdown-contract (Bun workspace)
 
 [![CI](https://github.com/sksizer/markdown-contract/actions/workflows/ci.yml/badge.svg)](https://github.com/sksizer/markdown-contract/actions/workflows/ci.yml)
 
-Validate and consume markdown-as-data: per-type **contracts** over a single parse —
-a **structure plane** (a regular tree grammar over sections and block kinds), a
-**content plane** (Zod over each block's data), and a typed **out-of-model** you can
-read. The contract that *checks* a document also *types* it.
+Bun workspace for **markdown-contract**. The publishable library + CLI lives in
+[`packages/core`](packages/core/); runtime apps (the single-binary prototype,
+the daemon-web UI prototype) live under `apps/`; websites — including the
+documentation site — live under `sites/`.
 
-> **Status: scaffolding (Phase 0).** The API design is settled — 38 decisions — and
-> implementation begins at milestone L0. The full spec and decision record were
-> brought over from the originating ADR and live under
-> [`provenance/d0014/`](provenance/d0014/):
-> [`proposed-shape.md`](provenance/d0014/proposed-shape.md) (the API spec) and
-> [`review-checklist.md`](provenance/d0014/review-checklist.md) (the plan + decision log).
+**Documentation:** <https://markdown-contract-docs.pages.dev/> — the
+[`sites/docs`](sites/docs/) Starlight site, auto-deployed to Cloudflare Pages on
+push to `main` (build settings: [`sites/docs/README.md`](sites/docs/README.md)).
 
 ## Layout
 
 | Path | Role |
 |---|---|
-| `src/core/` | the engine — one document × one contract → findings + `tree` + `doc`. Pure, no IO. |
-| `src/runner/` | the corpus runner — config (globs→contracts) → aggregated findings. Library API. |
-| `src/cli/` | the `markdown-contract` bin — argv → runner → format (human/json/sarif) → exit. Thin shell. |
-| `docs/planning/` | this project's own SDLC entities (self-hosted). |
-| `provenance/` | the D-0014 design review carried over from the originating repo. |
+| `packages/core` | The `markdown-contract` npm library + CLI. Runtime-neutral; the canonical published artifact. See [`packages/core/README.md`](packages/core/README.md). |
+| `apps/web` | The single-binary prototype (D-0012 "one binary, two faces"): CLI + localhost daemon serving the vault dashboard. See [`apps/web/README.md`](apps/web/README.md). |
+| `apps/daemon-web-prototype` | Nuxt + Storybook UI prototype of the daemon's vault dashboard. Mock data only; not a moon project. See [`apps/daemon-web-prototype/README.md`](apps/daemon-web-prototype/README.md). |
+| `sites/docs` | Astro + Starlight documentation site (M-0006), published to Cloudflare Pages; never published to npm. See [`sites/docs/README.md`](sites/docs/README.md). |
+| `docs/`, `contracts/` | Project planning docs and their contracts. |
+| `provenance/d0014/` | The originating ADR: proposed shape + decision log. |
 
-**Imports flow one way: `cli → runner → core`, never back.** The engine knows nothing
-of argv, files, or `process`; the CLI is just another consumer of the library.
+## Toolchain
 
-## Packaging
-
-A standard Node ESM package (Node ≥ 20). `tsc` builds `src/` → `dist/` (JS + `.d.ts`);
-`exports`, `types`, and `bin` point at `dist/`, and only `dist/` is published. No
-Bun-only APIs in shipped code, so it installs and runs under any package manager
-(`npm`, `pnpm`, `yarn`, `bun`) and any Node runtime.
-
-## Develop
-
-npm stays canonical — the package is a plain npm package and `npm run <script>`
-works exactly as before:
-
-```sh
-npm install
-npm run build      # tsc → dist/ (JS + declarations)
-npm test           # vitest
-npm run cli -- --help
-```
-
-### Task runner: moon
-
-Tasks also run through [moon](https://moonrepo.dev) ([D-0010](docs/planning/decisions)),
-which adds caching and a pinned toolchain so a clean checkout builds identically on
-every machine and in CI. moon ships as a pinned devDependency (`@moonrepo/cli`), so it
-arrives with `npm install` — invoke it via `npx moon`:
+- **Bun** is the canonical dev package manager and the fast task runner: one
+  `bun.lock` at the root, `bun install` resolves the whole workspace, and the
+  `build` + `typecheck` moon tasks run on the Bun toolchain.
+- **Node** is the compatibility gate and the runtime the published library
+  targets: the `test` / `coverage` moon tasks run vitest under the pinned Node
+  toolchain, exercising the runtime-neutral library under real Node before it
+  ships.
+- **moon** is the task runner; tasks are defined in `packages/core/moon.yml`.
+  The toolchain version pins (Bun, Node) live in `.moon/toolchains.yml`.
+- The published artifact still ships via `npm publish` from `packages/core`
+  (`dist/` + the CLI bin), unchanged from before the split.
 
 ```sh
-npx moon run :build        # tsc -p tsconfig.build.json  → dist/
-npx moon run :typecheck    # tsc --noEmit
-npx moon run :test         # vitest run
-npx moon run :lint-docs    # build, then validate docs/planning (local gate)
-npx moon ci                # build + typecheck + test (what CI runs)
+bun install                                  # resolve the workspace
+bunx moon run core:build                     # tsc → packages/core/dist
+bunx moon run core:test                      # vitest under Node
+bunx moon run :build :typecheck :coverage    # what CI runs
 ```
 
-A re-run with no input change is a cache hit (near-instant); `:lint-docs` depends on
-`:build` and runs it first. `:lint-docs` validates this repo's own in-flight planning
-docs, so it's a local author gate rather than a CI gate (those docs are mid-edit on any
-task branch); CI runs `:build :typecheck :test`. The moon tasks wrap the same npm
-scripts above (one task source of truth in `moon.yml`), so behavior is unchanged.
+### Authoring moon tasks
 
-**Pinned versions** (`.moon/toolchains.yml`, `package.json`):
+moon v2's runtime-only toolchains do **not** put `node_modules/.bin` on PATH, so
+a moon task must invoke its runner explicitly — never a bare `tsc` / `vitest` /
+`biome`:
 
-| Tool | Version | Role |
-|---|---|---|
-| moon (`@moonrepo/cli`) | `2.3.5` | task runner + toolchain manager |
-| Node | `20.20.2` | runs build / typecheck / test (matches `engines.node >=20`) |
-| Bun | `1.3.14` | pinned forward-looking for the future `bun build --compile` binary ([D-0012](docs/planning/decisions)); runs no task today |
+- On the **`bun`** toolchain (`build`, `typecheck`, `package-check`, `lint`), use
+  `bun run <script>`. `bun run` puts `node_modules/.bin` on PATH, so the tool bin
+  (`tsc`, `publint`, `biome`) resolves.
+- On the **`node`** toolchain (`test`, `coverage`, `lint-deps`), use
+  `npm run <script>` — **not** `bun run`. npm ships with Node, puts `.bin` on
+  PATH, *and* runs the script under the real **Node** runtime.
 
-This project self-hosts the SDLC planning system. In a Claude Code session opened in
-this repo, run `/sdlc:setup` then `sdlc entities validate` to wire and green the
-planning gate.
+Keep `test` / `coverage` pinned to `toolchain: node` on purpose: that run is the
+Node-compatibility gate for the runtime-neutral published library, so `vitest`
+must execute under Node. Moving those tasks onto Bun would run vitest under Bun
+and defeat the gate.
+
+## Code metrics
+
+`bun run metrics` (equivalently `npm run metrics`) runs
+[scc](https://github.com/boyter/scc) over `packages/core/src` to report
+lines-of-code, comments, blanks, and code per language/file, plus a
+cyclomatic-complexity aggregate and a COCOMO cost estimate. It is
+**report-only** — it never gates the build.
+
+scc is a single Go binary, not an npm package, so it is **not** a devDependency:
+it must be installed on your `PATH` first, e.g. `brew install scc` or
+`go install github.com/boyter/scc/v3@v3.5.0`.
+
+CI runs scc too, pinned via the `SCC_VERSION` env in
+[`.github/workflows/metrics.yml`](.github/workflows/metrics.yml) — that pinned
+version is the reproducible source of truth. Local numbers may differ if your
+installed scc version drifts from the pin.

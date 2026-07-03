@@ -1,0 +1,176 @@
+# yaml-language-server: $schema=https://moonrepo.dev/schemas/project.json
+#
+# The `core` project (mapped to 'packages/core' in .moon/workspace.yml) — the
+# canonical npm library + CLI (D-0006). Models the package.json scripts as cached
+# moon tasks; the scripts stay thin pass-throughs and this file is the single task
+# source of truth CI runs through.
+#
+# Toolchain split (T-WKSP / D-0010): build + typecheck run on the `bun` toolchain
+# for speed; `test` / `coverage` are pinned to the `node` toolchain so vitest
+# executes under Node — that run is the Node-compatibility gate for the
+# runtime-neutral published artifact. A peer guard
+# (tests/no-bun-only-apis.test.ts) fails the suite if any src/ file imports a
+# Bun-only API (`Bun.*`, `bun:*`).
+#
+# moon task ids cannot contain ':', so `lint:docs` becomes `lint-docs`.
+
+layer: 'library'
+language: 'typescript'
+
+# Authoring rule (T-U6W3): moon v2's runtime-only toolchains do NOT put
+# node_modules/.bin on PATH, so a task must invoke its runner explicitly — never
+# a bare `tsc`/`vitest`/`biome`. On the `bun` toolchain (build, typecheck,
+# package-check, lint) use `bun run <script>`: `bun run` puts .bin on PATH so the
+# tool bin resolves. On the `node` toolchain (test, coverage, lint-deps) use
+# `npm run <script>` — NOT `bun run`: npm ships with Node, puts .bin on PATH, AND
+# runs the script under the real Node runtime. Keep `test`/`coverage` on the node
+# toolchain on purpose — that run is the Node-compatibility gate for the
+# runtime-neutral published library, so vitest must execute under Node; moving
+# them onto bun would run vitest under Bun and defeat the gate.
+tasks:
+  # `bun run build` (= tsc -p tsconfig.build.json) → emits dist/. Runs on the bun
+  # toolchain; `bun run` puts node_modules/.bin on PATH so tsc resolves. dist/ is
+  # the declared output, so a no-change re-run is a cache hit and downstream tasks
+  # (lint-docs) hydrate dist/ from cache.
+  build:
+    command: 'bun run build'
+    toolchain: 'bun'
+    inputs:
+      - 'src/**/*'
+      - 'tsconfig.json'
+      - 'tsconfig.build.json'
+      - 'package.json'
+    outputs:
+      - 'dist'
+
+  # `bun run typecheck` (= tsc --noEmit) — type-checks src + tests against the
+  # project tsconfig (which includes both). No outputs (pure check), so caching
+  # keys purely on inputs.
+  typecheck:
+    command: 'bun run typecheck'
+    toolchain: 'bun'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `npm run test` (= vitest run) — the full suite (src/**/*.test.ts unit peers +
+  # tests/** integration corpus, per vitest.config.ts). Pinned to the NODE
+  # toolchain: this run is the Node-compatibility gate. npm is the runner (rather
+  # than a bare `vitest`) because moon's runtime-only node toolchain does not put
+  # node_modules/.bin on PATH; npm does.
+  test:
+    command: 'npm run test'
+    toolchain: 'node'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'vitest.config.ts'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `npm run coverage` (= vitest run --coverage) — the full suite under v8
+  # coverage, enforcing the thresholds in vitest.config.ts. Also NODE-pinned (same
+  # gate as :test). CI runs this instead of :test, so the coverage gate rides the
+  # normal test run rather than doubling it. Output is coverage/.
+  coverage:
+    command: 'npm run coverage'
+    toolchain: 'node'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'vitest.config.ts'
+      - 'tsconfig.json'
+      - 'package.json'
+    outputs:
+      - 'coverage'
+    options:
+      cache: true
+
+  # `npm run lint:deps` (= knip) — the dead-code / unused-dependency detector.
+  # The `lint:deps` script and knip.json both live at the WORKSPACE ROOT (knip
+  # scans the whole workspace and is scoped to packages/core in knip.json), so
+  # the command reaches the root script and the root-relative inputs are
+  # workspace-relative ('/knip.json', '/package.json'). NODE-pinned like
+  # :test/:coverage — npm is the runner because moon's runtime-only node
+  # toolchain does not put node_modules/.bin on PATH (npm does), so the `knip`
+  # bin resolves. runInCI: false — the report-only knip gate rides its own
+  # workflow (.github/workflows/knip.yml), like lint-docs; it is deliberately NOT
+  # part of the shared CI moon run list. No outputs, so caching keys purely on
+  # inputs. Run with `moon run core:lint-deps`.
+  lint-deps:
+    command: 'npm run lint:deps'
+    toolchain: 'node'
+    options:
+      runFromWorkspaceRoot: true
+      runInCI: false
+      cache: true
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'vitest.config.ts'
+      - 'tsconfig.json'
+      - 'package.json'
+      - '/knip.json'
+      - '/package.json'
+
+  # `lint:docs` validates the repo's OWN in-flight planning docs with the built
+  # CLI. docs/planning and markdown-contract.yaml live at the workspace root (not
+  # under packages/core), so the command reaches up two levels for both and the
+  # input is workspace-relative ('/docs/...'). --config is required: discovery
+  # searches the cwd (packages/core), not the target dir (same fix as the
+  # package.json lint:docs script). runInCI: false — it lints mid-edit planning
+  # docs, so it's a local author gate, not a CI gate. Run with
+  # `moon run core:lint-docs`.
+  lint-docs:
+    command: 'node dist/cli/index.js validate ../../docs/planning --config ../../markdown-contract.yaml'
+    toolchain: 'node'
+    deps:
+      - 'build'
+    inputs:
+      - '/docs/planning/**/*'
+      - 'dist/**/*'
+    options:
+      runInCI: false
+
+  # `bun run package-check` (= publint && attw --pack . --profile esm-only) — the
+  # published-package hygiene gate (T-L77L). publint lints package.json's
+  # exports/main/types/bin packaging; attw packs the dir and verifies the emitted
+  # .d.ts resolve for both entry points ('.' and './declarative') across node10,
+  # node16/nodenext, and bundler modes under the esm-only profile. Both lint the
+  # BUILT output, so deps: ['build'] keeps dist/ fresh first (mirrors lint-docs).
+  # BUN toolchain: `bun run` puts node_modules/.bin on PATH so the publint/attw
+  # bins resolve (the node toolchain does not). Unlike lint-docs/lint-deps this is
+  # a REAL CI gate (no runInCI: false) — it rides the dedicated package-quality.yml
+  # workflow. Run with `moon run core:package-check`.
+  package-check:
+    command: 'bun run package-check'
+    toolchain: 'bun'
+    deps:
+      - 'build'
+    inputs:
+      - 'dist/**/*'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `biome ci .` (via check:ci script) — the format + lint + import-organization
+  # gate (T-0MVN). CI mode = no writes. Config is the shared root biome.jsonc.
+  # BUN toolchain so `bun run` puts node_modules/.bin on PATH and the biome bin
+  # resolves. A real CI gate — rides the shared moon run list in ci.yml. Run with
+  # `moon run core:lint`.
+  lint:
+    command: 'bun run check:ci'
+    toolchain: 'bun'
+    inputs:
+      - 'src/**/*'
+      - 'tests/**/*'
+      - 'package.json'
+      - '/biome.jsonc'
+    options:
+      cache: true

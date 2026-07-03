@@ -19,6 +19,8 @@ tasks:
   - '[[T-NULL-nullable-field-inference]]'
   - '[[T-KCOL-infer-heading-key-collisions]]'
   - '[[T-RUNS-validate-run-summary]]'
+  - '[[T-IOUT-init-out-placement]]'
+  - '[[T-64SI-init-out-defaults-to-inferred-root]]'
 tags:
   - yaml
   - declarative
@@ -34,7 +36,7 @@ need_human_review: true
 ## Summary
 
 - Ship `markdown-contract init <dir>…`: infer a tight-but-accepting config (single-contract, or a `--meta` tree cut at `--depth`) from existing markdown, guaranteed by an accept-by-construction self-check — per [[C-0008-config-scaffolding]] / [[D-0009-config-inference]]. The first additive feature after the v1 declarative front-end ([[M-0002-declarative-yaml-contracts-v1]]). ^summary
-- The core verb is shipped; hardening is in flight (const string-length cap, min-const-examples floor, nullable fields, heading key-collision handling, a zero-findings run summary).
+- The core verb is shipped; hardening is in flight (const string-length cap, min-const-examples floor, nullable fields, heading key-collision handling, a zero-findings run summary, scaffold write-placement).
 
 ## Outcome
 
@@ -42,7 +44,7 @@ A consumer bootstraps a runnable, self-accepting config from a directory of mark
 
 ## Scope
 
-**In:** the `init` verb (single + meta modes, `--depth`, `--inline`, `--check`, `--include`/`--exclude` scoping); the value-type ladder; the accept-by-construction self-check; the inference hardening tasks.
+**In:** the `init` verb (single + meta modes, `--depth`, `--inline`, `--check`, `--include`/`--exclude` scoping); the value-type ladder; the accept-by-construction self-check; the inference hardening tasks; scaffold write-placement (`--out` coverage and the inferred-root default, so `init <dir>` → `init <dir> --check` round-trips).
 **Out:** content-plane leaf inference and deep nested grammars ([[D-0009-config-inference]] § Out of scope).
 
 ## Success criteria

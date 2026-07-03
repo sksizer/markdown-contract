@@ -2,24 +2,28 @@
 type: task
 schema_version: '5'
 id: T-WKSP
-status: open/ready
+status: closed/done
 created: '2026-06-28'
 related:
-  - '[[M-0005-monorepo-tooling]]'
-  - '[[D-0010-monorepo-tooling]]'
-  - '[[D-0006-packaging]]'
-  - '[[D-0012-distribution-single-exec-and-web-ui]]'
+- '[[M-0005-monorepo-tooling]]'
+- '[[D-0010-monorepo-tooling]]'
+- '[[D-0006-packaging]]'
+- '[[D-0012-distribution-single-exec-and-web-ui]]'
 depends_on:
-  - '[[T-MOON-adopt-moon-monorepo]]'
+- '[[T-MOON-adopt-moon-monorepo]]'
 tags:
-  - monorepo
-  - workspace
-  - bun
-  - packaging
+- monorepo
+- workspace
+- bun
+- packaging
 need_human_review: true
 impact: medium
 complexity: large
 autonomy: supervised
+last_reviewed: '2026-07-01'
+prs:
+- https://github.com/sksizer/markdown-contract/pull/135
+completion_note: 'Shipped via #135.'
 ---
 # Split the repo into a Bun workspace — `packages/core` (+ `apps/web` placeholder)
 
@@ -76,3 +80,29 @@ The root `package.json` gains a `workspaces` (Bun) declaration; moon's `projects
 ## Dependencies
 
 - Depends on [[T-MOON-adopt-moon-monorepo]] (moon + Bun toolchain already in place; closed/done). Governed by [[D-0010-monorepo-tooling]] D1/D3. Supersedes the workspace-split intent of the closed T-AE0J.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-01. PR: pending._
+
+### Acceptance criteria coverage
+
+- AC-1 (build/typecheck/test via moon, caching intact; one `bun.lock`; `package-lock.json` removed): auto — `bunx moon run core:build core:typecheck core:test` green; a re-run of `:build :typecheck :coverage` reported `3 completed (3 cached)` in 55ms; `bun install` resolves both members from one root `bun.lock`; `package-lock.json` deleted (and now gitignored at root).
+- AC-2 (build/typecheck on bun toolchain; test = vitest under pinned node): auto — `moon task core:build|typecheck` report `Toolchain: bun` (moon installed bun 1.3.14); `core:test|coverage` report `Toolchain: node`; 608 tests pass, coverage above thresholds.
+- AC-3 (no Bun-only APIs in `packages/core`): auto — `packages/core/tests/no-bun-only-apis.test.ts` scans shipped `src/**` for `Bun.*` / `bun:*`; passes clean, and a negative control (injected `Bun.env`) made it fail as designed.
+- AC-4 (npm artifact unchanged; no `workspace:*`): agent-manual — `npm pack --dry-run` from `packages/core` emits an **identical 135-entry** tarball vs. the pre-split baseline (LICENSE + README + package.json + `dist/**`), `name=markdown-contract version=0.1.0`, and the package.json contains no `workspace:` string.
+- AC-5 (`apps/web` is a resolvable workspace member): auto — `bun pm ls` lists `@markdown-contract/web@workspace:apps/web`; `moon project web` resolves (source `apps/web`).
+- AC-6 (CI bootstraps with Bun, green via moon; `sdlc.yaml` checks pass): agent-manual + deferred-user — CI reworked to `setup-bun` + `bun install --frozen-lockfile` + `bunx moon run :build :typecheck :coverage`; `--frozen-lockfile` verified locally (lockfile in sync), the exact moon command verified green locally, and `sdlc quality run` reports `OK 3/3`. The actual GitHub Actions run is deferred to the PR's CI (cannot execute Actions locally).
+
+### What worked
+
+- `git mv` preserved history for the whole `src/`/`tests/` tree and the moved configs in one clean rename set; because every internal path was project-relative, only **one** test needed a path fix.
+- moon's per-task `toolchain:` split worked exactly as intended once the *right* moon ran: build/typecheck on Bun, test/coverage on Node, with the CAS cache intact across re-runs.
+- The `npm pack --dry-run` file-list diff against a pre-captured baseline gave a crisp, unambiguous artifact-parity check (135 entries, identical).
+
+### Friction and automation gaps
+
+- `bunx moon` first ran a shadowing **global proto moon (1.41.8)** instead of the pinned `@moonrepo/cli@2.3.5`, because Bun links a workspace-package's dev-dep bin into that package's `node_modules/.bin`, not the root — and moon's version-inverted `vcs.client`/`vcs.manager` schema masked it as a config error. Fixed by hoisting moon+biome to the root `package.json`. Follow-up captured on-branch: [[B-QF64-assert-pinned-moon-version]] (assert the resolved moon version matches the pin).
+- `packages/core/src/core/projection.test.ts` reads a repo-root planning doc as a real-document fixture, so the split forced a `../../../../` climb out of the package — a package-isolation smell. Follow-up captured on-branch: [[B-UHOH-vendor-c0004-projection-fixture]] (vendor the fixture package-locally).
+- Step 3a captured the quality baseline under the **main repo's** `.sdlc/quality-baselines`, but Step 7 runs in the worktree and looks under the worktree's `.sdlc`, so `--diff-against-baseline` failed `baseline not found`; the verbs also changed (npm→moon) between capture and gate, making the diff moot. Already tracked upstream: [[B-HVL1-worktree-quality-baseline-dir-resolution]]. Worked around by gating without the baseline flag (`OK 3/3`).
+- The Step 3b permissions probe reported false-positive `Bash(bun|npm|node)` and `Write/Edit` gaps although all those tools worked throughout the run. Already tracked upstream: [[B-PFPB-permissions-probe-false-positive]]. Proceeded past it.

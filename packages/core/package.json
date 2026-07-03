@@ -1,0 +1,82 @@
+{
+  "name": "markdown-contract",
+  "version": "0.1.0",
+  "description": "Validate and consume markdown-as-data: per-type contracts over one parse — a structure plane (tree-grammar over sections + block kinds), a content plane (Zod over each block's data), and a typed model you can read.",
+  "type": "module",
+  "license": "MIT",
+  "author": "sksizer",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./declarative": {
+      "types": "./dist/declarative/index.d.ts",
+      "import": "./dist/declarative/index.js",
+      "default": "./dist/declarative/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli/index.d.ts",
+      "import": "./dist/cli/index.js",
+      "default": "./dist/cli/index.js"
+    },
+    "./cli/run": {
+      "types": "./dist/cli/run.d.ts",
+      "import": "./dist/cli/run.js",
+      "default": "./dist/cli/run.js"
+    }
+  },
+  "bin": {
+    "markdown-contract": "./dist/cli/index.js"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "check": "biome check .",
+    "check:ci": "biome ci .",
+    "lint:fix": "biome check --write .",
+    "cli": "node dist/cli/index.js",
+    "lint:docs": "npm run build && node dist/cli/index.js validate ../../docs/planning --config ../../markdown-contract.yaml",
+    "lint:package": "publint",
+    "check:types": "attw --pack . --profile esm-only",
+    "package-check": "bun run lint:package && bun run check:types",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.4",
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^20.14.0",
+    "@types/picomatch": "^4.0.3",
+    "@vitest/coverage-v8": "^4.1.9",
+    "publint": "^0.3.21",
+    "remark-stringify": "^11.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^8.1.2",
+    "vitest": "^4.1.9"
+  },
+  "dependencies": {
+    "picomatch": "^4.0.4",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  }
+}

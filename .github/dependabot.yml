@@ -1,0 +1,45 @@
+# Dependabot configuration (v2).
+#
+# Two ecosystems, both on a weekly cadence, so dependency and CI action pins
+# stay current with low PR noise instead of drifting by hand:
+#   - npm            — the JavaScript dependency tree (package.json + bun.lock).
+#   - github-actions — the action pins in .github/workflows/*.yml.
+#
+# Routine minor/patch bumps are grouped so the bulk of weekly churn lands as a
+# handful of PRs rather than one per dependency. Major bumps stay ungrouped
+# (Dependabot's default) so each one gets individual scrutiny before merge.
+version: 2
+updates:
+  # JavaScript dependencies. `npm` is the Dependabot ecosystem id for the
+  # JavaScript ecosystem; in this Bun workspace it maintains the committed
+  # `bun.lock` (there is no separate `bun` ecosystem id — `npm` covers it).
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      # Development dependencies: batch minor + patch bumps into one PR.
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      # Production dependencies: batch minor + patch bumps into one PR.
+      # Major production bumps stay ungrouped for individual review.
+      production-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions pins in .github/workflows/*.yml. All action bumps are
+  # batched into a single PR per week.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
