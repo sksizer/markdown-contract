@@ -20,6 +20,7 @@ impact: medium
 complexity: medium
 autonomy: supervised
 last_reviewed: '2026-06-30'
+readiness_verified_at: '2026-07-03T03:24:06Z'
 ---
 # Preserve per-cell `col` and inline-code byte spans on the projection (axis C1)
 
