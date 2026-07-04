@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-QX1Q
-status: planning/draft
+status: open/ready
 created: '2026-07-04'
 related:
 - T-W1CX-knip-baseline-dead-code-cleanup
@@ -10,6 +10,7 @@ tags: []
 need_human_review: false
 impact: medium
 complexity: small
+autonomy: autonomous/pr
 ---
 # Make the quality gate catch .d.ts declaration-emit regressions that tsc --noEmit misses
 
