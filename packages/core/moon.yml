@@ -32,6 +32,10 @@ tasks:
   # toolchain; `bun run` puts node_modules/.bin on PATH so tsc resolves. dist/ is
   # the declared output, so a no-change re-run is a cache hit and downstream tasks
   # (lint-docs) hydrate dist/ from cache.
+  # SOLE declaration-emit gate tier: `declaration: true` means only this task exercises
+  # `.d.ts` emit (typecheck's `--noEmit` does not), so it alone guards the cross-module
+  # TS4023/TS4058 regression class. See README.md → "Declaration emit" for the (cross-
+  # module, not same-module) reproduction condition.
   build:
     command: 'bun run build'
     toolchain: 'bun'
