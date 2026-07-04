@@ -92,12 +92,21 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `command grep '\.\./\.\./\.\./\.\.' packages/core/src/core/projection.test.ts` returns 0 matches; the test now loads `../../tests/fixtures/projection/C-0004-dialect-aware-projection.md`, which stays inside `packages/core/`.
+- AC-2: auto — fixture exists at `packages/core/tests/fixtures/projection/C-0004-dialect-aware-projection.md` (byte-identical to the source doc per `cmp`), and `projection.test.ts` loads it; the case passes under `bunx moon run core:test`.
+- AC-3: auto — `bunx moon run core:test` passes; the C-0004 case still asserts the H1 title (`Dialect-aware projection`), the H2 Summary/Statement sections, frontmatter `id: C-0004` / `type: capability`, and the `^summary` anchor against the vendored copy.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- Clean run — the baseline-gated quality gate reported `OK 6/6` on the first pass with zero new drift.
+- `cp` of the source doc preserved the fixture byte-for-byte (`cmp` confirmed identical), so no assertion needed adjusting; the vendoring was a pure path swap plus a comment refresh.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The pre-flight permissions probe (Step 3b) reported hard gaps for `Bash(bun:*)`, `Write`, and `Edit` that were false positives — `bun` ran throughout the session and `Write`/`Edit` were available — because the probe reads static settings without reconciling against tools already exercised successfully this session. The probe could down-weight a gap for a tool family already observed working, or task-work could treat a demonstrated-working family as covered. → [[T-0X9M-probe-credits-session-observed-tools]]
+- Step 7's baseline-gated `quality run` failed on the first attempt (`baseline not found`) because the baseline is written to the main repo's `.sdlc/quality-baselines/` in Step 3a, but running from the worktree resolves the default `--baseline-dir` to the worktree's own `.sdlc/`. Step 7's invocation should pass `--baseline-dir` pointing at the main repo (the worktree's superproject) when run from a worktree, matching where Step 3a captured it. → [[T-4U2H-quality-run-baseline-dir-from-worktree]]
+
+### Spawned follow-up tasks
+
+- [[T-0X9M-probe-credits-session-observed-tools]] (https://github.com/sksizer/dev/pull/658) — task-work permissions pre-flight probe treats session-observed tool families as covered; spawned Upstream-plugin (sdlc-meta).
+- [[T-4U2H-quality-run-baseline-dir-from-worktree]] (https://github.com/sksizer/dev/pull/659) — task-work Step 7 quality run targets the main-repo baseline dir when run from a worktree; spawned Upstream-plugin (sdlc-meta).
