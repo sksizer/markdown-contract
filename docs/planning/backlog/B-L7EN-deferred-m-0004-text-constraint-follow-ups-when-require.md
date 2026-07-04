@@ -5,7 +5,7 @@ id: B-L7EN
 tags:
 - declarative
 - text-match
-last_reviewed: '2026-07-03'
+last_reviewed: '2026-07-04'
 ---
 
 # Deferred M-0004 text-constraint follow-ups: when/require predicate DSL, anyOf disjunction, $ref escape hatch, link/inline constraints, repair/autofix
