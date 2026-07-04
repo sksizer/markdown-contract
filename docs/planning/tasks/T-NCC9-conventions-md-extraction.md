@@ -111,12 +111,18 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — created `CONVENTIONS.md`; `grep -c "## Modules & barrels\|## Tests\|## Fixture markdown" CONVENTIONS.md` = 3, all three sections present verbatim.
+- AC-2: auto — `grep -c "barrel only" CLAUDE.md CONVENTIONS.md` → `CLAUDE.md:0`, `CONVENTIONS.md:1` (phrase in exactly one file); `@CONVENTIONS.md` import present at `CLAUDE.md` line 7.
+- AC-3: agent-manual — `README.md` links `[CONVENTIONS.md](CONVENTIONS.md)` from the "Library health baseline" section (line 47).
+- AC-4: auto — `## Commit & PR authorship` section retained verbatim in `CLAUDE.md` (line 9).
+- AC-5: auto — `sdlc quality run --diff-against-baseline` → `OK 6/6` (baseline-gated, no new drift introduced by this branch).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The relocation was a clean move: the three sections were already well-written, so they transferred verbatim with no editorial churn, and the deterministic AC-2 grep gate made "no duplicated prose" trivially checkable.
+- The docs-only change sailed through all six quality verbs (`OK 6/6`) with zero new drift — Biome not formatting Markdown meant no reflow risk, exactly as the task predicted.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Approach step 4 (confirm Claude Code's `@CONVENTIONS.md` import actually surfaces the conventions text in agent context) could not be exercised from inside the worktree — a live `claude /memory` resolution isn't reachable there. Left as a deferred human spot-check on the PR. Automation gap: the skill has no affordance to assert `@path` CLAUDE.md imports resolve, so `@import`-based extractions always leave one manual verification.
+- Step 7's baseline-gated `quality run` failed first with `baseline not found` when `--project-root` pointed at the worktree, because the baseline was captured under the main repo's gitignored `.sdlc/quality-baselines/` and the worktree has its own empty one — had to pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly. Automation gap: when task-work runs the gate against a worktree project-root, it should default `--baseline-dir` to the superproject's baseline dir rather than the worktree's.
