@@ -20,6 +20,7 @@ impact: medium
 complexity: medium
 autonomy: supervised
 last_reviewed: '2026-07-03'
+readiness_verified_at: '2026-07-04T02:10:48Z'
 ---
 # Keep `everyItem` transform output and read back typed list items through `ListView`
 
