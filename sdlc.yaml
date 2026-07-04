@@ -10,6 +10,7 @@ quality_checks:
   - bunx moon run core:package-check
 worktree_init:
   - bun install
+  - bunx lefthook install
 
 # worktree_init:
 #   - mise trust
