@@ -2,8 +2,16 @@
 type: task
 schema_version: '5'
 id: T-WEBU
-status: planning/needs-definition
+status: closed/done
 created: '2026-06-30'
+completion_note: 'Delivered (beyond scope) via PR #183: apps/web shipped a full
+  Nuxt SPA (ssr: false) — validate-and-findings plus the M-0009 dashboard
+  surfaces (registry, SSE, editor). The minimal validate-a-vault surface this
+  task specified is now carried by the canonical example at
+  examples/single-binary/ui/ (one page over POST /api/validate), extracted by
+  T-UDPO-extract-single-binary-example. The stale-path definition gap became
+  moot: the SPA was built by adopting the daemon-web-prototype components
+  rather than fresh files at the cited paths.'
 related:
 - '[[M-0008-single-exec-distribution]]'
 - '[[D-0012-distribution-single-exec-and-web-ui]]'
@@ -22,19 +30,6 @@ need_human_review: true
 impact: high
 complexity: medium
 autonomy: supervised
-definition_gap: The spec has stale/ambiguous path citations that fail the readiness
-  gate. The `## Today` table lists `apps/web/src/daemon/api.ts` as an existing file,
-  but it does not exist yet (it is built by the not-yet-done [[T-DAEM-daemon-and-json-api]]);
-  reword that row so it does not assert a present-day file. Six cited component/config
-  paths (`apps/web/nuxt.config.ts`, `apps/web/app/app.vue`, `apps/web/app/pages/index.vue`,
-  `apps/web/app/components/FindingsList.vue`, `app/pages/index.vue`, and the daemon
-  `api.ts`) each collide by basename with an existing file under `apps/daemon-web-prototype/`,
-  so the readiness gate reads them as relocated citations; the spec must reconcile
-  the relationship to that existing prototype (reuse/adapt vs. build fresh) and disambiguate
-  the new-file paths. Finally, AC-3's universal quantifier 'lists each finding's id,
-  level, path, and message' is unpinned — name the set it ranges over (e.g. 'each
-  finding in the returned findings[] array'). Fixing these citation and quantifier
-  gaps needs human or /sdlc:task-define attention before pickup.
 ---
 # Minimal Nuxt SPA (`ssr: false`) — the embedded validate-and-findings UI
 

@@ -7,6 +7,8 @@ created: '2026-06-28'
 related:
   - '[[M-0008-single-exec-distribution]]'
   - '[[D-0012-distribution-single-exec-and-web-ui]]'
+  - '[[T-UDPO-extract-single-binary-example]]'
+  - '[[M-0009-local-web-ui-vault-dashboard]]'
 depends_on:
   - '[[T-BMTX-bun-compile-matrix]]'
   - '[[T-SPAE-spa-embed]]'
@@ -34,8 +36,9 @@ npm package stays the canonical, unchanged artifact — per
 
 | Location | Role today |
 |---|---|
-| `apps/web/moon.yml#compile` | The per-target `compile` tasks ([[T-BMTX-bun-compile-matrix]]) that emit the binaries into `dist-bin/` — built in CI but never uploaded. |
-| `.github/workflows/ci.yml` | Push/PR CI (incl. the host-binary smoke); there is **no tag-triggered release workflow**. |
+| `examples/single-binary/` | The canonical example the released binary builds from ([[T-UDPO-extract-single-binary-example]]) — the artifact ships from here until [[M-0009-local-web-ui-vault-dashboard]] retargets distribution at `apps/web`. |
+| `examples/single-binary/moon.yml#compile` | The per-target `compile` tasks ([[T-BMTX-bun-compile-matrix]], not yet landed) that emit the binaries into `dist-bin/` — to be built in CI but never uploaded. |
+| `.github/workflows/ci.yml` | Push/PR CI (the host-binary smoke arrives with [[T-BMTX-bun-compile-matrix]]); there is **no tag-triggered release workflow**. |
 | `package.json` | The npm publish flow (`tsc` → `dist`); runs as today, untouched here. |
 
 Nothing is uploaded, checksummed, or versioned for download.
@@ -66,7 +69,7 @@ publish flow is separate and unchanged.
 |---|---|---|
 | `.github/workflows/release.yml` | new | Tag-triggered: build the matrix, checksum each artifact, create the GitHub Release. |
 | `.github/release-notes-template.md` | new | Release-notes template (assets list + link to unsigned-install guidance). |
-| `apps/web/scripts/checksums.ts` | new | Emit per-artifact SHA-256 (and/or `SHA256SUMS`) over `dist-bin/*`. |
+| `examples/single-binary/scripts/checksums.ts` | new | Emit per-artifact SHA-256 (and/or `SHA256SUMS`) over `dist-bin/*`. |
 
 ## Acceptance criteria
 
@@ -83,4 +86,4 @@ publish flow is separate and unchanged.
 
 ## Dependencies
 
-- Depends on [[T-BMTX-bun-compile-matrix]] (the artifacts to publish) and [[T-SPAE-spa-embed]] (so the released binary carries the embedded UI). Governed by [[D-0012-distribution-single-exec-and-web-ui]] §D5.
+- Depends on [[T-BMTX-bun-compile-matrix]] (the artifacts to publish) and [[T-SPAE-spa-embed]] (so the released binary carries the embedded UI). The release builds from `examples/single-binary/` ([[T-UDPO-extract-single-binary-example]]) until [[M-0009-local-web-ui-vault-dashboard]] retargets distribution at `apps/web`. Governed by [[D-0012-distribution-single-exec-and-web-ui]] §D5.

@@ -2,8 +2,17 @@
 type: task
 schema_version: '5'
 id: T-SPAE
-status: open/ready
+status: closed/done
 created: '2026-06-28'
+completion_note: 'Embed shipped via PR #183: scripts/gen-assets.ts rewrites a
+  generated manifest (assets.gen.ts) with one `with { type: "file" }` import
+  per built SPA asset, so `bun build --compile` embeds the whole UI — the
+  explicit-file-import technique, avoiding whole-directory embedding
+  (oven-sh/bun#5445); verified by serving UI + API from an empty directory.
+  The canonical generate → gen-assets → compile pipeline is now carried by
+  examples/single-binary/ (T-UDPO-extract-single-binary-example), whose README
+  documents the mechanism, its limitations, and the Deno-compile fallback;
+  apps/web keeps its own copy for M-0009.'
 related:
   - '[[M-0008-single-exec-distribution]]'
   - '[[D-0012-distribution-single-exec-and-web-ui]]'

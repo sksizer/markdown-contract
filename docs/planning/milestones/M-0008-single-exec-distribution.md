@@ -3,7 +3,7 @@ type: milestone
 schema_version: '1'
 id: M-0008
 title: 'Single-binary prototype — one Bun executable: CLI + self-contained web-UI daemon'
-status: open/planned
+status: open/active
 created: '2026-06-28'
 related:
   - '[[D-0012-distribution-single-exec-and-web-ui]]'
@@ -17,6 +17,7 @@ tasks:
   - '[[T-DAEM-daemon-and-json-api]]'
   - '[[T-WEBU-nuxt-spa-ui]]'
   - '[[T-SPAE-spa-embed]]'
+  - '[[T-UDPO-extract-single-binary-example]]'
   - '[[T-DEMO-end-to-end-feasibility-demo]]'
   - '[[T-RELS-release-channels]]'
   - '[[T-INST-convenience-installer]]'
@@ -37,6 +38,15 @@ need_human_review: true
 
 # Single-binary prototype — one Bun executable: CLI + self-contained web-UI daemon
 
+## Goal
+
+Prove the whole [[D-0012-distribution-single-exec-and-web-ui]] shape end to end with a
+**working, minimal prototype**: one Bun-compiled executable that is both the
+`markdown-contract` CLI and, in `daemon` mode, a self-contained local web UI (an embedded
+Nuxt SPA over a thin loopback JSON API) — kept as the **canonical example** at
+`examples/single-binary/` — plus the build matrix, CI, and distribution channels to ship it.
+Hardening and product surfaces are [[M-0009-local-web-ui-vault-dashboard]].
+
 ## Summary
 
 - A **working feasibility prototype** of the whole [[D-0012-distribution-single-exec-and-web-ui]]
@@ -51,18 +61,23 @@ need_human_review: true
   dashboard (multi-vault registry, live SSE status, persisted history, polish) is
   [[M-0009-local-web-ui-vault-dashboard]], which now builds on this *proven* prototype instead
   of a paper plan.
+- **The prototype's home is `examples/single-binary/`** (the canonical minimal example,
+  extracted by [[T-UDPO-extract-single-binary-example]]). PR #183 first proved the
+  architecture inside `apps/web` but grew registry/SSE/watching/editor surfaces along the way;
+  `apps/web` is now recorded as the **M-0009 seed** (the product app), and the remaining
+  M-0008 tasks target the stable example instead.
 - **One codebase, two faces, no fork.** The npm library + CLI stay the canonical, Node-ESM
   `packages/core` artifact ([[D-0010-monorepo-tooling]] D1), unchanged. The combined binary is
-  an *additive* Bun target whose entry lives in `apps/web`, dispatching `daemon` → the server
-  and every other argv → `packages/core`'s `runCli` — so layering stays one-way
-  (`apps/web → packages/core`, `daemon → runner/declarative`) and no Bun-only API leaks into the
-  published library.
+  an *additive* Bun target whose entry lives in `examples/single-binary`, dispatching `daemon`
+  → the server and every other argv → `packages/core`'s `runCli` — so layering stays one-way
+  (`examples/single-binary → packages/core`, `daemon → runner/declarative`) and no Bun-only
+  API leaks into the published library.
 
 ```text
             ┌──── one codebase (Bun workspace · moon — D-0010 / M-0005) ─────┐
- core ◄ runner ◄┤ packages/core: library + CLI       apps/web: daemon + Nuxt SPA │
+ core ◄ runner ◄┤ packages/core: library + CLI   examples/single-binary: daemon + SPA │
 (engine)(corpus)└───────────────────────────────────────────────────────────────┘
-       published ▼                  bun build --compile (apps/web/src/bin.ts) ▼
+       published ▼      bun build --compile (examples/single-binary/src/bin.ts) ▼
   npm Node ESM library          ──── ONE binary `markdown-contract` ────
   (canonical, unchanged)        ├─ CLI     →  markdown-contract validate …  (→ runCli)
                                 └─ daemon  →  markdown-contract daemon
@@ -80,11 +95,11 @@ self-contained executable, no Node toolchain, no separate UI download.
 
 **In**
 
-- The **combined-binary entry** in `apps/web` and the `daemon` verb ([[T-DAEM-daemon-and-json-api]]).
+- The **combined-binary entry** in `examples/single-binary` and the `daemon` verb ([[T-DAEM-daemon-and-json-api]]; extracted from `apps/web` by [[T-UDPO-extract-single-binary-example]]).
 - A **thin JSON API** over `runCorpus` / `inferConfig` (`/api/validate`, `/api/health`) on loopback.
 - A **minimal Nuxt SPA** (`ssr: false`) that validates a vault and renders findings ([[T-WEBU-nuxt-spa-ui]]).
 - **Embedding** the built SPA into the binary and serving it with no external files ([[T-SPAE-spa-embed]]) — the one packaging risk to de-risk.
-- The **`bun build --compile` matrix** (macOS/Linux/Windows × x64/arm64) plus the **moon build graph and CI** (`build:web` → `compile`, both-faces smoke) ([[T-BMTX-bun-compile-matrix]]).
+- The **`bun build --compile` matrix** (macOS/Linux/Windows × x64/arm64) plus the **moon build graph and CI** (SPA build → `compile`, both-faces smoke) ([[T-BMTX-bun-compile-matrix]]).
 - **Distribution channels**: GitHub Releases + checksums ([[T-RELS-release-channels]]), at least one convenience installer ([[T-INST-convenience-installer]]), and unsigned-install notes ([[T-UNSG-unsigned-install-notes]]).
 - The **end-to-end illustrated demo** that ties it together ([[T-DEMO-end-to-end-feasibility-demo]]).
 
@@ -98,7 +113,7 @@ self-contained executable, no Node toolchain, no separate UI download.
 
 ## Success criteria
 
-- [ ] A single `bun build --compile` of `apps/web/src/bin.ts` produces a binary that runs the CLI (`validate`/`init`) identically to the npm bin **and** boots as `daemon`.
+- [ ] A single `bun build --compile` of `examples/single-binary/src/bin.ts` produces a binary that runs the CLI (`validate`/`init`) identically to the npm bin **and** boots as `daemon`.
 - [ ] Run as `daemon`, the binary serves the **embedded** Nuxt SPA over HTTP with **no external files**, and the SPA validates a vault via `/api/validate` and renders the findings.
 - [ ] Cross-compiled binaries for macOS/Linux/Windows × x64/arm64 are produced from one host via moon tasks, and CI builds the host binary + runs a both-faces smoke check.
 - [ ] Binaries are published on GitHub Releases with checksums, with at least one convenience installer and documented unsigned-install steps; the npm package is unchanged.
@@ -108,31 +123,33 @@ self-contained executable, no Node toolchain, no separate UI download.
 ## Deliverables
 
 The prototype is decomposed into eight tasks — the two binary faces, the embed, the build
-matrix/CI, the illustrated demo, and the three distribution channels. All depend on the
-workspace split [[T-WKSP-bun-workspace-split]] (the `packages/core` + `apps/web` layout) landing
-first.
+matrix/CI, the illustrated demo, and the three distribution channels. The core slice
+(T-DAEM/T-WEBU/T-SPAE) has landed and lives as the canonical example at
+`examples/single-binary/` ([[T-UDPO-extract-single-binary-example]]); the remaining tasks
+target that example.
 
 | # | Task | Delivers | Status |
 |---|------|----------|--------|
 | 1 | [[T-BMTX-bun-compile-matrix]] | The `bun build --compile` matrix + moon build graph + both-faces CI smoke | open/ready |
-| 2 | [[T-DAEM-daemon-and-json-api]] | The combined-binary entry, `daemon` mode, and the JSON API over the runner | open/ready |
-| 3 | [[T-WEBU-nuxt-spa-ui]] | The minimal Nuxt SPA (`ssr:false`) — validate a vault, render findings | open/ready |
-| 4 | [[T-SPAE-spa-embed]] | Embed the built SPA into the binary; serve it with no external files | open/ready |
+| 2 | [[T-DAEM-daemon-and-json-api]] | The combined-binary entry, `daemon` mode, and the JSON API over the runner | closed/done (PR #173) |
+| 3 | [[T-WEBU-nuxt-spa-ui]] | The minimal Nuxt SPA (`ssr:false`) — validate a vault, render findings | closed/done (PR #183) |
+| 4 | [[T-SPAE-spa-embed]] | Embed the built SPA into the binary; serve it with no external files | closed/done (PR #183) |
 | 5 | [[T-DEMO-end-to-end-feasibility-demo]] | The fully illustrated end-to-end walkthrough (sample vault + demo script + doc) | open/ready |
 | 6 | [[T-RELS-release-channels]] | GitHub Releases + SHA-256 checksums on a version tag | open/ready |
 | 7 | [[T-INST-convenience-installer]] | At least one one-line installer over the Release artifacts | open/ready |
 | 8 | [[T-UNSG-unsigned-install-notes]] | Per-OS Gatekeeper / SmartScreen override + checksum-verify notes | open/ready |
 
 Build-order dependency chain: `T-WKSP → {T-DAEM, T-BMTX} → T-WEBU → T-SPAE → T-DEMO`, with
-`T-SPAE → T-RELS → {T-INST, T-UNSG}` for distribution.
+`T-SPAE → T-RELS → {T-INST, T-UNSG}` for distribution. T-WKSP, T-DAEM, T-WEBU, and T-SPAE
+are done; T-BMTX → T-DEMO and the distribution chain remain.
 
 ## Risks / open questions
 
-- **SPA-in-binary embedding is the one real packaging risk.** Whole-*directory* asset
-  embedding has known Bun gaps (oven-sh/bun#5445, #23852); the prototype embeds via the
-  HTML-import / explicit `Bun.embeddedFiles` path ([[T-SPAE-spa-embed]]) and records the
-  Deno-`compile` fallback ([[D-0012-distribution-single-exec-and-web-ui]] §D2). This is the
-  task to land early — it gates the whole "two faces" claim.
+- **SPA-in-binary embedding was the one real packaging risk — now retired.** Whole-*directory*
+  asset embedding has known Bun gaps (oven-sh/bun#5445, #23852); the shipped embed
+  ([[T-SPAE-spa-embed]], PR #183) uses explicit per-asset `with { type: "file" }` imports
+  (a generated manifest) and is verified by serving the SPA from an empty directory. The
+  Deno-`compile` fallback stays recorded ([[D-0012-distribution-single-exec-and-web-ui]] §D2).
 - **`Bun.serve` vs Nitro for the daemon.** The prototype uses `Bun.serve` (fewest moving parts
   to prove the loop); Nitro's `bun` preset ([[D-0012-distribution-single-exec-and-web-ui]] §D3)
   is the M-0009 productionization. The riskiest unknown is the *client embed*, not the server
@@ -143,18 +160,20 @@ Build-order dependency chain: `T-WKSP → {T-DAEM, T-BMTX} → T-WEBU → T-SPAE
   M-0009 (a slimmer Deno build is the size-sensitive fallback).
 - **Signing timeline.** The prototype is unsigned by decision; *when* the unsigned stance flips
   (who holds the Apple Developer ID / Windows OV-EV cert) is an open [[D-0012-distribution-single-exec-and-web-ui]] question, deferred.
-- **Sequencing.** Every task assumes the post-[[T-WKSP-bun-workspace-split]] layout
-  (`packages/core` + `apps/web`); the touchpoint paths resolve only once that split lands, so
-  the workspace split is the hard prerequisite for picking any of these up.
-- **Milestone status.** `open/planned`: the prototype is fully decomposed and the member tasks
-  are `open/ready`, but none have started and the workspace split they depend on is not yet
-  merged.
+- **Sequencing.** The workspace split ([[T-WKSP-bun-workspace-split]]) and the core slice
+  (T-DAEM/T-WEBU/T-SPAE) are merged; the remaining tasks ([[T-BMTX-bun-compile-matrix]],
+  [[T-DEMO-end-to-end-feasibility-demo]], the distribution chain) build against
+  `examples/single-binary/` and can start now that the extraction
+  ([[T-UDPO-extract-single-binary-example]]) has landed.
+- **Milestone status.** `open/active`: the two faces, the JSON API, and the embed are shipped
+  and live as the canonical example at `examples/single-binary/`; the compile matrix, the
+  illustrated demo, and the three distribution channels remain open.
 
 ## Dependencies
 
-- **The workspace split** — [[T-WKSP-bun-workspace-split]] ([[M-0005-monorepo-tooling]]) creates
-  `packages/core` (library + CLI) and the `apps/web` slot the binary is built from. Hard
-  prerequisite.
+- **The workspace split** — [[T-WKSP-bun-workspace-split]] ([[M-0005-monorepo-tooling]]) created
+  `packages/core` (library + CLI) and the app slots; the binary is now built from the
+  `examples/single-binary` workspace member ([[T-UDPO-extract-single-binary-example]]).
 - **The moon / Bun toolchain** — [[T-MOON-adopt-moon-monorepo]] / [[D-0010-monorepo-tooling]];
   the compile matrix and build graph run as moon tasks.
 - **The library API** — `runCorpus` ([[C-0003-corpus-cli]]) and `inferConfig`

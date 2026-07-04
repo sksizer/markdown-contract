@@ -8,6 +8,7 @@ related:
   - '[[M-0008-single-exec-distribution]]'
   - '[[D-0012-distribution-single-exec-and-web-ui]]'
   - '[[C-0010-single-binary-and-vault-dashboard]]'
+  - '[[T-UDPO-extract-single-binary-example]]'
 depends_on:
   - '[[T-SPAE-spa-embed]]'
 tags:
@@ -36,10 +37,12 @@ illustrated example").
 | Location | Role today |
 |---|---|
 | `README.md` | The project front door; no single-binary / daemon walkthrough yet. |
-| `tests/corpus/` | Existing fixture vaults the demo can model a sample vault on. |
+| `examples/single-binary/` | The canonical example the walkthrough demonstrates ([[T-UDPO-extract-single-binary-example]]): `bun run build:binary` there emits `dist/markdown-contract`, the two-faces binary with the embedded SPA. |
+| `examples/single-binary/src/daemon/fixtures/vault/` | A tiny passing/failing vault pair the demo can model its sample vault on. |
+| `tests/corpus/` | Larger fixture vaults, another modeling source. |
 
-The binary itself does not exist yet — it is produced by [[T-BMTX-bun-compile-matrix]] with
-the embedded UI from [[T-SPAE-spa-embed]]; this task is the demonstration over it.
+The binary already builds from the example (host target); the cross-compile matrix and CI
+smoke are [[T-BMTX-bun-compile-matrix]]. This task is the illustrated demonstration over it.
 
 ## Proposed
 
@@ -53,14 +56,17 @@ run without prior context.
 1. **Sample vault.** Add `examples/demo-vault/` — a handful of markdown files plus a
    `markdown-contract.yaml`, one file deliberately failing a rule, so validation shows both a
    clean and an error finding.
-2. **Demo script.** Add `scripts/demo.sh`: build the binary (invoke the
-   [[T-BMTX-bun-compile-matrix]] moon `compile` task), run `<binary> validate examples/demo-vault`,
-   then start `<binary> daemon --open`, `curl` `POST /api/validate` for the sample vault, and
+2. **Demo script.** Add `scripts/demo.sh`: build the binary
+   (`moon run example-single-binary:build`, or the [[T-BMTX-bun-compile-matrix]] `compile`
+   task once it lands), run `<binary> validate examples/demo-vault`, then start
+   `<binary> daemon --open` (port 4320), `curl` `POST /api/validate` for the sample vault, and
    print the findings JSON — failing loudly if any step regresses.
-3. **Walkthrough doc.** Write `docs/prototype-demo.md`: prerequisites, the build command, the
+3. **Walkthrough doc.** Write `docs/prototype-demo.md`: prerequisites, the build command
+   (`bun run build:binary` in `examples/single-binary/` → `dist/markdown-contract`), the
    CLI run with its output, the daemon run, the browser URL, and a screenshot of the findings
    view; state explicitly what is proven (one binary = CLI + embedded-SPA daemon) and what is
-   deferred to [[M-0009-local-web-ui-vault-dashboard]].
+   deferred to [[M-0009-local-web-ui-vault-dashboard]] — pointing at
+   `examples/single-binary/README.md` for the architecture discussion.
 4. **Link it.** Add a "Try the single-binary prototype" section to `README.md` pointing at the doc.
 
 ## Files to touch
@@ -87,4 +93,4 @@ run without prior context.
 
 ## Dependencies
 
-- Depends on [[T-SPAE-spa-embed]] (the working binary with the embedded UI), which in turn pulls in [[T-DAEM-daemon-and-json-api]], [[T-WEBU-nuxt-spa-ui]], and [[T-BMTX-bun-compile-matrix]]. Governed by [[D-0012-distribution-single-exec-and-web-ui]].
+- Depends on [[T-SPAE-spa-embed]] (the working binary with the embedded UI — landed; the demo's subject now lives at `examples/single-binary/` per [[T-UDPO-extract-single-binary-example]]), which pulled in [[T-DAEM-daemon-and-json-api]] and [[T-WEBU-nuxt-spa-ui]]. [[T-BMTX-bun-compile-matrix]] supplies the cross-compile/CI story the demo can cite. Governed by [[D-0012-distribution-single-exec-and-web-ui]].
