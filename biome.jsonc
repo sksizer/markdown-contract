@@ -30,14 +30,15 @@
           "options": { "maxAllowedComplexity": 46 }
         }
       },
-      // noExplicitAny (104 sites) and noNonNullAssertion (185 sites) are pervasive
-      // in the parser/AST + Zod code and are kept relaxed at "warn" deliberately
-      // (non-blocking) rather than refactored in this pass.
+      // noExplicitAny (104 sites) is pervasive in the parser/AST + Zod code and is
+      // kept relaxed at "warn" deliberately (non-blocking) rather than refactored in
+      // this pass (T-JGCX). noNonNullAssertion was fixed at the source (T-FOCX) — the
+      // `!` assertions replaced with real narrowing — and is enforced at "error".
       "suspicious": {
         "noExplicitAny": "warn"
       },
       "style": {
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "error"
       }
     }
   },
