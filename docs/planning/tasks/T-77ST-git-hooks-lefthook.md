@@ -2,9 +2,9 @@
 type: task
 schema_version: '5'
 id: T-77ST
-status: open/ready
+status: in-progress
 created: '2026-06-30'
-last_reviewed: '2026-07-03'
+last_reviewed: '2026-07-04'
 related:
 - '[[M-0010 Quality Tooling]]'
 depends_on:
@@ -161,3 +161,19 @@ npm-first (npm install, package-lock.json, root moon.yml) and pre-dated the
 Bun-workspace split; this revision resolves the recorded `definition_gap` —
 Bun lifecycle arming, `bun.lock`, `biome.jsonc`, `packages/core` moon tasks,
 and the escaped-pipe touchpoint row.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
