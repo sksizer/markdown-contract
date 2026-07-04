@@ -30,7 +30,12 @@ function def(c: InferredContract): {
   body?: {
     order?: string;
     allowUnknown?: boolean;
-    sections?: Array<{ section: string; aliases?: string[]; optional?: boolean }>;
+    sections?: Array<{
+      section: string;
+      aliases?: string[];
+      optional?: boolean;
+      repeatable?: boolean;
+    }>;
   };
 } {
   return c.def as never;
@@ -409,6 +414,37 @@ describe("inferConfig — heading key-collision handling (T-KCOL)", () => {
     const r = inferConfig(root);
     expect(r.warnings).toEqual([]);
     expect(r.contracts[0]!.def).toBeDefined();
+  });
+});
+
+describe("inferConfig — repeatable-slot inference (T-1TA2, AC-4)", () => {
+  it("infers repeatable: true for a heading repeated as peers within one doc", () => {
+    file("a.md", "## Entry\n\nx\n\n## Entry\n\ny\n");
+    const r = inferConfig(root);
+    expect(def(r.contracts[0]!).body!.sections).toEqual([{ section: "Entry", repeatable: true }]);
+    // Not a spurious variant-merge: a single spelling emits no alias and no warning.
+    expect(r.warnings).toEqual([]);
+  });
+
+  it("the inferred contract accepts its own repeated-peer corpus (accept-by-construction)", () => {
+    const src = "## Entry\n\nx\n\n## Entry\n\ny\n";
+    file("a.md", src);
+    const contract = compileContractObject(inferConfig(root).contracts[0]!.def);
+    const res = contract.validate(src, { path: "a.md" });
+    expect(res.findings.filter((f) => f.level === "error")).toEqual([]);
+  });
+
+  it("marks repeatable across docs where the heading repeats in only one of them", () => {
+    file("a.md", "## Release\n\nx\n\n## Release\n\ny\n");
+    file("b.md", "## Release\n\nz\n");
+    const sections = def(inferConfig(root).contracts[0]!).body!.sections!;
+    expect(sections).toEqual([{ section: "Release", repeatable: true }]);
+  });
+
+  it("a non-repeated heading stays a plain (non-repeatable) slot", () => {
+    file("a.md", "## Summary\n\nx\n");
+    file("b.md", "## Summary\n\ny\n");
+    expect(def(inferConfig(root).contracts[0]!).body!.sections).toEqual([{ section: "Summary" }]);
   });
 });
 

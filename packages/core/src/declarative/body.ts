@@ -109,6 +109,26 @@ function sectionOpts(node: Record<string, unknown>, path: string): SectionOpts |
     opts.anchor = String(node.anchor);
     any = true;
   }
+  // Repeatable slot (T-1TA2): `repeatable: true` (+ optional numeric `min` / `max`). The
+  // semantic bound checks (min/max only on a repeatable slot, min ≤ max) run in `section()` /
+  // `oneOf()` (a `ContractBuildError`); here we only enforce the DSL value types.
+  if ("repeatable" in node) {
+    if (typeof node.repeatable !== "boolean") {
+      throw new DeclarativeError(`${path}.repeatable must be a boolean`);
+    }
+    opts.repeatable = node.repeatable;
+    any = true;
+  }
+  if ("min" in node) {
+    if (typeof node.min !== "number") throw new DeclarativeError(`${path}.min must be a number`);
+    opts.min = node.min;
+    any = true;
+  }
+  if ("max" in node) {
+    if (typeof node.max !== "number") throw new DeclarativeError(`${path}.max must be a number`);
+    opts.max = node.max;
+    any = true;
+  }
   if ("content" in node) {
     opts.content = compileContent(node.content, `${path}.content`);
     any = true;
