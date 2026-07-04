@@ -6,6 +6,7 @@ status: planning/draft
 created: '2026-07-03'
 related:
 - T-SCPP-cell-position-preservation
+- T-SCDF-structured-cells-dogfood
 tags: []
 need_human_review: false
 impact: medium
@@ -64,3 +65,17 @@ _TBD — receiver to fill before promoting from planning/draft._
 ## Discovery context
 
 Spawned by /sdlc:spawn-task-pr on 2026-07-03 UTC from [[T-SCPP-cell-position-preservation]] in git@github.com:sksizer/markdown-contract.git.
+
+### Dedup search (spawn-from-post-mortem)
+
+Bullet: `Doc.inlineSpans(row, col)` content-matches against the RAW row, but a transformed row's `Location` is an object, so passing the typed row returns `[]`; the fixture had to re-form the raw cell string from the typed value (a `rawLocation()` helper) to content-match, while `cellPos` (reference-matched on the `TableView`) accepts the typed row directly. This asymmetry is exactly what use case 2 (`scan-placeholders` masking) would hit downstream. — `inlineSpans` should accept the same row reference `cellPos` does (reference-match, not content-match) so a consumer with typed rows can read spans without reconstructing raw cell text; captured as a follow-up.
+Keywords searched: reference-matched, scan-placeholders, content-matches, reference-match, reconstructing, content-match, inlinespans, transformed
+Excluded: T-SCDF-structured-cells-dogfood
+Top candidates (score / status / headline):
+  - 17 / closed/done / T-SCPP-cell-position-preservation — Preserve per-cell `col` and inline-code byte spans on the projection (axis C1)
+  - 7 / planning/draft / T-OX98-typed-row-source-coordinate-handle — Give model rows a typed source-coordinate handle so inlineSpans resolves by identity
+  - 3 / closed/done / T-SCFX-structured-cells-fixture-scaffold — Scaffold the structured-cells fixtures and enable gates (`cell-typed` / `list-typed` / `cell-pos`)
+  - 3 / open/ready / T-SCPA-paragraph-transform-adr — Decide the paragraph-transform generalization (design-only ADR + scoped follow-ons)
+  - 1 / closed/done / T-FMSP-frontmatter-split-primitive — Frontmatter/body split — a pure splitter retained on the `parse()` result
+Decision: LINKED-EXISTING T-OX98-typed-row-source-coordinate-handle
+Rationale: Overrode the script's SPAWNED default. The top keyword-score candidate (T-SCPP, 17, closed/done) is a different, already-closed task; candidate #2 T-OX98 (score 7, planning/draft) is a near-exact semantic duplicate — same `inlineSpans` content-match vs `cellPos` reference-match asymmetry, same typed-row-handle fix — and was itself spawned from T-SCPP. Linked to T-OX98 rather than spawn a duplicate follow-up.
