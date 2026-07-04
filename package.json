@@ -18,11 +18,13 @@
   "scripts": {
     "audit": "bun audit --audit-level=high",
     "lint:deps": "knip",
-    "metrics": "scc packages/core/src"
+    "metrics": "scc packages/core/src",
+    "prepare": "lefthook install || true"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
     "@moonrepo/cli": "2.3.5",
-    "knip": "^5"
+    "knip": "^5",
+    "lefthook": "^2.1.9"
   }
 }
