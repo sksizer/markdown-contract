@@ -22,9 +22,9 @@
     "prepare": "lefthook install || true"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.0",
+    "@biomejs/biome": "2.5.1",
     "@moonrepo/cli": "2.3.5",
-    "knip": "^5",
-    "lefthook": "^2.1.9"
+    "knip": "5.88.1",
+    "lefthook": "2.1.9"
   }
 }
