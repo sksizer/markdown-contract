@@ -53,8 +53,8 @@ const KIND_GROUP: Record<DriftKind, GroupKey> = {
 };
 
 /**
- * The local visual language for the three groups (analogous to FindingsList's
- * LEVEL_LABEL). Accent hexes are harmonized with the `--mc-*` palette but stated
+ * The local visual language for the three groups — a per-group label, glyph, and
+ * accent color. Accent hexes are harmonized with the `--mc-*` palette but stated
  * concretely and bound INLINE, so this component stays self-contained.
  */
 const GROUP: Record<GroupKey, { label: string; glyph: string; color: string; bg: string }> = {
