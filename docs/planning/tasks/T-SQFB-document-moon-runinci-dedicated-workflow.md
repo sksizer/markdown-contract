@@ -2,9 +2,9 @@
 type: task
 schema_version: '5'
 id: T-SQFB
-status: open/ready
+status: in-progress
 created: '2026-07-01'
-last_reviewed: '2026-07-03'
+last_reviewed: '2026-07-04'
 related:
 - '[[M-0010 Quality Tooling]]'
 tags:
@@ -78,3 +78,19 @@ dedicated workflow over the shared `moon run` CI list. Cross-referenced from the
 ## Discovery context
 
 - Surfaced by the [[T-HIL6]] post-mortem friction list: the moon `runInCI: false` / `CI:''` interaction cost a debugging cycle and is currently documented only in a single workflow comment.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
