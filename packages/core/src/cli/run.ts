@@ -80,7 +80,7 @@ function parseCliArgs(argv: string[]) {
       depth: { type: "string" }, // directory cut for --meta (default 1; 0 == single)
       relax: { type: "boolean" }, // loosen generation toward a permissive floor
       inline: { type: "boolean" }, // one self-contained config instead of contracts/ files
-      out: { type: "string" }, // where to write (default: cwd)
+      out: { type: "string" }, // where to write (default: the single inferred root; cwd for multi-root)
       force: { type: "boolean" }, // overwrite an existing config (default: refuse)
       "dry-run": { type: "boolean" }, // print the would-be files to stdout; write nothing
       check: { type: "boolean" }, // verify an existing config still accepts the tree
@@ -250,9 +250,11 @@ const INIT_CONFIG_NAME = "markdown-contract.yaml";
  *  - **scope** — `--include` / `--exclude` / `--glob` choose which files feed inference, exactly
  *    as `validate` scopes a run; the same globs also scope the self-check.
  *  - **`--dry-run`** — print the would-be files to stdout and write nothing (exit 0).
- *  - **write** — otherwise write `result.files` under `--out` (default cwd), REFUSING to clobber
- *    an existing config without `--force` (exit 2). Single-contract mode additionally writes a
- *    `markdown-contract.yaml` router so `validate <dir>` auto-discovers the scaffold.
+ *  - **write** — otherwise write `result.files` under `--out` (default: the single inferred root,
+ *    so `validate <dir>` / `init <dir> --check` find the scaffold from any cwd; a multi-root run
+ *    has no single natural base, so it falls back to cwd with a stderr warning), REFUSING to
+ *    clobber an existing config without `--force` (exit 2). Single-contract mode additionally
+ *    writes a `markdown-contract.yaml` router so `validate <dir>` auto-discovers the scaffold.
  *  - **self-check** — after writing, load the scaffold back through `loadConfigFile` and run it
  *    over the corpus via `runCorpus`; an error-level finding is an inferer bug, reported loudly
  *    (it should never happen — accept-by-construction, D-0009 § Self-check).
@@ -326,7 +328,21 @@ function runInit(cwd: string, roots: string[], flags: InitFlags): CliResult {
     }
   }
 
-  const outDir = flags.out ? (isAbsolute(flags.out) ? flags.out : resolve(cwd, flags.out)) : cwd;
+  // Default the write target to the SINGLE inferred root, so the config, `contracts/`, and the
+  // root-relative globs share one base and `init <dir> --check` finds what `init <dir>` wrote from
+  // any cwd. A multi-root run has no single natural base, so it keeps the cwd fallback (with a
+  // warning below). Explicit `--out` overrides both, silently.
+  const multiRootCwdFallback = !flags.out && absRoots.length > 1;
+  const outDir = flags.out
+    ? isAbsolute(flags.out)
+      ? flags.out
+      : resolve(cwd, flags.out)
+    : absRoots.length === 1
+      ? absRoots[0]!
+      : cwd;
+  const multiRootWarning = multiRootCwdFallback
+    ? "init: multiple roots — writing the scaffold to the current directory (pass --out <dir> to choose)"
+    : "";
 
   // --check: verify an EXISTING config against the tree(s); never infer or write.
   if (flags.check === true) {
@@ -386,10 +402,11 @@ function runInit(cwd: string, roots: string[], flags: InitFlags): CliResult {
   const selfCheckErrors = selfCheck(results, absRoots, scope);
 
   const summary = renderSummary(results, files, selfCheckErrors);
-  // A self-check failure is an inferer bug, surfaced loudly with a non-zero exit.
+  // A self-check failure is an inferer bug, surfaced loudly with a non-zero exit. The multi-root
+  // cwd-fallback warning (empty otherwise) rides along on stderr regardless of the self-check.
   return selfCheckErrors.length > 0
-    ? { code: 1, stdout: summary, stderr: "" }
-    : { code: 0, stdout: summary, stderr: "" };
+    ? { code: 1, stdout: summary, stderr: multiRootWarning }
+    : { code: 0, stdout: summary, stderr: multiRootWarning };
 }
 
 /**

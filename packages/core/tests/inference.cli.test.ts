@@ -100,6 +100,61 @@ suite("markdown-contract init (CLI)", () => {
     expect(readdirSync(cwd)).toHaveLength(0);
   });
 
+  test("default write lands under <dir> (the inferred root), not cwd, when run from a foreign cwd", async () => {
+    // The scaffold is anchored to the single inferred root by default, so it shares one base
+    // with the root-relative globs and `--check` — regardless of where the command is run from.
+    const vault = stageVault("07-tree-depth1");
+    const cwd = mkdtempSync(join(tmpdir(), "mc-cwd-"));
+
+    const r = await runCli(["init", vault, "--meta"], { cwd });
+    expect(r.code).toBe(0);
+
+    // The scaffold lands under the inferred root <dir>.
+    expect(existsSync(join(vault, "markdown-contract.yaml"))).toBe(true);
+    expect(existsSync(join(vault, "contracts"))).toBe(true);
+
+    // The foreign cwd is left completely untouched.
+    expect(existsSync(join(cwd, "markdown-contract.yaml"))).toBe(false);
+    expect(existsSync(join(cwd, "contracts"))).toBe(false);
+    expect(readdirSync(cwd)).toHaveLength(0);
+
+    // The clobber guard operates on the NEW default location: a re-run from the same foreign
+    // cwd still refuses to overwrite the scaffold at the inferred root without --force.
+    const reRun = await runCli(["init", vault, "--meta"], { cwd });
+    expect(reRun.code).toBe(2);
+  });
+
+  test("init <dir> then init <dir> --check round-trips from a foreign cwd (exit 0)", async () => {
+    // The round-trip that fails today: with the scaffold written to the inferred root, `--check`
+    // (which loads resolve(<dir>, markdown-contract.yaml)) finds it from any cwd.
+    const vault = stageVault("01-flat-uniform");
+    const cwd = mkdtempSync(join(tmpdir(), "mc-cwd-"));
+
+    const init = await runCli(["init", vault], { cwd });
+    expect(init.code).toBe(0);
+
+    const check = await runCli(["init", vault, "--check"], { cwd });
+    expect(check.code).toBe(0);
+  });
+
+  test("multi-root without --out writes to cwd and warns, suggesting --out", async () => {
+    // A multi-root run has no single natural base, so it keeps the cwd fallback — and says so.
+    const a = stageVault("01-flat-uniform");
+    const b = stageVault("02-optional-sections");
+    const cwd = mkdtempSync(join(tmpdir(), "mc-cwd-"));
+
+    const r = await runCli(["init", a, b, "--meta"], { cwd });
+    expect(r.code).toBe(0);
+
+    // The scaffold lands in cwd (the fallback base), not in either root.
+    expect(existsSync(join(cwd, "markdown-contract.yaml"))).toBe(true);
+
+    // A warning names the fallback and suggests --out.
+    expect(r.stderr).toContain(
+      "init: multiple roots — writing the scaffold to the current directory (pass --out <dir> to choose)",
+    );
+  });
+
   test("--check exits 0 when the config still accepts, 1 after a doc drifts", async () => {
     const dir = stageVault("01-flat-uniform");
     const init = await runCli(["init", dir], { cwd: dir });
