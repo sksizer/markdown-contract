@@ -1,13 +1,27 @@
 # Dependabot configuration (v2).
 #
-# Two ecosystems, both on a weekly cadence, so dependency and CI action pins
-# stay current with low PR noise instead of drifting by hand:
-#   - npm            — the JavaScript dependency tree (package.json + bun.lock).
-#   - github-actions — the action pins in .github/workflows/*.yml.
+# Two ecosystems on distinct cadences, so dependency and CI action pins stay
+# current with low PR noise instead of drifting by hand:
+#   - npm            — the JavaScript dependency tree (package.json + bun.lock),
+#                      swept monthly.
+#   - github-actions — the action pins in .github/workflows/*.yml, swept weekly.
 #
-# Routine minor/patch bumps are grouped so the bulk of weekly churn lands as a
+# (Deliberate deviation from the sksizer/node-template baseline, which runs both
+# weekly: the npm tree here is large and moves slowly, so a monthly sweep keeps
+# PR volume down; the CI action pins stay on the template's weekly cadence.)
+#
+# Routine minor/patch bumps are grouped so the bulk of the churn lands as a
 # handful of PRs rather than one per dependency. Major bumps stay ungrouped
 # (Dependabot's default) so each one gets individual scrutiny before merge.
+#
+# Supply-chain hardening — each ecosystem carries a `cooldown` window, so a
+# freshly-published (possibly compromised) release is never proposed until it
+# has aged: 7 days for minor/patch, 30 for majors. This is defense in depth.
+# The committed `bun.lock` plus `bun install --frozen-lockfile` already pin
+# exactly what installs, and `bun audit` gates *known* advisories — but neither
+# closes the window between a malicious release landing on the registry and the
+# ecosystem noticing. The cooldown closes that window by refusing to adopt a
+# release until it has survived out in the open for the aging period.
 version: 2
 updates:
   # JavaScript dependencies. `npm` is the Dependabot ecosystem id for the
@@ -17,6 +31,9 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
     open-pull-requests-limit: 3
     groups:
       # Development dependencies: batch minor + patch bumps into one PR.
@@ -39,6 +56,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
     groups:
       github-actions:
         patterns:

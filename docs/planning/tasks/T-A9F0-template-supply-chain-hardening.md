@@ -131,12 +131,24 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — `grep -c` confirmed two `cooldown` blocks in `.github/dependabot.yml`, each `default-days: 7` / `semver-major-days: 30`; header cadence comment corrected (npm monthly, actions weekly).
+- AC-2: auto — per-manifest check across all five workspace manifests (`package.json`, `packages/core`, `apps/web`, `apps/daemon-web-prototype`, `sites/docs`) returned 0 ranged `devDependencies`.
+- AC-3: auto — `packages/core` runtime `dependencies` retain all 7 ranged entries (consumer-facing policy unchanged).
+- AC-4: agent-manual — `bun install --frozen-lockfile` exits 0 with "no changes"; `git diff --stat bun.lock` empty. No configVersion churn appeared, so no revert needed.
+- AC-5: agent-manual — README "Library health baseline" section rewritten to describe supply-chain hardening as a carried layer; no "known gap" phrasing remains.
+- AC-6: auto — `bunx moon run core:build core:typecheck core:lint core:test` green; baseline-gated `sdlc quality run` reports `OK 6/6` (no new drift).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The task spec pre-computed the exact touchpoints and locked-version source (`bun.lock`), so the pin work was mechanical and unambiguous.
+- The baseline-gated quality gate cleanly separated a pre-existing `core:lint` `--line`-mode buffer-overflow flake from real drift — the plain gate FAILed on that artifact, but the baseline diff correctly reported `OK 6/6`.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Plain `sdlc quality run --line` reports `FAIL bunx moon run core:lint` because biome emits >1 MB of pre-existing warnings that overflow the runner's `spawnSync` default `maxBuffer` (ENOBUFS/SIGTERM), masquerading as a lint failure — the `--line`-mode runner (`plugin/lib/services/quality/run.ts`) should set an explicit large `maxBuffer` (or stream) so a chatty-but-passing verb is not misreported as failing. → [[quality-runner-explicit-maxbuffer]]
+- The Step 7 baseline-gated gate defaults `--baseline-dir` to the worktree's `.sdlc/quality-baselines/`, but Step 3a captures the baseline in the main repo's `.sdlc/`; the gate errored `baseline not found` until `--baseline-dir` was pointed back at the main repo — task-work's Step 7 invocation should pass the main-repo baseline dir explicitly (or the executor should resolve the superproject baseline dir when run from a worktree). → [[resolve-superproject-baseline-dir]]
+
+### Spawned follow-up tasks
+
+- [[quality-runner-explicit-maxbuffer]] (https://github.com/sksizer/dev/pull/675) [open/ready] — spawned (Upstream-plugin, `sdlc-meta`): set an explicit `maxBuffer` in the `--line` quality runner so a chatty-but-passing verb is not misreported as failing.
+- [[resolve-superproject-baseline-dir]] (https://github.com/sksizer/dev/pull/676) [open/ready] — spawned (Upstream-plugin, `sdlc-meta`): resolve the superproject baseline dir when the task-work Step 7 baseline gate runs from a worktree.

@@ -31,11 +31,13 @@ test + coverage floor, the CI gate, dependency hygiene (Dependabot + audit),
 publish hygiene (`publint` + `are-the-types-wrong`), dead-code detection (knip),
 code metrics (scc), module/test conventions, and supply-chain hardening
 (Dependabot cooldown windows + exact devDependency pins). This workspace carries
-the stack adapted from the template's npm single-package shape to the Bun + moon
-workspace (gates wrapped as `core:*` moon tasks plus dedicated side-gate
-workflows), with one known gap: the **supply-chain-hardening** layer (no
-cooldown on our Dependabot config; devDependencies use `^` ranges, not exact
-pins).
+the full stack adapted from the template's npm single-package shape to the Bun +
+moon workspace (gates wrapped as `core:*` moon tasks plus dedicated side-gate
+workflows) — including the supply-chain-hardening layer: Dependabot cooldown
+windows (7 days for minor/patch, 30 for majors) on both ecosystems, and exact
+devDependency pins across every workspace manifest. The published
+`packages/core` runtime `dependencies` deliberately keep their `^` ranges, since
+consumers need range flexibility.
 
 Layers here that go beyond the template: lefthook pre-commit/pre-push hooks +
 `.editorconfig`, knip promoted to a **blocking** gate (the template ships it
