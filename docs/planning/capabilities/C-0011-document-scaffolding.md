@@ -84,9 +84,11 @@ shape [[C-0008-config-scaffolding]] already uses.
 
 - A new CLI verb — **`markdown-contract new <contract> [--out <file>]`** — that
   emits one conforming markdown document from a contract, to stdout or a file.
-- A library entry point beside `validate` / `read` — a pure `contract → string`
-  function — so tools (an editor "New" command, a CMS, a bot) can scaffold
-  without shelling out.
+- A library entry point beside `validate` / `read`, in **two shapes**: a pure
+  `contract → string` scaffolder for the blank skeleton, and a **typed builder**
+  `template.create(contract)(values) → string` whose `values` argument is typed
+  *by the contract* (see [Typed builder](#typed-builder--the-write-dual-of-read)).
+  Tools (an editor "New" command, a CMS, a bot) use either without shelling out.
 - **Deterministic structure from the contract**: required sections as ordered
   headings, correct heading depth from nested grammars, block-id `^anchors` where
   the contract declares them, and per-leaf stubs (table header row + separator,
@@ -170,6 +172,50 @@ created: '2026-07-03'
 The console reports what it emitted and what it could not synthesise (which
 fields fell to a placeholder, which sections were left as `oneOf`/`optional`
 choices) so the author knows exactly what remains to fill in.
+
+## Typed builder — the write-dual of `read`
+
+The blank skeleton above is the *human* on-ramp. For tooling, the same contract
+should also produce a **typed builder**: a factory bound to the contract that
+takes a typed structure of the values to fill in and places them in the right
+positions. It is the exact write-side mirror of [[C-0002-typed-consumption]] —
+the contract that types a document for *reading* (`doc.frontmatter.status` is a
+typed read) types the value structure for *writing* just as well.
+
+```ts
+import { contract, template } from "markdown-contract";
+import { z } from "zod";
+
+const decision = contract({
+  frontmatter: z.object({ status: z.enum(["active", "closed", "pending"]) }),
+  body: /* sections(…) */,
+});
+
+const make = template.create(decision);          // typed factory bound to the contract
+const md = make({ frontmatter: { status: "closed" } });
+//                              ^ typed "active" | "closed" | "pending";
+//                                a wrong value is a compile error, not a runtime finding
+```
+
+- **The input type is derived from the contract**, not hand-written: frontmatter
+  from its schema (`z.input` of the Zod object / the declarative fields), body
+  fills from the section grammar and leaves (a prose section → a string; a `table`
+  leaf → rows typed by its declared columns; a `list` → items). Required fields
+  are required in the input, optional fields optional, enums narrowed to their
+  unions.
+- **The builder *places* the values** — frontmatter keys into the YAML block,
+  prose under the right heading, rows into the declared table — the same positions
+  the validator checks and `read` navigates. Anything not supplied falls back to
+  the skeleton's placeholder, so `make({})` is exactly the blank scaffold.
+- **One contract, typed both ways.** `read`: document → typed values;
+  `create`: typed values → document. Because both derive from the same contract,
+  a builder can't place a value the validator would reject, and the two can never
+  drift. This is the shape closest to a real template engine — a typed template
+  instantiated with data — while still not authoring prose: it places values, it
+  does not invent content.
+
+*(Origin: reviewer idea on this PR — a typed function/wrapper over the contract
+that supplies a typed data structure of the fill-in values.)*
 
 ## Hook points
 

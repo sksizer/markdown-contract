@@ -11,6 +11,7 @@ related:
   - '[[D-0009-config-inference]]'
   - '[[C-0006-declarative-yaml-contracts]]'
   - '[[C-0005-two-plane-contract-engine]]'
+  - '[[C-0002-typed-consumption]]'
   - '[[C-0003-corpus-cli]]'
   - '[[D-0008-declarative-contract-dsl]]'
   - '[[D-0007-engine-scope-and-fidelity]]'
@@ -176,6 +177,36 @@ After emitting, optionally load the string back through `validate`. The target:
 clean* validate. This mirrors `init`'s self-check and becomes the capability's
 backbone test (golden round-trip: `new <contract>` → `validate` → clean/bounded).
 
+### 5. The typed builder (raised in review)
+
+Beyond the blank `contract → string` scaffolder, expose a **typed factory**
+`template.create(contract)(values) → string` whose `values` argument is derived
+*from the contract* — the write-side dual of [[C-0002-typed-consumption]]. The
+generator already walks the section/leaf/schema IR to *place* content; the only
+addition is a static **input type** and a values-merge step:
+
+- **Input type derivation.** Frontmatter comes from the schema — `z.input<>` of a
+  Zod object, or the declarative fields — required/optional and enum unions
+  preserved. Body fills come from the grammar and leaves: a prose section → a
+  `string`; a `table` leaf → rows typed by its declared columns/cells (the same
+  typed-row shape the consumption model already derives, `core/model.ts`); a
+  `list` → items. This is the exact machinery C-0002 uses to type `read`, run in
+  the input direction, so it costs little beyond what already exists.
+- **Placement, not authoring.** `create(values)` fills the supplied values into
+  the positions the walk emits (frontmatter keys, under-heading prose, table
+  rows) and falls back to the skeleton's placeholder for anything omitted — so
+  `create(contract)({})` *is* the blank scaffold, and `new` is the CLI over the
+  empty-values case.
+- **Stronger round-trip.** Because `values` is typed by the contract, whole
+  classes of "fill me in" findings (a bad enum member, a missing required field)
+  become **compile-time type errors** rather than post-hoc validation findings —
+  the builder can't place a value the validator would reject.
+- **Scope.** For a **declarative** contract the input type is data-derived and
+  clean; for a **combinator Zod** contract it rides `z.input<>` directly (tighter
+  than the generation side, which needs `z.toJSONSchema()`), with `.transform()`
+  inputs the one rough edge. This is additive over §1–4: same walk, plus a type
+  and a merge — no engine change.
+
 ## Why
 
 - **It is the dual of an already-shipped transform.** `init` proves the IR is
@@ -217,6 +248,11 @@ backbone test (golden round-trip: `new <contract>` → `validate` → clean/boun
   contract.** The declarative object is the invertible one and makes generation
   the literal dual of `infer.ts`; a `Contract.new()` door for the code path is
   possible but is best-effort (via `z.toJSONSchema()`). Lead with declarative.
+- **Blank scaffolder vs. typed builder — offer both (§5).** The `contract →
+  string` scaffolder serves the CLI / human path; the typed
+  `create(contract)(values)` factory serves tooling and moves fill errors to
+  compile time. They share one walk (the builder is the scaffolder with a typed
+  values-merge), so both ship from the same code path.
 - **Regex inversion vs. `example:` annotation vs. TODO token.** Full regex
   generation is out of scope (unbounded); a restricted-subset generator is a
   maybe; the **annotation** is the clean, predictable fix, with a TODO token as
