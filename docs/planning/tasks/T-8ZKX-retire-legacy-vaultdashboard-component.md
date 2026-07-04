@@ -97,9 +97,10 @@ entry remains in Storybook, and the repo knip check reports no new unused files.
 ## Discovery context
 
 Promoted from [[B-8ZKX-retire-legacy-vaultdashboard-component]]. The cleanup was
-explicitly left out of scope by T-6RFC, which scoped itself to `pages/index.vue` +
-`pages/index.stories.ts` and used the distinct title `Screens/Dashboard` to avoid a
-sidebar collision.
+explicitly left out of scope by T-6RFC, which scoped itself to
+`apps/daemon-web-prototype/pages/index.vue` +
+`apps/daemon-web-prototype/pages/index.stories.ts` and used the distinct title
+`Screens/Dashboard` to avoid a sidebar collision.
 
 ## Post-mortem
 
