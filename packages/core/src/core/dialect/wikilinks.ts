@@ -11,7 +11,7 @@
  */
 
 /** A recognized `[[wikilink]]` or `![[transclusion]]` reference, extracted from flattened text. */
-export interface VaultRef {
+interface VaultRef {
   /** `"wikilink"` for `[[…]]`, `"transclusion"` for `![[…]]`. */
   kind: "wikilink" | "transclusion";
   /** The link target: the part before any `|alias`, `#heading`, or `#^block` suffix. */

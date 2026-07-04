@@ -108,12 +108,22 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — each of the 13 baseline findings was resolved: 4 genuinely-dead barrel/type re-exports deleted (`matchStructure`, `matchContent`, `compileMatcher`, the `VaultRef` type re-export), and 9 internal-only symbols de-exported (`CONTENT_LEVELS`/`RULE_LEVELS`/`TEXT_LEVELS`/`LevelRegistry`, `compileMatchSpec`/`compileMatchSpecs`/`compileScopeTextSpecs`/`ScopeTextSpecs`, the `VaultRef` interface). Each decision was grep-verified across the repo; none left unaddressed, none kept.
+- AC-2: auto — `bun run lint:deps` after the cleanup reports **0** `packages/core/src` dead-code findings, down from the 13-finding baseline (0 < 13). The residual knip output is only the explicitly out-of-scope `apps/web`/`sites/docs` findings plus a pre-existing `vitest.config.ts` config hint, none of which this task owns.
+- AC-3: auto — the full quality gate (`build`/`typecheck`/`lint`/`test`/`package-check`) is green: `sdlc quality run` reports `OK 5/5` (baseline-gated, zero new drift).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The T-HIL6 baseline was accurate: the 13 documented findings matched the live `knip` run exactly at pickup, so no re-triage was needed before deleting.
+- knip's per-symbol locations plus a repo-wide grep made the delete-vs-de-export call unambiguous for every finding — dead re-exports were removed outright, symbols still used inside their own module were simply de-exported without touching live code.
+- The baseline-gated quality run (`--diff-against-baseline`) confirmed zero new drift cleanly, so AC-3 was verifiable mechanically rather than by eye.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- De-exporting a type that is still referenced in an exported function's signature (`LevelRegistry`, the `VaultRef` interface) can regress `.d.ts` declaration emit while `tsc --noEmit` typecheck stays green — the gate's typecheck verb runs `--noEmit`, so it alone would not catch a declaration-only break. Both cases were verified against a real `core:build`, but a knip-cleanup affordance could flag "de-exporting a type used by an exported signature → needs a full build check" so the safety step isn't left to the implementer's memory. → [[T-QX1Q-gate-covers-declaration-emit]]
+- knip's exit code is repo-coarse: it cannot scope-fail to a single workspace, so confirming "`packages/core` is clean" is a manual read of the finding list rather than a green exit. A `--workspace packages/core` gate (or a `knip --reporter` filter) would let a task like this assert its scope mechanically instead of eyeballing. → [[T-32OG-knip-per-workspace-scope-gate]]
+
+### Spawned follow-up tasks
+
+- [[T-QX1Q-gate-covers-declaration-emit]] (https://github.com/sksizer/markdown-contract/pull/206) — declaration-emit / full-build check for the quality gate, spawned.
+- [[T-32OG-knip-per-workspace-scope-gate]] (https://github.com/sksizer/markdown-contract/pull/207) — per-workspace knip scope gate, spawned.
