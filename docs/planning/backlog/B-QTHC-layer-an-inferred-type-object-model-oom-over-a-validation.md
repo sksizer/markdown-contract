@@ -6,7 +6,7 @@ tags:
 - architecture
 - api
 - types
-last_reviewed: '2026-07-02'
+last_reviewed: '2026-07-04'
 ---
 
 # Layer an inferred-type object model (OOM) over a validation + raw-data-access layer
