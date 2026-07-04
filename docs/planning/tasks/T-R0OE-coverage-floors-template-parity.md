@@ -45,7 +45,11 @@ floor needs roughly 40 more covered branches (1360/1599).
 | `packages/core/src/runner/index.ts` | Same — barrel in the coverage denominator. |
 | `packages/core/src/core/dialect/index.ts` | Same — barrel in the coverage denominator. |
 | `packages/core/src/declarative/index.ts` | Same — barrel in the coverage denominator. |
-| `packages/core/coverage/` | Gitignored report output (`html` + `json-summary`) — the per-file branch data that identifies where the cheapest uncovered branches live. |
+
+The per-file branch data that identifies where the cheapest uncovered branches
+live comes from the gitignored report a coverage run writes (`html` +
+`json-summary` reporters, output directory `coverage/`) — regenerate it with
+`bunx moon run core:coverage`; it does not exist on a fresh checkout.
 
 ## Proposed
 
