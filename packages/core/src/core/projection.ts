@@ -205,7 +205,25 @@ function projectList(node: MdList): Extract<BlockNode, { kind: "list" }> {
     if (li.checked === true || li.checked === false) item.checked = li.checked;
     return item;
   });
-  return { kind: "list", ordered: node.ordered === true, items, pos: posOf(node) };
+
+  // A1 — the sparse typed overlay (the list analogue of the table's `typedStore`). A closure-captured
+  // `Map<itemIndex, value>` (NOT an enumerable property) so `typedItem`/`setTypedItem` are the only
+  // way in and the cache never serializes onto the public `tree`. Starts empty; the content plane's
+  // per-item `safeParse` pass fills it (a plain / `"checkbox"` list leaves it empty).
+  const typedStore = new Map<number, unknown>();
+
+  return {
+    kind: "list",
+    ordered: node.ordered === true,
+    items,
+    typedItem(i: number): unknown | undefined {
+      return typedStore.get(i);
+    },
+    setTypedItem(i: number, value: unknown): void {
+      typedStore.set(i, value);
+    },
+    pos: posOf(node),
+  };
 }
 
 /**
