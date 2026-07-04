@@ -217,12 +217,25 @@ _Captured by /sdlc:task-work on 2026-07-03. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — built the binary, copied it to an empty scratch dir; `validate` stdout AND stderr byte-identical (`cmp`) to the npm bin on a passing and a failing vault, exit codes matched (0/0, 1/1).
+- AC-2: agent-manual — daemon booted from the empty dir on 4326 and 4320; `/api/health` ok, `/` served the embedded SPA HTML, hashed asset came back with `immutable` cache headers, `POST /api/validate` on a real vault returned findings JSON. No `ui/.output` anywhere on disk.
+- AC-3: auto — grep gate: no `apps/web` imports, no `packages/core/src` reach, CLI face imports `markdown-contract/cli/run` only; pinned by the import layout itself.
+- AC-4: auto (local) / deferred-user (CI half) — `moon run example-single-binary:typecheck example-single-binary:test` green locally (23 tests); the "green in the PR's CI run" half is observable only after this PR's CI completes — please confirm on the PR checks.
+- AC-5: agent-manual — README carries all six required sections (Boundary, two-faces diagram, build pipeline, loopback trust model, Bun.serve-vs-Nitro, `cli/run` entry-guard gotcha); independently spot-checked by the parent session.
+- AC-6: auto — all seven re-pointed planning docs pass `sdlc entities validate`; T-WEBU/T-SPAE `closed/done` with completion notes citing PR #183; T-UTKU `closed/superseded`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The copy-then-trim extraction out of `apps/web` was clean — the T-DAEM skeleton and embed pipeline separated from the M-0009 business logic exactly along the seams the task's Today table predicted.
+- The baseline-gated quality run (`OK 5/5`) correctly ignored pre-existing repo drift and gated only this branch's changes.
+- End-to-end verification from an empty directory (both faces, real vaults) caught zero regressions — the byte-identical CLI check is a strong, cheap parity gate.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- `sdlc quality run` captures verb output via `spawnSync` with the default 1 MiB maxBuffer; `bunx moon run core:lint` emits ~1.04 MiB of pre-existing warnings and gets SIGTERM-killed, misreported as FAIL (flaps right at the boundary) — the runner should stream or raise maxBuffer.
+- `packages/core` carries 324 pre-existing biome warnings whose colored output is what breaches that buffer — a warning cleanup or a `--max-diagnostics` cap would defuse the flap from the repo side.
+- The task location grammar cannot cite literal paths containing `[` `]` (Nuxt dynamic-route files like `pages/vault/[id]/edit.vue` parse as glob character classes and never resolve) — the resolver could support escaping; worked around by citing the parent directory.
+- `preflight_permissions.ts` reported missing Write/Edit grants for the worktree path even though session writes to `.sdlc/worktrees/**` demonstrably worked — the settings-file scan misses session-effective permission modes; a live write-probe would eliminate the false gate.
+- task-work's "land body edits on origin/main before the gate" step has no sanctioned verb: a hand-rolled `git push origin HEAD:main` for the citation fix was denied by the harness permission layer (correctly), while the plugin's own scripts push main internally — a `sdlc task amend --on main` verb would close the gap; worked around by carrying the fix on the task branch.
+- M-0008's milestone body was missing the schema-required `## Goal` H2 at HEAD (pre-existing validation failure on main, only surfaced when this task edited the file) — periodic `/sdlc:entities-audit` runs would catch such drift before it blocks unrelated tasks.
+- `docs/index.md` is a generated artifact indexing task statuses; nothing in the task-work flow regenerates it after planning-doc edits — `/sdlc:docs` needs a post-merge run, or close-out should trigger it.
