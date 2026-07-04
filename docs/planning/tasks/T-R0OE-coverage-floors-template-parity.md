@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-R0OE
-status: open/ready
+status: in-progress
 created: '2026-07-04'
 related:
 - '[[M-0010 Quality Tooling]]'
@@ -16,6 +16,7 @@ impact: medium
 complexity: medium
 autonomy: autonomous/pr
 readiness_verified_at: '2026-07-04T19:21:51Z'
+last_reviewed: '2026-07-04'
 ---
 # Raise coverage floors toward node-template parity (best effort on branches)
 
@@ -125,3 +126,19 @@ Surfaced by the node-template baseline comparison (2026-07-04, README
 "Library health baseline" section): the template's `pr3-vitest` layer sets
 90/85/90/90 with barrel exclusion; this repo's floors predate 151 of its
 698 tests and sit visibly below its own measured coverage.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
