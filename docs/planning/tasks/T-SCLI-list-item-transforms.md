@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-SCLI
-status: open/ready
+status: in-progress
 created: '2026-06-30'
 related:
 - '[[M-0011-structured-cells]]'
@@ -19,7 +19,7 @@ need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-last_reviewed: '2026-07-03'
+last_reviewed: '2026-07-04'
 readiness_verified_at: '2026-07-04T02:10:48Z'
 ---
 # Keep `everyItem` transform output and read back typed list items through `ListView`
@@ -115,3 +115,19 @@ const raw: string[] = [...notes].map((i) => i.text); // items stay raw strings, 
 ## Dependencies
 
 - [[T-SCRB-typed-row-read-back]] — establishes the capture overlay + the `section()` / `sections()` / `Infer` threading pattern this mirrors for lists.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
