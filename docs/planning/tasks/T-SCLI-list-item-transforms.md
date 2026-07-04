@@ -19,7 +19,7 @@ need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-03'
 ---
 # Keep `everyItem` transform output and read back typed list items through `ListView`
 
@@ -31,11 +31,11 @@ Extend the "keep the transform output" mechanism from table cells to list items 
 
 | Location | Role today |
 |---|---|
-| `src/core/content.ts#validateList` | For `everyItem: ZodType`, runs `zod.safeParse(item.text)` per item, branches on `res.success`, emits `content/list/item-kind` on failure — and **discards `res.data`**. |
-| `src/core/model.ts#listView` | Returns `node.items` as raw projection items (each `.text` a string); no typed item path. |
-| `src/core/types.ts#ListView` | `ListView extends Iterable<ListItem>` with raw-string items; no `z.output<everyItem>` carry. |
-| `src/core/leaves.ts#list` | `list({ everyItem?: "checkbox" | ZodType, ... })` carries no literal type out for the item schema. |
-| `tests/fixtures/consumption/` | Typed list-item fixtures authored by `T-SCFX`, skipped under `list-typed: false`. |
+| `packages/core/src/core/content.ts#validateList` | For `everyItem: ZodType`, runs `zod.safeParse(item.text)` per item, branches on `res.success`, emits `content/list/item-kind` on failure — and **discards `res.data`**. |
+| `packages/core/src/core/model.ts#listView` | Returns `node.items` as raw projection items (each `.text` a string); no typed item path. |
+| `packages/core/src/core/types.ts#ListView` | `ListView extends Iterable<ListItem>` with raw-string items; no `z.output<everyItem>` carry. |
+| `packages/core/src/core/leaves.ts#list` | `list({ everyItem?: "checkbox" | ZodType, ... })` carries no literal type out for the item schema. |
+| `packages/core/tests/fixtures/consumption/` | Typed list-item fixtures authored by `T-SCFX`, skipped under `list-typed: false`. |
 
 ## Proposed
 
@@ -78,24 +78,24 @@ const raw: string[] = [...notes].map((i) => i.text); // items stay raw strings, 
 
 ## Approach
 
-1. Add an additive sparse `typedItem(i): unknown | undefined` accessor (+ internal writer) to the `list` arm of `BlockNode` in `src/core/types.ts`; raw `items` retained.
-2. In `src/core/content.ts#validateList`, on a successful per-item `safeParse` (the `everyItem: ZodType` branch only — not `"checkbox"`), cache `res.data`; leave the failure branch and the `content/list/item-kind` finding unchanged.
-3. In `src/core/projection.ts`, initialize the sparse typed-item store when the list node is built.
-4. In `src/core/model.ts#listView`, yield `typedItem(i)` when defined, falling back to the raw item; type the view as `ListView<Item>` where `Item = z.output<everyItem>` for a transforming list, raw otherwise.
-5. In `src/core/leaves.ts`, make `list<I extends ZodType>` capture the `everyItem` literal type and thread it (via the same `section()` / `sections()` / `Infer` path `T-SCRB` established) to `read()`.
-6. Flip `list-typed` to `true` in `tests/components.ts`, un-skip the list fixtures, and add peer tests in `src/core/content.test.ts` / `src/core/model.test.ts` (typed item cached, `"checkbox"` unaffected, failing item still finds + caches nothing).
+1. Add an additive sparse `typedItem(i): unknown | undefined` accessor (+ internal writer) to the `list` arm of `BlockNode` in `packages/core/src/core/types.ts`; raw `items` retained.
+2. In `packages/core/src/core/content.ts#validateList`, on a successful per-item `safeParse` (the `everyItem: ZodType` branch only — not `"checkbox"`), cache `res.data`; leave the failure branch and the `content/list/item-kind` finding unchanged.
+3. In `packages/core/src/core/projection.ts`, initialize the sparse typed-item store when the list node is built.
+4. In `packages/core/src/core/model.ts#listView`, yield `typedItem(i)` when defined, falling back to the raw item; type the view as `ListView<Item>` where `Item = z.output<everyItem>` for a transforming list, raw otherwise.
+5. In `packages/core/src/core/leaves.ts`, make `list<I extends ZodType>` capture the `everyItem` literal type and thread it (via the same `section()` / `sections()` / `Infer` path `T-SCRB` established) to `read()`.
+6. Flip `list-typed` to `true` in `packages/core/tests/components.ts`, un-skip the list fixtures, and add peer tests in `packages/core/src/core/content.test.ts` / `packages/core/src/core/model.test.ts` (typed item cached, `"checkbox"` unaffected, failing item still finds + caches nothing).
 
 ## Files to touch
 
 | Location | Kind | Change |
 |---|---|---|
-| `src/core/types.ts` | modify | Add additive `typedItem(i)` to the `list` arm of `BlockNode`; `ListView` carries an optional typed `Item` |
-| `src/core/content.ts` | modify | In `validateList`, keep `res.data` on a successful `everyItem` parse; failure + `"checkbox"` branches unchanged |
-| `src/core/projection.ts` | modify | Initialize the sparse typed-item store on the list `BlockNode` |
-| `src/core/model.ts` | modify | `listView` yields cached typed items with raw fallback |
-| `src/core/leaves.ts` | modify | `list<I>` captures the `everyItem` literal type and threads it to `read()` |
-| `tests/components.ts` | modify | Flip `list-typed` to `true` |
-| `tests/fixtures/consumption/` | modify | Un-skip the typed list-item fixtures gated by `list-typed` |
+| `packages/core/src/core/types.ts` | modify | Add additive `typedItem(i)` to the `list` arm of `BlockNode`; `ListView` carries an optional typed `Item` |
+| `packages/core/src/core/content.ts` | modify | In `validateList`, keep `res.data` on a successful `everyItem` parse; failure + `"checkbox"` branches unchanged |
+| `packages/core/src/core/projection.ts` | modify | Initialize the sparse typed-item store on the list `BlockNode` |
+| `packages/core/src/core/model.ts` | modify | `listView` yields cached typed items with raw fallback |
+| `packages/core/src/core/leaves.ts` | modify | `list<I>` captures the `everyItem` literal type and threads it to `read()` |
+| `packages/core/tests/components.ts` | modify | Flip `list-typed` to `true` |
+| `packages/core/tests/fixtures/consumption/` | modify | Un-skip the typed list-item fixtures gated by `list-typed` |
 
 ## Acceptance criteria
 
@@ -104,7 +104,7 @@ const raw: string[] = [...notes].map((i) => i.text); // items stay raw strings, 
 - [ ] AC-3: `everyItem: "checkbox"` and lists with no `everyItem` are unchanged (raw items); the typed store is additive and sparse.
 - [ ] AC-4: A failing item still emits exactly one `content/list/item-kind` finding and caches no typed value for that item.
 - [ ] AC-5: `list-typed` is `true` and the list fixtures run and pass; no previously-passing fixture changes.
-- [ ] AC-6: `npm run build`, `npm run test`, and `npm run typecheck` pass.
+- [ ] AC-6: `bunx moon run core:build`, `bunx moon run core:test`, and `bunx moon run core:typecheck` pass.
 
 ## Out of scope
 
