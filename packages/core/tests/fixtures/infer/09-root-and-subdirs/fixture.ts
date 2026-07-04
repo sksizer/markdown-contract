@@ -2,14 +2,10 @@ import { fileURLToPath } from "node:url";
 
 import { expect } from "vitest";
 
+import { byName, expectDefined } from "../../../expect.js";
 import type { InferenceFixture } from "../../../harness.js";
 
 const dir = fileURLToPath(new URL("./vault", import.meta.url));
-
-/** Find one inferred contract by its directory-slug name. */
-function byName(contracts: { name: string; include: string[] }[], name: string) {
-  return contracts.find((c) => c.name === name);
-}
 
 /**
  * 09 · root-and-subdirs (infer-meta). `--meta` at the default depth 1 over a tree with
@@ -28,13 +24,13 @@ const fixture: InferenceFixture = {
     expect(result.mode).toBe("meta");
 
     // Subdir contracts plus a root contract.
-    expect(byName(result.contracts, "guides")!.include).toEqual(["guides/**/*.md"]);
-    expect(byName(result.contracts, "reference")!.include).toEqual(["reference/**/*.md"]);
+    expect(byName(result.contracts, "guides").include).toEqual(["guides/**/*.md"]);
+    expect(byName(result.contracts, "reference").include).toEqual(["reference/**/*.md"]);
 
     // Exactly one contract scopes the root files with a direct-only `*.md` glob.
     const rootContract = result.contracts.find((c) => c.include.includes("*.md"));
-    expect(rootContract, "a root contract with include ['*.md']").toBeDefined();
-    expect(rootContract!.include).toEqual(["*.md"]);
+    expectDefined(rootContract, "a root contract with include ['*.md']");
+    expect(rootContract.include).toEqual(["*.md"]);
   },
 };
 

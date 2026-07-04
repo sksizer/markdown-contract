@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { expect } from "vitest";
 
+import { first } from "../../../expect.js";
 import type { InferenceFixture } from "../../../harness.js";
 import { isOptional, isRequired, sectionNames } from "../_assert.js";
 
@@ -18,7 +19,7 @@ const fixture: InferenceFixture = {
   component: "infer-core",
   dir,
   assert: (result) => {
-    const def = result.contracts[0]!.def;
+    const def = first(result.contracts).def;
     expect(sectionNames(def)).toEqual(["Context", "Decision", "Notes", "Summary"]);
 
     // Universal core → required.

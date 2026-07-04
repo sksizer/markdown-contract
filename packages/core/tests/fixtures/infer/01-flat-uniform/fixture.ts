@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { expect } from "vitest";
 
+import { first } from "../../../expect.js";
 import type { InferenceFixture } from "../../../harness.js";
 import { asDef, isRequired, sectionNames } from "../_assert.js";
 
@@ -22,7 +23,7 @@ const fixture: InferenceFixture = {
     expect(result.mode).toBe("single");
     expect(result.contracts).toHaveLength(1);
 
-    const def = result.contracts[0]!.def;
+    const def = first(result.contracts).def;
     expect(sectionNames(def)).toEqual(["Context", "Decision", "Notes", "Summary"]);
     // Every section is universal → required (no `optional`).
     for (const name of ["Summary", "Context", "Decision", "Notes"]) {

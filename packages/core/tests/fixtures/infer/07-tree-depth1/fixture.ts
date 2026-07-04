@@ -2,14 +2,10 @@ import { fileURLToPath } from "node:url";
 
 import { expect } from "vitest";
 
+import { byName } from "../../../expect.js";
 import type { InferenceFixture } from "../../../harness.js";
 
 const dir = fileURLToPath(new URL("./vault", import.meta.url));
-
-/** Find one inferred contract by its directory-slug name. */
-function byName(contracts: { name: string; include: string[] }[], name: string) {
-  return contracts.find((c) => c.name === name);
-}
 
 /**
  * 07 · tree-depth1 (infer-meta). `--meta` at the default depth 1 cuts the tree at the
@@ -29,8 +25,8 @@ const fixture: InferenceFixture = {
     const names = result.contracts.map((c) => c.name).sort();
     expect(names).toEqual(["api", "guides"]);
 
-    expect(byName(result.contracts, "guides")!.include).toEqual(["guides/**/*.md"]);
-    expect(byName(result.contracts, "api")!.include).toEqual(["api/**/*.md"]);
+    expect(byName(result.contracts, "guides").include).toEqual(["guides/**/*.md"]);
+    expect(byName(result.contracts, "api").include).toEqual(["api/**/*.md"]);
   },
 };
 

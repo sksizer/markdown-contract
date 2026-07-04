@@ -27,14 +27,15 @@ const fixture: InferenceFixture = {
     const globs = result.contracts.flatMap((c) => c.include);
     const prefixes = globs.map((g) => g.replace(/\/?\*\*?\/\*\.md$/, "").replace(/\/?\*\.md$/, ""));
     for (let i = 0; i < prefixes.length; i++) {
+      const a = prefixes[i];
+      // "" is the root prefix (an ancestor of nothing here); skip it and any out-of-range read.
+      if (a === undefined || a === "") continue;
       for (let j = 0; j < prefixes.length; j++) {
         if (i === j) continue;
-        const a = prefixes[i]!;
-        const b = prefixes[j]!;
+        const b = prefixes[j];
+        if (b === undefined) continue;
         // `a` must not be a strict directory-prefix of `b` (which would make a/b nested).
-        if (a !== "") {
-          expect(b === a || b.startsWith(`${a}/`), `${a} is an ancestor of ${b}`).toBe(false);
-        }
+        expect(b === a || b.startsWith(`${a}/`), `${a} is an ancestor of ${b}`).toBe(false);
       }
     }
   },

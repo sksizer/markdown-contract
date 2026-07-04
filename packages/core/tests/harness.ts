@@ -220,8 +220,9 @@ export function runInferenceFixtures(label: string, fixtures: InferenceFixture[]
       });
 
       if (fx.assert) {
+        const { assert } = fx; // bind before the callback so the narrowing survives the closure
         test("inferred shape", () => {
-          fx.assert!(inferConfig(fx.dir, fx.opts));
+          assert(inferConfig(fx.dir, fx.opts));
         });
       }
     });

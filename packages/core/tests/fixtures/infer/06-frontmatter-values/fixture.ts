@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { expect } from "vitest";
 
+import { expectDefined, first } from "../../../expect.js";
 import type { InferenceFixture } from "../../../harness.js";
 import { field } from "../_assert.js";
 
@@ -24,7 +25,7 @@ const fixture: InferenceFixture = {
   component: "infer-values",
   dir,
   assert: (result) => {
-    const def = result.contracts[0]!.def;
+    const def = first(result.contracts).def;
 
     // Rung 1 — uniform → const.
     expect(field(def, "kind")).toEqual({ const: "policy" });
@@ -43,8 +44,8 @@ const fixture: InferenceFixture = {
 
     // Rung 6 — small closed categorical set → enum (observed values, any order).
     const severity = field(def, "severity") as { enum?: unknown[] };
-    expect(severity.enum).toBeDefined();
-    expect([...severity.enum!].sort()).toEqual(["high", "low"]);
+    expectDefined(severity.enum, "severity.enum");
+    expect([...severity.enum].sort()).toEqual(["high", "low"]);
 
     // Rung 7 — all-distinct free-form → string (no const/format/enum).
     expect(field(def, "title")).toMatchObject({ type: "string" });

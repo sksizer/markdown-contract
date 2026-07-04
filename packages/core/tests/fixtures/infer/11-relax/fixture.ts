@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { expect } from "vitest";
 
+import { first } from "../../../expect.js";
 import type { InferenceFixture } from "../../../harness.js";
 import { asDef, field, isOptional } from "../_assert.js";
 
@@ -23,7 +24,7 @@ const fixture: InferenceFixture = {
   opts: { relax: true },
   dir,
   assert: (result) => {
-    const def = result.contracts[0]!.def;
+    const def = first(result.contracts).def;
 
     // The loosened floor.
     expect(asDef(def).body?.order).toBe("none");

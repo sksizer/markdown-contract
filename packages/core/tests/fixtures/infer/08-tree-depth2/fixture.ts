@@ -2,14 +2,10 @@ import { fileURLToPath } from "node:url";
 
 import { expect } from "vitest";
 
+import { byName } from "../../../expect.js";
 import type { InferenceFixture } from "../../../harness.js";
 
 const dir = fileURLToPath(new URL("./vault", import.meta.url));
-
-/** Find one inferred contract by its directory-slug name. */
-function byName(contracts: { name: string; include: string[] }[], name: string) {
-  return contracts.find((c) => c.name === name);
-}
 
 /**
  * 08 · tree-depth2 (infer-meta). `--meta --depth 2`: every file lives at depth 2
@@ -30,9 +26,9 @@ const fixture: InferenceFixture = {
     const names = result.contracts.map((c) => c.name).sort();
     expect(names).toEqual(["api-v1", "api-v2", "web-v1"]);
 
-    expect(byName(result.contracts, "api-v1")!.include).toEqual(["api/v1/**/*.md"]);
-    expect(byName(result.contracts, "api-v2")!.include).toEqual(["api/v2/**/*.md"]);
-    expect(byName(result.contracts, "web-v1")!.include).toEqual(["web/v1/**/*.md"]);
+    expect(byName(result.contracts, "api-v1").include).toEqual(["api/v1/**/*.md"]);
+    expect(byName(result.contracts, "api-v2").include).toEqual(["api/v2/**/*.md"]);
+    expect(byName(result.contracts, "web-v1").include).toEqual(["web/v1/**/*.md"]);
   },
 };
 

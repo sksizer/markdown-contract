@@ -21,6 +21,7 @@ import { describe, expect, test } from "vitest";
 
 import { runCli } from "../src/cli/index.js";
 import { IMPLEMENTED } from "./components.js";
+import { expectDefined } from "./expect.js";
 
 /** Copy a fixture vault into a fresh temp dir so write-mode `init` runs never mutate fixtures. */
 function stageVault(rel: string): string {
@@ -244,9 +245,9 @@ suite("markdown-contract validate — run summary (T-RUNS)", () => {
     const init = await runCli(["init", dir], { cwd: dir });
     expect(init.code).toBe(0);
     const contractFile = readdirSync(dir).find((f) => f.endsWith(".contract.yaml"));
-    expect(contractFile).toBeDefined();
+    expectDefined(contractFile, "an emitted .contract.yaml");
 
-    const r = await runCli(["validate", dir, "--contract", join(dir, contractFile!)], { cwd: dir });
+    const r = await runCli(["validate", dir, "--contract", join(dir, contractFile)], { cwd: dir });
     expect(r.code).toBe(0);
     // Total line present, but no `across K contracts` clause and no indented rows (the rule is unnamed).
     expect(r.stdout).toMatch(/^Scanned \d+ files?; \d+ matched, \d+ unmatched/);
