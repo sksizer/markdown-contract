@@ -13,15 +13,20 @@ export default defineConfig({
       // surface at 0% instead of being silently omitted — honest totals.
       all: true,
       include: ["src/**/*.ts"],
-      exclude: ["src/**/*.test.ts", "**/*.d.ts"],
+      exclude: ["src/**/*.test.ts", "src/**/index.ts", "**/*.d.ts"],
       reporter: ["text-summary", "html", "json-summary", "lcov"],
       reportsDirectory: "coverage",
-      // Floors sit a few points under the current baseline (statements 91.2,
-      // branches 82.2, functions 94.9, lines 93.5) so the gate catches real
-      // regressions without flaking on noise. Ratchet upward as coverage grows.
+      // Floors track the node-template library-health baseline (90/85/90/90 for
+      // statements/branches/functions/lines) with re-export-only barrels excluded from
+      // the denominator (the `src/**/index.ts` glob above — the four `core`, `runner`,
+      // `core/dialect`, and `declarative` barrels hold no logic per CLAUDE.md).
+      // Measured 2026-07-04 (721 tests, post-exclusion): statements 93.50% (2045/2187),
+      // branches 85.22% (1356/1591), functions 97.15% (478/492), lines 95.40% (1787/1873).
+      // Floors sit at or under those numbers so the gate catches real regressions without
+      // flaking on noise; branches reached the template's 85. Ratchet upward as coverage grows.
       thresholds: {
-        statements: 88,
-        branches: 78,
+        statements: 90,
+        branches: 85,
         functions: 90,
         lines: 90,
       },
