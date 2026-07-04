@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-TH8U
-status: planning/draft
+status: open/ready
 created: '2026-07-04'
 related:
 - T-QX1Q-gate-covers-declaration-emit
@@ -12,6 +12,11 @@ impact: medium
 complexity: small
 ---
 # Note the lefthook pre-push manual-run caveat (needs --all-files without unpushed commits)
+
+> AUTO-DEFINED: this spec was best-effort machine-authored by
+> /sdlc:task-auto-define on 2026-07-04 because the task is
+> autonomy: autonomous/pr. Review the Goal, Approach, Today,
+> Files-to-touch, and Acceptance-criteria carefully before trusting it.
 
 ## Goal
 
@@ -34,31 +39,58 @@ future manual run from drawing the wrong conclusion.
 
 ## Today
 
-_TBD — receiver to fill before promoting from planning/draft._
+| Location | Role today |
+|---|---|
+| `lefthook.yml` | The `pre-push` command block runs `bunx moon run core:typecheck core:test`. Its header comment documents hook arming and the `git push --no-verify` bypass, but says nothing about `bunx lefthook run pre-push` silently skipping its gates on a branch with no upstream / no unpushed commits. |
+| `README.md` | The **Git hooks** bullet (near line 38) documents lefthook arming and the per-run `--no-verify` bypass, but omits the manual dry-run caveat — a hand-run `bunx lefthook run pre-push` looks like it passed when it actually matched no push files. |
 
 ## Proposed
 
-_TBD — receiver to fill before promoting from planning/draft._
+Record the manual-run caveat in both the `lefthook.yml` `pre-push` comment block and
+the README **Git hooks** bullet: `bunx lefthook run pre-push` skips its gates with
+"no matching push files" on a branch that has no upstream / no unpushed commits, so
+demonstrating a pre-push gate failure by hand requires `--all-files` (or a real
+`git push`). The gate fires correctly on an actual push; only the manual dry-run is
+affected. Keeping the note in both places means a future manual run does not misread a
+skipped invocation as a passing gate.
 
 ## Approach
 
-_TBD — receiver to fill before promoting from planning/draft._
+1. In `lefthook.yml`, extend the `pre-push:` comment block (the header comment above
+   `commands:` / the `gates:` entry) with a "Manual run caveat" note: `bunx lefthook run
+   pre-push` skips its gates ("no matching push files") on a branch with no upstream / no
+   unpushed commits; pass `--all-files` (or push for real) to force the gate to run by hand.
+2. In `README.md`, extend the **Git hooks** bullet with the same caveat sentence so the
+   docs and the hook comment agree.
+3. Keep the wording consistent between the two locations. This is a comment/docs-only
+   change — do not alter any hook `run:` command or gate behavior.
 
 ## Files to touch
 
-_TBD — receiver to fill before promoting from planning/draft._
+| Location | Kind | Change |
+|---|---|---|
+| `lefthook.yml` | modify | Add a manual-run caveat note to the `pre-push` comment block. |
+| `README.md` | modify | Add the same caveat sentence to the **Git hooks** bullet. |
 
 ## Acceptance criteria
 
-_TBD — receiver to fill before promoting from planning/draft._
+- [ ] AC-1: `lefthook.yml` contains a comment noting that `bunx lefthook run pre-push`
+  skips its gates on a branch with no unpushed commits, and that `--all-files` (or a real
+  `git push`) is required to exercise the gate by hand.
+- [ ] AC-2: The README **Git hooks** section contains an equivalent caveat sentence.
+- [ ] AC-3: No hook `run:` command or gate behavior changes — the diff is limited to a
+  comment in `lefthook.yml` and prose in `README.md`.
 
 ## Out of scope
 
-_TBD — receiver to fill before promoting from planning/draft._
+- Changing any pre-push / pre-commit gate behavior or the commands the hooks run.
+- Altering lefthook arming (the `prepare` script or `worktree_init`).
+- Adding tooling/automation to detect or warn about the skipped manual run.
 
 ## Dependencies
 
-_TBD — receiver to fill before promoting from planning/draft._
+- none — this is a standalone docs/comment change. It originated from
+  [[T-QX1Q-gate-covers-declaration-emit]] but does not depend on it.
 
 ## Discovery context
 
