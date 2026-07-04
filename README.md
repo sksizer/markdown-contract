@@ -22,6 +22,24 @@ push to `main` (build settings: [`sites/docs/README.md`](sites/docs/README.md)).
 | `docs/`, `contracts/` | Project planning docs and their contracts. |
 | `provenance/d0014/` | The originating ADR: proposed shape + decision log. |
 
+## Library health baseline
+
+This repo tracks [sksizer/node-template](https://github.com/sksizer/node-template)
+as the reference for single-package Node/TypeScript **library health**. The
+template defines the canonical layer stack — scaffold, Biome format/lint, Vitest
+test + coverage floor, the CI gate, dependency hygiene (Dependabot + audit),
+publish hygiene (`publint` + `are-the-types-wrong`), dead-code detection (knip),
+code metrics (scc), and module/test conventions — and this workspace carries
+every layer, adapted from the template's npm single-package shape to the
+Bun + moon workspace (gates wrapped as `core:*` moon tasks plus dedicated
+side-gate workflows).
+
+Layers here that go beyond the template: lefthook pre-commit/pre-push hooks +
+`.editorconfig`, knip promoted to a **blocking** gate (the template plans
+report-only), and the planning-docs contract gate (`core:lint-docs`). When the
+template grows or changes a layer, mirror the delta here — and when a quality
+practice proves out here first, upstream it to the template.
+
 ## Toolchain
 
 - **Bun** is the canonical dev package manager and the fast task runner: one
