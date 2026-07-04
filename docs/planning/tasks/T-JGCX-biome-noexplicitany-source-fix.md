@@ -16,6 +16,7 @@ tags:
 need_human_review: false
 impact: medium
 complexity: medium
+readiness_verified_at: '2026-07-04T02:05:46Z'
 ---
 # Fix noExplicitAny warnings at the source and promote the rule
 
