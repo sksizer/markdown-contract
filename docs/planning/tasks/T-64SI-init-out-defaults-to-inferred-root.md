@@ -156,4 +156,8 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Friction and automation gaps
 
-- Step 7's `quality run --diff-against-baseline` looked for the baseline under the *worktree's* `.sdlc/quality-baselines/` and failed until `--baseline-dir` was pointed at the main repo's dir — task-work Step 7's documented invocation omits `--baseline-dir`, so the worktree-vs-main-repo baseline-location split is a footgun the skill should either pass through explicitly or resolve to the superproject automatically.
+- Step 7's `quality run --diff-against-baseline` looked for the baseline under the *worktree's* `.sdlc/quality-baselines/` and failed until `--baseline-dir` was pointed at the main repo's dir — task-work Step 7's documented invocation omits `--baseline-dir`, so the worktree-vs-main-repo baseline-location split is a footgun the skill should either pass through explicitly or resolve to the superproject automatically. → linked-existing: already tracked upstream by sdlc `T-44OO-plugin-scripts-self-discover-project-root` (successor to the superseded `T-5X6Y-task-work-step7-explicit-baseline-dir`), with open PRs `sksizer/dev#598`, `#605`, `#608` proposing the Step 7 fix; not re-spawned.
+
+### Spawned follow-up tasks
+
+- `T-44OO-plugin-scripts-self-discover-project-root` (https://github.com/sksizer/dev/pull/608) — linked-existing, Upstream-plugin (`sdlc`). The worktree-vs-main-repo baseline-dir footgun is already tracked upstream: the successor of the superseded `T-5X6Y-task-work-step7-explicit-baseline-dir`, with three open PRs (`sksizer/dev#598`, `#605`, `#608`) proposing the task-work Step 7 baseline-dir resolution. No new PR spawned — a fourth would fragment the upstream backlog (the dedup search in step 3 ran against this repo's local task corpus, which is blind to the sdlc dev repo; a direct query of the target repo surfaced the existing coverage).
