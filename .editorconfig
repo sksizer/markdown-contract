@@ -1,0 +1,19 @@
+# EditorConfig — encodes the Biome style (space/2, utf-8, lf, final newline,
+# trim trailing) so editors emit Biome-shaped bytes in the first place.
+# https://editorconfig.org
+root = true
+
+[*]
+indent_style = space
+indent_size = 2
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Markdown carries semantic trailing whitespace (two spaces = hard line break),
+# and the packages/core/tests/**/*.md fixtures are loaded verbatim (no trailing
+# newline normalization), so exempt Markdown from the whitespace/newline rules.
+[*.md]
+trim_trailing_whitespace = false
+insert_final_newline = false

@@ -36,6 +36,7 @@ import type {
   GapSpec,
   InlineSpan,
   LeafSpec,
+  ListItem,
   ListView,
   OneOfSpec,
   OptionalSpec,
@@ -105,17 +106,29 @@ function tableView(node: Extract<BlockNode, { kind: "table" }>): TableView {
   return view;
 }
 
-/** A `ListView` over a projected list block. */
+/**
+ * A `ListView` over a projected list block. Each item reads back the CACHED transform output when a
+ * declared `everyItem` schema produced one (`node.typedItem(i)`, the sparse overlay T-SCLI fills from
+ * the content plane's per-item `safeParse`), falling back to the RAW `ListItem` otherwise — so a
+ * declared transforming list (e.g. `AC-1: …` → `{ ref, text }`) reads back the parsed value while a
+ * plain / `"checkbox"` list stays raw `ListItem`s (AC-1/AC-3), the list analogue of `tableView`. The
+ * typed value flows ONLY through this model; `node.items` (the projected tree) stays raw (AC-5).
+ * `Infer`'s `ListView<Item>` types the items statically for a declared list; at runtime each is
+ * `unknown` (the cached value or the raw item).
+ */
 function listView(node: Extract<BlockNode, { kind: "list" }>): ListView {
-  const items = node.items;
+  const items: unknown[] = node.items.map((raw, i) => {
+    const typed = node.typedItem(i);
+    return typed !== undefined ? typed : raw;
+  });
   const view: ListView = {
     kind: "list",
     ordered: node.ordered,
-    items,
+    items: items as ListItem[],
     length: items.length,
     pos: node.pos,
-    [Symbol.iterator]() {
-      return items[Symbol.iterator]();
+    [Symbol.iterator](): Iterator<ListItem> {
+      return items[Symbol.iterator]() as Iterator<ListItem>;
     },
   };
   return view;

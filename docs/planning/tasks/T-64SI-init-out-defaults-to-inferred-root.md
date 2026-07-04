@@ -1,27 +1,27 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-64SI
-status: in-progress
+status: closed/done
 created: '2026-07-02'
 related:
-  - "[[M-0003-config-inference]]"
-  - "[[C-0008-config-scaffolding]]"
-  - "[[D-0009-config-inference]]"
-  - "[[T-IOUT-init-out-placement]]"
+- '[[M-0003-config-inference]]'
+- '[[C-0008-config-scaffolding]]'
+- '[[D-0009-config-inference]]'
+- '[[T-IOUT-init-out-placement]]'
 tags:
-  - infer
-  - cli
-  - init
-  - dx
+- infer
+- cli
+- init
+- dx
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-07-04T00:46:23Z'
 last_reviewed: '2026-07-04'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/208
+- https://github.com/sksizer/markdown-contract/pull/208
+completion_note: 'Shipped via #208.'
 ---
 # init defaults the scaffold write to the single inferred root, not cwd
 

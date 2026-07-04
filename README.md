@@ -35,6 +35,11 @@ push to `main` (build settings: [`sites/docs/README.md`](sites/docs/README.md)).
   The toolchain version pins (Bun, Node) live in `.moon/toolchains.yml`.
 - The published artifact still ships via `npm publish` from `packages/core`
   (`dist/` + the CLI bin), unchanged from before the split.
+- **Git hooks** are managed by [lefthook](https://lefthook.dev) and arm
+  automatically on install (the root `prepare` script and `worktree_init` both
+  run `lefthook install`). `pre-commit` runs Biome over staged files;
+  `pre-push` runs the `core:typecheck` + `core:test` gates. Bypass an
+  individual run with `git commit --no-verify` / `git push --no-verify`.
 
 ```sh
 bun install                                  # resolve the workspace
