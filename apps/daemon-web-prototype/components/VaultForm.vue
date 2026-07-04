@@ -130,8 +130,8 @@ function submit(): void {
         ? { ...v, name, path, configPath: effectiveConfig(path, draft.configPath) }
         : v,
     );
-    const updated = registry.value.find((v) => v.id === id)!;
-    emit("update", updated);
+    const updated = registry.value.find((v) => v.id === id);
+    if (updated) emit("update", updated); // just mapped this id in; guard narrows the type
     emit("update:vaults", registry.value);
   } else {
     const req: RegisterVaultRequest = {

@@ -19,7 +19,10 @@ export const greenVaultStatus: VaultStatus = makeVaultStatus({
   name: "Team Handbook",
   path: "~/vaults/team-handbook",
   state: "green",
-  result: makeResult([], makeStats({ filesScanned: 42, filesMatched: 38, matchedByRule: [22, 16] })),
+  result: makeResult(
+    [],
+    makeStats({ filesScanned: 42, filesMatched: 38, matchedByRule: [22, 16] }),
+  ),
 });
 
 // ── findings: a mixed error/warn/report run, exitCode 1 ──────────────────────────
@@ -50,7 +53,8 @@ export const findingsVaultStatus: VaultStatus = makeVaultStatus({
         level: "warn",
         path: "docs/api/reference.md",
         pos: { line: 64 },
-        message: 'Section "## Examples" appears before "## Parameters"; recognized order is reversed.',
+        message:
+          'Section "## Examples" appears before "## Parameters"; recognized order is reversed.',
         fix: { description: 'Move "## Examples" after "## Parameters".' },
       }),
       makeFinding({
@@ -77,12 +81,14 @@ export const sampleDrift: DriftResult = {
     {
       kind: "field-changed",
       target: "frontmatter.fields.status",
-      detail: 'Observed values now include "archived"; the contract enum lists only draft/review/published.',
+      detail:
+        'Observed values now include "archived"; the contract enum lists only draft/review/published.',
     },
     {
       kind: "section-added",
       target: "body.sections.Changelog",
-      detail: 'A "## Changelog" section now appears in 3 of 5 files; the contract does not list it.',
+      detail:
+        'A "## Changelog" section now appears in 3 of 5 files; the contract does not list it.',
     },
   ],
   warnings: [
@@ -140,6 +146,15 @@ export const emptyVaultList: VaultListResponse = { vaults: [] };
  * run, finishes with findings, a drift check lands, then another vault errors.
  * Ids are monotonic for `Last-Event-ID` resumption.
  */
+// The findings fixture always carries a result; bind it once so the validated event below reads
+// a defined value (loud at import time if that invariant is ever broken).
+const findingsResult = findingsVaultStatus.result;
+if (!findingsResult) {
+  throw new Error(
+    "api-fixtures: findingsVaultStatus.result must be set for the validated SSE event",
+  );
+}
+
 export const mockSseEvents: SseEvent[] = [
   {
     id: 1,
@@ -153,7 +168,7 @@ export const mockSseEvents: SseEvent[] = [
     at: "2026-06-30T12:00:03.000Z",
     vaultId: findingsVaultStatus.id,
     type: "validated",
-    result: findingsVaultStatus.result!,
+    result: findingsResult,
   },
   {
     id: 3,
