@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-1GIL
-status: planning/draft
+status: open/ready
 created: '2026-07-04'
 related: []
 tags: []
@@ -12,96 +12,72 @@ complexity: medium
 ---
 # Vendor the C-0004 projection fixture into packages/core instead of reaching out to a repo-root planning doc
 
+> AUTO-DEFINED: this spec was best-effort machine-authored by
+> /sdlc:task-auto-define on 2026-07-04 from the linked backlog origin story
+> ([[B-UHOH-vendor-c0004-projection-fixture]]). Review the Goal, Approach, Today,
+> Files-to-touch, and Acceptance-criteria carefully before trusting it.
+
 ## Goal
 
-<Why this task exists. The problem it solves, the work it unblocks, or the
-risk it mitigates. Two or three sentences — the elevator pitch.>
+`packages/core/src/core/projection.test.ts` reads a real provenance document —
+`docs/planning/capabilities/C-0004-dialect-aware-projection.md` at the workspace root —
+as a projection fixture, climbing out of the package with `../../../../`. That couples the
+package's test suite to a file outside the package and pins the exact `packages/<name>/`
+depth, so extracting or independently testing `packages/core` would break. Vendor a
+package-local snapshot and point the test at it so the package is self-contained.
 
 ## Today
 
-<Current state of the relevant area as a typed table. One row per touched
-location; the Location column uses the five-form grammar documented in
-the template's header comment. The Role-today column is a one-line note
-on what that location does today (or what's wrong/missing there).
-
-Pure-narrative Todays (no path-bearing rows) may also be expressed as
-prose — but tables are the preferred shape because the verifier resolves
-each row against the live codebase, so the description doesn't go stale
-as code drifts.>
-
 | Location | Role today |
 |---|---|
-| `path/to/file.ext` | <what this file does today> |
-| `path/to/dir/` | <what's in this directory today> |
+| `packages/core/src/core/projection.test.ts` | Projection unit tests; one case reads the root doc via `../../../../docs/planning/capabilities/C-0004-dialect-aware-projection.md` (~line 448), coupling the suite to a file outside the package. |
+| `docs/planning/capabilities/C-0004-dialect-aware-projection.md` | The real provenance capability doc used as the projection fixture; lives at the workspace root, not inside the package. |
+| `packages/core/tests/fixtures/` | Package-local fixtures dir (`consumption`, `corpus`, `infer`, `validation`); has no projection fixture, so the test reaches out to the repo root instead. |
 
 ## Proposed
 
-<Target state after this task ships. Concrete enough that an implementer
-can tell when they're done. Not the steps — the destination.>
+A vendored snapshot of the C-0004 document lives under `packages/core/tests/fixtures/`,
+and `projection.test.ts` loads the package-local copy. The package no longer reaches
+outside its own tree for the projection fixture and the `../../../../` climb is gone. If
+drift-against-the-live-doc coverage is still wanted, it lives as a separate,
+clearly-labelled repo-level check rather than a `packages/core` unit test.
 
 ## Approach
 
-<Numbered, ordered steps to get from Today to Proposed. Each step should
-be small enough to commit on its own if useful. Call out any decisions
-still open inside the step.>
-
-1. <step>
-2. <step>
-3. <step>
+1. Copy `docs/planning/capabilities/C-0004-dialect-aware-projection.md` verbatim to a
+   package-local fixture, e.g. `packages/core/tests/fixtures/projection/C-0004-dialect-aware-projection.md`.
+2. Update `projection.test.ts` to load the vendored copy via a package-local relative
+   path (no `../../../../` climb), keeping the same assertions (H1 title, H2 sections,
+   frontmatter `id: C-0004`, the `^summary` anchor).
+3. Confirm the vendored bytes satisfy what the test asserts; run the core test suite.
+4. Decide the drift question: if catching drift against the live repo doc is desired, add
+   a separate, clearly-labelled repo-level check (out of scope here) rather than
+   re-coupling the unit test.
 
 ## Files to touch
 
-<Typed table of every location you expect to touch. Location uses the
-same five-form grammar as `## Today` (see header comment). Kind is one
-of `new`, `modify`, or `delete`. Change is a one-line note on what
-happens there.
-
-The verifier resolves each row by Kind: `new` rows require no existing
-file; `modify` and `delete` rows must resolve in the codebase (file /
-symbol / dir must exist; glob must expand to ≥1 match). Symbols on
-glob rows are rejected.>
-
 | Location | Kind | Change |
 |---|---|---|
-| `path/to/file.ext` | modify | <what changes> |
-| `path/to/new-file.ext` | new | <what gets created> |
+| `packages/core/tests/fixtures/projection/C-0004-dialect-aware-projection.md` | new | Vendored package-local snapshot of the C-0004 capability doc. |
+| `packages/core/src/core/projection.test.ts` | modify | Point the projection case at the vendored fixture; remove the `../../../../` root climb. |
 
 ## Acceptance criteria
 
-<Each AC must be observable from outside the change — a test that passes,
-a user-visible behavior, a removed wart. Avoid "the code is cleaner" style
-ACs; pick something verifiable.>
-
-- [ ] AC-1: <criterion>
-- [ ] AC-2: <criterion>
-- [ ] AC-3: <criterion>
+- [ ] AC-1: `packages/core/src/core/projection.test.ts` contains no `../../../../` (nor any path escaping `packages/core/`) — it loads the fixture from within the package.
+- [ ] AC-2: A package-local fixture file exists under `packages/core/tests/fixtures/` and the projection test loads it.
+- [ ] AC-3: The core test suite passes: the C-0004 projection case still asserts the H1 title, H2 sections, frontmatter `id: C-0004`, and the `^summary` anchor against the vendored copy.
 
 ## Out of scope
 
-<Things adjacent to this task that are deliberately NOT being addressed
-here. Useful for keeping PR review focused and for future tasks to point
-back to. Always required: if scope is obvious and nothing is excluded,
-leave a single "- none" bullet so the explicit signal is "scope
-considered, nothing to exclude.">
-
-- none
+- Adding a repo-level drift check comparing the vendored snapshot against the live `docs/planning/capabilities/C-0004-dialect-aware-projection.md` — noted as a follow-up, deliberately not a `packages/core` unit test.
+- Vendoring fixtures for any other test that reaches outside the package — only the projection C-0004 case is in scope here.
 
 ## Dependencies
 
-<Other tasks, branches, infra changes, or external decisions this task
-waits on. For hard "B cannot start until A closes" dependencies on
-other tasks or epics, also record them in the frontmatter
-`depends_on:` array (strict wikilink shape, e.g. `[[T-0010]]`) — the
-audit walks that graph for cycle detection. This prose section is the
-human-readable narrative; `depends_on:` is the machine-readable
-canonical list. Leave a single "- none" bullet if there are none.>
-
-- <dependency or "none">
+- none.
 
 ## Discovery context
 
-<Optional. How this task got onto the list: linked incident, design doc,
-upstream conversation, prior PR review comment. Helps future-you remember
-why this was worth doing. Delete this section if there's nothing to add.>
-
--
+Promoted from [[B-UHOH-vendor-c0004-projection-fixture]]. The coupling surfaced during
+the T-WKSP Bun-workspace split, when the fixture path had to climb from `../../` to
+`../../../../` after `packages/core` moved below the repo root.
