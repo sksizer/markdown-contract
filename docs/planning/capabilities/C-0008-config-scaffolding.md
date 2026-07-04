@@ -126,13 +126,15 @@ markdown-contract validate docs               # auto-discovers the generated mar
 Useful flags (full surface in [[D-0009-config-inference]] § The CLI surface):
 
 ```bash
-markdown-contract init docs --meta --out config/   # where to write
+markdown-contract init docs --meta --out config/   # where to write (default: the inferred root)
 markdown-contract init docs --meta --inline        # one self-contained file instead of contracts/ files
 markdown-contract init docs/guides --relax         # loosen toward a permissive floor
 markdown-contract init docs --dry-run              # print to stdout, write nothing
 markdown-contract init docs --force               # overwrite an existing config
 markdown-contract init docs --check               # don't write; verify an existing config still accepts the tree
 ```
+
+By default the scaffold is written **under the single inferred `<dir>`** — so the config, its `contracts/`, and the root-relative globs share one base and `validate <dir>` / `init <dir> --check` find it from any cwd; a multi-root run has no single natural base, so it falls back to the current directory and warns (pass `--out <dir>` to choose). `--out` overrides the default in either mode.
 
 `init` reuses the same **`--glob` / `--include` / `--exclude`** scoping as `validate` ([[C-0007-declarative-corpus-meta-config]]) to choose *which* files feed inference — so a run can skip fixtures or drafts exactly as a validation run would. By design `init` only *adds* a config; it never edits the source docs and refuses to clobber an existing config without `--force`.
 
