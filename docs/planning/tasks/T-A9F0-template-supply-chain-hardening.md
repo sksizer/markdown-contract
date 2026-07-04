@@ -14,6 +14,7 @@ need_human_review: false
 impact: medium
 complexity: small
 autonomy: autonomous/pr
+readiness_verified_at: '2026-07-04T17:53:18Z'
 ---
 # Adopt node-template supply-chain hardening: Dependabot cooldown + exact devDependency pins
 
