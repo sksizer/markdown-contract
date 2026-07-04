@@ -143,5 +143,10 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Friction and automation gaps
 
-- Plain `sdlc quality run --line` reports `FAIL bunx moon run core:lint` because biome emits >1 MB of pre-existing warnings that overflow the runner's `spawnSync` default `maxBuffer` (ENOBUFS/SIGTERM), masquerading as a lint failure — the `--line`-mode runner (`plugin/lib/services/quality/run.ts`) should set an explicit large `maxBuffer` (or stream) so a chatty-but-passing verb is not misreported as failing.
-- The Step 7 baseline-gated gate defaults `--baseline-dir` to the worktree's `.sdlc/quality-baselines/`, but Step 3a captures the baseline in the main repo's `.sdlc/`; the gate errored `baseline not found` until `--baseline-dir` was pointed back at the main repo — task-work's Step 7 invocation should pass the main-repo baseline dir explicitly (or the executor should resolve the superproject baseline dir when run from a worktree).
+- Plain `sdlc quality run --line` reports `FAIL bunx moon run core:lint` because biome emits >1 MB of pre-existing warnings that overflow the runner's `spawnSync` default `maxBuffer` (ENOBUFS/SIGTERM), masquerading as a lint failure — the `--line`-mode runner (`plugin/lib/services/quality/run.ts`) should set an explicit large `maxBuffer` (or stream) so a chatty-but-passing verb is not misreported as failing. → [[quality-runner-explicit-maxbuffer]]
+- The Step 7 baseline-gated gate defaults `--baseline-dir` to the worktree's `.sdlc/quality-baselines/`, but Step 3a captures the baseline in the main repo's `.sdlc/`; the gate errored `baseline not found` until `--baseline-dir` was pointed back at the main repo — task-work's Step 7 invocation should pass the main-repo baseline dir explicitly (or the executor should resolve the superproject baseline dir when run from a worktree). → [[resolve-superproject-baseline-dir]]
+
+### Spawned follow-up tasks
+
+- [[quality-runner-explicit-maxbuffer]] (https://github.com/sksizer/dev/pull/675) [open/ready] — spawned (Upstream-plugin, `sdlc-meta`): set an explicit `maxBuffer` in the `--line` quality runner so a chatty-but-passing verb is not misreported as failing.
+- [[resolve-superproject-baseline-dir]] (https://github.com/sksizer/dev/pull/676) [open/ready] — spawned (Upstream-plugin, `sdlc-meta`): resolve the superproject baseline dir when the task-work Step 7 baseline gate runs from a worktree.
