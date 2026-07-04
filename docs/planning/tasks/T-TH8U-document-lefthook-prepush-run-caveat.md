@@ -10,6 +10,7 @@ tags: []
 need_human_review: false
 impact: medium
 complexity: small
+readiness_verified_at: '2026-07-04T16:36:23Z'
 ---
 # Note the lefthook pre-push manual-run caveat (needs --all-files without unpushed commits)
 
