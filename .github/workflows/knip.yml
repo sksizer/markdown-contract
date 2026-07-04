@@ -62,7 +62,8 @@ jobs:
       # explicit `moon run`. Clearing `CI` lets this dedicated job still exercise
       # the task via moon, without touching its runInCI: false (which keeps it out
       # of the shared ci.yml gate). moon is version-pinned (@moonrepo/cli 2.3.5),
-      # so this behavior is stable.
+      # so this behavior is stable. See README "Authoring moon tasks" for the
+      # convention; this workflow is its canonical worked example.
       - name: Run knip
         run: bunx moon run :lint-deps
         env:
