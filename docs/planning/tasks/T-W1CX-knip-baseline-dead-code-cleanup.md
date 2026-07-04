@@ -118,5 +118,10 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Friction and automation gaps
 
-- De-exporting a type that is still referenced in an exported function's signature (`LevelRegistry`, the `VaultRef` interface) can regress `.d.ts` declaration emit while `tsc --noEmit` typecheck stays green — the gate's typecheck verb runs `--noEmit`, so it alone would not catch a declaration-only break. Both cases were verified against a real `core:build`, but a knip-cleanup affordance could flag "de-exporting a type used by an exported signature → needs a full build check" so the safety step isn't left to the implementer's memory.
-- knip's exit code is repo-coarse: it cannot scope-fail to a single workspace, so confirming "`packages/core` is clean" is a manual read of the finding list rather than a green exit. A `--workspace packages/core` gate (or a `knip --reporter` filter) would let a task like this assert its scope mechanically instead of eyeballing.
+- De-exporting a type that is still referenced in an exported function's signature (`LevelRegistry`, the `VaultRef` interface) can regress `.d.ts` declaration emit while `tsc --noEmit` typecheck stays green — the gate's typecheck verb runs `--noEmit`, so it alone would not catch a declaration-only break. Both cases were verified against a real `core:build`, but a knip-cleanup affordance could flag "de-exporting a type used by an exported signature → needs a full build check" so the safety step isn't left to the implementer's memory. → [[T-QX1Q-gate-covers-declaration-emit]]
+- knip's exit code is repo-coarse: it cannot scope-fail to a single workspace, so confirming "`packages/core` is clean" is a manual read of the finding list rather than a green exit. A `--workspace packages/core` gate (or a `knip --reporter` filter) would let a task like this assert its scope mechanically instead of eyeballing. → [[T-32OG-knip-per-workspace-scope-gate]]
+
+### Spawned follow-up tasks
+
+- [[T-QX1Q-gate-covers-declaration-emit]] (https://github.com/sksizer/markdown-contract/pull/206) — declaration-emit / full-build check for the quality gate, spawned.
+- [[T-32OG-knip-per-workspace-scope-gate]] (https://github.com/sksizer/markdown-contract/pull/207) — per-workspace knip scope gate, spawned.
