@@ -81,22 +81,30 @@ export interface ValidationFixture {
   note?: string;
 }
 
-export interface ModelRead {
+/**
+ * A single typed-model read asserted against `read()`'s `doc`. Generic over the contract's
+ * frontmatter type `F` and body type `B` (defaulting to the untyped `unknown` shape), so `get`
+ * receives the typed `Doc<F, B>` a fixture's `build()` infers — `doc.body` / `doc.frontmatter`
+ * are the library's own typed surfaces, not bare `Doc`. `get` is a METHOD (bivariant parameter)
+ * so a heterogeneous `ConsumptionFixture<F, B>` still stores in a `ConsumptionFixture[]` array.
+ */
+export interface ModelRead<F = unknown, B = unknown> {
   label: string;
-  get: (doc: Doc) => unknown;
+  get(doc: Doc<F, B>): unknown;
   equals: unknown;
 }
 
-export interface ConsumptionFixture {
+export interface ConsumptionFixture<F = unknown, B = unknown> {
   /** stable short id, e.g. "c01". */
   id: string;
   title: string;
   component: Component;
   path?: string;
   source: string;
-  build: () => Contract;
+  /** lazy contract construction — `F`/`B` infer from its `Contract<F, B>` return (via {@link defineConsumptionFixture}). */
+  build: () => Contract<F, B>;
   /** typed-model reads asserted against `read()`'s `doc`. */
-  reads?: ModelRead[];
+  reads?: ModelRead<F, B>[];
   /** when set, assert `read()` throws `ContractError` instead of running `reads`. */
   throws?: "ContractError";
   /**
@@ -105,6 +113,19 @@ export interface ConsumptionFixture {
    */
   peerless?: boolean;
   note?: string;
+}
+
+/**
+ * Identity helper that lets a fixture's `F`/`B` INFER from its `build()` with no hand annotation:
+ * `defineConsumptionFixture({ build: () => contract(...), reads: [...] })` flows the contract's
+ * frontmatter/body types into every `reads[].get(doc)`, so a read navigates the typed `Doc<F, B>`
+ * the library ships (`doc.body["Heading"]`, `doc.frontmatter.field`) instead of casting to `any`.
+ * The returned fixture stores in the `ConsumptionFixture[]` barrel via `get`'s bivariant parameter.
+ */
+export function defineConsumptionFixture<F, B>(
+  fx: ConsumptionFixture<F, B>,
+): ConsumptionFixture<F, B> {
+  return fx;
 }
 
 function shape(f: Finding): { id: string; level: Finding["level"]; line: number | undefined } {
