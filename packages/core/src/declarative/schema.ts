@@ -16,6 +16,9 @@ import { DeclarativeError } from "./errors.js";
 const describe = (v: unknown): string =>
   v === null ? "null" : Array.isArray(v) ? "a list" : typeof v;
 
+/** A number-or-`undefined` reader for the optional `min` / `max` bound knobs. */
+const num = (v: unknown): number | undefined => (typeof v === "number" ? v : undefined);
+
 /**
  * The closed `format` vocabulary (D-0008 § Schema vocabulary): the string formats Zod and
  * JSON Schema both expose out of the box, each mapped to its Zod constructor. Deliberately
@@ -109,46 +112,15 @@ function base(n: Record<string, unknown>, path: string): z.ZodType {
 }
 
 function typed(n: Record<string, unknown>, path: string): z.ZodType {
-  const num = (v: unknown): number | undefined => (typeof v === "number" ? v : undefined);
   switch (n.type) {
-    case "string": {
-      if (typeof n.format === "string") {
-        const make = STRING_FORMATS[n.format];
-        if (!make) {
-          throw new DeclarativeError(
-            `${path}: unsupported string format '${n.format}' (expected one of: ${Object.keys(STRING_FORMATS).join(", ")})`,
-          );
-        }
-        return make();
-      }
-      let s = z.string();
-      const min = num(n.min);
-      const max = num(n.max);
-      if (min !== undefined) s = s.min(min);
-      if (max !== undefined) s = s.max(max);
-      if (typeof n.pattern === "string") s = s.regex(new RegExp(n.pattern));
-      return s;
-    }
-    case "number": {
-      let s = n.int === true ? z.int() : z.number();
-      const min = num(n.min);
-      const max = num(n.max);
-      if (min !== undefined) s = s.min(min);
-      if (max !== undefined) s = s.max(max);
-      return s;
-    }
+    case "string":
+      return stringSchema(n, path);
+    case "number":
+      return numberSchema(n);
     case "boolean":
       return z.boolean();
-    case "array": {
-      if (!("of" in n))
-        throw new DeclarativeError(`${path}: an array schema needs an 'of' element schema`);
-      let s = z.array(compileSchema(n.of, `${path}[]`));
-      const min = num(n.min);
-      const max = num(n.max);
-      if (min !== undefined) s = s.min(min);
-      if (max !== undefined) s = s.max(max);
-      return s;
-    }
+    case "array":
+      return arraySchema(n, path);
     case "object":
       return compileObjectSchema(n.fields, n.strict === true, path);
     default:
@@ -156,4 +128,46 @@ function typed(n: Record<string, unknown>, path: string): z.ZodType {
         `${path}: unsupported type '${String(n.type)}' (string | number | boolean | array | object)`,
       );
   }
+}
+
+/** `type: string` — a named `format`, else a plain string with optional `min` / `max` / `pattern`. */
+function stringSchema(n: Record<string, unknown>, path: string): z.ZodType {
+  if (typeof n.format === "string") {
+    const make = STRING_FORMATS[n.format];
+    if (!make) {
+      throw new DeclarativeError(
+        `${path}: unsupported string format '${n.format}' (expected one of: ${Object.keys(STRING_FORMATS).join(", ")})`,
+      );
+    }
+    return make();
+  }
+  let s = z.string();
+  const min = num(n.min);
+  const max = num(n.max);
+  if (min !== undefined) s = s.min(min);
+  if (max !== undefined) s = s.max(max);
+  if (typeof n.pattern === "string") s = s.regex(new RegExp(n.pattern));
+  return s;
+}
+
+/** `type: number` — an integer (`int: true`) or float, with optional `min` / `max`. */
+function numberSchema(n: Record<string, unknown>): z.ZodType {
+  let s = n.int === true ? z.int() : z.number();
+  const min = num(n.min);
+  const max = num(n.max);
+  if (min !== undefined) s = s.min(min);
+  if (max !== undefined) s = s.max(max);
+  return s;
+}
+
+/** `type: array` — an `of` element schema, with optional `min` / `max` length bounds. */
+function arraySchema(n: Record<string, unknown>, path: string): z.ZodType {
+  if (!("of" in n))
+    throw new DeclarativeError(`${path}: an array schema needs an 'of' element schema`);
+  let s = z.array(compileSchema(n.of, `${path}[]`));
+  const min = num(n.min);
+  const max = num(n.max);
+  if (min !== undefined) s = s.min(min);
+  if (max !== undefined) s = s.max(max);
+  return s;
 }
