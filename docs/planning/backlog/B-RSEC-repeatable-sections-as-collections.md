@@ -2,12 +2,14 @@
 type: backlog
 schema_version: '1'
 id: B-RSEC
-last_reviewed: '2026-06-27'
+last_reviewed: '2026-07-04'
 tags:
 - engine
 - oom
 - sections
 - schema
+status: promoted/task
+result: '[[T-1TA2-repeatable-sections-as-collections]]'
 ---
 # Repeatable sections: let a heading recur as peers, surfaced as a collection in the model
 
