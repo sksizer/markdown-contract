@@ -22,6 +22,7 @@ impact: medium
 complexity: small
 autonomy: supervised
 last_reviewed: '2026-07-03'
+readiness_verified_at: '2026-07-04T09:42:01Z'
 ---
 # Dogfood structured cells on a realistic worked contract and close the milestone
 
