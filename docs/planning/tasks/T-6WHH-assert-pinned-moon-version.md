@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-6WHH
-status: open/ready
+status: in-progress
 created: '2026-07-04'
 related: []
 tags: []
@@ -10,6 +10,7 @@ need_human_review: false
 impact: medium
 complexity: medium
 readiness_verified_at: '2026-07-04T11:13:24Z'
+last_reviewed: '2026-07-04'
 ---
 # Guard that bunx moon resolves the pinned @moonrepo/cli, not a shadowing global proto moon
 
@@ -90,3 +91,19 @@ Promoted from [[B-QF64-assert-pinned-moon-version]]. Surfaced during T-WKSP when
 `bunx moon` ran a global proto moon 1.41.8 instead of the pinned 2.3.5, silently
 degrading the per-task toolchain split to `system` so the bun/node gate went
 unenforced.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
