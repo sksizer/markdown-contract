@@ -1,0 +1,17 @@
+# A tiny note contract: a `title` frontmatter string and a required `Summary` section.
+# `good.md` satisfies both; `bad.md` omits the Summary section, yielding exactly one
+# `structure/section-missing` error — the finding the peer test pins.
+mcVersion: 1
+kind: contract
+
+frontmatter:
+  fields:
+    title:
+      type: string
+      min: 1
+
+body:
+  order: none
+  allowUnknown: true
+  sections:
+    - section: Summary

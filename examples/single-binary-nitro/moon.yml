@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://moonrepo.dev/schemas/project.json
+#
+# The `example-single-binary-nitro` project (mapped to 'examples/single-binary-nitro'
+# in .moon/workspace.yml) — the Nitro variant of the M-0008 "one binary, two faces"
+# example (D-0012 §D3): the same combined `bin.ts` entry and loopback daemon as
+# `example-single-binary`, but the daemon face is the `nuxt build` Nitro server
+# (bun preset, inlined assets) instead of a hand-rolled Bun.serve. Models the
+# package.json scripts as moon tasks; the scripts stay thin pass-throughs.
+#
+# All Bun-only / server code lives here (never in packages/core), so every task
+# runs on the `bun` toolchain — Bun is both the dev runtime and the
+# `bun build --compile` target.
+#
+# typecheck/test both `deps: ['core:build']` because the example imports the
+# published library through its `exports` map (`markdown-contract`,
+# `.../declarative`, `.../cli/run`), which resolves to packages/core's `dist/` —
+# so dist must be fresh first.
+
+layer: 'application'
+language: 'typescript'
+
+tasks:
+  # `bun run daemon` (= bun src/bin.ts daemon) — boot the loopback daemon for local
+  # development (requires a prior `bun run build:ui`; plain UI dev wants `ui:dev`,
+  # which serves UI + API together in this variant). `preset: server` marks it
+  # local + persistent, cache off, never a CI gate.
+  dev:
+    command: 'bun run daemon'
+    toolchain: 'bun'
+    preset: 'server'
+
+  # `bun run typecheck` (= tsc --noEmit) — type-check src/types/ui-server against
+  # the project tsconfig. No outputs (pure check), so caching keys purely on inputs.
+  # Needs core's dist for the `markdown-contract/*` type resolutions.
+  typecheck:
+    command: 'bun run typecheck'
+    toolchain: 'bun'
+    deps:
+      - 'core:build'
+    inputs:
+      - 'src/**/*'
+      - 'types/**/*'
+      - 'ui/server/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `bun run test` (= bun test src ui/server) — the peer test suite (the validate
+  # logic under ui/server/utils, framework-free). Pinned to `bun test` for parity
+  # with the peer example's Bun-only suite. Needs core's dist for the
+  # `markdown-contract/*` runtime imports the validate module resolves.
+  test:
+    command: 'bun run test'
+    toolchain: 'bun'
+    deps:
+      - 'core:build'
+    inputs:
+      - 'src/**/*'
+      - 'types/**/*'
+      - 'ui/server/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `bun run build:binary` (= nuxt build ui → bun build --compile) — the full
+  # single-binary pipeline, emitting dist/markdown-contract with the Nitro server
+  # (and its inlined SPA assets) embedded. Local-only for now (runInCI: false):
+  # the CI compile matrix and both-faces smoke are [[T-BMTX-bun-compile-matrix]]'s
+  # scope, and the shared CI `:build` line must not start compiling a multi-MB
+  # binary as a side effect.
+  build:
+    command: 'bun run build:binary'
+    toolchain: 'bun'
+    deps:
+      - 'core:build'
+    inputs:
+      - 'src/**/*'
+      - 'types/**/*'
+      - 'ui/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    outputs:
+      - 'dist'
+    options:
+      runInCI: false
