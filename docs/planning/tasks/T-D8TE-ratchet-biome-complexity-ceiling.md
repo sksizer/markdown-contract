@@ -26,7 +26,7 @@ readiness_verified_at: '2026-07-04T07:46:04Z'
 
 When [[T-0MVN-biome-lint-format]] promoted `noExcessiveCognitiveComplexity` from
 `warn` to `error`, 16 functions already exceeded Biome's recommended ceiling of 15
-(the maximum was 46, in `declarative/text.ts`). Refactoring them was out of scope for
+(the maximum was 46, in `packages/core/src/declarative/text.ts`). Refactoring them was out of scope for
 a behavior-preserving reformat, so the ceiling was parked at 46 (`maxAllowedComplexity: 46`)
 to gate *new* regressions only. This task pays down that debt: refactor the worst
 offenders and lower the ceiling step by step so the gate becomes meaningful rather than
@@ -107,12 +107,18 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `maxAllowedComplexity` lowered 46 → 15 in `biome.jsonc`; verified by grep and by `bunx biome lint packages/core --reporter=json` reporting zero `noExcessiveCognitiveComplexity` diagnostics at the new ceiling.
+- AC-2: auto — `bunx moon run core:lint` exits 0 at ceiling 15 (green in the baseline-gated quality run, `OK 6/6`).
+- AC-3: auto — `bunx moon run core:test` stays green (697 tests / 36 files) after every refactor; the decompositions are behavior-preserving.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- Biome's `--reporter=json` gave a precise offender map (complexity → `file:line`), so the 16 functions were scopeable up front and re-checkable at any point.
+- 15 of 16 functions decomposed cleanly by extracting cohesive helpers and flattening control flow, with the test suite green after each step; moon's test cache kept the iterate-and-verify loop fast.
+- The one genuinely-irreducible function (`core/structure.ts` `checkStrict`, a two-cursor positional merge) took a single scoped `biome-ignore` with a specific rationale, so the recommended ceiling of 15 was reached without contorting the parser core — it is the only such ignore in the codebase.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 3a captured the quality baseline against a 5-verb `sdlc.yaml`, but a parallel session added a 6th verb (`bun run lint:deps`) to `sdlc.yaml` on `origin/main` mid-run; the stale baseline had no `lint:deps` findings to subtract, so Step 7 reported 7 false `new-drift:` lines until I re-captured a baseline at the branch base with the current config — task-work Step 7 should refresh (or invalidate) the Step 3a baseline when the config's verb list changed since capture, rather than diffing against a baseline built from a different verb set.
+- knip (`lint:deps`) emits cwd-relative paths (`../../../.git/hooks/...` from a worktree vs `.git/hooks/...` from the main repo), so a baseline captured from the main-repo cwd cannot string-match findings from a worktree gate run — the baseline diff should normalize cwd-relative finding paths (or always capture/run from a canonical cwd) so main-repo baselines subtract cleanly under a worktree run.
+- The readiness gate flagged the Goal prose's bare `` `declarative/text.ts` `` citation as a path disqualifier (only the full `packages/core/src/...` path exists); an otherwise implementation-ready task would have parked on a one-token relative-path citation had it not been hand-corrected — the path claim-resolver could accept a unique-basename match (or the task template could require repo-root-relative paths) so trivial relative citations do not gate readiness.
