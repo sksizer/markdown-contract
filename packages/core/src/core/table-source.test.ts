@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 
+import { first } from "../../tests/expect.js";
 import { blocksOfKind } from "./navigate.js";
 import { parse } from "./projection.js";
 import { rawTableRow, rawTableRows } from "./table-source.js";
@@ -18,7 +19,7 @@ const DOC = [
 
 function opsTable(doc: string) {
   const { root } = parse(doc);
-  return blocksOfKind(root.sections[0]!, "table")[0]!;
+  return first(blocksOfKind(first(root.sections), "table"));
 }
 
 describe("rawTableRows — verbatim header + rows from source", () => {

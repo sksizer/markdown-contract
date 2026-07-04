@@ -7,6 +7,7 @@
  */
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
+import { first } from "../../tests/expect.js";
 import type { Finding } from "../index.js";
 import { code, contract, list, maxWords, section, sections, table } from "../index.js";
 
@@ -122,7 +123,8 @@ describe("table typed-cell cache", () => {
       ctx.addIssue({ code: "custom", message: "expected ‘path’ or ‘path#symbol’" });
       return z.NEVER;
     }
-    return { path: m[1]!, ...(m[2] ? { symbol: m[2] } : {}) };
+    const [, path = "", symbol] = m;
+    return { path, ...(symbol ? { symbol } : {}) };
   });
 
   const filesWithLocation = contract({
@@ -138,7 +140,7 @@ describe("table typed-cell cache", () => {
 
   /** The projected table `BlockNode` for the first section's first block. */
   function tableNode(c: ReturnType<typeof contract>, source: string) {
-    const node = c.validate(source, CTX).tree.root.sections[0]!.blocks[0]!;
+    const node = first(first(c.validate(source, CTX).tree.root.sections).blocks);
     if (node.kind !== "table") throw new Error("expected a table block");
     return node;
   }
@@ -186,7 +188,7 @@ describe("table typed-cell cache", () => {
     // Exactly one cell finding, pinned to the offending row's line (A3 remap preserved).
     expect(shape(res.findings)).toEqual([{ id: "content/table/cell", line: 5 }]);
     // Nothing cached for the failed cell.
-    const node = res.tree.root.sections[0]!.blocks[0]!;
+    const node = first(first(res.tree.root.sections).blocks);
     if (node.kind !== "table") throw new Error("expected a table block");
     expect(node.typed(0, "Location")).toBeUndefined();
   });
@@ -204,7 +206,7 @@ describe("table typed-cell cache", () => {
     });
     const src = ["## Files", "", "| Location |", "| --- |", "| src/a.ts |"].join("\n");
     const { tree } = c.validate(src, CTX);
-    const node = tree.root.sections[0]!.blocks[0]!;
+    const node = first(first(tree.root.sections).blocks);
     if (node.kind !== "table") throw new Error("expected a table block");
     // Reachable by CALLING the accessor…
     expect(node.typed(0, "Location")).toEqual({ raw: "src/a.ts", tag: "CLOSURE_ONLY_9f3a" });

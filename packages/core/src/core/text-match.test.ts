@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 
+import { first } from "../../tests/expect.js";
 import { contract, docRule, section, sections } from "../index.js";
 import { defaultRegistry, makeCtx } from "./registry.js";
 import {
@@ -187,15 +188,17 @@ describe("buildTextFindings — requires / forbids / count, positioned per D-001
   test("the spec's note is appended to the message", () => {
     const spec: TextMatchSpec = { pattern: "outcome", note: "the decision outcome" };
     const match = matchText("nope", spec);
-    const f = buildTextFindings({
-      kind: "requires",
-      spec,
-      match,
-      scopeKey: "summary",
-      scope: "Summary",
-      scopePos: { line: 6, col: 1 },
-      ctx,
-    })[0]!;
+    const f = first(
+      buildTextFindings({
+        kind: "requires",
+        spec,
+        match,
+        scopeKey: "summary",
+        scope: "Summary",
+        scopePos: { line: 6, col: 1 },
+        ctx,
+      }),
+    );
     expect(f.message).toBe('required phrase "outcome" not found in Summary — the decision outcome');
   });
 
@@ -256,14 +259,16 @@ describe("buildTextFindings — requires / forbids / count, positioned per D-001
   test("count shortfall (requires min ≥ 2) → text/count 'expected at least M'", () => {
     const spec: TextMatchSpec = { pattern: "na", min: 2 };
     const match = matchText("na", spec);
-    const f = buildTextFindings({
-      kind: "requires",
-      spec,
-      match,
-      scopeKey: "doc",
-      scopePos: { line: 1, col: 1 },
-      ctx,
-    })[0]!;
+    const f = first(
+      buildTextFindings({
+        kind: "requires",
+        spec,
+        match,
+        scopeKey: "doc",
+        scopePos: { line: 1, col: 1 },
+        ctx,
+      }),
+    );
     expect(f.id).toBe(synthesizeTextId("count", "doc", spec));
     expect(f.message).toBe('"na" found 1 times, expected at least 2');
   });
@@ -271,14 +276,16 @@ describe("buildTextFindings — requires / forbids / count, positioned per D-001
   test("forbids with a positive max → text/count when the cap is exceeded", () => {
     const spec: TextMatchSpec = { pattern: "na", max: 2 };
     const match = matchText("na na na", spec);
-    const f = buildTextFindings({
-      kind: "forbids",
-      spec,
-      match,
-      scopeKey: "doc",
-      scopePos: { line: 1, col: 1 },
-      ctx,
-    })[0]!;
+    const f = first(
+      buildTextFindings({
+        kind: "forbids",
+        spec,
+        match,
+        scopeKey: "doc",
+        scopePos: { line: 1, col: 1 },
+        ctx,
+      }),
+    );
     expect(f.id).toBe(synthesizeTextId("count", "doc", spec));
     expect(f.message).toBe('"na" found 3 times, expected at most 2');
   });
@@ -286,7 +293,7 @@ describe("buildTextFindings — requires / forbids / count, positioned per D-001
   test("a spec's explicit level overrides the registry default", () => {
     const spec: TextMatchSpec = { pattern: "X", level: "warn" };
     const match = matchText("X", spec);
-    const f = buildTextFindings({ kind: "forbids", spec, match, scopeKey: "doc", ctx })[0]!;
+    const f = first(buildTextFindings({ kind: "forbids", spec, match, scopeKey: "doc", ctx }));
     expect(f.level).toBe("warn");
   });
 });

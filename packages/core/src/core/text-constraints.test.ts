@@ -9,7 +9,7 @@
  * the synthesized per-entry id, and the `requires` absence-form purity guard.
  */
 import { describe, expect, it } from "vitest";
-
+import { first } from "../../tests/expect.js";
 import { contract, section, sections } from "../index.js";
 import { ContractBuildError } from "./grammar.js";
 import { defaultRegistry, makeCtx } from "./registry.js";
@@ -75,7 +75,7 @@ describe("textRule — a document must NOT contain a phrase (forbids)", () => {
   it("fails at the offending line when the phrase appears", () => {
     const { findings } = c.validate("## Summary\n\nThere is a TODO left here.\n", { path: "d.md" });
     expect(findings).toHaveLength(1);
-    const f = findings[0]!;
+    const f = first(findings);
     expect(f.id).toBe("text/forbids/doc/mf4oln");
     expect(f.level).toBe("error");
     expect(f.message).toBe('forbidden phrase "TODO" present');
@@ -94,7 +94,7 @@ describe("forbids — a section must NOT contain a phrase, reported at the sourc
     expect(out).toHaveLength(2);
     expect(out.every((f) => f.id === "text/forbids/notes/mf4oln")).toBe(true);
     expect(out.map((f) => f.pos?.line)).toEqual([5, 5]);
-    expect(out[0]!.message).toBe('forbidden phrase "TODO" present');
+    expect(out[0]?.message).toBe('forbidden phrase "TODO" present');
   });
 
   it("emits nothing when the phrase is absent", () => {
@@ -110,9 +110,9 @@ describe("count bounds (AC-3)", () => {
     const node = sectionNode("Summary", 1, [para(3, "na once")]);
     const out = requires([{ pattern: "na", min: 2 }]).run(node, ctx);
     expect(out).toHaveLength(1);
-    expect(out[0]!.id).toBe("text/count/summary/1jqz098");
-    expect(out[0]!.message).toBe('"na" found 1 times, expected at least 2');
-    expect(out[0]!.pos?.line).toBe(1);
+    expect(out[0]?.id).toBe("text/count/summary/1jqz098");
+    expect(out[0]?.message).toBe('"na" found 1 times, expected at least 2');
+    expect(out[0]?.pos?.line).toBe(1);
   });
 
   it("a satisfied minimum emits nothing — DONE markers counted across list items", () => {
@@ -161,8 +161,8 @@ describe("note and level flow onto the finding (AC-3)", () => {
     const out = requires([
       { pattern: "outcome", note: "name the decision outcome", level: "warn" },
     ]).run(node, ctx);
-    expect(out[0]!.level).toBe("warn");
-    expect(out[0]!.message).toBe(
+    expect(out[0]?.level).toBe("warn");
+    expect(out[0]?.message).toBe(
       'required phrase "outcome" not found in Summary — name the decision outcome',
     );
   });
@@ -183,7 +183,7 @@ describe("per-entry id (AC-4)", () => {
   it("an explicit id on the spec pins the finding id", () => {
     const node = sectionNode("Summary", 1, [para(3, "nope")]);
     const out = requires([{ pattern: "outcome", id: "decision/names-outcome" }]).run(node, ctx);
-    expect(out[0]!.id).toBe("decision/names-outcome");
+    expect(out[0]?.id).toBe("decision/names-outcome");
   });
 });
 
@@ -219,7 +219,7 @@ describe("textRule requires — a document-level miss has no position", () => {
     });
     const { findings } = c.validate("## Summary\n\nunrelated prose.\n", { path: "d.md" });
     expect(findings).toHaveLength(1);
-    const f = findings[0]!;
+    const f = first(findings);
     expect(f.id).toBe("text/requires/doc/p2ase8");
     expect(f.message).toBe('required phrase "sdlc task close" not found in document');
     expect(f.pos).toBeUndefined();

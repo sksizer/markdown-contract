@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { expectDefined } from "../../tests/expect.js";
 import { blocksOfKind, findSection, sectionForLine, sectionSpans, sectionsAt } from "./navigate.js";
 import { parse } from "./projection.js";
 
@@ -92,15 +93,17 @@ describe("sectionSpans — each section's body extent", () => {
 describe("blocksOfKind — narrowed block accessor", () => {
   test("returns the section's blocks of a kind (take [0] for the sole one)", () => {
     const { root } = parse(DOC);
-    const ops = findSection(root, "Operations")!;
+    const ops = findSection(root, "Operations");
+    expectDefined(ops);
     const tables = blocksOfKind(ops, "table");
     expect(tables).toHaveLength(1);
-    expect(tables[0]!.columns).toEqual(["Name", "Description"]);
+    expect(tables[0]?.columns).toEqual(["Name", "Description"]);
   });
 
   test("recursive descends subsections", () => {
     const { root } = parse(DOC);
-    const notes = findSection(root, "Notes")!;
+    const notes = findSection(root, "Notes");
+    expectDefined(notes);
     // Non-recursive: only Notes' own paragraph; the nested Sub paragraph is not counted.
     expect(blocksOfKind(notes, "paragraph")).toHaveLength(1);
     // Recursive: Notes' paragraph plus the Sub subsection's paragraph.

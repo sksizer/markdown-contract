@@ -26,6 +26,7 @@ import remarkParse from "remark-parse";
 import remarkStringify from "remark-stringify";
 import { unified } from "unified";
 import { describe, expect, test } from "vitest";
+import { expectDefined, first } from "../../tests/expect.js";
 import type { BlockNode } from "../index.js";
 import { parse } from "../index.js";
 import { extractVaultRefs } from "./dialect/index.js";
@@ -45,7 +46,7 @@ describe("section nesting (flat headings → tree)", () => {
   test("01 shape: a single ## Overview → root.sections=[Overview] at line 1", () => {
     const t = parse(["## Overview", "", "Rollout prose.", ""].join("\n"));
     expect(t.root.sections.map((s) => s.name)).toEqual(["Overview"]);
-    const overview = t.root.sections[0]!;
+    const overview = first(t.root.sections);
     expect(overview.depth).toBe(2);
     expect(overview.pos.line).toBe(1);
     expect(overview.pos.col).toBe(1);
@@ -65,7 +66,7 @@ describe("section nesting (flat headings → tree)", () => {
         "\n",
       ),
     );
-    const decision = t.root.sections[0]!;
+    const decision = first(t.root.sections);
     expect(decision.name).toBe("Decision");
     expect(decision.sections.map((s) => s.name)).toEqual(["Components", "Resolution"]);
     expect(decision.sections.every((s) => s.depth === 3)).toBe(true);
@@ -73,7 +74,7 @@ describe("section nesting (flat headings → tree)", () => {
 
   test("heading name is the exact trimmed text", () => {
     const t = parse("##   Files to touch   \n\nx\n");
-    expect(t.root.sections[0]!.name).toBe("Files to touch");
+    expect(t.root.sections[0]?.name).toBe("Files to touch");
   });
 });
 
@@ -91,7 +92,7 @@ describe("block kinds", () => {
         "| `src/b.ts`        | add    |",
       ].join("\n"),
     );
-    const table = blockOf(t.root.sections[0]!.blocks[0], "table");
+    const table = blockOf(t.root.sections[0]?.blocks[0], "table");
     expect(table.columns).toEqual(["Location", "Kind"]);
     expect(table.rows).toEqual([
       ["src/a.ts", "modify"], // inlineCode cell flattened to its value (no backticks)
@@ -112,7 +113,7 @@ describe("block kinds", () => {
         "| src/a.ts | modify |",
       ].join("\n"),
     );
-    const table = blockOf(t.root.sections[0]!.blocks[0], "table");
+    const table = blockOf(t.root.sections[0]?.blocks[0], "table");
     // Projection alone runs no content plane, so the sparse overlay is empty → undefined.
     expect(table.typed(0, "Location")).toBeUndefined();
     expect(table.typed(0, "Kind")).toBeUndefined();
@@ -126,36 +127,36 @@ describe("block kinds", () => {
 
   test("list: ordered flag + task-list checked", () => {
     const t = parse(["## A", "", "- [ ] todo", "- [x] done", "- plain"].join("\n"));
-    const list = blockOf(t.root.sections[0]!.blocks[0], "list");
+    const list = blockOf(t.root.sections[0]?.blocks[0], "list");
     expect(list.ordered).toBe(false);
     expect(list.items.map((i) => ({ text: i.text, checked: i.checked }))).toEqual([
       { text: "todo", checked: false },
       { text: "done", checked: true },
       { text: "plain", checked: undefined }, // plain item carries no `checked`
     ]);
-    expect(list.items[0]!.pos.line).toBe(3);
+    expect(list.items[0]?.pos.line).toBe(3);
   });
 
   test("list: ordered list reports ordered:true", () => {
     const t = parse(["## A", "", "1. one", "2. two"].join("\n"));
-    const list = blockOf(t.root.sections[0]!.blocks[0], "list");
+    const list = blockOf(t.root.sections[0]?.blocks[0], "list");
     expect(list.ordered).toBe(true);
     expect(list.items.map((i) => i.text)).toEqual(["one", "two"]);
   });
 
   test("code: lang + verbatim value (null lang for an unlabelled fence)", () => {
     const t = parse(["## A", "", "```ts", "const x = 1;", "```"].join("\n"));
-    const code = blockOf(t.root.sections[0]!.blocks[0], "code");
+    const code = blockOf(t.root.sections[0]?.blocks[0], "code");
     expect(code.lang).toBe("ts");
     expect(code.value).toBe("const x = 1;");
 
     const t2 = parse(["## A", "", "```", "raw", "```"].join("\n"));
-    expect(blockOf(t2.root.sections[0]!.blocks[0], "code").lang).toBeNull();
+    expect(blockOf(t2.root.sections[0]?.blocks[0], "code").lang).toBeNull();
   });
 
   test("paragraph: flattened inline text", () => {
     const t = parse(["## A", "", "Some **bold** and `code` text."].join("\n"));
-    const para = blockOf(t.root.sections[0]!.blocks[0], "paragraph");
+    const para = blockOf(t.root.sections[0]?.blocks[0], "paragraph");
     expect(para.text).toBe("Some bold and code text.");
   });
 });
@@ -173,7 +174,7 @@ describe("cellPos + inlineSpans (C1 position overlay)", () => {
       "| plain | none |",
     ].join("\n"),
   );
-  const table = blockOf(t.root.sections[0]!.blocks[0], "table");
+  const table = blockOf(t.root.sections[0]?.blocks[0], "table");
 
   test("cellPos(row, col).col locates each cell's content-start column, not just the row line", () => {
     // `Code` (col 0): the opening backtick sits at column 3 on each body row.
@@ -210,14 +211,14 @@ describe("cellPos + inlineSpans (C1 position overlay)", () => {
 
   test("paragraph exposes the analogous inlineSpans accessor (document order; [] when none)", () => {
     const p = parse(["## A", "", "Prose with `inline` and `two` code runs."].join("\n"));
-    const para = blockOf(p.root.sections[0]!.blocks[0], "paragraph");
+    const para = blockOf(p.root.sections[0]?.blocks[0], "paragraph");
     expect(para.inlineSpans()).toEqual([
       { start: { line: 3, col: 12 }, end: { line: 3, col: 20 }, raw: "`inline`" },
       { start: { line: 3, col: 25 }, end: { line: 3, col: 30 }, raw: "`two`" },
     ]);
 
     const plain = parse(["## A", "", "No code at all here."].join("\n"));
-    expect(blockOf(plain.root.sections[0]!.blocks[0], "paragraph").inlineSpans()).toEqual([]);
+    expect(blockOf(plain.root.sections[0]?.blocks[0], "paragraph").inlineSpans()).toEqual([]);
   });
 });
 
@@ -241,20 +242,21 @@ describe("frontmatter", () => {
 
   test("data is parsed; raw is verbatim; pos is the opening ---", () => {
     const t = parse(src);
-    expect(t.frontmatter).not.toBeNull();
-    expect(t.frontmatter!.data).toEqual({
+    expectDefined(t.frontmatter);
+    expect(t.frontmatter.data).toEqual({
       id: "D-0014",
       status: "open/proposed",
       related: ["one", "two"],
       nested: { a: 1, b: 2 },
     });
-    expect(t.frontmatter!.raw).toContain("id: D-0014");
-    expect(t.frontmatter!.pos.line).toBe(1);
+    expect(t.frontmatter.raw).toContain("id: D-0014");
+    expect(t.frontmatter.pos.line).toBe(1);
   });
 
   test("lineForPath maps top-level keys, nested keys, and array indices to source lines", () => {
     const t = parse(src);
-    const lf = t.frontmatter!.lineForPath.bind(t.frontmatter!);
+    expectDefined(t.frontmatter);
+    const lf = t.frontmatter.lineForPath.bind(t.frontmatter);
     expect(lf(["id"])).toBe(2);
     expect(lf(["status"])).toBe(3);
     expect(lf(["related"])).toBe(4);
@@ -274,23 +276,23 @@ describe("frontmatter", () => {
 describe("^block-id anchors", () => {
   test("trailing anchor on a paragraph binds to that block (text stripped)", () => {
     const t = parse(["## Summary", "", "Some prose here.", "^summary"].join("\n"));
-    const para = blockOf(t.root.sections[0]!.blocks[0], "paragraph");
+    const para = blockOf(t.root.sections[0]?.blocks[0], "paragraph");
     expect(para.text).toBe("Some prose here."); // anchor token removed from text
     expect(para.anchor).toBe("summary");
   });
 
   test("standalone anchor after a code block binds to the preceding block", () => {
     const t = parse(["## A", "", "```", "hi", "```", "", "^code-id"].join("\n"));
-    const code = blockOf(t.root.sections[0]!.blocks[0], "code");
+    const code = blockOf(t.root.sections[0]?.blocks[0], "code");
     expect(code.anchor).toBe("code-id");
-    expect(t.root.sections[0]!.blocks).toHaveLength(1); // the anchor para is not a block
+    expect(t.root.sections[0]?.blocks).toHaveLength(1); // the anchor para is not a block
   });
 
   test("anchor row absorbed under a table becomes the table anchor (not a data row)", () => {
     const t = parse(
       ["## D", "", "| # | C |", "| - | - |", "| 1 | x |", "| 2 | y |", "^components"].join("\n"),
     );
-    const table = blockOf(t.root.sections[0]!.blocks[0], "table");
+    const table = blockOf(t.root.sections[0]?.blocks[0], "table");
     expect(table.anchor).toBe("components");
     expect(table.rows).toEqual([
       ["1", "x"],
@@ -300,8 +302,8 @@ describe("^block-id anchors", () => {
 
   test("section-level anchor (no preceding block) lands on SectionNode.anchors", () => {
     const t = parse(["## Notes", "", "^section-id"].join("\n"));
-    expect(t.root.sections[0]!.anchors).toEqual(["section-id"]);
-    expect(t.root.sections[0]!.blocks).toHaveLength(0);
+    expect(t.root.sections[0]?.anchors).toEqual(["section-id"]);
+    expect(t.root.sections[0]?.blocks).toHaveLength(0);
   });
 });
 
@@ -324,13 +326,13 @@ describe("invariant D2 — fenced code is opaque", () => {
     );
     // Only the two real H2s — the in-fence "## Decision" is opaque code.
     expect(t.root.sections.map((s) => s.name)).toEqual(["Capability", "Sample document"]);
-    const code = blockOf(t.root.sections[1]!.blocks[0], "code");
+    const code = blockOf(t.root.sections[1]?.blocks[0], "code");
     expect(code.value).toContain("## Decision"); // verbatim inside the fence value
   });
 
   test("a pipe / ^id line inside a fence is verbatim, not a table / anchor", () => {
     const t = parse(["## A", "", "```", "| a | b |", "^notanchor", "```"].join("\n"));
-    const code = blockOf(t.root.sections[0]!.blocks[0], "code");
+    const code = blockOf(t.root.sections[0]?.blocks[0], "code");
     expect(code.value).toBe("| a | b |\n^notanchor");
     expect(code.anchor).toBeUndefined();
   });
@@ -339,11 +341,11 @@ describe("invariant D2 — fenced code is opaque", () => {
 describe("invariant D3 — no depth-jump synthesis", () => {
   test("H2 then H4 attaches the H4 directly under the H2, preserving depth: 4", () => {
     const t = parse(["## Decision", "", "prose", "", "#### Components", "", "more"].join("\n"));
-    const decision = t.root.sections[0]!;
+    const decision = first(t.root.sections);
     expect(decision.depth).toBe(2);
     // The H4 is a DIRECT child of the H2 — no synthesized intermediate H3.
     expect(decision.sections).toHaveLength(1);
-    const components = decision.sections[0]!;
+    const components = first(decision.sections);
     expect(components.name).toBe("Components");
     expect(components.depth).toBe(4); // TRUE depth preserved → jump re-derivable downstream
     expect(components.pos.line).toBe(5);
@@ -353,7 +355,7 @@ describe("invariant D3 — no depth-jump synthesis", () => {
     // The projection returns a DocTree only — there is no findings channel here.
     const t = parse(["## A", "", "#### Deep"].join("\n"));
     expect(t).not.toHaveProperty("findings");
-    expect(t.root.sections[0]!.sections[0]!.depth).toBe(4);
+    expect(t.root.sections[0]?.sections[0]?.depth).toBe(4);
   });
 });
 
@@ -369,16 +371,16 @@ describe("invariant D4 — no hoisting", () => {
       ].join("\n"),
     );
     // The quoted table is nested in a blockquote → not hoisted to section.blocks.
-    expect(t.root.sections[0]!.blocks.filter((b) => b.kind === "table")).toHaveLength(0);
+    expect(t.root.sections[0]?.blocks.filter((b) => b.kind === "table")).toHaveLength(0);
   });
 
   test("a table inside a list item is NOT a section-level table block", () => {
     const t = parse(
       ["## D", "", "- intro", "", "  | a | b |", "  | - | - |", "  | 1 | 2 |"].join("\n"),
     );
-    expect(t.root.sections[0]!.blocks.filter((b) => b.kind === "table")).toHaveLength(0);
+    expect(t.root.sections[0]?.blocks.filter((b) => b.kind === "table")).toHaveLength(0);
     // The list itself is heading-direct, so it IS a section block.
-    expect(t.root.sections[0]!.blocks.filter((b) => b.kind === "list")).toHaveLength(1);
+    expect(t.root.sections[0]?.blocks.filter((b) => b.kind === "list")).toHaveLength(1);
   });
 });
 
@@ -416,22 +418,22 @@ describe("dialect round-trip (D-0002 proof)", () => {
     // Recognized in the original.
     const before = extractVaultRefs(src);
     expect(before.map((r) => r.kind)).toEqual(["wikilink", "transclusion"]);
-    expect(before[0]!.target).toBe("WikiTarget");
-    expect(before[1]!.target).toBe("Embed");
+    expect(before[0]?.target).toBe("WikiTarget");
+    expect(before[1]?.target).toBe("Embed");
 
     // Round-trip through remark-stringify, then re-parse.
     const roundTripped = stringify(src);
     const t = parse(roundTripped);
 
     // The ^summary anchor still binds to its block after the cycle.
-    const para = blockOf(t.root.sections[0]!.blocks[0], "paragraph");
+    const para = blockOf(t.root.sections[0]?.blocks[0], "paragraph");
     expect(para.anchor).toBe("summary");
 
     // The vault-reference constructs still recognize (tolerant of remark-stringify escaping).
     const after = extractVaultRefs(roundTripped);
     expect(after.map((r) => r.kind)).toEqual(["wikilink", "transclusion"]);
-    expect(after[0]!.target).toBe("WikiTarget");
-    expect(after[1]!.target).toBe("Embed");
+    expect(after[0]?.target).toBe("WikiTarget");
+    expect(after[1]?.target).toBe("Embed");
   });
 });
 
@@ -452,11 +454,11 @@ describe("real document (provenance entity file)", () => {
     const t = parse(readFileSync(path, "utf8"));
 
     // Frontmatter parses with the entity's stamp keys.
-    expect(t.frontmatter).not.toBeNull();
-    const fm = t.frontmatter!.data as Record<string, unknown>;
+    expectDefined(t.frontmatter);
+    const fm = t.frontmatter.data as Record<string, unknown>;
     expect(fm.id).toBe("C-0004");
     expect(fm.type).toBe("capability");
-    expect(t.frontmatter!.lineForPath(["id"])).toBeGreaterThan(0);
+    expect(t.frontmatter.lineForPath(["id"])).toBeGreaterThan(0);
 
     // The `# Dialect-aware projection` H1 is the document title.
     expect(t.root.name).toBe("Dialect-aware projection");
@@ -468,7 +470,8 @@ describe("real document (provenance entity file)", () => {
     expect(t.root.sections.every((s) => s.depth === 2)).toBe(true);
 
     // The `^summary` anchor inside ## Summary binds (block- or section-level).
-    const summary = t.root.sections.find((s) => s.name === "Summary")!;
+    const summary = t.root.sections.find((s) => s.name === "Summary");
+    expectDefined(summary);
     const anchorBound =
       summary.anchors.includes("summary") || summary.blocks.some((b) => b.anchor === "summary");
     expect(anchorBound).toBe(true);
