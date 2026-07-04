@@ -42,4 +42,4 @@
  */
 
 export { extractTrailingAnchor, isStandaloneAnchor } from "./anchors.js";
-export { extractVaultRefs, type VaultRef } from "./wikilinks.js";
+export { extractVaultRefs } from "./wikilinks.js";
