@@ -9,6 +9,7 @@ tags: []
 need_human_review: false
 impact: medium
 complexity: medium
+readiness_verified_at: '2026-07-04T09:42:37Z'
 ---
 # Vendor the C-0004 projection fixture into packages/core instead of reaching out to a repo-root planning doc
 
