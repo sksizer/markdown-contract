@@ -46,12 +46,13 @@ jobs:
       # organization, T-0MVN). lint-docs is a moon task too, but runInCI:false
       # because it validates mid-edit planning docs; see packages/core/moon.yml.
       #
-      # example-single-binary:test is named EXPLICITLY (T-UDPO): the example's
-      # peer suite runs under `bun test` (Bun.serve is Bun-only), so it cannot
-      # ride :coverage, and a bare :test would also re-run core's vitest suite
-      # (already subsumed by :coverage). Its :typecheck rides the shared tag.
+      # example-single-binary:test / example-single-binary-nitro:test are named
+      # EXPLICITLY (T-UDPO): the examples' peer suites run under `bun test`
+      # (Bun-only, for parity with the Bun.serve daemon), so they cannot ride
+      # :coverage, and a bare :test would also re-run core's vitest suite
+      # (already subsumed by :coverage). Their :typecheck rides the shared tag.
       - name: Run build, typecheck, test+coverage, and lint via moon
-        run: bunx moon run :build :typecheck :coverage :lint example-single-binary:test
+        run: bunx moon run :build :typecheck :coverage :lint example-single-binary:test example-single-binary-nitro:test
 
       - name: Upload coverage report
         if: always()
