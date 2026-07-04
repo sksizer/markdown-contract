@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-A9F0
-status: open/ready
+status: in-progress
 created: '2026-07-04'
 related:
 - '[[M-0010 Quality Tooling]]'
@@ -15,6 +15,7 @@ impact: medium
 complexity: small
 autonomy: autonomous/pr
 readiness_verified_at: '2026-07-04T17:53:18Z'
+last_reviewed: '2026-07-04'
 ---
 # Adopt node-template supply-chain hardening: Dependabot cooldown + exact devDependency pins
 
@@ -121,3 +122,19 @@ Surfaced by the node-template baseline comparison (2026-07-04, README
 "Library health baseline" section): the template's `pr10-supply-chain-hardening`
 layer adds Dependabot cooldown and exact devDependency pins; this workspace had
 neither. The comparison found every other layer present or exceeded here.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
