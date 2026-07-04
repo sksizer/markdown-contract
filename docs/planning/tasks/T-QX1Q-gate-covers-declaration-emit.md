@@ -11,6 +11,7 @@ need_human_review: false
 impact: medium
 complexity: small
 autonomy: autonomous/pr
+readiness_verified_at: '2026-07-04T15:51:38Z'
 ---
 # Make the quality gate catch .d.ts declaration-emit regressions that tsc --noEmit misses
 
