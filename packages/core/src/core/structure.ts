@@ -149,7 +149,8 @@ function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Findin
   const slotBoundBy = new Map<number, string>(); // slotIdx → the heading that first filled it
   for (const a of assigned) {
     if (a.slotIdx === null) continue;
-    const slot = slots[a.slotIdx]!;
+    const slot = slots[a.slotIdx];
+    if (!slot) continue; // a.slotIdx is a valid slots index; guard narrows the type
     if (slot.names.length <= 1) continue; // single-spelling slot: handled by duplicate-section above
     const boundHeading = slotBoundBy.get(a.slotIdx);
     if (boundHeading === undefined) {
@@ -216,8 +217,8 @@ function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Findin
   // ── The kind-gate, anchors, and node-local rules (per declared, present slot) ─────
   for (const a of assigned) {
     if (a.slotIdx === null) continue;
-    const slot = slots[a.slotIdx]!;
-    if (!slot.opts) continue;
+    const slot = slots[a.slotIdx];
+    if (!slot || !slot.opts) continue; // a.slotIdx is a valid slots index; guard narrows the type
     runSectionChecks(a.node, slot.opts, ctx, out);
   }
 }
@@ -286,13 +287,15 @@ function checkStrict(
   let specIdx = 0;
   let docIdx = 0;
   while (docIdx < nodes.length) {
-    const node = nodes[docIdx]!;
+    const node = nodes[docIdx];
+    if (node === undefined) break; // docIdx < nodes.length holds; guard narrows the type
 
     if (specIdx >= specs.length) {
       // Past the declared sequence. A trailing gap (if the last spec was one) absorbs extras;
       // otherwise an unknown is out of place under allowUnknown:false. A recognized section
       // here matched an earlier (skipped) slot — its disorder was already flagged at the jumper.
-      const lastWasGap = specs.length > 0 && unwrap(specs[specs.length - 1]!).inner.kind === "gap";
+      const lastSpec = specs[specs.length - 1];
+      const lastWasGap = lastSpec !== undefined && unwrap(lastSpec).inner.kind === "gap";
       const slotIdx = slotForOrNull(slots, node.name);
       if (slotIdx === null && !lastWasGap && !allowUnknown) {
         out.push(
@@ -309,7 +312,8 @@ function checkStrict(
       continue;
     }
 
-    const spec = specs[specIdx]!;
+    const spec = specs[specIdx];
+    if (spec === undefined) break; // specIdx < specs.length holds here; guard narrows the type
     const u = unwrap(spec);
 
     if (u.inner.kind === "gap") {
@@ -325,7 +329,13 @@ function checkStrict(
     }
 
     // A section/oneOf slot at the cursor.
-    const slot = slots.find((s) => s.specIdx === specIdx)!;
+    const slot = slots.find((s) => s.specIdx === specIdx);
+    if (!slot) {
+      // The cursor spec is a non-gap section/oneOf, so slotsOf produced a slot for it; if none
+      // is found (impossible), advance the cursor to keep the walk total.
+      specIdx++;
+      continue;
+    }
     if (slot.names.includes(node.name)) {
       specIdx++;
       docIdx++;
@@ -377,7 +387,9 @@ function checkStrict(
 
   // Gap-count bounds.
   for (const [gapSpecIdx, count] of gapCount) {
-    const gap = unwrap(specs[gapSpecIdx]!).inner as GapSpec;
+    const gapSpec = specs[gapSpecIdx];
+    if (gapSpec === undefined) continue; // gapCount keys are gap specIdxs; guard narrows the type
+    const gap = unwrap(gapSpec).inner as GapSpec;
     const min = gap.min;
     const max = gap.max;
     if ((min !== undefined && count < min) || (max !== undefined && count > max)) {
@@ -407,7 +419,9 @@ function checkUnorderedGap(
 ): void {
   const gapSpecIdx = specs.findIndex((s) => unwrap(s).inner.kind === "gap");
   if (gapSpecIdx === -1) return;
-  const gap = unwrap(specs[gapSpecIdx]!).inner as GapSpec;
+  const gapSpec = specs[gapSpecIdx];
+  if (gapSpec === undefined) return; // gapSpecIdx is a valid findIndex result; guard narrows the type
+  const gap = unwrap(gapSpec).inner as GapSpec;
   const count = assigned.filter((a) => a.slotIdx === null).length;
   if ((gap.min !== undefined && count < gap.min) || (gap.max !== undefined && count > gap.max)) {
     out.push(

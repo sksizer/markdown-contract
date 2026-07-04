@@ -90,11 +90,13 @@ class LineBuffer {
     if (text === "") return;
     const parts = text.split("\n");
     for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (part === undefined) continue; // i < parts.length holds; guard narrows the type
       const idx = line - 1 + i;
       if (idx < 0) continue;
       while (this.lines.length <= idx) this.lines.push("");
-      const existing = this.lines[idx]!;
-      this.lines[idx] = existing === "" ? parts[i]! : `${existing} ${parts[i]!}`;
+      const existing = this.lines[idx] ?? "";
+      this.lines[idx] = existing === "" ? part : `${existing} ${part}`;
     }
   }
 

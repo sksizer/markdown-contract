@@ -118,7 +118,9 @@ function sectionOpts(node: Record<string, unknown>, path: string): SectionOpts |
 }
 
 function isLeafMap(v: unknown): v is Record<string, unknown> {
-  return isMap(v) && Object.keys(v).length === 1 && LEAF_KEYS.has(Object.keys(v)[0]!);
+  if (!isMap(v)) return false;
+  const keys = Object.keys(v);
+  return keys.length === 1 && keys[0] !== undefined && LEAF_KEYS.has(keys[0]);
 }
 
 function compileContent(content: unknown, path: string): LeafSpec | Record<string, LeafSpec> {
@@ -142,7 +144,12 @@ function compileLeaf(node: unknown, path: string): LeafSpec {
       `${path}: a leaf must be a single-key mapping (table | list | code | maxWords)`,
     );
   }
-  const key = Object.keys(node)[0]!;
+  const key = Object.keys(node)[0];
+  if (key === undefined) {
+    throw new DeclarativeError(
+      `${path}: a leaf must be a single-key mapping (table | list | code | maxWords)`,
+    );
+  }
   const cfg = node[key];
   switch (key) {
     case "maxWords": {

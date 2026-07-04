@@ -236,8 +236,9 @@ function sectionUnion(docs: ParsedDoc[]): string[] {
  * different subset or a different order breaks it.
  */
 function allIdenticalSequences(docs: ParsedDoc[]): boolean {
-  if (docs.length === 0) return false;
-  const first = docs[0]!.sections;
+  const [head] = docs;
+  if (!head) return false;
+  const first = head.sections;
   return docs.every(
     (d) => d.sections.length === first.length && d.sections.every((n, i) => n === first[i]),
   );
@@ -258,9 +259,13 @@ function precedence(docs: ParsedDoc[]): Map<string, Set<string>> {
     set.add(b);
   };
   for (const doc of docs) {
-    for (let i = 0; i < doc.sections.length; i++) {
-      for (let j = i + 1; j < doc.sections.length; j++) {
-        if (doc.sections[i]! !== doc.sections[j]!) add(doc.sections[i]!, doc.sections[j]!);
+    const { sections } = doc;
+    for (let i = 0; i < sections.length; i++) {
+      const a = sections[i];
+      if (a === undefined) continue;
+      for (let j = i + 1; j < sections.length; j++) {
+        const b = sections[j];
+        if (b !== undefined && a !== b) add(a, b);
       }
     }
   }
@@ -288,8 +293,9 @@ function hasOrderConflict(edges: Map<string, Set<string>>): boolean {
 function detectOrder(docs: ParsedDoc[]): { order: Order; sections: string[] } {
   const union = sectionUnion(docs);
 
-  if (allIdenticalSequences(docs)) {
-    return { order: "strict", sections: docs[0]!.sections };
+  const [first] = docs;
+  if (first && allIdenticalSequences(docs)) {
+    return { order: "strict", sections: first.sections };
   }
 
   const edges = precedence(docs);
@@ -505,29 +511,29 @@ function inferFrontmatter(
   docs: ParsedDoc[],
   opts: FieldInferOptions,
 ): { strict?: boolean; fields: Record<string, unknown> } | undefined {
-  const keys: string[] = [];
-  const seen = new Set<string>();
+  // Values per key, in first-appearance order (Map preserves insertion order, so a later pass
+  // over its entries reads keys back in that same deterministic order).
   const values = new Map<string, unknown[]>();
   for (const doc of docs) {
     for (const [key, value] of Object.entries(doc.frontmatter)) {
-      if (!seen.has(key)) {
-        seen.add(key);
-        keys.push(key);
-        values.set(key, []);
+      let bucket = values.get(key);
+      if (!bucket) {
+        bucket = [];
+        values.set(key, bucket);
       }
-      values.get(key)!.push(value);
+      bucket.push(value);
     }
   }
-  if (keys.length === 0) return undefined;
+  if (values.size === 0) return undefined;
 
   // The rung-6 ratio gates `enum` against the group's file count, not a field's present-count,
   // so a half-optional field doesn't enum on coincidence (D-0009 § Step 4, rung 6).
   const fileCount = docs.length;
   const fields: Record<string, unknown> = {};
-  for (const key of keys) {
+  for (const [key, vals] of values) {
     const present = docs.filter((d) => key in d.frontmatter).length;
     const optional = present < docs.length;
-    const schema = inferFieldSchema(values.get(key)!, fileCount, opts);
+    const schema = inferFieldSchema(vals, fileCount, opts);
     fields[key] = optional ? { ...schema, optional: true } : schema;
   }
 
@@ -593,8 +599,9 @@ function inferBody(
   const emitted = new Set<string>(); // primary spellings already emitted
   for (const name of sections) {
     const key = toCamelKey(name);
-    const spellings = key === "" ? [name] : byKey.get(key)!;
-    const primary = spellings[0]!;
+    const spellings = key === "" ? [name] : (byKey.get(key) ?? [name]);
+    const [primary] = spellings;
+    if (primary === undefined) continue; // spellings is always non-empty; guard narrows the type
     if (name !== primary) continue; // an alias spelling — its slot is emitted at the primary
     if (emitted.has(primary)) continue;
     emitted.add(primary);
@@ -763,11 +770,15 @@ function inferMeta(
   // Emit the root group first (its direct-only glob), then the subdir groups in walk order.
   const orderedKeys = [...(hasRoot ? [""] : []), ...groupOrder.filter((k) => k !== "")];
 
-  const contracts: InferredContract[] = orderedKeys.map((key) => ({
-    name: nameForDir(key, absRoot),
-    include: [key === "" ? "*.md" : `${key}/**/*.md`],
-    def: generalize(groups.get(key)!, opts, sink),
-  }));
+  const contracts: InferredContract[] = orderedKeys.map((key) => {
+    const bucket = groups.get(key);
+    if (!bucket) throw new Error(`internal: no doc bucket for group ‘${key}’`);
+    return {
+      name: nameForDir(key, absRoot),
+      include: [key === "" ? "*.md" : `${key}/**/*.md`],
+      def: generalize(bucket, opts, sink),
+    };
+  });
 
   for (const rel of stranded) {
     sink.warnings.push(

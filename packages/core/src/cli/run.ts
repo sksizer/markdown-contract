@@ -338,7 +338,7 @@ function runInit(cwd: string, roots: string[], flags: InitFlags): CliResult {
       ? flags.out
       : resolve(cwd, flags.out)
     : absRoots.length === 1
-      ? absRoots[0]!
+      ? (absRoots[0] ?? cwd)
       : cwd;
   const multiRootWarning = multiRootCwdFallback
     ? "init: multiple roots — writing the scaffold to the current directory (pass --out <dir> to choose)"
@@ -498,7 +498,8 @@ function selfCheck(
 ): string[] {
   const errors: string[] = [];
   results.forEach((r, i) => {
-    const root = absRoots[i]!;
+    const root = absRoots[i];
+    if (root === undefined) return; // absRoots is parallel to results; guard narrows the type
     // Compile each contract on its own so a build-time guard (e.g. contract/key-collision) is
     // reported as a clean, attributed self-check failure — naming the contract and its globs —
     // instead of escaping as an uncaught throw that crashes the verb (T-KCOL).
@@ -588,14 +589,15 @@ function buildInlineConfig(
 
   // Single contract over a tree: `validate <path> --contract x.yaml`.
   if (paths.length === 0) {
-    if (contracts.length !== 1) {
+    const [only] = contracts;
+    if (contracts.length !== 1 || only === undefined) {
       throw new Error(
         `multiple --contract needs a matching --path for each (got ${contracts.length} --contract and no --path)`,
       );
     }
     const runRoot = pathArg ? resolve(cwd, pathArg) : cwd;
     return {
-      config: { rules: [{ include: ["**/*.md"], contract: load(contracts[0]!) }] },
+      config: { rules: [{ include: ["**/*.md"], contract: load(only) }] },
       runRoot,
     };
   }
@@ -612,7 +614,8 @@ function buildInlineConfig(
     );
   }
   const rules: Rule[] = contracts.map((ref, i) => {
-    const dir = paths[i]!.replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+$/, "");
+    // paths is parallel to contracts (length checked above), so paths[i] is always present.
+    const dir = (paths[i] ?? "").replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+$/, "");
     const include = dir === "" || dir === "." ? "**/*.md" : `${dir}/**/*.md`;
     return { include: [include], contract: load(ref) };
   });

@@ -176,10 +176,12 @@ export function runCorpus(
     if (include && !include(posixRel)) continue;
     const idx = rules.findIndex((r) => r.include(posixRel) && !(r.exclude && r.exclude(posixRel)));
     if (idx === -1) continue;
+    const rule = rules[idx];
+    if (!rule) continue; // idx is a valid findIndex result; guard narrows the type
     matchedByRule[idx] = (matchedByRule[idx] ?? 0) + 1;
     filesMatched += 1;
     const source = readFileSync(resolve(root, rel), "utf8");
-    const result = rules[idx]!.contract.validate(source, { path: posixRel });
+    const result = rule.contract.validate(source, { path: posixRel });
     findings.push(...result.findings);
   }
 

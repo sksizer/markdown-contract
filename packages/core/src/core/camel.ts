@@ -20,13 +20,13 @@ const NON_ALNUM = /[^\p{L}\p{N}]+/u;
 /** Lower the first character of `word` (and leave the rest as-is). */
 function lowerFirst(word: string): string {
   if (word.length === 0) return word;
-  return word[0]!.toLowerCase() + word.slice(1);
+  return word.charAt(0).toLowerCase() + word.slice(1);
 }
 
 /** Capitalize the first character of `word` and lowercase the remainder. */
 function capitalize(word: string): string {
   if (word.length === 0) return word;
-  return word[0]!.toUpperCase() + word.slice(1).toLowerCase();
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
 }
 
 /**
@@ -41,6 +41,6 @@ function capitalize(word: string): string {
 export function toCamelKey(name: string): string {
   const words = name.split(NON_ALNUM).filter((w) => w.length > 0);
   if (words.length === 0) return "";
-  const [first, ...rest] = words;
-  return lowerFirst(first!.toLowerCase()) + rest.map(capitalize).join("");
+  const [first = "", ...rest] = words;
+  return lowerFirst(first.toLowerCase()) + rest.map(capitalize).join("");
 }
