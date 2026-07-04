@@ -34,6 +34,35 @@ A standard Node ESM package (Node ≥ 20). `tsc` builds `src/` → `dist/` (JS +
 Bun-only APIs in shipped code, so it installs and runs under any package manager
 (`npm`, `pnpm`, `yarn`, `bun`) and any Node runtime.
 
+### Declaration emit
+
+`core:build` (`tsc -p tsconfig.build.json`, `declaration: true`) is the **only** gate tier
+that exercises `.d.ts` declaration emit — `core:typecheck` (`tsc --noEmit`) type-checks but
+emits nothing, so it never triggers a declaration-emit error. The regression class this
+guards is **TS4023 / TS4058** (*"Exported variable … / Return type of exported function …
+has or is using name 'X' from external module … but cannot be named"*): an exported
+value or function whose emitted `.d.ts` must reference a type from another module **by
+name**.
+
+The condition that reproduces it is **cross-module**. A type exported by module A and used
+(by inference or by annotation) in an *exported* signature of module B forces B's emitted
+`.d.ts` to name that type as `import("./A.js").T`. De-export the type from A — the shape
+knip flags as an "unused export" (nothing imports it by name; it survives only via B's
+inference) — and:
+
+- `core:typecheck` stays **green** (A still compiles with the type local; B never named it), yet
+- `core:build` **fails** with TS4023 / TS4058, because B's `.d.ts` can no longer write
+  `import("./A.js").T`.
+
+The naive **same-module** version does **not** reproduce it. De-export a type used in an
+exported signature *within the same file* and the build stays green: a non-exported
+same-module type still emits **inline** into that module's own `.d.ts` (as a local
+declaration), so nothing has to name it across a module boundary. So "de-export a type used
+in an exported signature" only breaks declaration emit when the reference **crosses a
+module** — reach for the cross-module recipe, not the same-module one, when reproducing or
+debugging this class. (Interfaces/classes are named in the `.d.ts`; a plain object type
+alias TS can inline structurally will not trip it.)
+
 ## Develop
 
 npm stays canonical — the package is a plain npm package and `npm run <script>`

@@ -142,12 +142,22 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — inspected the committed `packages/core/README.md` "Declaration emit" note; it names both `TS4023` and `TS4058` and states `core:build` (`tsc -p tsconfig.build.json`) exercises `.d.ts` emit while `core:typecheck` (`tsc --noEmit`) does not.
+- AC-2: agent-manual — inspected the committed note; it states the reproduction is cross-module (type exported by module A, used in an exported/inferred signature of module B, de-exported from A) AND that the naive same-module de-export does NOT reproduce it because a non-exported same-module type still emits inline into its own `.d.ts`.
+- AC-3: agent-manual — inspected the committed `packages/core/moon.yml` `build:` task comment; it names the task the sole declaration-emit gate tier and points to `README.md → "Declaration emit"`.
+- AC-4: auto — `sdlc quality run --diff-against-baseline` returned `OK 6/6 (baseline-gated)`; `core:build` and `core:lint` both exit 0. The change is docs/comments only.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The empirical probe reproduced the exact class the note documents: a cross-module de-export kept `core:typecheck` green while `core:build` failed with both TS4023 (exported variable) and TS4058 (exported function return type), and the same-module control stayed green with the type emitted inline into its `.d.ts`. Grounding the note in observed `tsc` behavior rather than the task's prose caught a real nuance (a plain object type-alias is structurally inlined and does NOT trip the error; only named interfaces/classes do) that made the note more accurate.
+- The baseline-gated quality gate correctly subtracted the pre-existing drift (15 knip `lint:deps` findings + the pre-existing biome warnings surfaced by `core:lint`) so the docs-only change reported `OK 6/6` with zero new drift — no manual triage of unrelated findings was needed.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 7's `sdlc quality run --diff-against-baseline` was invoked from the worktree and could not find the baseline captured in Step 3a (`baseline not found: <worktree>/.sdlc/quality-baselines/<sha>.json`), because the baseline lives in the MAIN repo's `.sdlc/quality-baselines/` while the gate's default `--baseline-dir` resolves against the worktree cwd — task-work Step 7's documented invocation omits `--baseline-dir`, so it defaults wrong. Had to re-run with an explicit `--baseline-dir <main-repo>/.sdlc/quality-baselines`. — task-work Step 7 should pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly (matching Step 3a's capture location) so the gate resolves the baseline when run from the worktree. → [[T-42LO-task-work-passes-baseline-dir]]
+- The plain `sdlc quality run` (no baseline) reports `FAIL bunx moon run core:lint` from pre-existing biome *warnings* even though `biome ci` itself exits 0 — the finding-extractor classifies warnings as FAIL. The implementation sub-agent had to stash its changes and re-run on the base tree to prove the FAIL was pre-existing and unrelated. — the implementation-sub-agent brief should always steer to the baseline-gated form, or the quality runner should distinguish biome warnings (exit 0) from errors so a warning-only run isn't reported as a hard FAIL. → [[T-YF4K-quality-runner-warnings-not-fail]]
+
+### Spawned follow-up tasks
+
+- [[T-42LO-task-work-passes-baseline-dir]] (https://github.com/sksizer/dev/pull/673) [planning/draft] — task-work Step 7 passes `--baseline-dir` explicitly so the baseline resolves from a worktree; Upstream-plugin (sdlc), spawned.
+- [[T-YF4K-quality-runner-warnings-not-fail]] (https://github.com/sksizer/dev/pull/674) [planning/draft] — quality runner distinguishes biome warnings from errors so a warning-only run isn't a hard FAIL; Upstream-plugin (sdlc), spawned.
