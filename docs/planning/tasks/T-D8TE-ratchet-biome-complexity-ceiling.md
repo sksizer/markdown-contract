@@ -1,26 +1,26 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-D8TE
-status: in-progress
-created: 2026-07-02
-last_reviewed: 2026-07-04
+status: closed/done
+created: '2026-07-02'
+last_reviewed: '2026-07-04'
 related:
-  - "[[M-0010 Quality Tooling]]"
-  - "[[T-0MVN-biome-lint-format]]"
+- '[[M-0010 Quality Tooling]]'
+- '[[T-0MVN-biome-lint-format]]'
 tags:
-  - quality
-  - lint
-  - complexity
-  - biome
-  - tech-debt
+- quality
+- lint
+- complexity
+- biome
+- tech-debt
 need_human_review: false
 impact: low
 complexity: medium
 autonomy: autonomous/pr
-readiness_verified_at: 2026-07-04T07:46:04Z
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/220
+- https://github.com/sksizer/markdown-contract/pull/220
+completion_note: 'Shipped via #220.'
 ---
 # Ratchet down the Biome cognitive-complexity ceiling from 46 toward 15
 
