@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-3L9Q
-status: open/ready
+status: in-progress
 created: '2026-07-03'
 related:
 - '[[M-0010 Quality Tooling]]'
@@ -18,6 +18,7 @@ need_human_review: false
 impact: medium
 complexity: medium
 readiness_verified_at: '2026-07-04T02:06:01Z'
+last_reviewed: '2026-07-04'
 ---
 # Flip knip from report-only to a blocking CI gate
 
@@ -129,3 +130,19 @@ per the M-0010 deliverable) and parked the flip. The M-0010 close-out
 assessment (2026-07-03) found the flip had no owning task, and a fresh run
 showed the finding set had grown beyond the documented baseline as the
 `apps/web` and `sites/docs` workspaces landed.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
