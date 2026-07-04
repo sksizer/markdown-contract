@@ -10,6 +10,7 @@ tags: []
 need_human_review: false
 impact: medium
 complexity: small
+readiness_verified_at: '2026-07-04T16:29:15Z'
 ---
 # Document the cross-module condition for reproducing .d.ts declaration-emit regressions
 
