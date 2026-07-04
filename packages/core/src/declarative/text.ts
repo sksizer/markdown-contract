@@ -50,7 +50,7 @@ const isMap = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === "object" && !Array.isArray(v);
 
 /** Compile and validate ONE match-spec entry against the closed vocabulary. */
-export function compileMatchSpec(raw: unknown, kind: TextKind, path: string): TextMatchSpec {
+function compileMatchSpec(raw: unknown, kind: TextKind, path: string): TextMatchSpec {
   if (!isMap(raw)) {
     throw new DeclarativeError(`${path}: a match spec must be a mapping (pattern | regex, …)`);
   }
@@ -152,7 +152,7 @@ function matcherIdentity(spec: TextMatchSpec): string {
 }
 
 /** Compile a `requires` / `forbids` LIST, rejecting a duplicate matcher within the list (AC-3). */
-export function compileMatchSpecs(raw: unknown, kind: TextKind, path: string): TextMatchSpec[] {
+function compileMatchSpecs(raw: unknown, kind: TextKind, path: string): TextMatchSpec[] {
   if (!Array.isArray(raw)) {
     throw new DeclarativeError(`${path}: ${kind} must be a list of match specs`);
   }
@@ -172,7 +172,7 @@ export function compileMatchSpecs(raw: unknown, kind: TextKind, path: string): T
 }
 
 /** A scope's compiled `requires` / `forbids` spec lists (either may be empty). */
-export interface ScopeTextSpecs {
+interface ScopeTextSpecs {
   requires: TextMatchSpec[];
   forbids: TextMatchSpec[];
 }
@@ -187,7 +187,7 @@ export function hasTextKeys(node: Record<string, unknown>): boolean {
  * `requires` and a `forbids` entry over the SAME literal `pattern` (regex excluded) at one scope
  * is unsatisfiable (AC-4). `scopeLabel` names the scope in the error.
  */
-export function compileScopeTextSpecs(
+function compileScopeTextSpecs(
   node: Record<string, unknown>,
   path: string,
   scopeLabel: string,

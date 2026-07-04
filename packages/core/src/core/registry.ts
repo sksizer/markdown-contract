@@ -30,7 +30,7 @@ export const STRUCTURE_LEVELS: Record<string, FindingLevel> = {
  * Content checks default to `error` (a data-shape violation blocks the typed model); the
  * frontmatter Zod findings are likewise `error`.
  */
-export const CONTENT_LEVELS: Record<string, FindingLevel> = {
+const CONTENT_LEVELS: Record<string, FindingLevel> = {
   // table
   "content/table/column-missing": "error",
   "content/table/column-extra": "error",
@@ -59,7 +59,7 @@ export const CONTENT_LEVELS: Record<string, FindingLevel> = {
  * that supplies its own `level` overrides this; an unregistered rule id still defaults to
  * `"error"` via {@link makeCtx}, so this table is the documented, not the load-bearing, source.
  */
-export const RULE_LEVELS: Record<string, FindingLevel> = {
+const RULE_LEVELS: Record<string, FindingLevel> = {
   // cross-plane docRule ids the corpus contracts use
   "task/post-mortem-when-worked": "error",
   "task/completion-note-when-closed": "error",
@@ -74,14 +74,14 @@ export const RULE_LEVELS: Record<string, FindingLevel> = {
  * (a forbidden phrase is present), and `text/count` (a `min` / `max` occurrence bound is
  * violated). All default to `error`, overridable per entry via the spec's `level`.
  */
-export const TEXT_LEVELS: Record<string, FindingLevel> = {
+const TEXT_LEVELS: Record<string, FindingLevel> = {
   "text/requires": "error",
   "text/forbids": "error",
   "text/count": "error",
 };
 
 /** The id → default-level registry. T-3NC8 extends it with rule ids. */
-export type LevelRegistry = Record<string, FindingLevel>;
+type LevelRegistry = Record<string, FindingLevel>;
 
 /** A fresh registry seeded with the structure-, content-, text-, and rule-plane defaults. */
 export function defaultRegistry(): LevelRegistry {
