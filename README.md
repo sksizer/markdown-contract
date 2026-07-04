@@ -66,6 +66,22 @@ Node-compatibility gate for the runtime-neutral published library, so `vitest`
 must execute under Node. Moving those tasks onto Bun would run vitest under Bun
 and defeat the gate.
 
+**`runInCI: false` suppresses explicit `moon run` under CI.** A task marked
+`runInCI: false` (in `packages/core/moon.yml`, that's `core:lint-deps` and
+`core:lint-docs`) is not merely dropped from the shared `moon ci` list — moon
+also **skips it for an explicit `moon run <task>`** once it detects a CI
+environment. moon (version-pinned at `@moonrepo/cli` 2.3.5) keys that detection
+on a **non-empty `CI` env var**.
+
+- To run such a task from a **dedicated side-gate workflow**, clear `CI` for
+  that step (`env: CI: ''`) so moon stops treating the run as CI and actually
+  executes the task. `.github/workflows/knip.yml` is the canonical worked
+  example.
+- Prefer a dedicated side-gate workflow over adding the task to the shared
+  `moon run` CI list for **report-only gates that must not fail the shared build
+  gate** — `runInCI: false` keeps the task out of `moon ci`, and its own
+  workflow decides whether a finding reddens the PR.
+
 ## Code metrics
 
 `bun run metrics` (equivalently `npm run metrics`) runs

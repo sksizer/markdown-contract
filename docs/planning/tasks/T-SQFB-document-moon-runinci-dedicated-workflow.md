@@ -87,12 +87,20 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — added the `runInCI: false` + `CI:''` side-gate note to `README.md`'s "Authoring moon tasks" section; inspected the rendered prose to confirm it states the CI-skip behavior, the `CI:''` pattern (citing `.github/workflows/knip.yml`), and when to prefer a dedicated side-gate. Names `core:lint-deps` / `core:lint-docs` as the `runInCI: false` tasks.
+- AC-2: agent-manual — extended the `knip.yml` inline comment to cross-reference the README convention ("See README 'Authoring moon tasks' …"); confirmed by reading the workflow that the comment now points at the note rather than being the sole source.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The relevance check confirmed every referenced path and claim up front (both `runInCI: false` tasks in `moon.yml`, the `CI:''` workaround in `knip.yml`, the pinned `@moonrepo/cli` 2.3.5), so no rediscovery was needed during implementation.
+- Baseline-gated quality run reported `OK 5/5` with pre-existing findings subtracted; doc-only edits sailed through build/typecheck/lint/test/package-check.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- `sdlc quality run --diff-against-baseline` defaulted `--baseline-dir` to the worktree's `.sdlc/` and errored `baseline not found`, because Step 3a captured the baseline in the main-repo `.sdlc/quality-baselines/`; had to re-invoke with an explicit `--baseline-dir` pointing at the main repo — the gate step should resolve the baseline dir against the superproject root (not the worktree) so the Step 7 invocation works without a manual `--baseline-dir` override. → not re-spawned: already tracked upstream in the `sdlc` plugin as the aggregator task `T-44OO-plugin-scripts-self-discover-project-root` plus open PRs sksizer/dev#632, #608, #605, #598. Skipped as an upstream duplicate to avoid fragmenting that backlog.
+- The base moved between task pickup and the Step 5b reset (`knip.yml` had been flipped from report-only to a blocking gate on origin/main by parallel work), so the file I first read differed from the branch base; re-reading the worktree copy before editing caught it — a pre-implementation re-read of touched files against the actual branch base (not the pickup-time snapshot) would make this a non-event. → `T-EYC2-reread-touched-files-against-branch-base` (sksizer/dev#654).
+
+### Spawned follow-up tasks
+
+- `T-EYC2-reread-touched-files-against-branch-base` (<https://github.com/sksizer/dev/pull/654>) — spawned; Upstream-plugin (`sdlc-meta`). Pre-implementation re-read of touched files against the post-reset branch base; the PR body cross-references the adjacent-but-distinct T-61OI (#284), T-XU99 (#111), and #602 so the upstream reviewer can close it as a duplicate if they disagree.
+- Baseline-dir/superproject friction — not spawned; already covered upstream in the `sdlc` plugin by aggregator task `T-44OO-plugin-scripts-self-discover-project-root` and open PRs sksizer/dev#632, #608, #605, #598 (the same friction landed there across ≥5 prior post-mortems, e.g. `T-61OI`). Skipped to avoid duplicating the upstream backlog.
