@@ -1,20 +1,22 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-77ST
 status: in-progress
-created: '2026-06-30'
-last_reviewed: '2026-07-04'
+created: 2026-06-30
+last_reviewed: 2026-07-04
 related:
-- '[[M-0010 Quality Tooling]]'
+  - "[[M-0010 Quality Tooling]]"
 depends_on:
-- '[[T-0MVN]]'
+  - "[[T-0MVN]]"
 tags:
-- quality
+  - quality
 need_human_review: false
 impact: medium
 complexity: small
-readiness_verified_at: '2026-07-04T00:46:14Z'
+readiness_verified_at: 2026-07-04T00:46:14Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/212
 ---
 # Add lefthook pre-commit hooks and EditorConfig
 
