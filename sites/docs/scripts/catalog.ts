@@ -30,18 +30,6 @@ export const CATEGORY_ORDER = [
 
 export type CategoryKey = (typeof CATEGORY_ORDER)[number];
 
-/** Short sidebar labels per category (long form lives in the category `title`). */
-export const CATEGORY_LABELS: Record<CategoryKey, string> = {
-	cli: "CLI Quickstart",
-	"inference-init": "Scaffold & Guard",
-	"declarative-yaml": "Declarative YAML",
-	"validation-planes": "Contracts in Code",
-	"consume-as-data": "Consume as Data",
-	dialect: "Dialect",
-	"embed-and-ci": "Embed & Automate",
-	"real-world-schemas": "Real-World Schemas",
-};
-
 export type ArtifactKind = "cli" | "code" | "yaml" | "mixed";
 
 export interface CatalogExample {
