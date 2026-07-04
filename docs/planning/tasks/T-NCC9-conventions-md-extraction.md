@@ -1,23 +1,23 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-NCC9
-status: in-progress
-created: 2026-07-04
+status: closed/done
+created: '2026-07-04'
 related:
-  - "[[M-0010 Quality Tooling]]"
+- '[[M-0010 Quality Tooling]]'
 tags:
-  - docs
-  - conventions
-  - quality
+- docs
+- conventions
+- quality
 need_human_review: false
 impact: low
 complexity: small
 autonomy: autonomous/pr
-readiness_verified_at: 2026-07-04T19:21:54Z
-last_reviewed: 2026-07-04
+last_reviewed: '2026-07-04'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/236
+- https://github.com/sksizer/markdown-contract/pull/236
+completion_note: 'Shipped via #236.'
 ---
 # Extract engineering conventions into a human-facing CONVENTIONS.md
 
