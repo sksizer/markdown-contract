@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-NCC9
-status: open/ready
+status: in-progress
 created: '2026-07-04'
 related:
 - '[[M-0010 Quality Tooling]]'
@@ -15,6 +15,7 @@ impact: low
 complexity: small
 autonomy: autonomous/pr
 readiness_verified_at: '2026-07-04T19:21:54Z'
+last_reviewed: '2026-07-04'
 ---
 # Extract engineering conventions into a human-facing CONVENTIONS.md
 
@@ -103,3 +104,19 @@ Surfaced by the node-template baseline comparison (2026-07-04, README
 "Library health baseline" section): the template's `pr9-conventions` layer
 ships `CONVENTIONS.md` as a human-facing repo doc; this repo's equivalent
 content is agent-only in `CLAUDE.md`.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
