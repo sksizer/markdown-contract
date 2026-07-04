@@ -133,12 +133,19 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `grep -c index.ts packages/core/coverage/coverage-summary.json` returns 0 after adding `src/**/index.ts` to the exclude list; all four barrels dropped from the denominator.
+- AC-2: auto — thresholds read `statements: 90, functions: 90, lines: 90`; `bunx moon run core:coverage` enforces them and exits 0 (measured 93.50 / 97.15 / 95.40, no one-point-under exception needed).
+- AC-3: auto — `branches: 85` (≥ 82, strictly > 78); branches measured 85.22% so the template's 85 floor was reached exactly — no residual note required.
+- AC-4: auto — `bunx moon run core:coverage` exits 0 at the new floors on the clean tree (721 tests, all green).
+- AC-5: agent-manual — inspected the refreshed threshold comment in `vitest.config.ts`: cites the post-exclusion baseline with date 2026-07-04 and 721 tests; the stale 547-test-era numbers (91.2/82.2/94.9/93.5) are gone.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The readiness gate passed clean on the first pass — `task gap-report` found no gaps (both touchpoint tables valid, all sections present), so no auto-define round-trip was needed.
+- `bunx moon run core:coverage` writes a `json-summary` report with per-file branch data, which made targeting the cheapest uncovered branches (untested factory `finding()`, closed-vocab schema error paths, malformed-config rejections) straightforward — +38 branches recovered across 7 peer test files, landing branches at 85.22% (over the 85 floor) without chasing defensive/CLI paths.
+- Branches reached 85 exactly, so the floor is a clean 85 with no residual-gap bookkeeping.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The `quality run --line` gate reported a spurious `FAIL bunx moon run core:lint` while the verb itself exits 0 — the quality runner captures each verb's output via `spawnSync` with the default 1MB `maxBuffer`, and `biome ci` emits ~1.068MB to stderr, tripping `ENOBUFS` → SIGTERM → exit 1. It reproduces on `main` (pre-existing, not from this change) and the baseline-gated run reports `OK 6/6`. Fix: raise `maxBuffer` (or stream) in the quality runner's `spawnSync` so large verb output can't manufacture a false FAIL.
+- Step 7's documented `quality run --diff-against-baseline` invocation omits `--baseline-dir`, so run from the worktree it looked for the baseline under the worktree's `.sdlc/` and errored `baseline not found`; the baseline was captured in the main repo's `.sdlc/quality-baselines/`. Fix: task-work Step 7 (and the dogfood sub-step) should pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly when the gate runs inside a worktree, mirroring the Step 3a capture path.
