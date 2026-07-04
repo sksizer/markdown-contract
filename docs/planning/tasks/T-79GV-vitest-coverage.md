@@ -1,24 +1,20 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-79GV
 status: closed/done
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0010]]'
+  - "[[M-0010 Quality Tooling]]"
 tags:
-- quality
-- coverage
-- vitest
-- testing
+  - quality
+  - coverage
+  - vitest
+  - testing
 need_human_review: false
 impact: medium
 complexity: medium
-completion_note: 'Delivered in the M-0010 opening PR — added @vitest/coverage-v8,
-  a v8 coverage block with per-metric thresholds in vitest.config.ts, an npm
-  `coverage` script, a moon `:coverage` task, and wired CI to run `:coverage`
-  (subsuming `:test`) plus upload the report. Baseline at adoption: statements
-  91.2%, branches 82.2%, functions 94.87%, lines 93.5% (547 tests).'
+completion_note: "Delivered in the M-0010 opening PR — added @vitest/coverage-v8, a v8 coverage block with per-metric thresholds in vitest.config.ts, an npm `coverage` script, a moon `:coverage` task, and wired CI to run `:coverage` (subsuming `:test`) plus upload the report. Baseline at adoption: statements 91.2%, branches 82.2%, functions 94.87%, lines 93.5% (547 tests)."
 ---
 # Add vitest v8 test coverage with reporting and a threshold gate
 
@@ -100,6 +96,6 @@ normal run rather than doubling it). The HTML/lcov report is uploaded as a CI ar
 
 ## Discovery context
 
-Surfaced while planning [[M-0010]] code-quality tooling: the project gates `typecheck` +
+Surfaced while planning [[M-0010 Quality Tooling]] code-quality tooling: the project gates `typecheck` +
 `test` in CI ([[T-VQ1N-ci-quality-checks]]) but never measured coverage. Chosen as one of
 the two foundation tools because it has zero source churn and unblocks an honest baseline.

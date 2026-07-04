@@ -1,13 +1,14 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-W1CX
-status: planning/backlog
-created: '2026-07-01'
+status: open/ready
+created: 2026-07-01
+last_reviewed: 2026-07-03
 related:
-- '[[M-0010]]'
+  - "[[M-0010 Quality Tooling]]"
 tags:
-- quality
+  - quality
 need_human_review: false
 impact: medium
 complexity: small
@@ -25,14 +26,17 @@ trends toward zero findings.
 ## Today
 
 knip (config in root `knip.json`, run via `bun run lint:deps` / `moon run
-core:lint-deps`) reports **13 genuine findings** — 9 unused exports and 4 unused
-exported types, all in `packages/core/src`, none of them the published barrels'
-public API. None have been removed.
+core:lint-deps`) reports **13 genuine findings** in `packages/core/src` — 9
+unused exports and 4 unused exported types, none of them the published barrels'
+public API. None have been removed. Re-verified 2026-07-03: the same 13
+`packages/core` findings stand; a fresh run also reports newer findings in the
+`apps/web` / `sites/docs` workspaces, which are NOT this task's scope (they
+belong to the gating flip, [[T-3L9Q-knip-gating-flip]]).
 
 | Location | Role today |
 |---|---|
-| `packages/core/src/core/grammar.ts` | Exports `matchStructure` (line ~36), reported unused. |
-| `packages/core/src/core/leaves.ts` | Exports `matchContent` (line ~16), reported unused. |
+| `packages/core/src/core/grammar.ts` | Exports `matchStructure` (line 39), reported unused. |
+| `packages/core/src/core/leaves.ts` | Exports `matchContent` (line 17), reported unused. |
 | `packages/core/src/core/registry.ts` | Exports `CONTENT_LEVELS`, `RULE_LEVELS`, `TEXT_LEVELS`, and type `LevelRegistry`, all reported unused. |
 | `packages/core/src/declarative/text.ts` | Exports functions `compileMatchSpec`, `compileMatchSpecs`, `compileScopeTextSpecs` and interface `ScopeTextSpecs`, all reported unused. |
 | `packages/core/src/runner/index.ts` | Internal barrel re-exports `compileMatcher`, reported unused (nothing reachable consumes it). |
@@ -84,7 +88,8 @@ and explained.
 ## Out of scope
 
 - Changing the knip config itself (entry/project/ignores) — that is tuned in T-HIL6; this task only removes code.
-- Flipping knip to a hard CI gate (dropping `continue-on-error`, `runInCI: true`) — the deferred gating flip.
+- Flipping knip to a hard CI gate (dropping `continue-on-error`) — owned by [[T-3L9Q-knip-gating-flip]], which depends on this task.
+- The newer knip findings outside `packages/core` (the `apps/web` daemon exports, the `sites/docs` script exports, the unused `zod` devDep) — triaged by [[T-3L9Q-knip-gating-flip]] as part of driving the run to exit 0.
 
 ## Dependencies
 

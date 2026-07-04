@@ -1,13 +1,14 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-SQFB
-status: planning/backlog
-created: '2026-07-01'
+status: open/ready
+created: 2026-07-01
+last_reviewed: 2026-07-03
 related:
-- '[[M-0010]]'
+  - "[[M-0010 Quality Tooling]]"
 tags:
-- quality
+  - quality
 need_human_review: false
 impact: low
 complexity: small
@@ -30,12 +31,12 @@ future detectors) does not rediscover it.
 |---|---|
 | `packages/core/moon.yml` | Declares `lint-docs` and (from T-HIL6) `lint-deps` with `runInCI: false`. The interaction with `moon run` under CI is undocumented. |
 | `.github/workflows/knip.yml` | Works around the skip with `env: CI: ''`, explained only in an inline comment on that one workflow. |
-| repo docs / conventions | No shared note on the `runInCI: false` + dedicated-side-gate-workflow + `CI:''` pattern; the knowledge lives in a single workflow comment. |
+| `README.md` | Has a "Toolchain → Authoring moon tasks" section — the natural home for the convention — that today says nothing about `runInCI` / moon's CI detection. |
 
 ## Proposed
 
-A short, discoverable convention note (in the repo's moon/CI docs or a
-conventions file) that states: (1) `runInCI: false` also suppresses explicit
+A short, discoverable convention note in `README.md` (under "Authoring moon
+tasks") that states: (1) `runInCI: false` also suppresses explicit
 `moon run` under CI; (2) the pattern for running such a task from a dedicated
 side-gate workflow is to clear `CI` for that step; (3) when to prefer a
 dedicated workflow over the shared `moon run` CI list. Cross-referenced from the
@@ -56,12 +57,12 @@ dedicated workflow over the shared `moon run` CI list. Cross-referenced from the
 
 | Location | Kind | Change |
 |---|---|---|
-| repo moon/CI conventions doc | modify | Add the `runInCI: false` + side-gate-workflow + `CI:''` note. |
+| `README.md` | modify | Add the `runInCI: false` + side-gate-workflow + `CI:''` note under "Authoring moon tasks". |
 | `.github/workflows/knip.yml` | modify | Cross-reference the convention note from the inline comment. |
 
 ## Acceptance criteria
 
-- [ ] AC-1: A discoverable convention note documents that `runInCI: false` suppresses explicit `moon run` under CI and gives the `CI:''` side-gate pattern.
+- [ ] AC-1: `README.md`'s "Authoring moon tasks" section documents that `runInCI: false` suppresses explicit `moon run` under CI and gives the `CI:''` side-gate pattern.
 - [ ] AC-2: The `knip.yml` workflow comment references that note rather than being the sole source of the explanation.
 
 ## Out of scope

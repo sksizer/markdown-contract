@@ -1,18 +1,19 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-1C0J
-status: planning/backlog
-created: '2026-07-02'
+status: open/ready
+created: 2026-07-02
+last_reviewed: 2026-07-03
 related:
-- '[[M-0010]]'
-- '[[T-0MVN-biome-lint-format]]'
+  - "[[M-0010 Quality Tooling]]"
+  - "[[T-0MVN-biome-lint-format]]"
 tags:
-- quality
-- lint
-- cleanup
-- biome
-- tech-debt
+  - quality
+  - lint
+  - cleanup
+  - biome
+  - tech-debt
 need_human_review: false
 impact: low
 complexity: small
@@ -31,10 +32,15 @@ suppression was added next to one (e.g. the `noSelfCompare` case in
 
 ## Today
 
+Inventory (verified 2026-07-03 via `grep -rn "eslint-disable" packages/core --include='*.ts'`):
+**65 sites** — 64 line-level comments across ten consumption fixtures, plus one
+file-level block in a co-located unit test under `src/`.
+
 | Location | Role today |
 |---|---|
-| `packages/core/tests/fixtures/**/*.ts` | Some fixtures carry `// eslint-disable-next-line @typescript-eslint/...` comments that no linter reads (ESLint is not configured). |
+| `packages/core/tests/fixtures/consumption/*.ts` | Ten fixtures (01–09, 11) carry 64 `// eslint-disable-next-line @typescript-eslint/no-explicit-any` comments that no linter reads (ESLint is not configured). |
 | `packages/core/tests/fixtures/consumption/03-dual-key-section-access.ts` | Has a stale eslint-disable directly above a real `// biome-ignore lint/suspicious/noSelfCompare` comment (added by T-0MVN). |
+| `packages/core/src/core/model.test.ts` | Carries a file-level `/* eslint-disable @typescript-eslint/no-explicit-any */` (line 14) — the one site outside `tests/fixtures/`. |
 
 ## Proposed
 
@@ -55,7 +61,8 @@ either left unsuppressed (the rule is `warn`, non-blocking) or converted to a pr
 
 | Location | Kind | Change |
 |---|---|---|
-| `packages/core/tests/fixtures/**/*.ts` | modify | Remove stale `eslint-disable` comments; convert to `biome-ignore` only where a real Biome error needs suppressing. |
+| `packages/core/tests/fixtures/consumption/*.ts` | modify | Remove stale `eslint-disable` comments; convert to `biome-ignore` only where a real Biome error needs suppressing. |
+| `packages/core/src/core/model.test.ts` | modify | Remove the file-level `/* eslint-disable */` block comment. |
 
 ## Acceptance criteria
 
@@ -65,7 +72,10 @@ either left unsuppressed (the rule is `warn`, non-blocking) or converted to a pr
 
 ## Out of scope
 
-- The deliberately-relaxed `noExplicitAny` / `noNonNullAssertion` warn severities (owned by the Biome-debt theme, see [[T-D8TE-ratchet-biome-complexity-ceiling]]).
+- Actually fixing the `any` usages the comments point at — that is
+  [[T-JGCX-biome-noexplicitany-source-fix]] (and [[T-FOCX-biome-nononnull-source-fix]]
+  for non-null assertions). This task only removes dead directives. If T-JGCX lands
+  first and rewrites a fixture, re-run the grep — the sweep is cheap either way.
 
 ## Dependencies
 

@@ -40,23 +40,26 @@ each owning its own config file and adding only additive edits to the shared sur
 
 ## Success criteria
 
-- [ ] Test **coverage is measured and gated** — `vitest` v8 coverage runs in CI with
+- [x] Test **coverage is measured and gated** — `vitest` v8 coverage runs in CI with
   per-metric thresholds that fail the build on a regression ([[T-79GV-vitest-coverage]]).
-- [ ] **Biome** lints and formats the TypeScript with a CI gate, including a
-  per-function complexity rule ([[T-0MVN-biome-lint-format]]).
-- [ ] Repo-wide **code metrics** — lines of code and a cyclomatic-complexity estimate —
-  are reported in CI via `scc` ([[T-X07O-code-metrics-scc]]).
-- [ ] The **published package is validated** — `publint` + `are-the-types-wrong` confirm
+- [x] **Biome** lints and formats the TypeScript with a CI gate, including a
+  per-function complexity rule ([[T-0MVN-biome-lint-format]], PR #169).
+- [x] Repo-wide **code metrics** — lines of code and a cyclomatic-complexity estimate —
+  are reported in CI via `scc` ([[T-X07O-code-metrics-scc]], PR #166).
+- [x] The **published package is validated** — `publint` + `are-the-types-wrong` confirm
   the `exports` map and `.d.ts` resolution are correct for consumers
-  ([[T-L77L-package-publish-hygiene]]).
-- [ ] **Dead code and unused dependencies** are surfaced by `knip`
-  ([[T-HIL6-knip-dead-code]]).
+  ([[T-L77L-package-publish-hygiene]], PR #144).
+- [x] **Dead code and unused dependencies** are surfaced by `knip`
+  ([[T-HIL6-knip-dead-code]], PR #143 — report-only by design; the gating flip is
+  [[T-3L9Q-knip-gating-flip]]).
 - [ ] **Local pre-commit/pre-push hooks** (lefthook) + an `.editorconfig` catch issues
   before CI ([[T-77ST-git-hooks-lefthook]]).
-- [ ] **Dependency updates and a vulnerability audit** run automatically — Dependabot
-  PRs + a CI audit step ([[T-LCA7-dependency-updates-audit]]).
+- [x] **Dependency updates and a vulnerability audit** run automatically — Dependabot
+  PRs + a CI audit step ([[T-LCA7-dependency-updates-audit]], PR #138).
 - [ ] Every gate is wired through the moon task graph (or a dedicated workflow) so it is
-  reproducible locally (`moon run :<task>`) and enforced in CI.
+  reproducible locally (`moon run :<task>`) and enforced in CI. *(Met for coverage,
+  Biome, package-check, and audit; knip is deliberately report-only until
+  [[T-3L9Q-knip-gating-flip]] lands.)*
 
 ## Deliverables
 
@@ -68,7 +71,7 @@ PR and **five parallel followers**, each independent and pickable in any order
 
 - [x] [[T-79GV-vitest-coverage]] — vitest v8 coverage + per-metric threshold gate, wired
   as the moon `:coverage` task and run in CI. **Done in the opening PR.**
-- [ ] [[T-0MVN-biome-lint-format]] — Biome is *scaffolded* in the opening PR (devDep,
+- [x] [[T-0MVN-biome-lint-format]] — Biome is *scaffolded* in the opening PR (devDep,
   `biome.json`, `lint`/`format`/`check` scripts, usable locally); this task does the
   repo-wide format/lint application + the blocking CI gate + the complexity rule. Split
   out because a one-shot reformat collides with in-flight branches and must land
@@ -76,16 +79,35 @@ PR and **five parallel followers**, each independent and pickable in any order
 
 ### Parallel followers (independent tasks)
 
-- [ ] [[T-X07O-code-metrics-scc]] — `scc` lines-of-code + cyclomatic-complexity reporting
-  (report-only).
-- [ ] [[T-L77L-package-publish-hygiene]] — `publint` + `are-the-types-wrong` on the built
-  package.
-- [ ] [[T-HIL6-knip-dead-code]] — `knip` unused files/exports/dependencies (report-only
-  first, then gate).
+- [x] [[T-X07O-code-metrics-scc]] — `scc` lines-of-code + cyclomatic-complexity reporting
+  (report-only). **Shipped via #166.**
+- [x] [[T-L77L-package-publish-hygiene]] — `publint` + `are-the-types-wrong` on the built
+  package. **Shipped via #144.**
+- [x] [[T-HIL6-knip-dead-code]] — `knip` unused files/exports/dependencies (report-only
+  first, then gate). **Shipped via #143** (report-only; gate = [[T-3L9Q-knip-gating-flip]]).
 - [ ] [[T-77ST-git-hooks-lefthook]] — lefthook pre-commit/pre-push hooks + `.editorconfig`
-  (depends on Biome).
-- [ ] [[T-LCA7-dependency-updates-audit]] — Dependabot (npm + github-actions) + a CI
-  vulnerability audit step.
+  (depends on Biome). **The last open member task.**
+- [x] [[T-LCA7-dependency-updates-audit]] — Dependabot (npm + github-actions) + a CI
+  vulnerability audit step. **Shipped via #138.**
+
+### Follow-ups (debt surfaced by the member tasks; not milestone members)
+
+Defined implementation-ready 2026-07-03 so they can be dispatched independently:
+
+- [[T-D8TE-ratchet-biome-complexity-ceiling]] — ratchet `maxAllowedComplexity` from
+  46 toward 15 (16 functions over the recommended ceiling).
+- [[T-JGCX-biome-noexplicitany-source-fix]] — eliminate the `noExplicitAny` warnings
+  at the source and promote the rule to `error`.
+- [[T-FOCX-biome-nononnull-source-fix]] — eliminate the `noNonNullAssertion` warnings
+  with real narrowing and promote the rule to `error`.
+- [[T-1C0J-remove-stale-eslint-disable-comments]] — sweep the 65 stale
+  `eslint-disable` comments left from pre-Biome fixtures.
+- [[T-W1CX-knip-baseline-dead-code-cleanup]] — delete the 13-finding knip baseline in
+  `packages/core`.
+- [[T-3L9Q-knip-gating-flip]] — triage the newer `apps/web` / `sites/docs` findings
+  and make knip a blocking gate (depends on T-W1CX).
+- [[T-SQFB-document-moon-runinci-dedicated-workflow]] — document the
+  `runInCI: false` + side-gate-workflow + `CI:''` convention.
 
 ### Shared-surface coordination
 

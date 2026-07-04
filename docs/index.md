@@ -64,7 +64,7 @@ Milestones are product releases; order is ascending `version`. Source:
 | Version | ID | Milestone |
 | --- | --- | --- |
 | — | [[M-0003-config-inference]] | Config inference & `init` scaffolding |
-| — | [[M-0010]] | Code quality tooling — coverage, lint, metrics, and package hygiene |
+| — | [[M-0010 Quality Tooling]] | Code quality tooling — coverage, lint, metrics, and package hygiene |
 
 **Deferred / emerging / obsoleted** — milestones not in effect today
 (planned, draft, or closed), rendered as a table:
