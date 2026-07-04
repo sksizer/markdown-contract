@@ -2,24 +2,32 @@
 type: task
 schema_version: '5'
 id: T-DEMO
-status: open/ready
+status: planning/needs-definition
 created: '2026-06-30'
 related:
-  - '[[M-0008-single-exec-distribution]]'
-  - '[[D-0012-distribution-single-exec-and-web-ui]]'
-  - '[[C-0010-single-binary-and-vault-dashboard]]'
-  - '[[T-UDPO-extract-single-binary-example]]'
+- '[[M-0008-single-exec-distribution]]'
+- '[[D-0012-distribution-single-exec-and-web-ui]]'
+- '[[C-0010-single-binary-and-vault-dashboard]]'
+- '[[T-UDPO-extract-single-binary-example]]'
 depends_on:
-  - '[[T-SPAE-spa-embed]]'
+- '[[T-SPAE-spa-embed]]'
 tags:
-  - distribution
-  - prototype
-  - demo
-  - docs
+- distribution
+- prototype
+- demo
+- docs
 need_human_review: true
 impact: high
 complexity: small
 autonomy: supervised
+definition_gap: 'The ## Today table references the modeling-source path `tests/corpus/`,
+  which no longer exists: the corpus moved to `packages/core/tests/fixtures/corpus/`
+  in the monorepo split, so the touchpoint resolves to directory-missing and fails
+  the implementation-ready gate. Update that one Today-table row to the current path
+  (it is a secondary modeling reference, not a file the task edits); every other referenced
+  path (examples/single-binary/, its daemon fixture vault, README.md) resolves and
+  the demo deliverable is fully feasible against the current binary. No other sections
+  are missing, thin, or placeholder-bearing.'
 ---
 # End-to-end feasibility demo — the fully illustrated example
 
