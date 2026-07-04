@@ -17,6 +17,7 @@ tags:
 need_human_review: false
 impact: medium
 complexity: medium
+readiness_verified_at: '2026-07-04T02:06:01Z'
 ---
 # Flip knip from report-only to a blocking CI gate
 
