@@ -13,6 +13,7 @@ need_human_review: false
 impact: low
 complexity: small
 autonomy: autonomous/pr
+readiness_verified_at: '2026-07-04T07:38:27Z'
 ---
 # Document moon runInCI:false + dedicated side-gate workflow pattern
 
