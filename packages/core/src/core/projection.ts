@@ -360,88 +360,96 @@ function buildTree(
   // The ancestor stack: docRoot plus the chain of open sections, deepest last.
   const stack: SectionNode[] = [docRoot];
 
-  /** The section currently receiving blocks (the deepest open section, or docRoot). */
-  const current = (): SectionNode => stack[stack.length - 1] as SectionNode;
-
-  /** Attach `child` under the nearest open ancestor whose depth is < child.depth. */
-  function attachSection(child: SectionNode): void {
-    // Pop the stack to the nearest ancestor of smaller depth (D3 nearest-ancestor attach).
-    while (stack.length > 1 && (stack[stack.length - 1] as SectionNode).depth >= child.depth) {
-      stack.pop();
-    }
-    (stack[stack.length - 1] as SectionNode).sections.push(child);
-    stack.push(child);
-  }
-
   for (const node of root.children) {
     if (node.type === "yaml") continue; // frontmatter handled separately
 
     if (node.type === "heading") {
       const name = flattenInline(node.children).trim();
-      const depth = node.depth;
-      if (depth === 1 && !titleSeen) {
+      if (node.depth === 1 && !titleSeen) {
         // The leading H1 is the document title — captured, not a body section.
         title = name;
         titleSeen = true;
         continue;
       }
-      attachSection(newSection(name, depth, posOf(node)));
+      attachSection(stack, newSection(name, node.depth, posOf(node)));
       continue;
     }
 
-    // Non-heading content → a BlockNode on the current section (D4: root-level only).
-    const sec = current();
-
-    // Table: project once; a trailing single-cell `^id` row becomes the table's anchor.
-    if (node.type === "table") {
-      const projected = projectTable(node, source);
-      if (projected.absorbedAnchor !== undefined) {
-        projected.block.anchor = projected.absorbedAnchor;
-      }
-      sec.blocks.push(projected.block);
-      continue;
-    }
-
-    const block = projectBlock(node, source);
-
-    // Standalone `^block-id` paragraph: bind to the preceding block, else to the section.
-    if (block && block.kind === "paragraph") {
-      const standalone = isStandaloneAnchor(block.text);
-      if (standalone !== null) {
-        bindAnchor(sec, standalone);
-        continue; // the anchor paragraph itself is not a content block
-      }
-    }
-
-    if (!block) continue; // D4: blockquote / nested content yields no section-level block
-
-    // Trailing inline `^id` on a paragraph (no blank line before the anchor) → block anchor.
-    if (block.kind === "paragraph") {
-      const trailing = extractTrailingAnchor(block.text);
-      if (trailing) {
-        block.text = trailing.rest;
-        block.anchor = trailing.id;
-      }
-    }
-
-    // Trailing `^id` terminating a list item's text (`… extensions. ^summary`) → list anchor.
-    // An anchor can terminate any item (Obsidian binds it to the block it sits in); the
-    // first item carrying one wins, and the token is stripped from that item's text.
-    if (block.kind === "list") {
-      for (const item of block.items) {
-        const trailing = extractTrailingAnchor(item.text);
-        if (trailing) {
-          item.text = trailing.rest;
-          block.anchor = trailing.id;
-          break;
-        }
-      }
-    }
-
-    sec.blocks.push(block);
+    // Non-heading content → a BlockNode on the current (deepest open) section (D4: root-level only).
+    attachContentNode(stack[stack.length - 1] as SectionNode, node, source);
   }
 
   return { docRoot, title };
+}
+
+/** Attach `child` under the nearest open ancestor whose depth is < child.depth (D3). */
+function attachSection(stack: SectionNode[], child: SectionNode): void {
+  // Pop the stack to the nearest ancestor of smaller depth (D3 nearest-ancestor attach).
+  while (stack.length > 1 && (stack[stack.length - 1] as SectionNode).depth >= child.depth) {
+    stack.pop();
+  }
+  (stack[stack.length - 1] as SectionNode).sections.push(child);
+  stack.push(child);
+}
+
+/**
+ * Project one non-heading root node and attach its block to `sec` (D4: root-level only). A table's
+ * absorbed `^id` row becomes the table anchor; a standalone `^block-id` paragraph binds an anchor
+ * and yields no block; a trailing `^id` on a paragraph / list item is stripped onto the block.
+ */
+function attachContentNode(sec: SectionNode, node: RootContent, source: string): void {
+  // Table: project once; a trailing single-cell `^id` row becomes the table's anchor.
+  if (node.type === "table") {
+    const projected = projectTable(node, source);
+    if (projected.absorbedAnchor !== undefined) {
+      projected.block.anchor = projected.absorbedAnchor;
+    }
+    sec.blocks.push(projected.block);
+    return;
+  }
+
+  const block = projectBlock(node, source);
+
+  // Standalone `^block-id` paragraph: bind to the preceding block, else to the section.
+  if (block && block.kind === "paragraph") {
+    const standalone = isStandaloneAnchor(block.text);
+    if (standalone !== null) {
+      bindAnchor(sec, standalone);
+      return; // the anchor paragraph itself is not a content block
+    }
+  }
+
+  if (!block) return; // D4: blockquote / nested content yields no section-level block
+
+  bindTrailingAnchor(block);
+  sec.blocks.push(block);
+}
+
+/**
+ * Strip a trailing `^id` off a paragraph or list block and bind it as the block's anchor. On a
+ * paragraph the inline anchor (no blank line before it) is lifted; on a list the FIRST item
+ * carrying one wins (Obsidian binds it to the block it sits in), and the token is stripped.
+ */
+function bindTrailingAnchor(block: BlockNode): void {
+  if (block.kind === "paragraph") {
+    const trailing = extractTrailingAnchor(block.text);
+    if (trailing) {
+      block.text = trailing.rest;
+      block.anchor = trailing.id;
+    }
+    return;
+  }
+
+  if (block.kind === "list") {
+    for (const item of block.items) {
+      const trailing = extractTrailingAnchor(item.text);
+      if (trailing) {
+        item.text = trailing.rest;
+        block.anchor = trailing.id;
+        break;
+      }
+    }
+  }
 }
 
 /**

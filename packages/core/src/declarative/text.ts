@@ -49,11 +49,33 @@ const SPEC_KEYS = new Set([
 const isMap = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === "object" && !Array.isArray(v);
 
+/** The plain scalar spec fields validated by a single type check, keyed to the expected typeof. */
+const SCALAR_SPEC_FIELDS = [
+  ["normalize", "boolean"],
+  ["ignoreCase", "boolean"],
+  ["min", "number"],
+  ["max", "number"],
+  ["id", "string"],
+  ["note", "string"],
+] as const;
+
 /** Compile and validate ONE match-spec entry against the closed vocabulary. */
 function compileMatchSpec(raw: unknown, kind: TextKind, path: string): TextMatchSpec {
   if (!isMap(raw)) {
     throw new DeclarativeError(`${path}: a match spec must be a mapping (pattern | regex, …)`);
   }
+  assertKnownSpecKeys(raw, path);
+
+  const spec: TextMatchSpec = {};
+  assignNeedle(raw, spec, path);
+  assignScalarFields(raw, spec, path);
+  assignLevel(raw, spec, path);
+  assertCountBound(spec, kind, path);
+  return spec;
+}
+
+/** Reject any key outside the closed match-spec vocabulary (D-0011 § The match spec). */
+function assertKnownSpecKeys(raw: Record<string, unknown>, path: string): void {
   for (const key of Object.keys(raw)) {
     if (!SPEC_KEYS.has(key)) {
       throw new DeclarativeError(
@@ -61,7 +83,10 @@ function compileMatchSpec(raw: unknown, kind: TextKind, path: string): TextMatch
       );
     }
   }
+}
 
+/** Resolve the needle onto `spec`: exactly one of `pattern` (a literal) or `regex` (a source). */
+function assignNeedle(raw: Record<string, unknown>, spec: TextMatchSpec, path: string): void {
   const hasPattern = "pattern" in raw;
   const hasRegex = "regex" in raw;
   if (hasPattern && hasRegex) {
@@ -74,8 +99,6 @@ function compileMatchSpec(raw: unknown, kind: TextKind, path: string): TextMatch
       `${path}: a match spec needs one of 'pattern' (a literal) or 'regex' (a source)`,
     );
   }
-
-  const spec: TextMatchSpec = {};
   if (hasPattern) {
     if (typeof raw.pattern !== "string")
       throw new DeclarativeError(`${path}.pattern must be a string`);
@@ -85,32 +108,21 @@ function compileMatchSpec(raw: unknown, kind: TextKind, path: string): TextMatch
     if (typeof raw.regex !== "string") throw new DeclarativeError(`${path}.regex must be a string`);
     spec.regex = raw.regex;
   }
-  if ("normalize" in raw) {
-    if (typeof raw.normalize !== "boolean")
-      throw new DeclarativeError(`${path}.normalize must be a boolean`);
-    spec.normalize = raw.normalize;
+}
+
+/** Copy each present scalar tuning / shaper field onto `spec`, type-checking it by its expected typeof. */
+function assignScalarFields(raw: Record<string, unknown>, spec: TextMatchSpec, path: string): void {
+  for (const [key, type] of SCALAR_SPEC_FIELDS) {
+    if (key in raw) {
+      const value = raw[key];
+      if (typeof value !== type) throw new DeclarativeError(`${path}.${key} must be a ${type}`);
+      (spec as Record<string, unknown>)[key] = value;
+    }
   }
-  if ("ignoreCase" in raw) {
-    if (typeof raw.ignoreCase !== "boolean")
-      throw new DeclarativeError(`${path}.ignoreCase must be a boolean`);
-    spec.ignoreCase = raw.ignoreCase;
-  }
-  if ("min" in raw) {
-    if (typeof raw.min !== "number") throw new DeclarativeError(`${path}.min must be a number`);
-    spec.min = raw.min;
-  }
-  if ("max" in raw) {
-    if (typeof raw.max !== "number") throw new DeclarativeError(`${path}.max must be a number`);
-    spec.max = raw.max;
-  }
-  if ("id" in raw) {
-    if (typeof raw.id !== "string") throw new DeclarativeError(`${path}.id must be a string`);
-    spec.id = raw.id;
-  }
-  if ("note" in raw) {
-    if (typeof raw.note !== "string") throw new DeclarativeError(`${path}.note must be a string`);
-    spec.note = raw.note;
-  }
+}
+
+/** Validate and assign the finding `level` override (`error` | `warn`). */
+function assignLevel(raw: Record<string, unknown>, spec: TextMatchSpec, path: string): void {
   if ("level" in raw) {
     if (raw.level !== "error" && raw.level !== "warn") {
       throw new DeclarativeError(
@@ -119,10 +131,14 @@ function compileMatchSpec(raw: unknown, kind: TextKind, path: string): TextMatch
     }
     spec.level = raw.level;
   }
+}
 
-  // A count bound below its effective floor can never be satisfied — D-0011 routes absence to
-  // `forbids`, not a `requires` with `max: 0`. Caught here as a `DeclarativeError` so the builder's
-  // construction-time `ContractBuildError` (`assertRequiresPurity`) never fires (AC-4 single-entry).
+/**
+ * A count bound below its effective floor can never be satisfied — D-0011 routes absence to
+ * `forbids`, not a `requires` with `max: 0`. Caught here as a `DeclarativeError` so the builder's
+ * construction-time `ContractBuildError` (`assertRequiresPurity`) never fires (AC-4 single-entry).
+ */
+function assertCountBound(spec: TextMatchSpec, kind: TextKind, path: string): void {
   if (spec.max !== undefined) {
     const floor = kind === "requires" ? Math.max(spec.min ?? 1, 1) : (spec.min ?? 0);
     if (spec.max < floor) {
@@ -132,8 +148,6 @@ function compileMatchSpec(raw: unknown, kind: TextKind, path: string): TextMatch
       );
     }
   }
-
-  return spec;
 }
 
 /**

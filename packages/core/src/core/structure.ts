@@ -106,7 +106,22 @@ function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Findin
   const allowUnknown = seq.opts.allowUnknown ?? true;
   const slots = slotsOf(specs);
 
-  // ── Duplicate headings (exact) and camelCase key collisions (distinct headings) ──
+  checkDuplicatesAndCollisions(nodes, ctx, out);
+
+  // Assign each section to its declared slot (first occurrence binds the slot).
+  const assigned: Assigned[] = nodes.map((node) => ({
+    node,
+    slotIdx: slotForOrNull(slots, node.name),
+  }));
+
+  checkAliasAmbiguity(assigned, slots, ctx, out);
+  checkMissingSlots(assigned, slots, nodes, ctx, out);
+  checkOrderAndUnknowns(order, allowUnknown, nodes, specs, slots, assigned, ctx, out);
+  runPresentSlotChecks(assigned, slots, ctx, out);
+}
+
+/** Duplicate headings (exact) and camelCase key collisions (distinct headings) at one level. */
+function checkDuplicatesAndCollisions(nodes: SectionNode[], ctx: Ctx, out: Finding[]): void {
   const seenName = new Map<string, SectionNode>();
   const seenKey = new Map<string, string>(); // camelKey → first heading text
   for (const node of nodes) {
@@ -138,14 +153,10 @@ function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Findin
       }
     }
   }
+}
 
-  // ── Assign each section to its declared slot (first occurrence binds the slot) ────
-  const assigned: Assigned[] = nodes.map((node) => ({
-    node,
-    slotIdx: slotForOrNull(slots, node.name),
-  }));
-
-  // ── oneOf / alias ambiguity: a second distinct spelling filling an already-filled slot ──
+/** oneOf / alias ambiguity: a second distinct spelling filling an already-filled multi-name slot. */
+function checkAliasAmbiguity(assigned: Assigned[], slots: Slot[], ctx: Ctx, out: Finding[]): void {
   const slotBoundBy = new Map<number, string>(); // slotIdx → the heading that first filled it
   for (const a of assigned) {
     if (a.slotIdx === null) continue;
@@ -164,8 +175,16 @@ function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Findin
       );
     }
   }
+}
 
-  // ── Missing required slots ───────────────────────────────────────────────────────
+/** Required (non-optional) declared slots that no doc section filled → `structure/section-missing`. */
+function checkMissingSlots(
+  assigned: Assigned[],
+  slots: Slot[],
+  nodes: SectionNode[],
+  ctx: Ctx,
+  out: Finding[],
+): void {
   const filledSlots = new Set<number>();
   for (const a of assigned) if (a.slotIdx !== null) filledSlots.add(a.slotIdx);
   slots.forEach((slot, slotIdx) => {
@@ -182,38 +201,59 @@ function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Findin
       }),
     );
   });
+}
 
-  // ── Ordering + unknown admission ─────────────────────────────────────────────────
+/**
+ * Ordering + unknown-admission. `recognized-relative` / `strict` run their order check; then, for a
+ * non-strict level with `allowUnknown: false`, each unknown is out of place unless a gap admits it
+ * (a gap on an unordered level counts all unknowns against that single window). `order === "none"`
+ * with `allowUnknown: true` admits everything.
+ */
+function checkOrderAndUnknowns(
+  order: "none" | "recognized-relative" | "strict",
+  allowUnknown: boolean,
+  nodes: SectionNode[],
+  specs: readonly Spec[],
+  slots: Slot[],
+  assigned: Assigned[],
+  ctx: Ctx,
+  out: Finding[],
+): void {
   if (order === "recognized-relative") {
     checkRecognizedRelative(assigned, ctx, out);
   } else if (order === "strict") {
     checkStrict(nodes, specs, slots, allowUnknown, ctx, out);
   }
-  // `order === "none"`: no order check. Unknown admission for none/recognized-relative is
-  // governed by allowUnknown (true ⇒ all admitted; false ⇒ a gap is required — handled below).
 
-  if (order !== "strict" && !allowUnknown) {
-    // Unknowns are only legal at a gap; with no gap declared, each unknown is out of place.
-    const hasGap = specs.some((s) => unwrap(s).inner.kind === "gap");
-    if (!hasGap) {
-      for (const a of assigned) {
-        if (a.slotIdx === null) {
-          out.push(
-            ctx.finding({
-              id: "structure/section-order",
-              message: `unexpected unknown section ‘${a.node.name}’; unknown sections are not permitted here`,
-              pos: a.node.pos,
-            }),
-          );
-        }
-      }
-    } else {
-      // A gap exists but the level is unordered — count all unknowns against the (single) gap.
-      checkUnorderedGap(assigned, specs, ctx, out);
+  if (order === "strict" || allowUnknown) return;
+
+  // Unknowns are only legal at a gap; with no gap declared, each unknown is out of place.
+  const hasGap = specs.some((s) => unwrap(s).inner.kind === "gap");
+  if (!hasGap) {
+    emitStrayUnknowns(assigned, ctx, out);
+  } else {
+    // A gap exists but the level is unordered — count all unknowns against the (single) gap.
+    checkUnorderedGap(assigned, specs, ctx, out);
+  }
+}
+
+/** One `structure/section-order` per unknown section on a gap-less, unknown-forbidding level. */
+function emitStrayUnknowns(assigned: Assigned[], ctx: Ctx, out: Finding[]): void {
+  for (const a of assigned) {
+    if (a.slotIdx === null) {
+      out.push(
+        ctx.finding({
+          id: "structure/section-order",
+          message: `unexpected unknown section ‘${a.node.name}’; unknown sections are not permitted here`,
+          pos: a.node.pos,
+        }),
+      );
     }
   }
+}
 
-  // ── The kind-gate, anchors, and node-local rules (per declared, present slot) ─────
+/** The kind-gate, anchors, and node-local rules for each declared, present slot. */
+function runPresentSlotChecks(assigned: Assigned[], slots: Slot[], ctx: Ctx, out: Finding[]): void {
   for (const a of assigned) {
     if (a.slotIdx === null) continue;
     const slot = slots[a.slotIdx]!;
@@ -260,7 +300,11 @@ function checkRecognizedRelative(assigned: Assigned[], ctx: Ctx, out: Finding[])
  *   - an unknown at a gap is admitted (counted for the gap bound); an unknown with no gap
  *     here and `allowUnknown: false` → `structure/section-order`.
  * Gap bounds are checked against each window's admitted count.
+ *
+ * The separable passes (past-sequence admission, gap-count bounds) are extracted to
+ * `admitPastSequence` / `emitGapCounts`; what remains is the irreducible two-cursor merge.
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: a two-cursor positional merge over (declared specs × doc sections) whose branches share and advance the specIdx/docIdx cursors and early-`continue` — the ordering state machine reads clearest as one flat walk, not scattered across helpers.
 function checkStrict(
   nodes: SectionNode[],
   specs: readonly Spec[],
@@ -289,22 +333,7 @@ function checkStrict(
     const node = nodes[docIdx]!;
 
     if (specIdx >= specs.length) {
-      // Past the declared sequence. A trailing gap (if the last spec was one) absorbs extras;
-      // otherwise an unknown is out of place under allowUnknown:false. A recognized section
-      // here matched an earlier (skipped) slot — its disorder was already flagged at the jumper.
-      const lastWasGap = specs.length > 0 && unwrap(specs[specs.length - 1]!).inner.kind === "gap";
-      const slotIdx = slotForOrNull(slots, node.name);
-      if (slotIdx === null && !lastWasGap && !allowUnknown) {
-        out.push(
-          ctx.finding({
-            id: "structure/section-order",
-            message: `unexpected section ‘${node.name}’ after the declared sequence`,
-            pos: node.pos,
-          }),
-        );
-      } else if (slotIdx === null && lastWasGap) {
-        gapCount.set(specs.length - 1, (gapCount.get(specs.length - 1) ?? 0) + 1);
-      }
+      admitPastSequence(node, specs, slots, allowUnknown, gapCount, ctx, out);
       docIdx++;
       continue;
     }
@@ -375,7 +404,48 @@ function checkStrict(
     specIdx++;
   }
 
-  // Gap-count bounds.
+  emitGapCounts(gapCount, specs, slots, nodes, ctx, out);
+}
+
+/**
+ * A doc section encountered past the declared spec sequence. A trailing gap (if the last spec was
+ * one) absorbs it into that window; otherwise an unknown is out of place under `allowUnknown: false`.
+ * A recognized section here matched an earlier (skipped) slot — its disorder was already flagged at
+ * the jumper.
+ */
+function admitPastSequence(
+  node: SectionNode,
+  specs: readonly Spec[],
+  slots: Slot[],
+  allowUnknown: boolean,
+  gapCount: Map<number, number>,
+  ctx: Ctx,
+  out: Finding[],
+): void {
+  const lastWasGap = specs.length > 0 && unwrap(specs[specs.length - 1]!).inner.kind === "gap";
+  const slotIdx = slotForOrNull(slots, node.name);
+  if (slotIdx === null && !lastWasGap && !allowUnknown) {
+    out.push(
+      ctx.finding({
+        id: "structure/section-order",
+        message: `unexpected section ‘${node.name}’ after the declared sequence`,
+        pos: node.pos,
+      }),
+    );
+  } else if (slotIdx === null && lastWasGap) {
+    gapCount.set(specs.length - 1, (gapCount.get(specs.length - 1) ?? 0) + 1);
+  }
+}
+
+/** Check each gap window's admitted count against its `min` / `max` bound → `structure/gap-count`. */
+function emitGapCounts(
+  gapCount: Map<number, number>,
+  specs: readonly Spec[],
+  slots: Slot[],
+  nodes: SectionNode[],
+  ctx: Ctx,
+  out: Finding[],
+): void {
   for (const [gapSpecIdx, count] of gapCount) {
     const gap = unwrap(specs[gapSpecIdx]!).inner as GapSpec;
     const min = gap.min;

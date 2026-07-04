@@ -233,6 +233,18 @@ function validateTable(
   ctx: Ctx,
   out: Finding[],
 ): void {
+  checkTableColumns(node, cfg, ctx, out);
+  checkTableMinRows(node, cfg, ctx, out);
+  checkTableCells(node, cfg, ctx, out);
+}
+
+/** Missing declared columns and (when `extraColumns: "error"`) undeclared columns. */
+function checkTableColumns(
+  node: Extract<BlockNode, { kind: "table" }>,
+  cfg: TableConfig,
+  ctx: Ctx,
+  out: Finding[],
+): void {
   // Declared columns must all be present (one finding per missing column).
   for (const col of cfg.columns) {
     if (!node.columns.includes(col)) {
@@ -260,8 +272,15 @@ function validateTable(
       }
     }
   }
+}
 
-  // Row-count floor.
+/** Row-count floor → `content/table/min-rows`. */
+function checkTableMinRows(
+  node: Extract<BlockNode, { kind: "table" }>,
+  cfg: TableConfig,
+  ctx: Ctx,
+  out: Finding[],
+): void {
   if (cfg.minRows !== undefined && node.rows.length < cfg.minRows) {
     out.push(
       ctx.finding({
@@ -271,31 +290,37 @@ function validateTable(
       }),
     );
   }
+}
 
-  // Typed cells — run each declared cell schema over every row's value in that column.
-  if (cfg.cells) {
-    for (const [col, schema] of Object.entries(cfg.cells)) {
-      const colIdx = node.columns.indexOf(col);
-      if (colIdx === -1) continue; // a declared cell on a missing column → column-missing covers it
-      const zod = asZod(schema);
-      node.rows.forEach((row, i) => {
-        const value = row[colIdx] ?? "";
-        const res = zod.safeParse(value);
-        if (res.success) {
-          // A1 — keep the parsed output (previously discarded) and cache it on the table node's
-          // sparse typed overlay, from this SAME `safeParse` (no second Zod pass / traversal).
-          node.setTyped(i, col, res.data);
-        } else {
-          out.push(
-            ctx.finding({
-              id: "content/table/cell",
-              message: `cell ‘${value}’ in column ‘${col}’ is invalid`,
-              pos: node.rowPos(i), // AC-5 — localize to the offending row
-            }),
-          );
-        }
-      });
-    }
+/** Typed cells — run each declared cell schema over every row's value in that column. */
+function checkTableCells(
+  node: Extract<BlockNode, { kind: "table" }>,
+  cfg: TableConfig,
+  ctx: Ctx,
+  out: Finding[],
+): void {
+  if (!cfg.cells) return;
+  for (const [col, schema] of Object.entries(cfg.cells)) {
+    const colIdx = node.columns.indexOf(col);
+    if (colIdx === -1) continue; // a declared cell on a missing column → column-missing covers it
+    const zod = asZod(schema);
+    node.rows.forEach((row, i) => {
+      const value = row[colIdx] ?? "";
+      const res = zod.safeParse(value);
+      if (res.success) {
+        // A1 — keep the parsed output (previously discarded) and cache it on the table node's
+        // sparse typed overlay, from this SAME `safeParse` (no second Zod pass / traversal).
+        node.setTyped(i, col, res.data);
+      } else {
+        out.push(
+          ctx.finding({
+            id: "content/table/cell",
+            message: `cell ‘${value}’ in column ‘${col}’ is invalid`,
+            pos: node.rowPos(i), // AC-5 — localize to the offending row
+          }),
+        );
+      }
+    });
   }
 }
 
@@ -469,41 +494,60 @@ function frontmatterMessage(issue: ZodIssue, id: string, data: unknown): string 
 
   switch (issue.code) {
     case "invalid_enum_value": // zod v3 enum mismatch
-    case "invalid_value": {
-      // zod v4 literal/enum mismatch — `values` is the allowed set (one entry for a literal).
-      const values = Array.isArray(issue.values) ? issue.values : [];
-      if (values.length === 1) return `${at} must be ‘${String(values[0])}’`;
-      if (values.length > 1)
-        return `${at} must be one of ${values.map((v) => `‘${String(v)}’`).join(", ")}`;
-      return `${at} has an invalid value`;
-    }
-    case "invalid_type": {
-      const got = typeName(valueAt(data, issue.path));
-      return issue.expected
-        ? `${at} must be a ${issue.expected} (got ${got})`
-        : `${at} has the wrong type (got ${got})`;
-    }
+    case "invalid_value":
+      return invalidValueMessage(at, issue);
+    case "invalid_type":
+      return invalidTypeMessage(at, issue, data);
     case "invalid_format":
-      // a `pattern`/`format` constraint (D-0008 schema vocabulary) — name the format, else "pattern".
-      return issue.format && issue.format !== "regex"
-        ? `${at} is not a valid ${issue.format}`
-        : `${at} does not match the required pattern`;
+      return invalidFormatMessage(at, issue);
     case "too_small":
       return `${at} is too small`;
     case "too_big":
       return `${at} is too large`;
     case "custom":
-      // a `.refine()` / `.superRefine()` predicate speaks its own rule — keep its message,
-      // field-qualified when it addresses a key, verbatim when it is document-level.
-      return field && issue.message
-        ? `${at}: ${issue.message}`
-        : (issue.message ?? `${at} is invalid`);
+      return customMessage(at, field, issue);
     default:
-      // an unhandled code: lead with the field but keep Zod's detail rather than discard it.
-      return field
-        ? `${at}: ${issue.message ?? "is invalid"}`
-        : (issue.message ?? "frontmatter is invalid");
+      return unhandledMessage(at, field, issue);
   }
+}
+
+/** zod v4 literal/enum mismatch — `values` is the allowed set (one entry for a literal). */
+function invalidValueMessage(at: string, issue: ZodIssue): string {
+  const values = Array.isArray(issue.values) ? issue.values : [];
+  if (values.length === 1) return `${at} must be ‘${String(values[0])}’`;
+  if (values.length > 1)
+    return `${at} must be one of ${values.map((v) => `‘${String(v)}’`).join(", ")}`;
+  return `${at} has an invalid value`;
+}
+
+/** A wrong-type mismatch — name the expected type and the actual type (zod v4 drops `received`). */
+function invalidTypeMessage(at: string, issue: ZodIssue, data: unknown): string {
+  const got = typeName(valueAt(data, issue.path));
+  return issue.expected
+    ? `${at} must be a ${issue.expected} (got ${got})`
+    : `${at} has the wrong type (got ${got})`;
+}
+
+/** A `pattern` / `format` constraint (D-0008 schema vocabulary) — name the format, else "pattern". */
+function invalidFormatMessage(at: string, issue: ZodIssue): string {
+  return issue.format && issue.format !== "regex"
+    ? `${at} is not a valid ${issue.format}`
+    : `${at} does not match the required pattern`;
+}
+
+/**
+ * A `.refine()` / `.superRefine()` predicate speaks its own rule — keep its message,
+ * field-qualified when it addresses a key, verbatim when it is document-level.
+ */
+function customMessage(at: string, field: string, issue: ZodIssue): string {
+  return field && issue.message ? `${at}: ${issue.message}` : (issue.message ?? `${at} is invalid`);
+}
+
+/** An unhandled Zod code: lead with the field but keep Zod's detail rather than discard it. */
+function unhandledMessage(at: string, field: string, issue: ZodIssue): string {
+  return field
+    ? `${at}: ${issue.message ?? "is invalid"}`
+    : (issue.message ?? "frontmatter is invalid");
 }
 
 /**
@@ -526,37 +570,55 @@ function matchFrontmatter(tree: DocTree, schema: ZodType, ctx: Ctx, out: Finding
   };
 
   for (const issue of res.error.issues) {
-    // A strict-object rejection lists every offending key under `issue.keys`; emit one
-    // unknown-key finding per key, each at that key's source line.
+    // A strict-object rejection lists every offending key under `issue.keys`; each becomes its
+    // own unknown-key finding. Anything else is a generic field issue.
     if (issue.code === "unrecognized_keys" && Array.isArray(issue.keys)) {
-      for (const key of issue.keys) {
-        const pos = lineFor([...issue.path, key]);
-        out.push(
-          ctx.finding({
-            id: "frontmatter/unknown-key",
-            message: `unknown frontmatter key ‘${key}’`,
-            ...(pos ? { pos } : {}),
-          }),
-        );
-      }
-      continue;
+      emitUnknownKeys(issue, lineFor, ctx, out);
+    } else {
+      emitFrontmatterIssue(issue, data, lineFor, ctx, out);
     }
+  }
+}
 
-    // A missing required key reads as an invalid_type whose input is undefined.
-    const id =
-      issue.code === "invalid_type" && isMissingRequired(data, issue.path)
-        ? "frontmatter/required"
-        : frontmatterIdFor(issue);
+/** Whether a Zod issue path maps to a source position via the frontmatter CST. */
+type LineForPath = (path: (string | number)[]) => SourcePos | undefined;
 
-    const pos = lineFor(issue.path);
+/** Emit one `frontmatter/unknown-key` per offending key, each at that key's source line. */
+function emitUnknownKeys(issue: ZodIssue, lineFor: LineForPath, ctx: Ctx, out: Finding[]): void {
+  for (const key of issue.keys ?? []) {
+    const pos = lineFor([...issue.path, key]);
     out.push(
       ctx.finding({
-        id,
-        message: frontmatterMessage(issue, id, data),
+        id: "frontmatter/unknown-key",
+        message: `unknown frontmatter key ‘${key}’`,
         ...(pos ? { pos } : {}),
       }),
     );
   }
+}
+
+/** Emit one finding for a generic frontmatter issue (required / type / enum / …), at its key's line. */
+function emitFrontmatterIssue(
+  issue: ZodIssue,
+  data: unknown,
+  lineFor: LineForPath,
+  ctx: Ctx,
+  out: Finding[],
+): void {
+  // A missing required key reads as an invalid_type whose input is undefined.
+  const id =
+    issue.code === "invalid_type" && isMissingRequired(data, issue.path)
+      ? "frontmatter/required"
+      : frontmatterIdFor(issue);
+
+  const pos = lineFor(issue.path);
+  out.push(
+    ctx.finding({
+      id,
+      message: frontmatterMessage(issue, id, data),
+      ...(pos ? { pos } : {}),
+    }),
+  );
 }
 
 /** Whether the value addressed by `path` is absent from `data` (a missing required key). */
