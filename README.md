@@ -29,13 +29,16 @@ as the reference for single-package Node/TypeScript **library health**. The
 template defines the canonical layer stack — scaffold, Biome format/lint, Vitest
 test + coverage floor, the CI gate, dependency hygiene (Dependabot + audit),
 publish hygiene (`publint` + `are-the-types-wrong`), dead-code detection (knip),
-code metrics (scc), and module/test conventions — and this workspace carries
-every layer, adapted from the template's npm single-package shape to the
-Bun + moon workspace (gates wrapped as `core:*` moon tasks plus dedicated
-side-gate workflows).
+code metrics (scc), module/test conventions, and supply-chain hardening
+(Dependabot cooldown windows + exact devDependency pins). This workspace carries
+the stack adapted from the template's npm single-package shape to the Bun + moon
+workspace (gates wrapped as `core:*` moon tasks plus dedicated side-gate
+workflows), with one known gap: the **supply-chain-hardening** layer (no
+cooldown on our Dependabot config; devDependencies use `^` ranges, not exact
+pins).
 
 Layers here that go beyond the template: lefthook pre-commit/pre-push hooks +
-`.editorconfig`, knip promoted to a **blocking** gate (the template plans
+`.editorconfig`, knip promoted to a **blocking** gate (the template ships it
 report-only), and the planning-docs contract gate (`core:lint-docs`). When the
 template grows or changes a layer, mirror the delta here — and when a quality
 practice proves out here first, upstream it to the template.
