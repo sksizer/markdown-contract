@@ -77,6 +77,41 @@ are iterable typed-row collections; anchors resolve with `doc.byAnchor(id)`.
 Because the model is derived from the contract, checking and consuming can
 never drift apart.
 
+## Repeatable sections
+
+The structure plane enforces per-level heading uniqueness — two sibling
+sections with the same heading are a `structure/duplicate-section` error. But
+some documents legitimately repeat a heading as peers: a per-entry `## Entry`, a
+changelog's `## Release`, a per-day `## Schedule`. Declaring a slot
+**repeatable** waives that rule for its own peers, and only its peers:
+
+```ts
+section("Entry", { repeatable: true })                     // may recur as peers
+section("Release", { repeatable: true, min: 1, max: 12 })  // bounded count
+```
+
+The declarative DSL takes the same keys on a section node — `repeatable: true`
+plus optional numeric `min` / `max`. Every occurrence fills the one slot, so N
+repeats validate (and consecutive repeats never misfire the order check);
+`min` / `max` bound the count, and a present slot outside them is a
+`structure/repeat-count` finding. A heading that recurs *without* being declared
+repeatable still errors — the default is unchanged.
+
+In the typed model the slot's dual-key key binds a **positional array** in
+document order — `doc.body.entry` is a `SectionView[]`, or a `TableView<Row>[]`
+when the section's sole content is a `table(...)`, each element the same value a
+single section would bind:
+
+```ts
+doc.body.entry.length         // how many occurrences
+doc.body.entry[0].text()      // positionally indexed, typed by the inner shape
+doc.body.section("Entry")     // still the first occurrence's SectionView
+```
+
+Because the shape is a first-class, validated one, `init` can emit it: a heading
+it sees repeated as exact-duplicate peers becomes a repeatable slot, so the
+inferred contract accepts the folder it was read from.
+
 ## Architecture
 
 The package is three layers, and imports flow one way:
