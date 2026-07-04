@@ -39,7 +39,7 @@ const DEFAULT_CONFIG_NAMES = [
 ];
 
 /** What {@link validateVault} hands back for the route to emit: HTTP status + JSON body. */
-export interface ValidateOutcome {
+interface ValidateOutcome {
   status: number;
   body: ValidateResponse | ApiError;
 }
