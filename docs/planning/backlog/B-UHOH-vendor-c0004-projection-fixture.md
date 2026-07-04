@@ -2,11 +2,13 @@
 type: backlog
 schema_version: '1'
 id: B-UHOH
-last_reviewed: '2026-07-01'
+last_reviewed: '2026-07-04'
 tags:
 - monorepo
 - testing
 - packages-core
+status: promoted/task
+result: '[[T-1GIL-vendor-c0004-projection-fixture]]'
 ---
 # `packages/core` projection test reaches out to a repo-root planning doc — vendor it as a package-local fixture
 
