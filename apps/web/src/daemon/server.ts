@@ -13,7 +13,6 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join, normalize, resolve, sep } from "node:path";
-import { parseArgs } from "node:util";
 
 import { handleApi, type RouteContext } from "./routes.js";
 
@@ -77,45 +76,6 @@ export function serve(opts: ServeOptions = {}): ReturnType<typeof Bun.serve> {
   });
 
   if (opts.open) openBrowser(`http://${displayHost(server.hostname)}:${server.port}/`);
-  return server;
-}
-
-/**
- * Parse the `daemon` subcommand's flags (`--port`, `--host`, `--root`, `--open`), boot
- * the server, and print the listening URL. `--host`/`--root` are infrastructure: `--host`
- * makes the loopback refusal (AC-1) reachable from the binary; `--root` sets the vault
- * jail. Returns the server handle (mainly for tests); the binary never resolves it.
- */
-export function runDaemon(argv: string[]): ReturnType<typeof Bun.serve> {
-  const { values } = parseArgs({
-    args: argv,
-    options: {
-      port: { type: "string" },
-      host: { type: "string" },
-      root: { type: "string" },
-      open: { type: "boolean" },
-    },
-    allowPositionals: false,
-  });
-
-  let port: number | undefined;
-  if (values.port !== undefined) {
-    port = Number(values.port);
-    if (!Number.isInteger(port) || port < 0 || port > 65535) {
-      throw new Error(`--port must be an integer in 0..65535 (got '${values.port}')`);
-    }
-  }
-
-  const server = serve({
-    port,
-    host: values.host,
-    root: values.root,
-    open: values.open === true,
-  });
-
-  process.stdout.write(
-    `markdown-contract daemon listening on http://${displayHost(server.hostname)}:${server.port}/\n`,
-  );
   return server;
 }
 
