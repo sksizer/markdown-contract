@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-1GIL
-status: open/ready
+status: in-progress
 created: '2026-07-04'
 related: []
 tags: []
@@ -10,6 +10,7 @@ need_human_review: false
 impact: medium
 complexity: medium
 readiness_verified_at: '2026-07-04T09:42:37Z'
+last_reviewed: '2026-07-04'
 ---
 # Vendor the C-0004 projection fixture into packages/core instead of reaching out to a repo-root planning doc
 
@@ -82,3 +83,19 @@ clearly-labelled repo-level check rather than a `packages/core` unit test.
 Promoted from [[B-UHOH-vendor-c0004-projection-fixture]]. The coupling surfaced during
 the T-WKSP Bun-workspace split, when the fixture path had to climb from `../../` to
 `../../../../` after `packages/core` moved below the repo root.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
