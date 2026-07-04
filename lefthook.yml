@@ -1,0 +1,26 @@
+# Local git hooks (lefthook) — mirrors the CI gates so format/lint/type/test
+# failures are caught before the push, not after the PR build goes red.
+#
+# The hooks arm automatically: the root package.json "prepare" script runs
+# `lefthook install` on `bun install`, and sdlc.yaml's worktree_init runs
+# `bunx lefthook install` when a fresh worktree is bootstrapped.
+#
+# Bypass (for an intentional WIP commit/push):
+#   git commit --no-verify     # skip the pre-commit Biome check
+#   git push   --no-verify     # skip the pre-push typecheck + test gates
+
+pre-commit:
+  parallel: true
+  commands:
+    # Biome over STAGED files only (check-only — no auto-fix / no re-stage), so
+    # the commit is fast and scoped to what's changing.
+    biome:
+      glob: '*.{ts,tsx,js,jsx,json,jsonc,mjs,cjs}'
+      run: bunx biome check --no-errors-on-unmatched {staged_files}
+
+pre-push:
+  commands:
+    # The heavier cached gates — mirrors what CI enforces. moon parallelizes and
+    # caches the two tasks, so a clean tree is a fast cache hit.
+    gates:
+      run: bunx moon run core:typecheck core:test
