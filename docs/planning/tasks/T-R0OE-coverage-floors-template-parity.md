@@ -15,6 +15,7 @@ need_human_review: false
 impact: medium
 complexity: medium
 autonomy: autonomous/pr
+readiness_verified_at: '2026-07-04T19:21:51Z'
 ---
 # Raise coverage floors toward node-template parity (best effort on branches)
 
