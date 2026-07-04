@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-6WHH
-status: planning/draft
+status: open/ready
 created: '2026-07-04'
 related: []
 tags: []
@@ -12,96 +12,80 @@ complexity: medium
 ---
 # Guard that bunx moon resolves the pinned @moonrepo/cli, not a shadowing global proto moon
 
+> AUTO-DEFINED: this spec was best-effort machine-authored by
+> /sdlc:task-auto-define on 2026-07-04 from the linked backlog origin story
+> ([[B-QF64-assert-pinned-moon-version]]). Review the Goal, Approach, Today,
+> Files-to-touch, and Acceptance-criteria carefully before trusting it.
+
 ## Goal
 
-<Why this task exists. The problem it solves, the work it unblocks, or the
-risk it mitigates. Two or three sentences — the elevator pitch.>
+During T-WKSP, `bunx moon` silently resolved a global proto-managed moon (1.41.8)
+instead of the workspace-pinned `@moonrepo/cli@2.3.5`, because moon lived only in
+`packages/core`'s devDeps (not the root) and moon's version-inverted config schema
+surfaced the mismatch as a config parse error rather than an obvious "wrong moon."
+Under the wrong moon the per-task `toolchain:` split degraded to `system`, so the
+bun/node gate was not actually enforced. Add a cheap preflight that fails loudly when
+`bunx moon --version` does not equal the pinned CLI version, so the regression cannot
+silently return on any machine with a global proto moon on `PATH`.
 
 ## Today
 
-<Current state of the relevant area as a typed table. One row per touched
-location; the Location column uses the five-form grammar documented in
-the template's header comment. The Role-today column is a one-line note
-on what that location does today (or what's wrong/missing there).
-
-Pure-narrative Todays (no path-bearing rows) may also be expressed as
-prose — but tables are the preferred shape because the verifier resolves
-each row against the live codebase, so the description doesn't go stale
-as code drifts.>
-
 | Location | Role today |
 |---|---|
-| `path/to/file.ext` | <what this file does today> |
-| `path/to/dir/` | <what's in this directory today> |
+| `package.json` | Root manifest; pins `@moonrepo/cli` at `2.3.5` (and `@biomejs/biome`) in devDependencies so `bun install` hoists moon into the root `node_modules/.bin`. |
+| `.moon/toolchains.yml` | Pins the `bun` (1.3.14) and `node` (22.12.0) runtimes moon launches tasks under — but does not pin or assert moon's own binary version. |
+| `.github/workflows/ci.yml` | Runs `bunx moon run :build :typecheck :coverage :lint example-single-binary:test` after `bun install --frozen-lockfile`; no step asserts the resolved moon is the pinned CLI. |
+| `sdlc.yaml` | Carries `quality_checks:` and a commented `worktree_init:` block — the hook point for a per-worktree bootstrap check. |
 
 ## Proposed
 
-<Target state after this task ships. Concrete enough that an implementer
-can tell when they're done. Not the steps — the destination.>
+A single preflight asserts that the moon `bunx moon` resolves is the workspace-pinned
+`@moonrepo/cli` version, failing with a clear message (naming both versions and the
+likely cause) when a global/proto moon shadows it. It runs in CI before the `moon run`
+step and is available as a local/worktree bootstrap check, so a shadowing global moon
+fails the build instead of silently degrading the toolchain split to `system`.
 
 ## Approach
 
-<Numbered, ordered steps to get from Today to Proposed. Each step should
-be small enough to commit on its own if useful. Call out any decisions
-still open inside the step.>
-
-1. <step>
-2. <step>
-3. <step>
+1. Add a small check script (e.g. `scripts/assert-moon-version.sh`) that reads the
+   pinned version from root `package.json` (`.devDependencies["@moonrepo/cli"]`,
+   stripping any range prefix), compares it to the output of `bunx moon --version`, and
+   exits non-zero with a message naming both the expected and resolved versions and the
+   likely cause (a global proto moon earlier on `PATH`) when they differ.
+2. Wire it into `.github/workflows/ci.yml` as a step immediately before the
+   `bunx moon run …` step so CI fails fast on a shadowed moon.
+3. Add the same script as a `worktree_init:` verb in `sdlc.yaml` so a fresh worktree
+   bootstrap surfaces the shadow locally — the environment where T-WKSP first hit it.
+4. Verify by temporarily putting a different-version `moon` earlier on `PATH` and
+   confirming the script fails; confirm it passes on a clean checkout.
 
 ## Files to touch
 
-<Typed table of every location you expect to touch. Location uses the
-same five-form grammar as `## Today` (see header comment). Kind is one
-of `new`, `modify`, or `delete`. Change is a one-line note on what
-happens there.
-
-The verifier resolves each row by Kind: `new` rows require no existing
-file; `modify` and `delete` rows must resolve in the codebase (file /
-symbol / dir must exist; glob must expand to ≥1 match). Symbols on
-glob rows are rejected.>
-
 | Location | Kind | Change |
 |---|---|---|
-| `path/to/file.ext` | modify | <what changes> |
-| `path/to/new-file.ext` | new | <what gets created> |
+| `scripts/assert-moon-version.sh` | new | Preflight comparing `bunx moon --version` against the pinned `@moonrepo/cli` in root `package.json`; fails loudly on mismatch. |
+| `.github/workflows/ci.yml` | modify | Add a guard step running the preflight before the `bunx moon run …` step. |
+| `sdlc.yaml` | modify | Add the preflight as a `worktree_init:` verb so fresh worktrees catch a shadowing global moon locally. |
 
 ## Acceptance criteria
 
-<Each AC must be observable from outside the change — a test that passes,
-a user-visible behavior, a removed wart. Avoid "the code is cleaner" style
-ACs; pick something verifiable.>
-
-- [ ] AC-1: <criterion>
-- [ ] AC-2: <criterion>
-- [ ] AC-3: <criterion>
+- [ ] AC-1: On a clean checkout the preflight exits 0 and prints the resolved moon version, which equals `@moonrepo/cli` in root `package.json` (2.3.5).
+- [ ] AC-2: With a different-version `moon` earlier on `PATH`, the preflight exits non-zero and its message names both the expected and resolved versions.
+- [ ] AC-3: `.github/workflows/ci.yml` runs the preflight as a step ordered before the `bunx moon run …` step, so a shadowed moon fails the CI job.
 
 ## Out of scope
 
-<Things adjacent to this task that are deliberately NOT being addressed
-here. Useful for keeping PR review focused and for future tasks to point
-back to. Always required: if scope is obvious and nothing is excluded,
-leave a single "- none" bullet so the explicit signal is "scope
-considered, nothing to exclude.">
-
-- none
+- Changing which moon version is pinned, or upgrading `@moonrepo/cli`.
+- Pinning moon's own binary version inside `.moon/toolchains.yml` (moon's WASM toolchains manage runtimes, not the moon binary) — the pin stays in root `package.json`.
+- Asserting the bun/node runtime versions themselves — that is the toolchain pin's job, separate from catching a shadowed moon binary.
 
 ## Dependencies
 
-<Other tasks, branches, infra changes, or external decisions this task
-waits on. For hard "B cannot start until A closes" dependencies on
-other tasks or epics, also record them in the frontmatter
-`depends_on:` array (strict wikilink shape, e.g. `[[T-0010]]`) — the
-audit walks that graph for cycle detection. This prose section is the
-human-readable narrative; `depends_on:` is the machine-readable
-canonical list. Leave a single "- none" bullet if there are none.>
-
-- <dependency or "none">
+- none (the root-devDep fix from T-WKSP already landed; this only adds the guard).
 
 ## Discovery context
 
-<Optional. How this task got onto the list: linked incident, design doc,
-upstream conversation, prior PR review comment. Helps future-you remember
-why this was worth doing. Delete this section if there's nothing to add.>
-
--
+Promoted from [[B-QF64-assert-pinned-moon-version]]. Surfaced during T-WKSP when
+`bunx moon` ran a global proto moon 1.41.8 instead of the pinned 2.3.5, silently
+degrading the per-task toolchain split to `system` so the bun/node gate went
+unenforced.
