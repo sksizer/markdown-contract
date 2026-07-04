@@ -1,16 +1,15 @@
-# Dead-code / unused-dependency report (knip).
+# Dead-code / unused-dependency gate (knip).
 #
-# Report-only gate: runs knip (via the core:lint-deps moon task) and surfaces
-# unused files / exports / dependencies in the job log, but NEVER fails CI — the
-# knip step is `continue-on-error: true`. This is the documented-baseline gate
-# for the dead-code cleanup follow-up; flipping it to a hard gate (drop
-# continue-on-error, add to the shared ci.yml `moon run` list, set the moon
-# task's runInCI: true) is a deliberate later step, not this one.
+# Blocking gate: runs knip (via the core:lint-deps moon task) and FAILS the
+# workflow on any unused file / export / dependency finding (the knip step has no
+# `continue-on-error`, so a non-zero knip exit reddens the PR). The report-only
+# baseline phase is over (T-3L9Q flipped it) — new dead code now fails CI instead
+# of accumulating silently.
 #
 # Why a dedicated workflow rather than the shared ci.yml `moon run` list:
-#   knip is report-only, so it must not fail the shared build/typecheck/coverage
-#   gate. The core:lint-deps moon task is runInCI: false for the same reason, so
-#   it never rides `moon ci`. This dedicated job is where knip actually runs —
+#   knip stays a dedicated side-gate rather than riding the shared
+#   build/typecheck/coverage line. The core:lint-deps moon task is runInCI: false
+#   so it never rides `moon ci`; this dedicated job is where knip actually runs —
 #   mirroring the sibling audit.yml pattern (a separate side-gate workflow).
 #
 # Setup mirrors ci.yml exactly (Bun-canonical: T-WKSP / D-0010 D1): Bun installs
@@ -53,19 +52,18 @@ jobs:
           key: ${{ runner.os }}-proto-${{ hashFiles('.moon/toolchains.yml') }}
           restore-keys: ${{ runner.os }}-proto-
 
-      # Report-only: run knip through the moon task. continue-on-error keeps a
-      # finding from failing the workflow (knip exits non-zero on dead code) —
-      # the findings are surfaced in this log as the baseline, nothing more.
+      # Blocking gate: run knip through the moon task. A knip finding exits
+      # non-zero, and with no continue-on-error that fails this workflow — a new
+      # unused export / dependency reddens the PR.
       #
       # CI is blanked for this step only: the core:lint-deps task is
       # runInCI: false, which makes moon SKIP it once it detects a CI environment
       # (moon keys CI detection on a non-empty `CI` env var) — even for an
-      # explicit `moon run`. Clearing `CI` lets this dedicated report-only job
-      # still exercise the task via moon, without touching its runInCI: false
-      # (which keeps it out of the shared ci.yml gate). moon is version-pinned
-      # (@moonrepo/cli 2.3.5), so this behavior is stable.
-      - name: Run knip (report-only)
+      # explicit `moon run`. Clearing `CI` lets this dedicated job still exercise
+      # the task via moon, without touching its runInCI: false (which keeps it out
+      # of the shared ci.yml gate). moon is version-pinned (@moonrepo/cli 2.3.5),
+      # so this behavior is stable.
+      - name: Run knip
         run: bunx moon run :lint-deps
-        continue-on-error: true
         env:
           CI: ''

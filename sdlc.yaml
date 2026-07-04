@@ -8,6 +8,7 @@ quality_checks:
   - bunx moon run core:lint
   - bunx moon run core:test
   - bunx moon run core:package-check
+  - bun run lint:deps
 worktree_init:
   - bun install
 
