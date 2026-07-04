@@ -30,13 +30,11 @@ const c02: ConsumptionFixture = {
   reads: [
     {
       label: "doc.frontmatter.id — typed from the frontmatter Zod",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.frontmatter as any).id,
       equals: "D-0099",
     },
     {
       label: "doc.body.overview... — typed SectionView read (Summary prose)",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).summary.text(),
       equals:
         "Replace the bespoke body-schema scanners with a combinator grammar over a positioned section tree.",

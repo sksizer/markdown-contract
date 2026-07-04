@@ -26,44 +26,37 @@ const c07: ConsumptionFixture = {
   reads: [
     {
       label: "doc.byAnchor('extra')?.kind === 'table' — doc-wide search, BlockView discriminant",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc as any).byAnchor("extra")?.kind,
       equals: "table",
     },
     {
       label: "byAnchor('extra') narrowed: b.columns === ['Option', 'Note']",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc as any).byAnchor("extra").columns,
       equals: ["Option", "Note"],
     },
     {
       label: "byAnchor('extra') narrowed: b.rows[1].Option === 'B' — typed string, no row typing",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc as any).byAnchor("extra").rows[1].Option,
       equals: "B",
     },
     {
       label:
         "doc.byAnchor('components')?.kind === 'table' — declared anchor reachable dynamically too",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc as any).byAnchor("components")?.kind,
       equals: "table",
     },
     {
       label: "byAnchor('components') narrowed: c.rows[0]['#'] === '1' — Record<string,string> here",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc as any).byAnchor("components").rows[0]["#"],
       equals: "1",
     },
     {
       label: "doc.body.decision.byAnchor('extra')?.kind === 'table' — section-scoped search",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).decision.byAnchor("extra")?.kind,
       equals: "table",
     },
     {
       label: "doc.body.decision.byAnchor('missing') === undefined — no such anchor in this section",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).decision.byAnchor("missing"),
       equals: undefined,
     },

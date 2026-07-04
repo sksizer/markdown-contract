@@ -39,39 +39,33 @@ const c03: ConsumptionFixture = {
   reads: [
     {
       label: "exact === dotted — same promoted TableView behind both keys, not a copy",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any)["Files to touch"] === (doc.body as any).filesToTouch,
       equals: true,
     },
     {
       label: "section() resolves the underlying SectionView, stable across calls",
       get: (doc) =>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         // biome-ignore lint/suspicious/noSelfCompare: intentional — asserts section() returns a stable SectionView across calls
         (doc.body as any).section("Files to touch") === (doc.body as any).section("Files to touch"),
       equals: true,
     },
     {
       label: "section('Files to touch').name — the underlying SectionView's exact heading",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).section("Files to touch").name,
       equals: "Files to touch",
     },
     {
       label: "exact.kind === 'table' — the promoted key is the TableView (BlockView discriminant)",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any)["Files to touch"].kind,
       equals: "table",
     },
     {
       label: "section('Files to touch').pos — one SourcePos, one underlying node (heading line 6)",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).section("Files to touch").pos,
       equals: { line: 6, col: 1 },
     },
     {
       label: "dotted.rowCount === 3 — the promoted TableView reads directly behind every key",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).filesToTouch.rowCount,
       equals: 3,
     },

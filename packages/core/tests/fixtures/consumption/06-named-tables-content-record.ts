@@ -25,32 +25,27 @@ const c06: ConsumptionFixture = {
   reads: [
     {
       label: "decision.components.rowCount === 2",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).decision.components.rowCount,
       equals: 2,
     },
     {
       label: "decision.risks.rowCount === 1",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).decision.risks.rowCount,
       equals: 1,
     },
     {
       label: "decision.components.column('Component') === ['projection', 'grammar']",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).decision.components.column("Component"),
       equals: ["projection", "grammar"],
     },
     {
       label: "decision.risks.find(r => r.Risk.includes('gfm'))?.Mitigation === 'pin in spike S6'",
       get: (doc) =>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (doc.body as any).decision.risks.find((r: any) => r.Risk.includes("gfm"))?.Mitigation,
       equals: "pin in spike S6",
     },
     {
       label: "decision.components.rowPos(0).line — source line of the first components row",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).decision.components.rowPos(0).line,
       equals: 5,
     },

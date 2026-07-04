@@ -11,8 +11,6 @@ import { z } from "zod";
 import type { Infer, ListItem, ListView, SectionGroup, SectionView, TableView } from "../index.js";
 import { contract, gap, list, optional, section, sections, table } from "../index.js";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const PATH = { path: "model.test.md" };
 
 describe("unknown partitioning", () => {

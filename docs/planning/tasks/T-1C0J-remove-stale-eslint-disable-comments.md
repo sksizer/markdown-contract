@@ -96,12 +96,22 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `grep -rn "eslint-disable" packages/core` returns nothing (exit 1); no `@typescript-eslint` residue either.
+- AC-2: auto — `bunx moon run core:lint` exits 0 (via the `sdlc quality run` gate, `OK 5/5`).
+- AC-3: auto — `bunx moon run core:test` stays green (same gate).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The readiness gate passed clean on the first run: the task's inventory (65 sites — 64 line-level across fixtures 01–09/11 plus one file-level block in `model.test.ts:14`) matched the live grep exactly, so no relevance drift to reconcile even though T-JGCX had merged just ahead of this pickup.
+- The `noExplicitAny: "warn"` severity in `biome.jsonc` made the whole sweep pure deletion — no `biome-ignore` conversions needed — and the one real suppression (`noSelfCompare` in `03-dual-key-section-access.ts`) was preserved cleanly.
+- The baseline-gated quality gate cleanly separated the single new format error from the 325 pre-existing `warn`-level findings, so the gate flagged only drift this branch introduced.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Deleting an eslint comment that sat *between* a lambda header and its body (in `11-real-task-consumed.ts`) let Biome reflow the two lines into one, which surfaced as a format **error** in `biome check:ci` — a raw comment-deletion sweep needs a `biome format --write` follow-up before the lint gate. The quality gate caught it, so no automation gap: expected and handled.
+- Step 7's baseline-gated `quality run` (invoked with cwd = the worktree) defaults `--baseline-dir` to `<worktree>/.sdlc/quality-baselines/`, but Step 3a captured the baseline into the *main repo's* `.sdlc/quality-baselines/`; the run failed `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — the task-work Step 7 invocation, which omits `--baseline-dir`, cannot find a Step-3a baseline when run from a worktree. → [[T-2GGI-step7-baseline-dir-from-main-repo]]
+
+### Spawned follow-up tasks
+
+- [[T-2GGI-step7-baseline-dir-from-main-repo]] (https://github.com/sksizer/dev/pull/632) — linked to an already-open upstream `sdlc-meta` follow-up in `sksizer/dev` (spawned earlier from [[T-77ST-git-hooks-lefthook]]'s post-mortem for the identical gap). The `/sdlc:spawn-task-pr` idempotency check matched the open head branch `meta-task/step7-baseline-dir-from-main-repo` and resolved to PR #632, so no duplicate PR was opened. The local dedup search could not surface this because T-2GGI lives in the plugin repo, outside this repo's `docs/planning/tasks/` corpus.
+- The first friction bullet (Biome reflowing two lines into one after a comment was deleted between a lambda header and its body) was **skipped**, not spawned: the post-mortem itself flags it "no automation gap: expected and handled" — the baseline-gated quality gate already catches the resulting format error, so there is no concrete tooling change to make.
