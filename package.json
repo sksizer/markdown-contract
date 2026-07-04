@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Bun workspace root for markdown-contract. The publishable library + CLI lives in packages/core; runtime apps (the single-binary prototype, the daemon-web UI prototype) live under apps/; websites, including the documentation site, live under sites/.",
+  "description": "Bun workspace root for markdown-contract. The publishable library + CLI lives in packages/core; runtime apps (the M-0009 vault dashboard, the daemon-web UI prototype) live under apps/; canonical examples (the M-0008 single-binary prototype) live under examples/; websites, including the documentation site, live under sites/.",
   "license": "MIT",
   "author": "sksizer",
   "engines": {
@@ -12,6 +12,7 @@
   "workspaces": [
     "packages/*",
     "apps/*",
+    "examples/*",
     "sites/*"
   ],
   "scripts": {
