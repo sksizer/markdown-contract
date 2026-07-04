@@ -8,13 +8,10 @@
  * data-shape validation lives in `./content` (`matchContent`), which the validate pass
  * calls AFTER the structure plane; it reads each leaf's `config` to validate a present,
  * correct-kind block's data (columns / rows / cells / items / lang / word-count) and
- * remaps Zod issue paths to source lines. `matchContent` is re-exported here so the leaf
- * vocabulary and its validator surface from one module.
+ * remaps Zod issue paths to source lines.
  */
 import type { z } from "zod";
 import type { LeafSpec, ZodType } from "./types.js";
-
-export { matchContent } from "./content.js";
 
 /**
  * The inert placeholder content schema. The real per-leaf Zod schema is built in T-5LW7
