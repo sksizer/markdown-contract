@@ -214,6 +214,13 @@ const md = make({ frontmatter: { status: "closed" } });
   instantiated with data — while still not authoring prose: it places values, it
   does not invent content.
 
+A fully-typed sketch of this surface lives as spec code at
+`packages/core/tests/proposed/document-scaffolding.proposed.ts` (types + throwing
+stubs) with a skipped example suite (`.todo.test.ts`): the example usage — an
+enum-narrowed `frontmatter.status`, a `@ts-expect-error` on an out-of-enum value —
+type-checks against a real contract today, and the behavioural cases green
+automatically once `scaffold` / `template.create` ship.
+
 *(Origin: reviewer idea on this PR — a typed function/wrapper over the contract
 that supplies a typed data structure of the fill-in values.)*
 
