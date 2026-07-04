@@ -1,20 +1,20 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-QX1Q
-status: in-progress
-created: 2026-07-04
+status: closed/done
+created: '2026-07-04'
 related:
-  - T-W1CX-knip-baseline-dead-code-cleanup
+- T-W1CX-knip-baseline-dead-code-cleanup
 tags: []
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: autonomous/pr
-readiness_verified_at: 2026-07-04T15:51:38Z
-last_reviewed: 2026-07-04
+last_reviewed: '2026-07-04'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/233
+- https://github.com/sksizer/markdown-contract/pull/233
+completion_note: 'Shipped via #233.'
 ---
 # Make the quality gate catch .d.ts declaration-emit regressions that tsc --noEmit misses
 
