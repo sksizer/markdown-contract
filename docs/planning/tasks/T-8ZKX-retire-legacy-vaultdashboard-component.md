@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-8ZKX
-status: planning/draft
+status: open/ready
 created: '2026-07-04'
 related: []
 tags: []
@@ -12,96 +12,89 @@ complexity: medium
 ---
 # Retire or reconcile the legacy VaultDashboard component now that pages/index.vue is the dashboard
 
+> AUTO-DEFINED: this spec was best-effort machine-authored by
+> /sdlc:task-auto-define on 2026-07-04 from the linked backlog origin story
+> ([[B-8ZKX-retire-legacy-vaultdashboard-component]]). Review the Goal, Approach,
+> Today, Files-to-touch, and Acceptance-criteria carefully before trusting it.
+
 ## Goal
 
-<Why this task exists. The problem it solves, the work it unblocks, or the
-risk it mitigates. Two or three sentences — the elevator pitch.>
+T-6RFC rebuilt the all-vaults dashboard directly into `pages/index.vue` on the
+five-state `VaultStatus` model, orphaning the earlier `VaultDashboard.vue` (built on
+the two-state `VaultSummary` / `result.exitCode` model) and its leaf components — now
+referenced only by their own Storybook stories. This leaves a duplicate `Screens/*`
+dashboard entry and dead code on an obsolete data model. Retire the orphaned legacy
+component and every leaf its removal orphans so the prototype carries one dashboard
+surface on one model.
 
 ## Today
 
-<Current state of the relevant area as a typed table. One row per touched
-location; the Location column uses the five-form grammar documented in
-the template's header comment. The Role-today column is a one-line note
-on what that location does today (or what's wrong/missing there).
-
-Pure-narrative Todays (no path-bearing rows) may also be expressed as
-prose — but tables are the preferred shape because the verifier resolves
-each row against the live codebase, so the description doesn't go stale
-as code drifts.>
-
 | Location | Role today |
 |---|---|
-| `path/to/file.ext` | <what this file does today> |
-| `path/to/dir/` | <what's in this directory today> |
+| `apps/daemon-web-prototype/pages/index.vue` | The live all-vaults dashboard (Storybook `Screens/Dashboard`), built on the five-state `VaultStatus` model via `mockApi.listVaults()`; imports only kit components, not `VaultDashboard`/`VaultStatusCard`. |
+| `apps/daemon-web-prototype/components/VaultDashboard.vue` | Orphaned earlier dashboard on the two-state `VaultSummary` model; imported only by its own story. Renders a grid of `VaultStatusCard` plus `RunSummary` and `FindingsList`. |
+| `apps/daemon-web-prototype/components/VaultStatusCard.vue` | Per-vault card imported only by the legacy `VaultDashboard.vue` (and its own story); unused by `pages/index.vue`. |
+| `apps/daemon-web-prototype/components/FindingsList.vue` | Findings list imported only by the legacy `VaultDashboard.vue`; `DriftView.vue` mentions it in a prose comment, not an import. |
+| `apps/daemon-web-prototype/components/RunSummary.vue` | Per-vault run summary imported only by the legacy `VaultDashboard.vue`. |
 
 ## Proposed
 
-<Target state after this task ships. Concrete enough that an implementer
-can tell when they're done. Not the steps — the destination.>
+The prototype has a single dashboard surface (`pages/index.vue`, Storybook
+`Screens/Dashboard`) on the five-state `VaultStatus` model. The legacy
+`VaultDashboard.vue`, its story, and every leaf its removal orphans (`VaultStatusCard`,
+`FindingsList`, `RunSummary`) plus their stories are deleted. No `Screens/VaultDashboard`
+entry remains in Storybook, and the repo knip check reports no new unused files.
 
 ## Approach
 
-<Numbered, ordered steps to get from Today to Proposed. Each step should
-be small enough to commit on its own if useful. Call out any decisions
-still open inside the step.>
-
-1. <step>
-2. <step>
-3. <step>
+1. Confirm the orphan set: grep the app (excluding each component's own `.stories.ts`)
+   for importers of `VaultDashboard.vue`, `VaultStatusCard.vue`, `FindingsList.vue`, and
+   `RunSummary.vue`. Expected result — each is imported only by the legacy dashboard
+   and/or its own story (`DriftView.vue` references `FindingsList` only in a comment).
+2. Delete `VaultDashboard.vue` and its story `VaultDashboard.stories.ts`.
+3. Delete the leaves the removal orphans and their stories — `VaultStatusCard`,
+   `FindingsList`, `RunSummary` — each only after step 1 confirms no remaining importer.
+4. Update the stale `FindingsList` reference in `DriftView.vue`'s comment so it no longer
+   cites a deleted component; check `apps/daemon-web-prototype/mocks/types` and drop the
+   now-dead `VaultSummary` type only if nothing else references it (do not touch the live
+   `VaultStatus` model).
+5. Run the prototype typecheck/build and the Storybook build; confirm only
+   `Screens/Dashboard` remains and no import resolves to a deleted file.
 
 ## Files to touch
 
-<Typed table of every location you expect to touch. Location uses the
-same five-form grammar as `## Today` (see header comment). Kind is one
-of `new`, `modify`, or `delete`. Change is a one-line note on what
-happens there.
-
-The verifier resolves each row by Kind: `new` rows require no existing
-file; `modify` and `delete` rows must resolve in the codebase (file /
-symbol / dir must exist; glob must expand to ≥1 match). Symbols on
-glob rows are rejected.>
-
 | Location | Kind | Change |
 |---|---|---|
-| `path/to/file.ext` | modify | <what changes> |
-| `path/to/new-file.ext` | new | <what gets created> |
+| `apps/daemon-web-prototype/components/VaultDashboard.vue` | delete | Remove the orphaned legacy dashboard (two-state model). |
+| `apps/daemon-web-prototype/components/VaultDashboard.stories.ts` | delete | Remove its story (the duplicate `Screens/VaultDashboard` sidebar entry). |
+| `apps/daemon-web-prototype/components/VaultStatusCard.vue` | delete | Leaf used only by the legacy dashboard. |
+| `apps/daemon-web-prototype/components/VaultStatusCard.stories.ts` | delete | Its story. |
+| `apps/daemon-web-prototype/components/FindingsList.vue` | delete | Leaf imported only by the legacy dashboard; delete after confirming no other importer. |
+| `apps/daemon-web-prototype/components/FindingsList.stories.ts` | delete | Its story. |
+| `apps/daemon-web-prototype/components/RunSummary.vue` | delete | Leaf imported only by the legacy dashboard; delete after confirming no other importer. |
+| `apps/daemon-web-prototype/components/RunSummary.stories.ts` | delete | Its story. |
+| `apps/daemon-web-prototype/components/DriftView.vue` | modify | Update the code comment that references the now-deleted `FindingsList`. |
 
 ## Acceptance criteria
 
-<Each AC must be observable from outside the change — a test that passes,
-a user-visible behavior, a removed wart. Avoid "the code is cleaner" style
-ACs; pick something verifiable.>
-
-- [ ] AC-1: <criterion>
-- [ ] AC-2: <criterion>
-- [ ] AC-3: <criterion>
+- [ ] AC-1: `VaultDashboard.vue` and `VaultDashboard.stories.ts` no longer exist under `apps/daemon-web-prototype/components/`.
+- [ ] AC-2: `grep -rn` under `apps/daemon-web-prototype` finds no import of `VaultStatusCard.vue`, `FindingsList.vue`, or `RunSummary.vue`, and those files and their stories are deleted.
+- [ ] AC-3: The Storybook build lists exactly one dashboard entry (`Screens/Dashboard`); `Screens/VaultDashboard` is gone.
+- [ ] AC-4: The prototype typecheck/build passes and the repo knip check reports no new unused-file findings.
 
 ## Out of scope
 
-<Things adjacent to this task that are deliberately NOT being addressed
-here. Useful for keeping PR review focused and for future tasks to point
-back to. Always required: if scope is obvious and nothing is excluded,
-leave a single "- none" bullet so the explicit signal is "scope
-considered, nothing to exclude.">
-
-- none
+- Rebuilding or restyling the live `pages/index.vue` dashboard — this task only removes dead code.
+- The "reconcile" alternative (migrating legacy two-state `VaultSummary` logic into the new dashboard) — retire is chosen because nothing outside stories exercises the legacy surface.
+- The separate `apps/web` Nuxt UI, a different surface from `apps/daemon-web-prototype`.
 
 ## Dependencies
 
-<Other tasks, branches, infra changes, or external decisions this task
-waits on. For hard "B cannot start until A closes" dependencies on
-other tasks or epics, also record them in the frontmatter
-`depends_on:` array (strict wikilink shape, e.g. `[[T-0010]]`) — the
-audit walks that graph for cycle detection. This prose section is the
-human-readable narrative; `depends_on:` is the machine-readable
-canonical list. Leave a single "- none" bullet if there are none.>
-
-- <dependency or "none">
+- none (T-6RFC already shipped the replacement dashboard).
 
 ## Discovery context
 
-<Optional. How this task got onto the list: linked incident, design doc,
-upstream conversation, prior PR review comment. Helps future-you remember
-why this was worth doing. Delete this section if there's nothing to add.>
-
--
+Promoted from [[B-8ZKX-retire-legacy-vaultdashboard-component]]. The cleanup was
+explicitly left out of scope by T-6RFC, which scoped itself to `pages/index.vue` +
+`pages/index.stories.ts` and used the distinct title `Screens/Dashboard` to avoid a
+sidebar collision.
