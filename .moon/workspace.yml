@@ -14,6 +14,7 @@ projects:
   core: "packages/core"
   web: "apps/web"
   example-single-binary: "examples/single-binary"
+  example-single-binary-nitro: "examples/single-binary-nitro"
   docs: "sites/docs"
 
 # Version control system. The repo is git, default branch is main.
