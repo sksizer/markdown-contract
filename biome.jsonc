@@ -30,12 +30,17 @@
           "options": { "maxAllowedComplexity": 46 }
         }
       },
-      // noExplicitAny (104 sites) and noNonNullAssertion (185 sites) are pervasive
-      // in the parser/AST + Zod code and are kept relaxed at "warn" deliberately
-      // (non-blocking) rather than refactored in this pass.
+      // noExplicitAny is enforced at "error" with ZERO suppressions (T-JGCX). The shipping
+      // source never carried `any`; the whole warning load lived in the test/fixture harness,
+      // which erased the typed model the library already ships. Genericizing that harness
+      // (`ConsumptionFixture<F, B>` → `Contract<F, B>` → `Doc<F, B>`) and reading through
+      // `Infer` / `BodyOf` / `TableView<Row>` — with a small `group()`/`asTable()`/`asSection()`
+      // boundary for the by-design dynamic dual-key surface — retired every cast at the source.
       "suspicious": {
-        "noExplicitAny": "warn"
+        "noExplicitAny": "error"
       },
+      // noNonNullAssertion (185 sites) is pervasive in the parser/AST + Zod code and is kept
+      // relaxed at "warn" deliberately (non-blocking) rather than refactored in this pass.
       "style": {
         "noNonNullAssertion": "warn"
       }

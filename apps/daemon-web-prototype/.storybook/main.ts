@@ -1,11 +1,7 @@
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-
-import vue from "@vitejs/plugin-vue";
 import type { StorybookConfig } from "@storybook/vue3-vite";
-
-// biome-ignore lint/suspicious/noExplicitAny: vite plugin objects are loosely typed across major versions
-type AnyPlugin = any;
+import vue from "@vitejs/plugin-vue";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -46,12 +42,14 @@ const config: StorybookConfig = {
     // version does not always inject `@vitejs/plugin-vue` itself, which leaves
     // raw `<script setup>` reaching Rollup ("Expression expected"). Add the Vue
     // plugin ourselves, guarded so we never register it twice.
-    const plugins: AnyPlugin[] = (viteConfig.plugins ?? []) as AnyPlugin[];
-    const hasVue = plugins
+    const existing = viteConfig.plugins ?? [];
+    // Vite plugin objects are loosely typed across major versions; treat the flattened list as
+    // `unknown` and narrow at the one property we read (`.name`) rather than reaching for `any`.
+    const hasVue = (existing as unknown[])
       .flat(Number.POSITIVE_INFINITY)
-      .some((p: AnyPlugin) => p && p.name === "vite:vue");
+      .some((p) => typeof p === "object" && p !== null && "name" in p && p.name === "vite:vue");
     if (!hasVue) {
-      viteConfig.plugins = [...plugins, vue()];
+      viteConfig.plugins = [...existing, vue()];
     }
     return viteConfig;
   },
