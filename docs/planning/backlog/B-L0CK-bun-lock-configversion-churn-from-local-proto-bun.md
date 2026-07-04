@@ -2,7 +2,7 @@
 type: backlog
 schema_version: '1'
 id: B-L0CK
-last_reviewed: '2026-07-01'
+last_reviewed: '2026-07-04'
 tags:
 - bun
 - lockfile
