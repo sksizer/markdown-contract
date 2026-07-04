@@ -2,9 +2,9 @@
 type: task
 schema_version: '5'
 id: T-1C0J
-status: open/ready
+status: in-progress
 created: '2026-07-02'
-last_reviewed: '2026-07-03'
+last_reviewed: '2026-07-04'
 related:
 - '[[M-0010 Quality Tooling]]'
 - '[[T-0MVN-biome-lint-format]]'
@@ -87,3 +87,19 @@ either left unsuppressed (the rule is `warn`, non-blocking) or converted to a pr
 
 Captured from the [[T-0MVN-biome-lint-format]] post-mortem: the `noSelfCompare` suppression
 placement surfaced that stale ESLint directives still live in the fixtures.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
