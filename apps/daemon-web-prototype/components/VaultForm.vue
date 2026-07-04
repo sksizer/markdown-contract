@@ -101,9 +101,7 @@ const showErrors = computed(() => props.eagerValidation || attempted.value);
 const isValid = computed(() => Object.keys(errors.value).length === 0);
 
 // ── Derived view state ───────────────────────────────────────────────────────
-const editingVault = computed(
-  () => registry.value.find((v) => v.id === editingId.value) ?? null,
-);
+const editingVault = computed(() => registry.value.find((v) => v.id === editingId.value) ?? null);
 const formTitle = computed(() =>
   editingId.value ? `Edit ${editingVault.value?.name ?? "vault"}` : "Add vault",
 );
@@ -126,9 +124,7 @@ function submit(): void {
   if (editingId.value) {
     const id = editingId.value;
     registry.value = registry.value.map((v) =>
-      v.id === id
-        ? { ...v, name, path, configPath: effectiveConfig(path, draft.configPath) }
-        : v,
+      v.id === id ? { ...v, name, path, configPath: effectiveConfig(path, draft.configPath) } : v,
     );
     const updated = registry.value.find((v) => v.id === id);
     if (updated) emit("update", updated); // just mapped this id in; guard narrows the type

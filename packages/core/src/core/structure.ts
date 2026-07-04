@@ -87,6 +87,21 @@ function slotForName(slots: Slot[], name: string): number {
   return slots.findIndex((s) => s.names.includes(name));
 }
 
+/**
+ * Assert a matcher loop-invariant value is present, narrowing its type. The per-level walk indexes
+ * into arrays it has already bounds-checked — a `slots` entry at an index the assignment produced,
+ * a `nodes[docIdx]` under `docIdx < nodes.length`, a `specs[specIdx]` under `specIdx < specs.length`,
+ * a gap `specs[gapSpecIdx]` whose index was recorded from those same specs — so every such read is
+ * non-null by construction. `mustGet` states that invariant honestly in place of a `!` assertion
+ * (throwing loudly if it is ever broken) without inflating the caller's cognitive complexity.
+ */
+function mustGet<T>(value: T | undefined, what: string): T {
+  if (value === undefined) {
+    throw new Error(`structure matcher invariant violated: ${what} was unexpectedly absent`);
+  }
+  return value;
+}
+
 // ── The per-level match ──────────────────────────────────────────────────────────
 
 /** A doc section paired with the declared slot it matches (or `null` when unknown). */
@@ -149,8 +164,7 @@ function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Findin
   const slotBoundBy = new Map<number, string>(); // slotIdx → the heading that first filled it
   for (const a of assigned) {
     if (a.slotIdx === null) continue;
-    const slot = slots[a.slotIdx];
-    if (!slot) continue; // a.slotIdx is a valid slots index; guard narrows the type
+    const slot = mustGet(slots[a.slotIdx], "slot at an assigned section's index");
     if (slot.names.length <= 1) continue; // single-spelling slot: handled by duplicate-section above
     const boundHeading = slotBoundBy.get(a.slotIdx);
     if (boundHeading === undefined) {
@@ -217,8 +231,8 @@ function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Findin
   // ── The kind-gate, anchors, and node-local rules (per declared, present slot) ─────
   for (const a of assigned) {
     if (a.slotIdx === null) continue;
-    const slot = slots[a.slotIdx];
-    if (!slot || !slot.opts) continue; // a.slotIdx is a valid slots index; guard narrows the type
+    const slot = mustGet(slots[a.slotIdx], "slot at a present section's index");
+    if (!slot.opts) continue;
     runSectionChecks(a.node, slot.opts, ctx, out);
   }
 }
@@ -287,8 +301,7 @@ function checkStrict(
   let specIdx = 0;
   let docIdx = 0;
   while (docIdx < nodes.length) {
-    const node = nodes[docIdx];
-    if (node === undefined) break; // docIdx < nodes.length holds; guard narrows the type
+    const node = mustGet(nodes[docIdx], "node at the cursor");
 
     if (specIdx >= specs.length) {
       // Past the declared sequence. A trailing gap (if the last spec was one) absorbs extras;
@@ -312,8 +325,7 @@ function checkStrict(
       continue;
     }
 
-    const spec = specs[specIdx];
-    if (spec === undefined) break; // specIdx < specs.length holds here; guard narrows the type
+    const spec = mustGet(specs[specIdx], "spec at the cursor");
     const u = unwrap(spec);
 
     if (u.inner.kind === "gap") {
@@ -328,14 +340,11 @@ function checkStrict(
       continue;
     }
 
-    // A section/oneOf slot at the cursor.
-    const slot = slots.find((s) => s.specIdx === specIdx);
-    if (!slot) {
-      // The cursor spec is a non-gap section/oneOf, so slotsOf produced a slot for it; if none
-      // is found (impossible), advance the cursor to keep the walk total.
-      specIdx++;
-      continue;
-    }
+    // A section/oneOf slot at the cursor (a non-gap spec always has one, per slotsOf).
+    const slot = mustGet(
+      slots.find((s) => s.specIdx === specIdx),
+      "slot for the non-gap spec at the cursor",
+    );
     if (slot.names.includes(node.name)) {
       specIdx++;
       docIdx++;
@@ -387,9 +396,8 @@ function checkStrict(
 
   // Gap-count bounds.
   for (const [gapSpecIdx, count] of gapCount) {
-    const gapSpec = specs[gapSpecIdx];
-    if (gapSpec === undefined) continue; // gapCount keys are gap specIdxs; guard narrows the type
-    const gap = unwrap(gapSpec).inner as GapSpec;
+    const gap = unwrap(mustGet(specs[gapSpecIdx], "gap spec at a recorded gap index"))
+      .inner as GapSpec;
     const min = gap.min;
     const max = gap.max;
     if ((min !== undefined && count < min) || (max !== undefined && count > max)) {
@@ -419,9 +427,7 @@ function checkUnorderedGap(
 ): void {
   const gapSpecIdx = specs.findIndex((s) => unwrap(s).inner.kind === "gap");
   if (gapSpecIdx === -1) return;
-  const gapSpec = specs[gapSpecIdx];
-  if (gapSpec === undefined) return; // gapSpecIdx is a valid findIndex result; guard narrows the type
-  const gap = unwrap(gapSpec).inner as GapSpec;
+  const gap = unwrap(mustGet(specs[gapSpecIdx], "gap spec at findIndex result")).inner as GapSpec;
   const count = assigned.filter((a) => a.slotIdx === null).length;
   if ((gap.min !== undefined && count < gap.min) || (gap.max !== undefined && count > gap.max)) {
     out.push(
