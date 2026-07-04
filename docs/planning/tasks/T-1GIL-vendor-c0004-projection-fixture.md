@@ -101,5 +101,10 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Friction and automation gaps
 
-- The pre-flight permissions probe (Step 3b) reported hard gaps for `Bash(bun:*)`, `Write`, and `Edit` that were false positives — `bun` ran throughout the session and `Write`/`Edit` were available — because the probe reads static settings without reconciling against tools already exercised successfully this session. The probe could down-weight a gap for a tool family already observed working, or task-work could treat a demonstrated-working family as covered.
-- Step 7's baseline-gated `quality run` failed on the first attempt (`baseline not found`) because the baseline is written to the main repo's `.sdlc/quality-baselines/` in Step 3a, but running from the worktree resolves the default `--baseline-dir` to the worktree's own `.sdlc/`. Step 7's invocation should pass `--baseline-dir` pointing at the main repo (the worktree's superproject) when run from a worktree, matching where Step 3a captured it.
+- The pre-flight permissions probe (Step 3b) reported hard gaps for `Bash(bun:*)`, `Write`, and `Edit` that were false positives — `bun` ran throughout the session and `Write`/`Edit` were available — because the probe reads static settings without reconciling against tools already exercised successfully this session. The probe could down-weight a gap for a tool family already observed working, or task-work could treat a demonstrated-working family as covered. → [[T-0X9M-probe-credits-session-observed-tools]]
+- Step 7's baseline-gated `quality run` failed on the first attempt (`baseline not found`) because the baseline is written to the main repo's `.sdlc/quality-baselines/` in Step 3a, but running from the worktree resolves the default `--baseline-dir` to the worktree's own `.sdlc/`. Step 7's invocation should pass `--baseline-dir` pointing at the main repo (the worktree's superproject) when run from a worktree, matching where Step 3a captured it. → [[T-4U2H-quality-run-baseline-dir-from-worktree]]
+
+### Spawned follow-up tasks
+
+- [[T-0X9M-probe-credits-session-observed-tools]] (https://github.com/sksizer/dev/pull/658) — task-work permissions pre-flight probe treats session-observed tool families as covered; spawned Upstream-plugin (sdlc-meta).
+- [[T-4U2H-quality-run-baseline-dir-from-worktree]] (https://github.com/sksizer/dev/pull/659) — task-work Step 7 quality run targets the main-repo baseline dir when run from a worktree; spawned Upstream-plugin (sdlc-meta).
