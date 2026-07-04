@@ -18,7 +18,7 @@ need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-07-03T03:01:34Z'
+readiness_verified_at: '2026-07-04T00:46:23Z'
 ---
 # init defaults the scaffold write to the single inferred root, not cwd
 
