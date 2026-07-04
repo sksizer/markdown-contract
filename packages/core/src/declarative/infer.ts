@@ -147,6 +147,11 @@ function toPosix(p: string): string {
 /** picomatch options — `dot` so dotfiles match like any other file (mirrors the runner). */
 const PICOMATCH_OPTS = { dot: true } as const;
 
+/** Deterministic directory-entry order: sort by name so an unchanged corpus walks identically. */
+function byName(a: { name: string }, b: { name: string }): number {
+  return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+}
+
 /**
  * Recursively collect every `*.md` under `root`, returned as paths relative to `root`
  * (POSIX-separated), in a deterministic order: directory entries are sorted before
@@ -166,16 +171,22 @@ function discover(root: string, scope?: { include?: string[]; exclude?: string[]
   const exclude =
     scope?.exclude && scope.exclude.length > 0 ? picomatch(scope.exclude, PICOMATCH_OPTS) : null;
 
+  /** A `*.md` path survives the scope pre-filter (AND-narrowing, mirrors the runner). */
+  const keep = (rel: string): boolean => {
+    if (exclude && exclude(rel)) return false;
+    if (include && !include(rel)) return false;
+    return true;
+  };
+
   const out: string[] = [];
   const recur = (absDir: string, relDir: string): void => {
     const entries = readdirSync(absDir, { withFileTypes: true });
-    entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    entries.sort(byName);
     for (const entry of entries) {
       const rel = relDir === "" ? entry.name : `${relDir}/${entry.name}`;
-      if (entry.isDirectory()) recur(resolve(absDir, entry.name), rel);
-      else if (entry.isFile() && entry.name.endsWith(".md")) {
-        if (exclude && exclude(rel)) continue;
-        if (include && !include(rel)) continue;
+      if (entry.isDirectory()) {
+        recur(resolve(absDir, entry.name), rel);
+      } else if (entry.isFile() && entry.name.endsWith(".md") && keep(rel)) {
         out.push(rel);
       }
     }
@@ -429,18 +440,9 @@ function inferFieldSchema(
     return { ...baseSchema, nullable: true };
   }
 
-  // Rung 1 — all identical (scalar) → const. Arrays/objects that happen to be identical fall
-  // through to their own rung (the compiler's `const` is scalar-only), still accept-by-construction.
-  // Two guards keep a coincidentally-uniform field from being frozen on thin/unwieldy evidence:
-  // a string longer than the cap is never a const, and any scalar needs at least
-  // `minConstExamples` observations. Either miss falls through to a looser rung — still
-  // accept-by-construction (D-0009 § Self-check).
-  const first = values[0];
-  if (isScalar(first) && values.every((v) => deepEqual(v, first))) {
-    const overLength = typeof first === "string" && first.length > opts.maxConstStringLength;
-    const tooFewExamples = values.length < opts.minConstExamples;
-    if (!overLength && !tooFewExamples) return { const: first };
-  }
+  // Rung 1 — all identical (scalar) → const (with the length / min-examples guards).
+  const constSchema = constRung(values, opts);
+  if (constSchema) return constSchema;
 
   // Rung 2 — all numbers → number (int when every value is an integer).
   if (values.every((v) => typeof v === "number")) {
@@ -462,35 +464,66 @@ function inferFieldSchema(
     return { type: "array", of: inferFieldSchema(items, items.length, { ...opts, relax: true }) };
   }
 
-  // Rung 5 — all strings matching one format (most specific first; validated via the engine).
+  // Rung 5 (format) + Rung 6 (enum) — all strings.
   if (values.every((v) => typeof v === "string")) {
-    const strings = values as string[];
-    for (const format of FORMAT_CANDIDATES) {
-      if (allMatchFormat(strings, format)) return { type: "string", format };
-    }
-
-    // Rung 6 — a small closed categorical set → enum (unless --relax, which keeps it a string).
-    // The compiler's `enum` is strings-only; the ratio (< half the files) keeps a coincidentally
-    // repetitive free-form field from enum'ing on thin evidence (D-0009 § Step 4, rung 6). An enum
-    // must admit EVERY observed value, so a value over the const string-length cap can't be
-    // dropped — if any value exceeds it, skip rung 6 and let the field fall to `{ type: string }`.
-    if (!opts.relax && !strings.some((s) => s.length > opts.maxConstStringLength)) {
-      const distinct: string[] = [];
-      const seen = new Set<string>();
-      for (const s of strings) {
-        if (!seen.has(s)) {
-          seen.add(s);
-          distinct.push(s);
-        }
-      }
-      if (distinct.length <= 12 && distinct.length * 2 < fileCount) {
-        return { enum: distinct };
-      }
-    }
+    return stringRung(values as string[], fileCount, opts);
   }
 
   // Rung 7 — fallback: a plain string accepts every value.
   return { type: "string" };
+}
+
+/**
+ * Rung 1 — all values identical (a scalar) → `{ const }`, or `null` to fall through. Two guards
+ * keep a coincidentally-uniform field from being frozen on thin/unwieldy evidence: a string longer
+ * than the cap is never a const, and any scalar needs at least `minConstExamples` observations.
+ * Either miss falls to a looser rung — still accept-by-construction (D-0009 § Self-check).
+ */
+function constRung(values: unknown[], opts: FieldInferOptions): Record<string, unknown> | null {
+  const first = values[0];
+  if (!isScalar(first) || !values.every((v) => deepEqual(v, first))) return null;
+  const overLength = typeof first === "string" && first.length > opts.maxConstStringLength;
+  const tooFewExamples = values.length < opts.minConstExamples;
+  return !overLength && !tooFewExamples ? { const: first } : null;
+}
+
+/**
+ * Rung 5 + 6 for an all-string field: the most-specific matching `format` (validated via the
+ * engine), else a small closed categorical `enum`, else a plain `{ type: string }`.
+ */
+function stringRung(
+  strings: string[],
+  fileCount: number,
+  opts: FieldInferOptions,
+): Record<string, unknown> {
+  for (const format of FORMAT_CANDIDATES) {
+    if (allMatchFormat(strings, format)) return { type: "string", format };
+  }
+  return enumRung(strings, fileCount, opts) ?? { type: "string" };
+}
+
+/**
+ * Rung 6 — a small closed categorical set → `{ enum }`, or `null` to fall through (unless --relax,
+ * which keeps it a string). The compiler's `enum` is strings-only; the ratio (< half the files)
+ * keeps a coincidentally repetitive free-form field from enum'ing on thin evidence (D-0009 § Step 4,
+ * rung 6). An enum must admit EVERY observed value, so a value over the const string-length cap
+ * can't be dropped — if any value exceeds it, skip the rung and let the field fall to a string.
+ */
+function enumRung(
+  strings: string[],
+  fileCount: number,
+  opts: FieldInferOptions,
+): Record<string, unknown> | null {
+  if (opts.relax || strings.some((s) => s.length > opts.maxConstStringLength)) return null;
+  const distinct: string[] = [];
+  const seen = new Set<string>();
+  for (const s of strings) {
+    if (!seen.has(s)) {
+      seen.add(s);
+      distinct.push(s);
+    }
+  }
+  return distinct.length <= 12 && distinct.length * 2 < fileCount ? { enum: distinct } : null;
 }
 
 /**
@@ -575,7 +608,21 @@ function inferBody(
   const { order, sections } = detectOrder(docs);
   if (sections.length === 0) return undefined;
 
-  // Group observed spellings by their generated key, in first-appearance (union) order.
+  const byKey = groupSpellingsByKey(sections);
+
+  const entries: Array<{ section: string; aliases?: string[]; optional?: boolean }> = [];
+  const emitted = new Set<string>(); // primary spellings already emitted
+  for (const name of sections) {
+    emitSectionEntry(name, byKey, emitted, docs, sink, entries);
+  }
+
+  return relax
+    ? { order: "none", allowUnknown: true, sections: entries }
+    : { order, allowUnknown: false, sections: entries };
+}
+
+/** Group observed section spellings by their generated camelCase key, in first-appearance order. */
+function groupSpellingsByKey(sections: string[]): Map<string, string[]> {
   const byKey = new Map<string, string[]>();
   for (const name of sections) {
     const key = toCamelKey(name);
@@ -585,52 +632,70 @@ function inferBody(
     if (!spellings) byKey.set(key, (spellings = []));
     spellings.push(name);
   }
+  return byKey;
+}
 
+/**
+ * Emit the section entry for `name` — but only once per merged slot, at its primary spelling. An
+ * alias spelling (or an already-emitted primary) is skipped; the primary carries any `aliases` and
+ * an `optional` flag (unless every doc has one of the merged spellings), and records the merge.
+ */
+function emitSectionEntry(
+  name: string,
+  byKey: Map<string, string[]>,
+  emitted: Set<string>,
+  docs: ParsedDoc[],
+  sink: InferSink,
+  entries: Array<{ section: string; aliases?: string[]; optional?: boolean }>,
+): void {
+  const key = toCamelKey(name);
+  const spellings = key === "" ? [name] : byKey.get(key)!;
+  const primary = spellings[0]!;
+  if (name !== primary) return; // an alias spelling — its slot is emitted at the primary
+  if (emitted.has(primary)) return;
+  emitted.add(primary);
+
+  const aliases = spellings.slice(1);
+  // Required iff every doc carries at least ONE of the (merged) spellings.
+  const required = docs.every((d) => spellings.some((s) => d.sections.includes(s)));
+  const entry: { section: string; aliases?: string[]; optional?: boolean } = { section: primary };
+  if (aliases.length > 0) entry.aliases = aliases;
+  if (!required) entry.optional = true;
+  entries.push(entry);
+
+  if (aliases.length > 0) recordAliasMerge(spellings, key, primary, docs, sink);
+}
+
+/**
+ * Record the diagnostic for a set of merged spellings sharing one `key`: a fatal `sink.errors`
+ * entry when any single doc carries MORE THAN ONE of them as peers (the one slot would match twice
+ * — genuine ambiguity, T-KCOL), else an advisory `sink.warnings` entry naming the merge.
+ */
+function recordAliasMerge(
+  spellings: string[],
+  key: string,
+  primary: string,
+  docs: ParsedDoc[],
+  sink: InferSink,
+): void {
   const filesWith = (spelling: string): string[] =>
     docs.filter((d) => d.sections.includes(spelling)).map((d) => d.rel);
-
-  const entries: Array<{ section: string; aliases?: string[]; optional?: boolean }> = [];
-  const emitted = new Set<string>(); // primary spellings already emitted
-  for (const name of sections) {
-    const key = toCamelKey(name);
-    const spellings = key === "" ? [name] : byKey.get(key)!;
-    const primary = spellings[0]!;
-    if (name !== primary) continue; // an alias spelling — its slot is emitted at the primary
-    if (emitted.has(primary)) continue;
-    emitted.add(primary);
-
-    const aliases = spellings.slice(1);
-    // Required iff every doc carries at least ONE of the (merged) spellings.
-    const required = docs.every((d) => spellings.some((s) => d.sections.includes(s)));
-    const entry: { section: string; aliases?: string[]; optional?: boolean } = { section: primary };
-    if (aliases.length > 0) entry.aliases = aliases;
-    if (!required) entry.optional = true;
-    entries.push(entry);
-
-    if (aliases.length === 0) continue;
-    const quoted = spellings.map((s) => `‘${s}’`).join(" / ");
-    // A single doc with MORE THAN ONE of the clashing spellings as peers can't be merged: the one
-    // slot would match twice. That genuine ambiguity is fatal — name every offending file.
-    const coDocs = docs
-      .filter((d) => spellings.filter((s) => d.sections.includes(s)).length > 1)
-      .map((d) => d.rel);
-    if (coDocs.length > 0) {
-      sink.errors.push(
-        `sibling headings ${quoted} collapse to the same key ‘${key}’ and appear together as peers ` +
-          `in ${sampleList(coDocs)}; they cannot be one section. Rename the headings so they differ ` +
-          `(or split the file), then re-run.`,
-      );
-    } else {
-      const examples = spellings.map((s) => `‘${s}’ in ${filesWith(s)[0]}`).join(", ");
-      sink.warnings.push(
-        `merged variant headings ${quoted} into one section ‘${primary}’ (shared key ‘${key}’); seen as ${examples}`,
-      );
-    }
+  const quoted = spellings.map((s) => `‘${s}’`).join(" / ");
+  const coDocs = docs
+    .filter((d) => spellings.filter((s) => d.sections.includes(s)).length > 1)
+    .map((d) => d.rel);
+  if (coDocs.length > 0) {
+    sink.errors.push(
+      `sibling headings ${quoted} collapse to the same key ‘${key}’ and appear together as peers ` +
+        `in ${sampleList(coDocs)}; they cannot be one section. Rename the headings so they differ ` +
+        `(or split the file), then re-run.`,
+    );
+  } else {
+    const examples = spellings.map((s) => `‘${s}’ in ${filesWith(s)[0]}`).join(", ");
+    sink.warnings.push(
+      `merged variant headings ${quoted} into one section ‘${primary}’ (shared key ‘${key}’); seen as ${examples}`,
+    );
   }
-
-  return relax
-    ? { order: "none", allowUnknown: true, sections: entries }
-    : { order, allowUnknown: false, sections: entries };
 }
 
 // ── Naming & emission ──────────────────────────────────────────────────────────────
