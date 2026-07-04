@@ -9,6 +9,7 @@ tags: []
 need_human_review: false
 impact: medium
 complexity: medium
+readiness_verified_at: '2026-07-04T11:13:24Z'
 ---
 # Guard that bunx moon resolves the pinned @moonrepo/cli, not a shadowing global proto moon
 
