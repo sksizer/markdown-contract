@@ -134,7 +134,9 @@ markdown-contract init <dir>…           one or more target roots (required)
 
   --meta                emit a meta-config + per-directory contracts (default: single contract)
   --depth <N>           directory cut for --meta (default 1; 0 = single contract)
-  --out <dir>           where to write (default: cwd)
+  --out <dir>           where to write (default: the single inferred root, so `validate <dir>` /
+                        `init <dir> --check` find the scaffold from any cwd; a multi-root run has
+                        no single natural base, so it falls back to cwd with a warning)
   --inline              one self-contained config instead of meta-config + contracts/ files
   --relax               loosen generation toward a permissive floor (order:none, allowUnknown,
                         non-strict frontmatter, no enums, loosest value types)

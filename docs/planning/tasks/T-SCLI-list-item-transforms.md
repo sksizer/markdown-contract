@@ -1,25 +1,28 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-SCLI
-status: open/ready
-created: '2026-06-30'
+status: in-progress
+created: 2026-06-30
 related:
-- '[[M-0011-structured-cells]]'
-- '[[D-0015-structured-cells]]'
-- '[[D-0005-consumption-oom]]'
+  - "[[M-0011-structured-cells]]"
+  - "[[D-0015-structured-cells]]"
+  - "[[D-0005-consumption-oom]]"
 depends_on:
-- '[[T-SCRB-typed-row-read-back]]'
+  - "[[T-SCRB-typed-row-read-back]]"
 tags:
-- structured-cells
-- consumption
-- typed-model
-- lists
+  - structured-cells
+  - consumption
+  - typed-model
+  - lists
 need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-last_reviewed: '2026-06-30'
+last_reviewed: 2026-07-04
+readiness_verified_at: 2026-07-04T02:10:48Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/215
 ---
 # Keep `everyItem` transform output and read back typed list items through `ListView`
 
@@ -31,11 +34,11 @@ Extend the "keep the transform output" mechanism from table cells to list items 
 
 | Location | Role today |
 |---|---|
-| `src/core/content.ts#validateList` | For `everyItem: ZodType`, runs `zod.safeParse(item.text)` per item, branches on `res.success`, emits `content/list/item-kind` on failure — and **discards `res.data`**. |
-| `src/core/model.ts#listView` | Returns `node.items` as raw projection items (each `.text` a string); no typed item path. |
-| `src/core/types.ts#ListView` | `ListView extends Iterable<ListItem>` with raw-string items; no `z.output<everyItem>` carry. |
-| `src/core/leaves.ts#list` | `list({ everyItem?: "checkbox" | ZodType, ... })` carries no literal type out for the item schema. |
-| `tests/fixtures/consumption/` | Typed list-item fixtures authored by `T-SCFX`, skipped under `list-typed: false`. |
+| `packages/core/src/core/content.ts#validateList` | For `everyItem: ZodType`, runs `zod.safeParse(item.text)` per item, branches on `res.success`, emits `content/list/item-kind` on failure — and **discards `res.data`**. |
+| `packages/core/src/core/model.ts#listView` | Returns `node.items` as raw projection items (each `.text` a string); no typed item path. |
+| `packages/core/src/core/types.ts#ListView` | `ListView extends Iterable<ListItem>` with raw-string items; no `z.output<everyItem>` carry. |
+| `packages/core/src/core/leaves.ts#list` | `list({ everyItem?: "checkbox" \| ZodType, ... })` carries no literal type out for the item schema. |
+| `packages/core/tests/fixtures/consumption/` | Typed list-item fixtures authored by `T-SCFX`, skipped under `list-typed: false`. |
 
 ## Proposed
 
@@ -78,24 +81,24 @@ const raw: string[] = [...notes].map((i) => i.text); // items stay raw strings, 
 
 ## Approach
 
-1. Add an additive sparse `typedItem(i): unknown | undefined` accessor (+ internal writer) to the `list` arm of `BlockNode` in `src/core/types.ts`; raw `items` retained.
-2. In `src/core/content.ts#validateList`, on a successful per-item `safeParse` (the `everyItem: ZodType` branch only — not `"checkbox"`), cache `res.data`; leave the failure branch and the `content/list/item-kind` finding unchanged.
-3. In `src/core/projection.ts`, initialize the sparse typed-item store when the list node is built.
-4. In `src/core/model.ts#listView`, yield `typedItem(i)` when defined, falling back to the raw item; type the view as `ListView<Item>` where `Item = z.output<everyItem>` for a transforming list, raw otherwise.
-5. In `src/core/leaves.ts`, make `list<I extends ZodType>` capture the `everyItem` literal type and thread it (via the same `section()` / `sections()` / `Infer` path `T-SCRB` established) to `read()`.
-6. Flip `list-typed` to `true` in `tests/components.ts`, un-skip the list fixtures, and add peer tests in `src/core/content.test.ts` / `src/core/model.test.ts` (typed item cached, `"checkbox"` unaffected, failing item still finds + caches nothing).
+1. Add an additive sparse `typedItem(i): unknown | undefined` accessor (+ internal writer) to the `list` arm of `BlockNode` in `packages/core/src/core/types.ts`; raw `items` retained.
+2. In `packages/core/src/core/content.ts#validateList`, on a successful per-item `safeParse` (the `everyItem: ZodType` branch only — not `"checkbox"`), cache `res.data`; leave the failure branch and the `content/list/item-kind` finding unchanged.
+3. In `packages/core/src/core/projection.ts`, initialize the sparse typed-item store when the list node is built.
+4. In `packages/core/src/core/model.ts#listView`, yield `typedItem(i)` when defined, falling back to the raw item; type the view as `ListView<Item>` where `Item = z.output<everyItem>` for a transforming list, raw otherwise.
+5. In `packages/core/src/core/leaves.ts`, make `list<I extends ZodType>` capture the `everyItem` literal type and thread it (via the same `section()` / `sections()` / `Infer` path `T-SCRB` established) to `read()`.
+6. Flip `list-typed` to `true` in `packages/core/tests/components.ts`, un-skip the list fixtures, and add peer tests in `packages/core/src/core/content.test.ts` / `packages/core/src/core/model.test.ts` (typed item cached, `"checkbox"` unaffected, failing item still finds + caches nothing).
 
 ## Files to touch
 
 | Location | Kind | Change |
 |---|---|---|
-| `src/core/types.ts` | modify | Add additive `typedItem(i)` to the `list` arm of `BlockNode`; `ListView` carries an optional typed `Item` |
-| `src/core/content.ts` | modify | In `validateList`, keep `res.data` on a successful `everyItem` parse; failure + `"checkbox"` branches unchanged |
-| `src/core/projection.ts` | modify | Initialize the sparse typed-item store on the list `BlockNode` |
-| `src/core/model.ts` | modify | `listView` yields cached typed items with raw fallback |
-| `src/core/leaves.ts` | modify | `list<I>` captures the `everyItem` literal type and threads it to `read()` |
-| `tests/components.ts` | modify | Flip `list-typed` to `true` |
-| `tests/fixtures/consumption/` | modify | Un-skip the typed list-item fixtures gated by `list-typed` |
+| `packages/core/src/core/types.ts` | modify | Add additive `typedItem(i)` to the `list` arm of `BlockNode`; `ListView` carries an optional typed `Item` |
+| `packages/core/src/core/content.ts` | modify | In `validateList`, keep `res.data` on a successful `everyItem` parse; failure + `"checkbox"` branches unchanged |
+| `packages/core/src/core/projection.ts` | modify | Initialize the sparse typed-item store on the list `BlockNode` |
+| `packages/core/src/core/model.ts` | modify | `listView` yields cached typed items with raw fallback |
+| `packages/core/src/core/leaves.ts` | modify | `list<I>` captures the `everyItem` literal type and threads it to `read()` |
+| `packages/core/tests/components.ts` | modify | Flip `list-typed` to `true` |
+| `packages/core/tests/fixtures/consumption/` | modify | Un-skip the typed list-item fixtures gated by `list-typed` |
 
 ## Acceptance criteria
 
@@ -104,7 +107,7 @@ const raw: string[] = [...notes].map((i) => i.text); // items stay raw strings, 
 - [ ] AC-3: `everyItem: "checkbox"` and lists with no `everyItem` are unchanged (raw items); the typed store is additive and sparse.
 - [ ] AC-4: A failing item still emits exactly one `content/list/item-kind` finding and caches no typed value for that item.
 - [ ] AC-5: `list-typed` is `true` and the list fixtures run and pass; no previously-passing fixture changes.
-- [ ] AC-6: `npm run build`, `npm run test`, and `npm run typecheck` pass.
+- [ ] AC-6: `bunx moon run core:build`, `bunx moon run core:test`, and `bunx moon run core:typecheck` pass.
 
 ## Out of scope
 
@@ -114,3 +117,31 @@ const raw: string[] = [...notes].map((i) => i.text); // items stay raw strings, 
 ## Dependencies
 
 - [[T-SCRB-typed-row-read-back]] — establishes the capture overlay + the `section()` / `sections()` / `Infer` threading pattern this mirrors for lists.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+- AC-1: auto — `packages/core/src/core/model.test.ts` "reads items back … from the cache" + "transform is not re-run" (a call-counter proves the read is cache-sourced), and consumption fixture `[c13]` under `core:test`.
+- AC-2: auto — compile-time type-level assertions in `model.test.ts` (`z.output<everyItem>` reached through `read()` and `Infer`; raw `ListItem` for the checkbox/no-everyItem defaults), enforced by `bunx moon run core:typecheck`.
+- AC-3: auto — `content.test.ts` (checkbox and no-`everyItem` lists cache nothing) + `model.test.ts` raw read-back + the raw-default type-level asserts.
+- AC-4: auto — `content.test.ts` "a failing item emits exactly one `content/list/item-kind` finding and caches nothing there".
+- AC-5: auto — `packages/core/tests/components.ts` `"list-typed": true`; `[c13]` fixture runs and passes; `core:test` (697 pass) shows no previously-passing fixture changed.
+- AC-6: auto — `bunx moon run core:build`, `core:typecheck`, `core:test`, and `core:lint` all exit 0; the baseline-gated quality gate reports `OK 5/5`.
+
+### What worked
+
+- The shipped table-cell slice (`T-SCTC` + `T-SCRB`) was an exact mirror template: the sparse `typed(row,col)` overlay and the `section()` → `sections()` → `Infer` literal-type threading transferred cleanly to the list `typedItem(i)` / `LeafSpec._item` analogue with no new architecture.
+- The baseline-gated quality gate (`--diff-against-baseline`) subtracted pre-existing drift and reported `OK 5/5` with zero new drift on the first clean run.
+
+### Friction and automation gaps
+
+- Quality gate `--line`/`--diff-against-baseline` mode captures each verb via `spawnSync` with a 1 MB per-stream `maxBuffer`; the repo's ~1.04 MB of pre-existing biome warnings overflow it and surface a spurious `core:lint` ENOBUFS/SIGTERM FAIL in the worktree (only `--log`, stdio-inherit, runs clean) — the quality runner should raise the `maxBuffer` or stream verb output to a temp file so large pre-existing lint output can't spuriously fail the gate. → [[T-VJKB-quality-gate-stream-verb-output]]
+- The ensure-ready touchpoint gate hard-failed the spec over an unescaped `|` inside an inline-code span in a `## Today` table cell (`"checkbox" | ZodType`), which the table parser read as a 3-cell row — a cosmetic markdown-escaping bug downshifted an otherwise implementation-ready task — `sdlc task gap-report`'s touchpoint table parser should tolerate pipes inside backtick code spans (or `\|`-escaped pipes) rather than counting them as column delimiters. → [[T-I8UZ-gap-report-code-span-pipes]]
+
+### Spawned follow-up tasks
+
+- [[T-VJKB-quality-gate-stream-verb-output]] (https://github.com/sksizer/dev/pull/638) — Upstream-plugin (sdlc): stream quality-gate verb output to a temp file (or raise the per-stream maxBuffer) so large pre-existing lint output can't spuriously fail the baseline gate; spawned.
+- [[T-I8UZ-gap-report-code-span-pipes]] (https://github.com/sksizer/dev/pull/639) — Upstream-plugin (sdlc): make `sdlc task gap-report`'s touchpoint table parser ignore pipes inside backtick code spans rather than treating them as column delimiters; spawned.

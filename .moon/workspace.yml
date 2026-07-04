@@ -1,9 +1,10 @@
 # yaml-language-server: $schema=https://moonrepo.dev/schemas/workspace.json
 
 # Bun workspace split (T-WKSP, D-0010 D3): the library lives in packages/core,
-# runtime apps live under apps/, and websites (including the documentation site)
-# live under sites/. moon's project map points at the workspace members that
-# define tasks, so later work is a pure *add* of a project rather than a retool.
+# runtime apps live under apps/, canonical examples under examples/, and websites
+# (including the documentation site) live under sites/. moon's project map points
+# at the workspace members that define tasks, so later work is a pure *add* of a
+# project rather than a retool.
 # See docs/planning/tasks/T-WKSP-bun-workspace-split.md.
 #
 # apps/daemon-web-prototype is a workspace member but deliberately NOT a moon
@@ -12,6 +13,7 @@
 projects:
   core: "packages/core"
   web: "apps/web"
+  example-single-binary: "examples/single-binary"
   docs: "sites/docs"
 
 # Version control system. The repo is git, default branch is main.

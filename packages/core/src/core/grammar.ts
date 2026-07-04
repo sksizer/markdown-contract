@@ -35,9 +35,6 @@ import type {
 } from "./types.js";
 import { read as readEntry, validate as validateEntry } from "./validate.js";
 
-// Re-export the structure matcher so callers can `import { matchStructure } from "./grammar.js"`.
-export { matchStructure } from "./structure.js";
-
 /**
  * A build-time contract-authoring error — thrown by `contract(...)` / `sections(...)`, not
  * collected as a `Finding`. Carries the offending finding id (`contract/key-collision`) in

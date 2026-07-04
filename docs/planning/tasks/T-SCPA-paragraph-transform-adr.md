@@ -18,7 +18,7 @@ need_human_review: true
 impact: low
 complexity: small
 autonomy: human-only
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-03'
 ---
 # Decide the paragraph-transform generalization (design-only ADR + scoped follow-ons)
 
@@ -30,9 +30,9 @@ Capture the paragraph generalization that [[D-0015-structured-cells]] lists as o
 
 | Location | Role today |
 |---|---|
-| `src/core/leaves.ts#maxWords` | The only paragraph combinator — `maxWords(n)` produces a `paragraph` leaf with a placeholder schema and `{ maxWords: n }` config; no user Zod schema over the text. |
-| `src/core/content.ts#validateParagraph` | Validates a paragraph by **word count only** — it never `safeParse`s the paragraph text against a user schema, so there is no transform output to keep. |
-| `src/core/model.ts#paragraphView` | Returns `{ kind, text, pos }` — the raw paragraph text, always a string; no typed value path. |
+| `packages/core/src/core/leaves.ts#maxWords` | The only paragraph combinator — `maxWords(n)` produces a `paragraph` leaf with a placeholder schema and `{ maxWords: n }` config; no user Zod schema over the text. |
+| `packages/core/src/core/content.ts#validateParagraph` | Validates a paragraph by **word count only** — it never `safeParse`s the paragraph text against a user schema, so there is no transform output to keep. |
+| `packages/core/src/core/model.ts#paragraphView` | Returns `{ kind, text, pos }` — the raw paragraph text, always a string; no typed value path. |
 | `provenance/d0015/` | The structured-cells decision; its "Out of scope" and `proposed-shape.md` §7 name the paragraph generalization as a separate, undecided question. |
 
 ## Proposed
@@ -89,7 +89,7 @@ alt.validate("## Reviewed\n\n2026-07-01\n", { path: "card.md" }).doc?.body.revie
 - [ ] AC-2: The record follows the `provenance/d0015/` format and notes the key asymmetry — a paragraph has no existing discarded `safeParse` output, so this needs a new schema-bearing leaf, not just retained output.
 - [ ] AC-3: If the recommendation is to ship, the ADR enumerates the scoped follow-on task(s); if defer/reject, it records the rationale.
 - [ ] AC-4: The decision `id` is verified free against `provenance/` and `docs/planning/decisions/`.
-- [ ] AC-5: No file under `src/` or `tests/` changes — this task is design-only.
+- [ ] AC-5: No file under `packages/core/src/` or `packages/core/tests/` changes — this task is design-only.
 
 ## Out of scope
 

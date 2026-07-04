@@ -2,7 +2,7 @@
 type: task
 schema_version: "5"
 id: T-SCPP
-status: in-progress
+status: closed/done
 created: 2026-06-30
 related:
   - "[[M-0011-structured-cells]]"
@@ -23,6 +23,7 @@ last_reviewed: 2026-07-03
 readiness_verified_at: 2026-07-03T03:24:06Z
 prs:
   - https://github.com/sksizer/markdown-contract/pull/187
+completion_note: "Shipped via #187."
 ---
 # Preserve per-cell `col` and inline-code byte spans on the projection (axis C1)
 

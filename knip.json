@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreExportsUsedInFile": true,
   "workspaces": {
     ".": {
       "entry": [],
@@ -10,7 +11,6 @@
         "src/index.ts",
         "src/declarative/index.ts",
         "src/cli/index.ts",
-        "vitest.config.ts",
         "src/**/*.test.ts",
         "tests/**/*.test.ts",
         "tests/harness.ts",
@@ -23,9 +23,18 @@
       "entry": ["src/daemon/index.ts", "src/**/*.test.ts"],
       "project": ["src/**/*.ts", "scripts/**/*.ts", "types/**/*.ts"],
       "ignoreDependencies": ["vue", "vue-tsc"]
+    },
+    "examples/single-binary": {
+      "entry": [
+        "src/daemon/index.ts",
+        "src/**/*.test.ts",
+        "types/api.ts"
+      ],
+      "project": ["src/**/*.ts", "scripts/**/*.ts", "types/**/*.ts"],
+      "ignoreDependencies": ["vue", "vue-tsc"]
     }
   },
   "ignoreWorkspaces": ["apps/daemon-web-prototype"],
   "ignoreDependencies": [],
-  "ignoreBinaries": []
+  "ignoreBinaries": ["scc"]
 }

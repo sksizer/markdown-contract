@@ -328,9 +328,13 @@ function validateList(
     }
   } else if (cfg.everyItem !== undefined) {
     const zod = asZod(cfg.everyItem);
-    for (const item of node.items) {
+    node.items.forEach((item, i) => {
       const res = zod.safeParse(item.text);
-      if (!res.success) {
+      if (res.success) {
+        // A1 — keep the parsed output (previously discarded) and cache it on the list node's sparse
+        // typed overlay, from this SAME `safeParse` (no second Zod pass), mirroring the table cell.
+        node.setTypedItem(i, res.data);
+      } else {
         out.push(
           ctx.finding({
             id: "content/list/item-kind",
@@ -339,7 +343,7 @@ function validateList(
           }),
         );
       }
-    }
+    });
   }
 
   if (cfg.minItems !== undefined && node.items.length < cfg.minItems) {

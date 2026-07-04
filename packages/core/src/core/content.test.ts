@@ -7,7 +7,7 @@
  */
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import type { Finding } from "../index.js";
+import type { DocTree, Finding } from "../index.js";
 import { code, contract, list, maxWords, section, sections, table } from "../index.js";
 
 const CTX = { path: "fixture.md" };
@@ -251,6 +251,108 @@ describe("list leaf", () => {
     });
     const src = ["## Acceptance criteria", "", "- [ ] only one"].join("\n");
     expect(shape(find(c, src))).toEqual([{ id: "content/list/min-items", line: 3 }]);
+  });
+});
+
+// ── List typed-item cache (T-SCLI) ────────────────────────────────────────────────
+// `validateList` keeps an `everyItem` transform's parsed output (previously discarded) and caches it
+// on the list node's sparse overlay, reachable via `node.typedItem(i)` — the runtime substrate the
+// model layer reads. The raw `items` stay verbatim. The `"checkbox"` gate caches nothing.
+
+describe("list typed-item cache", () => {
+  // A transform item: `AC-1: do the thing` → { ref: "AC-1", text: "do the thing" }.
+  const criterion = z.string().transform((raw) => {
+    const [ref = "", ...rest] = raw.split(":");
+    return { ref: ref.trim(), text: rest.join(":").trim() };
+  });
+
+  const acceptance = contract({
+    body: sections({}, [
+      section("Acceptance criteria", { content: list({ everyItem: criterion, minItems: 1 }) }),
+    ]),
+  });
+
+  /** The first section's first block as a list `BlockNode` (throws if it is not a list). */
+  function listBlockOf(tree: DocTree) {
+    const node = tree.root.sections[0]?.blocks[0];
+    if (node?.kind !== "list") throw new Error("expected a list block");
+    return node;
+  }
+
+  /** The projected list `BlockNode` for the first section's first block. */
+  function listNode(c: ReturnType<typeof contract>, source: string) {
+    return listBlockOf(c.validate(source, CTX).tree);
+  }
+
+  test("a transform item caches its parsed output, retrievable via typedItem(i)", () => {
+    const src = ["## Acceptance criteria", "", "- AC-1: scaffold it", "- AC-2: stub it"].join("\n");
+    const node = listNode(acceptance, src);
+    // Each item's `z.output` is cached beside the raw items.
+    expect(node.typedItem(0)).toEqual({ ref: "AC-1", text: "scaffold it" });
+    expect(node.typedItem(1)).toEqual({ ref: "AC-2", text: "stub it" });
+    // Raw items retained verbatim — the overlay is additive, not a replacement.
+    expect(node.items.map((i) => i.text)).toEqual(["AC-1: scaffold it", "AC-2: stub it"]);
+  });
+
+  test("everyItem: checkbox caches nothing (the typed store stays empty)", () => {
+    const c = contract({
+      body: sections({}, [
+        section("Acceptance criteria", { content: list({ everyItem: "checkbox", minItems: 1 }) }),
+      ]),
+    });
+    const src = ["## Acceptance criteria", "", "- [ ] one", "- [x] two"].join("\n");
+    const node = listNode(c, src);
+    // The `"checkbox"` branch never runs a schema, so nothing is cached — the store is sparse/empty.
+    expect(node.typedItem(0)).toBeUndefined();
+    expect(node.typedItem(1)).toBeUndefined();
+  });
+
+  test("a list with no everyItem caches nothing", () => {
+    const c = contract({ body: sections({}, [section("Notes", { content: list({}) })]) });
+    const node = listNode(c, ["## Notes", "", "- a", "- b"].join("\n"));
+    expect(node.typedItem(0)).toBeUndefined();
+    expect(node.typedItem(9)).toBeUndefined(); // an out-of-range index is undefined too
+  });
+
+  test("a failing item emits exactly one content/list/item-kind finding and caches nothing there", () => {
+    // `AC-1: ok` parses (the transform never rejects), but a stricter schema exercises the failure
+    // branch: require each item to start with `#`. Item 1 fails; items 0 and 2 succeed and cache.
+    const tags = contract({
+      body: sections({}, [
+        section("Tags", { content: list({ everyItem: z.string().regex(/^#/) }) }),
+      ]),
+    });
+    const src = [
+      "## Tags", // 1
+      "", // 2
+      "- #alpha", // 3 item 0 — ok
+      "- beta", // 4 item 1 — bad (no leading #)
+      "- #gamma", // 5 item 2 — ok
+    ].join("\n");
+    const res = tags.validate(src, CTX);
+    // Exactly one item-kind finding, pinned to the offending item's line (unchanged).
+    expect(shape(res.findings)).toEqual([{ id: "content/list/item-kind", line: 4 }]);
+    // Nothing cached for the failed item; the successful items DID cache (regex passthrough → string).
+    const node = listBlockOf(res.tree);
+    expect(node.typedItem(1)).toBeUndefined();
+    expect(node.typedItem(0)).toBe("#alpha");
+    expect(node.typedItem(2)).toBe("#gamma");
+  });
+
+  test("the cached output rides only on the accessor, never on the serialized tree", () => {
+    // The transform injects a sentinel that appears NOWHERE in the raw source, so finding it in a
+    // serialized `tree` would mean the typed overlay leaked onto the public surface.
+    const Tagged = z.string().transform((s) => ({ raw: s, tag: "CLOSURE_ONLY_7b2c" }));
+    const c = contract({
+      body: sections({}, [section("Notes", { content: list({ everyItem: Tagged }) })]),
+    });
+    const { tree } = c.validate(["## Notes", "", "- a", "- b"].join("\n"), CTX);
+    const node = listBlockOf(tree);
+    // Reachable by CALLING the accessor…
+    expect(node.typedItem(0)).toEqual({ raw: "a", tag: "CLOSURE_ONLY_7b2c" });
+    // …but not serialized onto the node or the wider tree.
+    expect(JSON.stringify(node)).not.toContain("CLOSURE_ONLY_7b2c");
+    expect(JSON.stringify(tree)).not.toContain("CLOSURE_ONLY_7b2c");
   });
 });
 

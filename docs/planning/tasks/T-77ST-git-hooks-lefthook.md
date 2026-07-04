@@ -1,20 +1,22 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-77ST
 status: in-progress
-created: '2026-06-30'
-last_reviewed: '2026-07-04'
+created: 2026-06-30
+last_reviewed: 2026-07-04
 related:
-- '[[M-0010 Quality Tooling]]'
+  - "[[M-0010 Quality Tooling]]"
 depends_on:
-- '[[T-0MVN]]'
+  - "[[T-0MVN]]"
 tags:
-- quality
+  - quality
 need_human_review: false
 impact: medium
 complexity: small
-readiness_verified_at: '2026-07-04T00:46:14Z'
+readiness_verified_at: 2026-07-04T00:46:14Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/212
 ---
 # Add lefthook pre-commit hooks and EditorConfig
 
@@ -168,12 +170,28 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — `bun add -d lefthook` landed `lefthook@2.1.9` in root `package.json` devDeps and `bun.lock`; `lefthook.yml` authored at repo root.
+- AC-2: agent-manual — `.editorconfig` created with `root = true`, the six `[*]` settings, and the `[*.md]` override (`trim_trailing_whitespace = false`, `insert_final_newline = false`); verified by inspection.
+- AC-3: agent-manual — staged a deliberately mis-formatted `.ts` → `git commit` blocked by pre-commit; staging only a `.md` → Biome reported `no files for inspection` and the commit succeeded.
+- AC-4: agent-manual — `bunx lefthook run pre-push` ran `bunx moon run core:typecheck core:test` (typecheck OK, 683 tests pass on the clean tree; failed on a temporary deliberate type error, since removed).
+- AC-5: agent-manual — `bunx lefthook install` succeeded and was idempotent on re-run; `bun install` fires the root `prepare` script (`lefthook install || true`); `worktree_init` gained `bunx lefthook install`.
+- AC-6: agent-manual — `git commit --no-verify` skipped the hook; bypass documented in the `lefthook.yml` header comment and the README Toolchain section.
+- AC-7: auto — `git diff --name-only origin/main..HEAD` touches only the six intended files; `.github/workflows/ci.yml` and `packages/core/**/moon.yml` are untouched.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The Bun + moon quality gate (`sdlc quality run`) passed 5/5 with zero new drift on the first post-implementation run — no fix-up loop needed.
+- lefthook's `{staged_files}` + glob filter delivered exactly the staged-only, Biome-scoped pre-commit the spec wanted, confirmed empirically (mis-formatted `.ts` blocked; `.md`-only skipped Biome).
+- `bun install` firing the root `prepare` script confirmed the auto-arming path works, so arming does not rely solely on the explicit `worktree_init` entry.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- `ensure_ready_mutate.ts` rejects `--cleanup-on-fail` under `--mode pass` (exit 2, "only meaningful with --mode fail"), but /sdlc:task-work Step 5a prose instructs passing `--commit-on main --cleanup-on-fail` together on the readiness-gate call — task-work should pass `--cleanup-on-fail` only on the fail path (or the mutator should accept-and-ignore it under `--mode pass`) so the documented invocation works verbatim. → [[T-1SSY-cleanup-on-fail-works-under-pass]]
+- /sdlc:task-work Step 7's `quality run --diff-against-baseline` runs from the worktree, so `--baseline-dir` defaults to the worktree's `.sdlc/` and the baseline captured in the main repo's `.sdlc/` (Step 3a) is not found (`baseline not found`) — Step 7's invocation should pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly, as Step 3a already does. → [[T-2GGI-step7-baseline-dir-from-main-repo]]
+- Step 3b's `preflight_permissions.ts` reported false-positive hard gaps (`Bash(bun:*)`, `Write`/`Edit` on the not-yet-created worktree path) even though `bun` was demonstrably usable for the whole run — the static settings-file read diverged from the actual harness grants, forcing a manual proceed-anyway judgment call the skill could not make on its own. → [[T-7XLY-preflight-permissions-match-harness-grants]]
+
+### Spawned follow-up tasks
+
+- [[T-1SSY-cleanup-on-fail-works-under-pass]] (https://github.com/sksizer/dev/pull/631) — spawned, Upstream-plugin (sdlc-meta): make `--cleanup-on-fail` compatible with `--mode pass` so task-work Step 5a's documented readiness-gate call runs verbatim.
+- [[T-2GGI-step7-baseline-dir-from-main-repo]] (https://github.com/sksizer/dev/pull/632) — spawned, Upstream-plugin (sdlc-meta): task-work Step 7 passes `--baseline-dir <main-repo>/.sdlc/quality-baselines` explicitly so the baseline-diff resolves the baseline Step 3a wrote.
+- [[T-7XLY-preflight-permissions-match-harness-grants]] (https://github.com/sksizer/dev/pull/633) — spawned, Upstream-plugin (sdlc-meta): reconcile `preflight_permissions.ts`'s static settings read with the harness's actual grants so it stops emitting false-positive hard gaps.

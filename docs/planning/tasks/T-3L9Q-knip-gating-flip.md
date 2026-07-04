@@ -1,22 +1,26 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-3L9Q
-status: open/ready
-created: '2026-07-03'
+status: in-progress
+created: 2026-07-03
 related:
-- '[[M-0010 Quality Tooling]]'
-- '[[T-HIL6-knip-dead-code]]'
-- '[[T-W1CX-knip-baseline-dead-code-cleanup]]'
+  - "[[M-0010 Quality Tooling]]"
+  - "[[T-HIL6-knip-dead-code]]"
+  - "[[T-W1CX-knip-baseline-dead-code-cleanup]]"
 depends_on:
-- '[[T-W1CX]]'
+  - "[[T-W1CX]]"
 tags:
-- quality
-- knip
-- ci
+  - quality
+  - knip
+  - ci
 need_human_review: false
 impact: medium
 complexity: medium
+readiness_verified_at: 2026-07-04T02:06:01Z
+last_reviewed: 2026-07-04
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/213
 ---
 # Flip knip from report-only to a blocking CI gate
 
@@ -128,3 +132,31 @@ per the M-0010 deliverable) and parked the flip. The M-0010 close-out
 assessment (2026-07-03) found the flip had no owning task, and a fresh run
 showed the finding set had grown beyond the documented baseline as the
 `apps/web` and `sites/docs` workspaces landed.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+- AC-1: auto — `bun run lint:deps` exits 0 on the committed clean tree (re-run after each triage edit).
+- AC-2: agent-manual — added a scratch `export const __knipGateProbe` to `routes.ts`, confirmed `bun run lint:deps` exited 1 (`Unused exports (1)`), then reverted; the knip step in `knip.yml` no longer carries `continue-on-error` (remaining matches are comment text only, verified with `grep -nE '^\s*continue-on-error:'` → none).
+- AC-3: auto — `grep lint:deps sdlc.yaml` confirms `bun run lint:deps` is in `quality_checks`.
+- AC-4: auto — `git diff origin/main..HEAD -- .github/workflows/ci.yml` is empty; the `moon run` list is untouched.
+- AC-5: auto — `bunx moon run core:build core:typecheck core:lint core:test` exits 0 (686 tests pass); the baseline-gated `sdlc quality run` also reports `OK 5/5`.
+
+### What worked
+
+- The deterministic readiness gate, start-commit, and baseline capture all ran first-try with no manual intervention.
+- `knip.json`'s own configuration hints named the exact redundant entry patterns to drop, so that triage was mechanical.
+- Baseline-gating the quality run cleanly subtracted the pre-existing `packages/core` biome-warning noise, so the gate flagged only this branch's (zero) new drift.
+
+### Friction and automation gaps
+
+- The task's written 2026-07-03 inventory had already drifted from the live `bun run lint:deps` output (the `nuxt` findings it listed were gone; the real set was smaller) — the implementer had to re-run and re-triage against reality. The Approach's "re-run to refresh the inventory" step anticipated this, so it cost only a re-run, not a stall. No automation change needed beyond keeping point-in-time inventories advisory.
+- Step 7's baseline-gated `quality run` failed first with `baseline not found` because the baseline was captured under the main repo's `.sdlc/quality-baselines/` while the gate, run from the worktree, defaulted to the worktree's dir — needed an explicit `--baseline-dir` pointing at the main repo. task-work Step 7 could pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` by default so the worktree-run gate always finds the Step 3a baseline without operator intervention. → [[T-44OO-plugin-scripts-self-discover-project-root]]
+
+### Spawned follow-up tasks
+
+- [[T-44OO-plugin-scripts-self-discover-project-root]] — linked (Upstream-plugin, `sdlc`). Cross-repo dedup: this exact gap is already tracked on `sksizer/dev`. It began as [[T-5X6Y-task-work-step7-explicit-baseline-dir]] (closed/superseded), which the successor T-44OO now folds into a broader "plugin scripts self-discover project root from cwd" fix that removes `--baseline-dir` from caller surfaces entirely; a prior spawn (PR #529) for the same gap was closed unmerged. No new PR opened — spawning a fourth artifact would only fragment the upstream backlog.
+- The inventory-drift bullet was skipped: it concludes no automation change is needed (point-in-time inventories stay advisory).

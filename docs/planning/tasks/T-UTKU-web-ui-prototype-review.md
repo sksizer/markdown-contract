@@ -2,8 +2,18 @@
 type: task
 schema_version: "5"
 id: T-UTKU
-status: in-progress
+status: closed/superseded
 created: 2026-06-30
+completion_note: 'The decide-after gate was overtaken by events: the adoption it
+  gated happened via PR #183, which wired the daemon-web-prototype components
+  into a real apps/web (live daemon, registry, SSE) without a formal
+  variant-by-variant review — the go/no-go it was to produce was answered
+  go, in code. The M-0009 boundary question it guarded is now settled
+  structurally by T-UDPO-extract-single-binary-example: apps/web is the M-0009
+  product app; examples/single-binary/ carries the minimal M-0008 surface. The
+  Storybook harness (apps/daemon-web-prototype) STAYS as the mock-driven design
+  surface for M-0009 UI work; its retirement, and any remaining gap-list items
+  (history/trends, settings), fall to M-0009 planning.'
 related:
   - "[[M-0009-local-web-ui-vault-dashboard]]"
   - "[[C-0010-single-binary-and-vault-dashboard]]"

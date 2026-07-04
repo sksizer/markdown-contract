@@ -9,4 +9,4 @@
  */
 
 export type { CorpusConfig, RunStats } from "./corpus.js";
-export { compileMatcher, defineConfig, runCorpus } from "./corpus.js";
+export { defineConfig, runCorpus } from "./corpus.js";

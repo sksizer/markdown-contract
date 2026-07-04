@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-64SI
-status: in-progress
+status: closed/done
 created: '2026-07-02'
 related:
 - '[[M-0003-config-inference]]'
@@ -18,8 +18,10 @@ need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-readiness_verified_at: '2026-07-04T00:46:23Z'
 last_reviewed: '2026-07-04'
+prs:
+- https://github.com/sksizer/markdown-contract/pull/208
+completion_note: 'Shipped via #208.'
 ---
 # init defaults the scaffold write to the single inferred root, not cwd
 
@@ -141,12 +143,23 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — test "default write lands under `<dir>` from a foreign cwd" in `inference.cli.test.ts`; also agent-manual (dogfooded `init <scratch>/vault --meta` from a foreign cwd, scaffold landed under vault, cwd left clean).
+- AC-2: auto — test "init `<dir>` then init `<dir>` --check round-trips from a foreign cwd" asserts exit 0; also agent-manual (ran the round-trip from a foreign cwd, `--check` exited 0 "clean").
+- AC-3: auto — test "multi-root without --out writes to cwd and warns"; also agent-manual (ran `init a b --meta` from a foreign cwd; warning printed to stderr, scaffold written to cwd).
+- AC-4: auto — the `--out` branch is untouched and the multi-root warning is gated on `!flags.out`; the [[T-IOUT-init-out-placement]] test passes unmodified (quality gate green).
+- AC-5: auto — the new foreign-cwd test re-runs `init` without `--force` and asserts exit 2; also agent-manual (second init at the inferred-root default refused with "refusing to overwrite …/markdown-contract.yaml").
+- AC-6: auto — USAGE/doc comments, `D-0009` § The CLI surface, and `C-0008` updated; `sdlc quality run` reports `OK 5/5` (build, typecheck, lint, test, package-check).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The task spec was precise (exact line numbers, exact warning string, three named test cases), so implementation was a direct translation with no guesswork.
+- The baseline-gated quality gate (`--diff-against-baseline`) reported `OK 5/5` with zero new drift on the first post-implementation run.
+- Manual dogfood of the `init <dir>` → `init <dir> --check` round-trip from a foreign cwd independently confirmed the headline fix outside the test harness.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 7's `quality run --diff-against-baseline` looked for the baseline under the *worktree's* `.sdlc/quality-baselines/` and failed until `--baseline-dir` was pointed at the main repo's dir — task-work Step 7's documented invocation omits `--baseline-dir`, so the worktree-vs-main-repo baseline-location split is a footgun the skill should either pass through explicitly or resolve to the superproject automatically. → linked-existing: already tracked upstream by sdlc `T-44OO-plugin-scripts-self-discover-project-root` (successor to the superseded `T-5X6Y-task-work-step7-explicit-baseline-dir`), with open PRs `sksizer/dev#598`, `#605`, `#608` proposing the Step 7 fix; not re-spawned.
+
+### Spawned follow-up tasks
+
+- `T-44OO-plugin-scripts-self-discover-project-root` (https://github.com/sksizer/dev/pull/608) — linked-existing, Upstream-plugin (`sdlc`). The worktree-vs-main-repo baseline-dir footgun is already tracked upstream: the successor of the superseded `T-5X6Y-task-work-step7-explicit-baseline-dir`, with three open PRs (`sksizer/dev#598`, `#605`, `#608`) proposing the task-work Step 7 baseline-dir resolution. No new PR spawned — a fourth would fragment the upstream backlog (the dedup search in step 3 ran against this repo's local task corpus, which is blind to the sdlc dev repo; a direct query of the target repo surfaced the existing coverage).

@@ -1,22 +1,23 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-D8TE
 status: open/ready
-created: 2026-07-02
-last_reviewed: 2026-07-03
+created: '2026-07-02'
+last_reviewed: '2026-07-03'
 related:
-  - "[[M-0010 Quality Tooling]]"
-  - "[[T-0MVN-biome-lint-format]]"
+- '[[M-0010 Quality Tooling]]'
+- '[[T-0MVN-biome-lint-format]]'
 tags:
-  - quality
-  - lint
-  - complexity
-  - biome
-  - tech-debt
+- quality
+- lint
+- complexity
+- biome
+- tech-debt
 need_human_review: false
 impact: low
 complexity: medium
+autonomy: autonomous/pr
 ---
 # Ratchet down the Biome cognitive-complexity ceiling from 46 toward 15
 

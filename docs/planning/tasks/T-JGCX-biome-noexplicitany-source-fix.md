@@ -1,21 +1,25 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-JGCX
-status: open/ready
-created: '2026-07-03'
+status: in-progress
+created: 2026-07-03
 related:
-- '[[M-0010 Quality Tooling]]'
-- '[[T-0MVN-biome-lint-format]]'
-- '[[T-1C0J-remove-stale-eslint-disable-comments]]'
+  - "[[M-0010 Quality Tooling]]"
+  - "[[T-0MVN-biome-lint-format]]"
+  - "[[T-1C0J-remove-stale-eslint-disable-comments]]"
 tags:
-- quality
-- lint
-- biome
-- tech-debt
+  - quality
+  - lint
+  - biome
+  - tech-debt
 need_human_review: false
 impact: medium
 complexity: medium
+readiness_verified_at: 2026-07-04T02:05:46Z
+last_reviewed: 2026-07-04
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/216
 ---
 # Fix noExplicitAny warnings at the source and promote the rule
 
@@ -123,3 +127,19 @@ Requested during the M-0010 close-out review (2026-07-03): "we shouldn't have
 noExplicitAny ideally — assess whether we can fix at the source." The source
 analysis found production code already clean and the whole warning load rooted
 in the untyped test harness, making promote-to-error a realistic single task.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._

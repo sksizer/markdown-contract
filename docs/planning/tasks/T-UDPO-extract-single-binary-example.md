@@ -57,7 +57,7 @@ minimal artifact instead of a moving product app.
 | `apps/web/types/api.ts` | The wire contract both faces bind to (adopted from the design prototype via T-D7X1); the example needs only its validate/health subset |
 | `apps/web/src/daemon/registry.ts` | M-0009 business logic (multi-vault registry) — stays behind, NOT extracted; likewise `sse.ts`, `watcher.ts`, `runs.ts`, `status.ts`, `config.ts`, `api.ts` |
 | `apps/web/ui/components/kit/` | The minimal findings-rendering component set (`FindingRow`, `SeverityBadge`, `StatusBadge`, `Empty/Error/LoadingState`, …) adopted from the design prototype — the subset the example's one page needs |
-| `apps/web/ui/pages/vault/[id]/edit.vue` | Contract-editor surface — M-0009 scope, marks how far past "minimal" `apps/web` has grown |
+| `apps/web/ui/components/editor/` | Contract-editor surface (and its `pages/vault/[id]/edit.vue` route) — M-0009 scope, marks how far past "minimal" `apps/web` has grown |
 | `apps/daemon-web-prototype/` | Mock-driven Storybook design harness (no engine imports, no daemon); source of the kit components, `design/tokens.ts`, and the "Boundary — read this first" README pattern |
 | `package.json` | Root bun workspace globs: `packages/*`, `apps/*`, `sites/*` — no `examples/*` |
 | `.moon/workspace.yml` | Explicit moon project map (`core`, `web`, `docs`) — the example must be registered to get moon tasks and CI coverage |
@@ -217,12 +217,36 @@ _Captured by /sdlc:task-work on 2026-07-03. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — built the binary, copied it to an empty scratch dir; `validate` stdout AND stderr byte-identical (`cmp`) to the npm bin on a passing and a failing vault, exit codes matched (0/0, 1/1).
+- AC-2: agent-manual — daemon booted from the empty dir on 4326 and 4320; `/api/health` ok, `/` served the embedded SPA HTML, hashed asset came back with `immutable` cache headers, `POST /api/validate` on a real vault returned findings JSON. No `ui/.output` anywhere on disk.
+- AC-3: auto — grep gate: no `apps/web` imports, no `packages/core/src` reach, CLI face imports `markdown-contract/cli/run` only; pinned by the import layout itself.
+- AC-4: auto (local) / deferred-user (CI half) — `moon run example-single-binary:typecheck example-single-binary:test` green locally (23 tests); the "green in the PR's CI run" half is observable only after this PR's CI completes — please confirm on the PR checks.
+- AC-5: agent-manual — README carries all six required sections (Boundary, two-faces diagram, build pipeline, loopback trust model, Bun.serve-vs-Nitro, `cli/run` entry-guard gotcha); independently spot-checked by the parent session.
+- AC-6: auto — all seven re-pointed planning docs pass `sdlc entities validate`; T-WEBU/T-SPAE `closed/done` with completion notes citing PR #183; T-UTKU `closed/superseded`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The copy-then-trim extraction out of `apps/web` was clean — the T-DAEM skeleton and embed pipeline separated from the M-0009 business logic exactly along the seams the task's Today table predicted.
+- The baseline-gated quality run (`OK 5/5`) correctly ignored pre-existing repo drift and gated only this branch's changes.
+- End-to-end verification from an empty directory (both faces, real vaults) caught zero regressions — the byte-identical CLI check is a strong, cheap parity gate.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- `sdlc quality run` captures verb output via `spawnSync` with the default 1 MiB maxBuffer; `bunx moon run core:lint` emits ~1.04 MiB of pre-existing warnings and gets SIGTERM-killed, misreported as FAIL (flaps right at the boundary) — the runner should stream or raise maxBuffer. → [[T-WG6B-quality-run-stream-verb-output]]
+- Related runner instability: `--diff-against-baseline` line-matches verb output exactly, so moon's per-run decoration (timing values like `Time: 56ms`, `(cached, <SHA>)` cache-status lines, ANSI-colored summaries) shows up as false `new-drift:` whenever cache state differs between baseline capture and gate run — Step 9's post-rebase re-run FAILed on 6 such lines while the branch's diff against `origin/main` touches nothing `core:lint` covers (verified empty for `packages/core` + biome config). The baseline differ should normalize/strip unstable decoration lines; same fix surface as [[T-WG6B-quality-run-stream-verb-output]].
+- `packages/core` carries 324 pre-existing biome warnings whose colored output is what breaches that buffer — a warning cleanup or a `--max-diagnostics` cap would defuse the flap from the repo side. → [[T-UFUX-core-biome-warning-cleanup]]
+- The task location grammar cannot cite literal paths containing `[` `]` (Nuxt dynamic-route files like `pages/vault/[id]/edit.vue` parse as glob character classes and never resolve) — the resolver could support escaping; worked around by citing the parent directory. → [[T-TLJW-location-grammar-bracket-escaping]]
+- `preflight_permissions.ts` reported missing Write/Edit grants for the worktree path even though session writes to `.sdlc/worktrees/**` demonstrably worked — the settings-file scan misses session-effective permission modes; a live write-probe would eliminate the false gate. → [[T-0AM0-preflight-probe-honors-runtime-edit-grant]] (pre-existing upstream task in sksizer/dev)
+- task-work's "land body edits on origin/main before the gate" step has no sanctioned verb: a hand-rolled `git push origin HEAD:main` for the citation fix was denied by the harness permission layer (correctly), while the plugin's own scripts push main internally — a `sdlc task amend --on main` verb would close the gap; worked around by carrying the fix on the task branch. → [[T-LCTU-task-amend-on-main-verb]]
+- M-0008's milestone body was missing the schema-required `## Goal` H2 at HEAD (pre-existing validation failure on main, only surfaced when this task edited the file) — periodic `/sdlc:entities-audit` runs would catch such drift before it blocks unrelated tasks. → [[T-6KS9-orchestrate-periodic-entities-audit]]
+- `docs/index.md` is a generated artifact indexing task statuses; nothing in the task-work flow regenerates it after planning-doc edits — `/sdlc:docs` needs a post-merge run, or close-out should trigger it. → [[T-BDKN-close-out-regenerates-docs-index]]
+
+### Spawned follow-up tasks
+
+- [[T-WG6B-quality-run-stream-verb-output]] (<https://github.com/sksizer/dev/pull/622>) — quality run streams verb output so the 1 MiB spawnSync maxBuffer can't misreport FAIL; spawned upstream (sksizer/dev, sdlc-meta)
+- [[T-UFUX-core-biome-warning-cleanup]] (<https://github.com/sksizer/markdown-contract/pull/204>) — clean up packages/core's 324 pre-existing biome warnings (or cap lint diagnostics); spawned local
+- [[T-TLJW-location-grammar-bracket-escaping]] (<https://github.com/sksizer/dev/pull/624>) — location grammar supports escaping literal `[` `]` in cited paths; spawned upstream (sksizer/dev, sdlc-meta)
+- [[T-0AM0-preflight-probe-honors-runtime-edit-grant]] — preflight probe honors runtime edit grants / touch-tests before flagging Write/Edit gaps; linked to the pre-existing upstream task in sksizer/dev (same gap, same proposed fix — no new PR)
+- [[T-LCTU-task-amend-on-main-verb]] (<https://github.com/sksizer/dev/pull/625>) — sanctioned `sdlc task amend --on main` verb for pre-gate body edits; spawned upstream (sksizer/dev, sdlc-meta)
+- [[T-6KS9-orchestrate-periodic-entities-audit]] (<https://github.com/sksizer/dev/pull/626>) — periodic /sdlc:entities-audit runs catch entity drift before it blocks tasks; spawned upstream (sksizer/dev, sdlc-meta)
+- [[T-BDKN-close-out-regenerates-docs-index]] (<https://github.com/sksizer/dev/pull/627>) — task close-out (or a post-merge hook) regenerates the /sdlc:docs artifacts; spawned upstream (sksizer/dev, sdlc-meta)

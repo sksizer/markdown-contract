@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://moonrepo.dev/schemas/project.json
+#
+# The `example-single-binary` project (mapped to 'examples/single-binary' in
+# .moon/workspace.yml) — the canonical M-0008 "one binary, two faces" example
+# (T-UDPO, D-0012 §D3): the combined `bin.ts` entry, the minimal loopback daemon
+# (health + stateless validate), and the embedded one-page SPA. Models the
+# package.json scripts as moon tasks; the scripts stay thin pass-throughs.
+#
+# All Bun-only / server code lives here (never in packages/core), so every task
+# runs on the `bun` toolchain — Bun is both the dev runtime and the
+# `bun build --compile` target.
+#
+# typecheck/test both `deps: ['core:build']` because the example imports the
+# published library through its `exports` map (`markdown-contract`,
+# `.../declarative`, `.../cli/run`), which resolves to packages/core's `dist/` —
+# so dist must be fresh first.
+
+layer: 'application'
+language: 'typescript'
+
+tasks:
+  # `bun run daemon` (= bun src/bin.ts daemon) — boot the loopback daemon for local
+  # development. `preset: server` marks it local + persistent, cache off, never a CI gate.
+  dev:
+    command: 'bun run daemon'
+    toolchain: 'bun'
+    preset: 'server'
+
+  # `bun run typecheck` (= tsc --noEmit) — type-check src/scripts/types against the
+  # project tsconfig. No outputs (pure check), so caching keys purely on inputs.
+  # Needs core's dist for the `markdown-contract/*` type resolutions.
+  typecheck:
+    command: 'bun run typecheck'
+    toolchain: 'bun'
+    deps:
+      - 'core:build'
+    inputs:
+      - 'src/**/*'
+      - 'scripts/**/*'
+      - 'types/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `bun run test` (= bun test src) — the peer test suite. Pinned to `bun test`
+  # (not vitest) because the daemon boots `Bun.serve`, a Bun-only API. Needs core's
+  # dist for the `markdown-contract/*` runtime imports the daemon resolves.
+  test:
+    command: 'bun run test'
+    toolchain: 'bun'
+    deps:
+      - 'core:build'
+    inputs:
+      - 'src/**/*'
+      - 'types/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `bun run build:binary` (= nuxt generate ui → gen:assets → bun build --compile)
+  # — the full single-binary pipeline, emitting dist/markdown-contract with the SPA
+  # embedded. Local-only for now (runInCI: false): the CI compile matrix and
+  # both-faces smoke are [[T-BMTX-bun-compile-matrix]]'s scope, and the shared CI
+  # `:build` line must not start compiling a ~58 MB binary as a side effect.
+  build:
+    command: 'bun run build:binary'
+    toolchain: 'bun'
+    deps:
+      - 'core:build'
+    inputs:
+      - 'src/**/*'
+      - 'scripts/**/*'
+      - 'types/**/*'
+      - 'ui/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    outputs:
+      - 'dist'
+    options:
+      runInCI: false

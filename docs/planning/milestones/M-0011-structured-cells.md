@@ -2,7 +2,7 @@
 type: milestone
 schema_version: '1'
 id: M-0011
-status: open/planned
+status: open/active
 title: Structured cells — typed transforms, typed read-back, position preservation
 created: '2026-06-30'
 related:

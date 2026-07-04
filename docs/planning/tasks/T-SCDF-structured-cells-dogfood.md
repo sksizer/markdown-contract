@@ -21,7 +21,7 @@ need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-03'
 ---
 # Dogfood structured cells on a realistic worked contract and close the milestone
 
@@ -34,9 +34,9 @@ Prove the assembled feature end-to-end on a realistic worked contract — the ta
 | Location | Role today |
 |---|---|
 | `contracts/task.contract.yaml` | Validates SDLC task docs (incl. their `Files to touch` table) declaratively — but YAML, closed vocabulary, no Zod transform; it cannot express a transforming cell. |
-| `tests/fixtures/consumption/` | The TS + YAML consumption corpus; the home for a realistic worked dogfood contract. |
-| `tests/components.ts#IMPLEMENTED` | The three structured-cells gates (`cell-typed` / `list-typed` / `cell-pos`), flipped `true` by the prior tasks. |
-| `tests/FIXTURES.md` | Documents the corpus and the greening switch. |
+| `packages/core/tests/fixtures/consumption/` | The TS + YAML consumption corpus; the home for a realistic worked dogfood contract. |
+| `packages/core/tests/components.ts#IMPLEMENTED` | The three structured-cells gates (`cell-typed` / `list-typed` / `cell-pos`), flipped `true` by the prior tasks. |
+| `packages/core/tests/FIXTURES.md` | Documents the corpus and the greening switch. |
 
 ## Proposed
 
@@ -46,16 +46,16 @@ Add a realistic worked dogfood contract to the consumption corpus: a TS contract
 
 1. Author the dogfood document (`.md`) — a realistic task-shaped doc with a `Files to touch` table (backticked `path#symbol` Locations, `Kind` values) and a transforming list section.
 2. Author the TS contract exercising a transforming `Location` cell + the `Kind` enum + a transforming `everyItem` list, and the `.ts` expectation asserting typed table rows, typed list items, and per-cell positions / inline spans on that one document.
-3. Run `npm run test` and confirm: `cell-typed`, `list-typed`, `cell-pos` are all `true`; no structured-cells fixture is skipped; the full suite is green.
+3. Run `bunx moon run core:test` and confirm: `cell-typed`, `list-typed`, `cell-pos` are all `true`; no structured-cells fixture is skipped; the full suite is green.
 4. Verify backward-compat: a corpus contract with no transforming cells produces byte-identical rows + findings (the "no golden moves" guard from `T-SCFX` still holds), and confirm no pre-existing golden changed across the milestone.
-5. Confirm imports stay one-way (`cli → runner → core`) and the change is confined to `src/core`; update `tests/FIXTURES.md` to describe the dogfood contract.
+5. Confirm imports stay one-way (`cli → runner → core`) and the change is confined to `packages/core/src/core`; update `packages/core/tests/FIXTURES.md` to describe the dogfood contract.
 
 ## Files to touch
 
 | Location | Kind | Change |
 |---|---|---|
-| `tests/fixtures/consumption/` | new | The realistic worked dogfood contract (`.md` + `.ts`) exercising a transforming cell + transforming list + positions |
-| `tests/FIXTURES.md` | modify | Document the dogfood contract and the closed state of the three structured-cells gates |
+| `packages/core/tests/fixtures/consumption/` | new | The realistic worked dogfood contract (`.md` + `.ts`) exercising a transforming cell + transforming list + positions |
+| `packages/core/tests/FIXTURES.md` | modify | Document the dogfood contract and the closed state of the three structured-cells gates |
 
 ## Acceptance criteria
 
@@ -63,8 +63,8 @@ Add a realistic worked dogfood contract to the consumption corpus: a TS contract
 - [ ] AC-2: The same document's `cellPos(...).col` and `inlineSpans(...)` are asserted, exercising transforms and positions together.
 - [ ] AC-3: `cell-typed`, `list-typed`, and `cell-pos` are all `true`; running the suite reports zero structured-cells fixtures skipped.
 - [ ] AC-4: A no-transform contract is byte-identical (rows + findings); no pre-existing fixture golden changed across the milestone.
-- [ ] AC-5: Imports stay one-way (`cli → runner → core`); the structured-cells change is confined to `src/core`.
-- [ ] AC-6: `npm run build`, `npm run test`, and `npm run typecheck` pass.
+- [ ] AC-5: Imports stay one-way (`cli → runner → core`); the structured-cells change is confined to `packages/core/src/core`.
+- [ ] AC-6: `bunx moon run core:build`, `bunx moon run core:test`, and `bunx moon run core:typecheck` pass.
 
 ## Out of scope
 
