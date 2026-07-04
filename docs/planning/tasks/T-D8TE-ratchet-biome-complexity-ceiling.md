@@ -18,6 +18,7 @@ need_human_review: false
 impact: low
 complexity: medium
 autonomy: autonomous/pr
+readiness_verified_at: '2026-07-04T07:46:04Z'
 ---
 # Ratchet down the Biome cognitive-complexity ceiling from 46 toward 15
 
