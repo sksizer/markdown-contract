@@ -132,12 +132,19 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `bunx biome lint --only=suspicious/noExplicitAny .` from the worktree root reports 0 findings (checked 338 files, no findings line emitted).
+- AC-2: auto — `noExplicitAny` is `"error"` in `biome.jsonc`; `grep -rn "biome-ignore lint/suspicious/noExplicitAny" packages/core apps sites` returns nothing (grep exit 1). Required removing one out-of-scope suppression in `apps/daemon-web-prototype/.storybook/main.ts` to keep the grep clean.
+- AC-3: auto — `bunx moon run core:typecheck` green; `bunx moon run core:test` 686 passed / 1 pre-existing skip. Behavior-preserving (assertion values unchanged).
+- AC-4: auto — `grep` finds zero hand `ConsumptionFixture<…>` annotations in the 11 (now 15) consumption fixtures; all 15 use `defineConsumptionFixture`, so `F`/`B` flow from each `build`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The library already shipped the typed surface (`Infer<C>` / `BodyOf` / `TableView<Row>` / `SectionGroup`) — genericizing the harness was the whole fix; the fixtures then read typed keys directly with no library change.
+- The baseline-gated quality gate (`--diff-against-baseline`) reported OK 5/5 cleanly; zero pre-existing drift at the baseline SHA meant no noise to subtract.
+- The existing `blockOf()` helper in `projection.test.ts` was a ready-made model for the `group()`/`asTable()`/`asSection()` narrowing boundary.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The `--line`/`--json` quality-gate mode spuriously FAILed on output volume: its `spawnSync(..., {encoding:"utf-8"})` default 1 MB `maxBuffer` SIGTERM-kills a verb whose captured stdout exceeds 1 MB (biome's verbose code-frames for 59 `useLiteralKeys` infos hit 1.12 MB), while `--log` mode (stdio inherit) is immune — the wrapper should raise `maxBuffer` (or stream) so a chatty-but-passing verb isn't misreported as failing.
+- AC-2's grep scope (`apps`, `sites`) reached beyond the task's stated `## Files to touch`, surfacing a real out-of-scope suppression in a Storybook config the task assumed absent — task specs whose ACs grep a wider scope than their Files-to-touch table should reconcile the two, or note the wider scope explicitly.
+- The list-item transform surface (fixture c13) isn't on the typed model yet (`SectionValue` only promotes tables, not lists), so it needed a local typed-cast boundary rather than a shared helper — a follow-up could extend `TableView`-style promotion to typed list items.
