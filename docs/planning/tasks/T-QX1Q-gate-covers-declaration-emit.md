@@ -131,12 +131,18 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: agent-manual — scratch-de-exported `FrontmatterSplit` (cross-module reference from `packages/core/src/core/projection.ts` into `frontmatter.ts`, plus a barrel-line drop). `bunx moon run core:typecheck` exited 0 while `bunx moon run core:build` exited 1 with `TS4058` (TS4023-family declaration-emit error); `bunx lefthook run pre-push --all-files` against the edited hook exited non-zero. Probe fully reverted, not committed.
+- AC-2: auto — `lefthook.yml` pre-push `gates` run line is now exactly `bunx moon run core:build core:typecheck core:test` (confirmed in the committed diff).
+- AC-3: auto — `sdlc.yaml` `quality_checks` still lists `bunx moon run core:build` and is unchanged (`git diff` empty for `sdlc.yaml`); `README.md` git-hooks bullet now names `core:build` + `core:typecheck` + `core:test`.
+- AC-4: agent-manual — on the clean tree (probe reverted), `bunx lefthook run pre-push --all-files` exited 0 (core:build ~762ms, typecheck + test served from moon cache).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The moon cache made adding `core:build` to pre-push nearly free on a clean tree — the extra gate is a fast cache hit, exactly as the task predicted.
+- The change was a two-file, six-line edit; the baseline-gated quality gate confirmed zero new drift (`OK 6/6`) since the diff carries no TypeScript.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The task's AC-1 recipe ("de-export a type used in an exported function's signature") does not reproduce TS4023 as written — a same-module non-exported type still emits into the `.d.ts`. The class only manifests on a cross-module inferred reference (the knip "unused export" shape) — future spec authors should cite the cross-module condition so a run doesn't burn cycles on the naive version.
+- `bunx lefthook run pre-push` skips its gates ("no matching push files") on a branch with no upstream/unpushed commits, so demonstrating a pre-push failure manually needs `--all-files` (or a real `git push`). The gate fires correctly on an actual push; the manual-run caveat is a lefthook affordance worth noting in the hook's comment or docs.
+- `sdlc quality run --line` produced a false `FAIL bunx moon run core:lint` from moon workspace-lock contention between the parallel `bunx moon run` invocations (`--log`/sequential is clean, and the baseline-gated `--line` run also came back clean on retry) — serializing moon invocations in `--line` mode, or documenting `--log` as the trustworthy mode for moon projects, would close this flake.
