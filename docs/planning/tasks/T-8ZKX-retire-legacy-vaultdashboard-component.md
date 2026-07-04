@@ -9,6 +9,7 @@ tags: []
 need_human_review: false
 impact: medium
 complexity: medium
+readiness_verified_at: '2026-07-04T11:22:14Z'
 ---
 # Retire or reconcile the legacy VaultDashboard component now that pages/index.vue is the dashboard
 
