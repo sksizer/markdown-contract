@@ -2,11 +2,13 @@
 type: backlog
 schema_version: '1'
 id: B-8ZKX
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-04'
 tags:
 - web-ui
 - prototype
 - cleanup
+status: promoted/task
+result: '[[T-8ZKX-retire-legacy-vaultdashboard-component]]'
 ---
 # Retire or reconcile the legacy `VaultDashboard` component now that `pages/index.vue` is the dashboard
 
