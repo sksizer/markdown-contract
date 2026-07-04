@@ -55,4 +55,17 @@ describe("tableRowLines — header + data-row lines (separator excluded)", () =>
     ].join("\n");
     expect([...tableRowLines(parse(doc).root)].sort((a, b) => a - b)).toEqual([3, 5, 6]);
   });
+
+  test("non-table blocks (prose) are skipped — only table rows contribute", () => {
+    const doc = [
+      "## Table", // 1
+      "", // 2
+      "Intro prose, not a table.", // 3  paragraph (skipped)
+      "", // 4
+      "| A | B |", // 5  header
+      "| - | - |", // 6  separator
+      "| 1 | 2 |", // 7  data
+    ].join("\n");
+    expect([...tableRowLines(parse(doc).root)].sort((a, b) => a - b)).toEqual([5, 7]);
+  });
 });

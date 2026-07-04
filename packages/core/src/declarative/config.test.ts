@@ -83,6 +83,60 @@ rules:
   });
 });
 
+const INLINE = "contract: { body: { order: none, sections: [ { section: Summary } ] } }";
+
+describe("loadConfig — malformed config is rejected with a clear DeclarativeError", () => {
+  it("rules must be a list", () => {
+    expect(() => loadConfig("mcVersion: 1\nkind: config\nrules: nope\n", dir)).toThrow(
+      /config.rules must be a list/,
+    );
+  });
+
+  it("a rule must be a mapping (not a bare scalar)", () => {
+    expect(() =>
+      loadConfig("mcVersion: 1\nkind: config\nrules:\n  - just-a-string\n", dir),
+    ).toThrow(/a rule must be a mapping/);
+  });
+
+  it("include must be a non-empty list of strings", () => {
+    const missing = "mcVersion: 1\nkind: config\nrules:\n  - contract: doc\n";
+    const empty = `mcVersion: 1\nkind: config\nrules:\n  - include: []\n    ${INLINE}\n`;
+    const nonString = `mcVersion: 1\nkind: config\nrules:\n  - include: [1]\n    ${INLINE}\n`;
+    for (const bad of [missing, empty, nonString]) {
+      expect(() => loadConfig(bad, dir)).toThrow(/include must be a non-empty list of globs/);
+    }
+  });
+
+  it("a rule-level exclude rides through when a list of strings, and is rejected otherwise", () => {
+    const ok = `mcVersion: 1\nkind: config\nrules:\n  - include: ['*.md']\n    exclude: ['skip.md']\n    ${INLINE}\n`;
+    expect(loadConfig(ok, dir).rules[0]!.exclude).toEqual(["skip.md"]);
+    const notList = `mcVersion: 1\nkind: config\nrules:\n  - include: ['*.md']\n    exclude: nope\n    ${INLINE}\n`;
+    const badItem = `mcVersion: 1\nkind: config\nrules:\n  - include: ['*.md']\n    exclude: [1]\n    ${INLINE}\n`;
+    for (const bad of [notList, badItem]) {
+      expect(() => loadConfig(bad, dir)).toThrow(/exclude must be a list of globs/);
+    }
+  });
+
+  it("a rule needs a contract", () => {
+    expect(() =>
+      loadConfig("mcVersion: 1\nkind: config\nrules:\n  - include: ['*.md']\n", dir),
+    ).toThrow(/a rule needs a contract/);
+  });
+
+  it("a contract ref that is neither a mapping, a name, nor a path is rejected", () => {
+    const yaml = "mcVersion: 1\nkind: config\nrules:\n  - include: ['*.md']\n    contract: 5\n";
+    expect(() => loadConfig(yaml, dir)).toThrow(
+      /contract must be a name, a .yaml path, or an inline contract/,
+    );
+  });
+
+  it("resolves an absolute .yaml contract path directly (no baseDir join)", () => {
+    const abs = join(dir, "doc.contract.yaml");
+    const yaml = `mcVersion: 1\nkind: config\nrules:\n  - include: ['*.md']\n    contract: ${JSON.stringify(abs)}\n`;
+    expect(loadConfig(yaml, dir).rules).toHaveLength(1);
+  });
+});
+
 describe("CLI — validate with a .yaml config", () => {
   it("a failing tree with --config x.yaml → exit 1", async () => {
     const res = await runCli(["validate", dir, "--config", join(dir, "mc.yaml")], { cwd: dir });

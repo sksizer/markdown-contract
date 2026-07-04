@@ -48,6 +48,27 @@ describe("compileSchema — the closed vocabulary → Zod", () => {
     expect(s.safeParse({ a: "x", b: 1 }).success).toBe(false);
   });
 
+  it("type: object compiles its `fields` shape (strict when strict: true)", () => {
+    const s = compileSchema({ type: "object", strict: true, fields: { a: { type: "string" } } });
+    expect(s.safeParse({ a: "x" }).success).toBe(true);
+    expect(s.safeParse({ a: "x", b: 1 }).success).toBe(false);
+  });
+
+  it("string min/max bound the length; number without `int` accepts a float", () => {
+    const str = compileSchema({ type: "string", max: 3 });
+    expect(str.safeParse("abc").success).toBe(true);
+    expect(str.safeParse("abcd").success).toBe(false);
+    const flt = compileSchema({ type: "number", min: 0, max: 10 });
+    expect(flt.safeParse(5.5).success).toBe(true);
+    expect(flt.safeParse(11).success).toBe(false);
+  });
+
+  it("array max bounds the length", () => {
+    const s = compileSchema({ type: "array", of: { type: "string" }, max: 2 });
+    expect(s.safeParse(["x", "y"]).success).toBe(true);
+    expect(s.safeParse(["x", "y", "z"]).success).toBe(false);
+  });
+
   it("optional / default / nullable wrappers", () => {
     expect(compileSchema({ type: "string", optional: true }).safeParse(undefined).success).toBe(
       true,
@@ -105,5 +126,20 @@ describe("compileSchema — the closed vocabulary → Zod", () => {
     expect(() => compileSchema({ wat: 1 })).toThrow(DeclarativeError);
     expect(() => compileSchema("nope")).toThrow(DeclarativeError);
     expect(() => compileSchema({ enum: [] })).toThrow(DeclarativeError);
+  });
+
+  it("names the offending shape — null, a list, or an unsupported type", () => {
+    expect(() => compileSchema(null)).toThrow(/got null/);
+    expect(() => compileSchema([1, 2])).toThrow(/got a list/);
+    expect(() => compileSchema({ type: "date-ish" })).toThrow(/unsupported type 'date-ish'/);
+  });
+
+  it("an array schema needs an `of` element schema", () => {
+    expect(() => compileSchema({ type: "array" })).toThrow(/needs an 'of' element schema/);
+  });
+
+  it("compileObjectSchema rejects a non-mapping fields value", () => {
+    expect(() => compileObjectSchema(null, false, "o")).toThrow(DeclarativeError);
+    expect(() => compileObjectSchema([1], false, "o")).toThrow(/fields must be a mapping/);
   });
 });

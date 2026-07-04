@@ -52,6 +52,33 @@ describe("rawTableRows — verbatim header + rows from source", () => {
     const table = opsTable(doc);
     expect(rawTableRows(table, doc, { pad: "header" }).rows).toEqual([["x", "y", ""]]);
   });
+
+  test("pad: <number> pads short rows to that many cells", () => {
+    const doc = [
+      "## T", // 1
+      "", // 2
+      "| A | B | C |", // 3
+      "| - | - | - |", // 4
+      "| x |", // 5  one cell
+    ].join("\n");
+    const table = opsTable(doc);
+    expect(rawTableRows(table, doc, { pad: 2 }).rows).toEqual([["x", ""]]);
+  });
+
+  test("a borderless table (no outer pipes) re-splits with nothing to drop", () => {
+    const doc = [
+      "## T", // 1
+      "", // 2
+      "Name | CLI", // 3  header, no outer pipes
+      "---- | ---", // 4  separator
+      "create | `x`", // 5  data, no outer pipes
+    ].join("\n");
+    const table = opsTable(doc);
+    expect(rawTableRows(table, doc)).toEqual({
+      header: ["Name", "CLI"],
+      rows: [["create", "`x`"]],
+    });
+  });
 });
 
 describe("rawTableRow — the literal, unpadded cell array for one row", () => {

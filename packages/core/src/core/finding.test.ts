@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { ContractError, notImplemented } from "./finding.js";
+import { ContractError, finding, notImplemented } from "./finding.js";
 import type { Finding } from "./types.js";
 
 // finding.ts owns the strict-door error and the uniform stub-throw. (The rule-author
@@ -33,5 +33,36 @@ describe("ContractError — the failure read() throws", () => {
 describe("notImplemented — the single stub throw", () => {
   test("builds an Error reading '<op>: not implemented'", () => {
     expect(notImplemented("parse").message).toBe("parse: not implemented");
+  });
+});
+
+describe("finding — the bare factory fills the shared shape from a partial", () => {
+  test("a minimal partial defaults level to 'error' and path to '', omitting pos/fix", () => {
+    expect(finding({ id: "frontmatter/enum", message: "bad status" })).toEqual({
+      id: "frontmatter/enum",
+      level: "error",
+      path: "",
+      message: "bad status",
+    });
+  });
+
+  test("every supplied field rides through verbatim (level, path, pos, fix)", () => {
+    expect(
+      finding({
+        id: "structure/section-missing",
+        message: "Summary is missing",
+        level: "warn",
+        path: "docs/a.md",
+        pos: { line: 5, col: 1 },
+        fix: { description: "add a Summary heading" },
+      }),
+    ).toEqual({
+      id: "structure/section-missing",
+      level: "warn",
+      path: "docs/a.md",
+      message: "Summary is missing",
+      pos: { line: 5, col: 1 },
+      fix: { description: "add a Summary heading" },
+    });
   });
 });

@@ -97,6 +97,18 @@ describe("formatRunSummary", () => {
       ["Scanned 1 file; 1 matched across 1 contract, 0 unmatched", "  task: 1"].join("\n"),
     );
   });
+
+  test("an unnamed rule among named ones counts toward the total but gets no row", () => {
+    const stats: RunStats = {
+      filesScanned: 5,
+      filesMatched: 4,
+      filesUnmatched: 1,
+      matchedByRule: [3, 1],
+    };
+    expect(formatRunSummary(stats, ["task", undefined])).toBe(
+      ["Scanned 5 files; 4 matched across 1 contract, 1 unmatched", "  task: 3"].join("\n"),
+    );
+  });
 });
 
 describe("formatJson", () => {
@@ -133,5 +145,17 @@ describe("formatSarif — a SARIF 2.1.0 log", () => {
 
   test("a whole-document finding (no pos) omits the region", () => {
     expect(log.runs[0].results[0].locations[0].physicalLocation.region).toBeUndefined();
+  });
+
+  test("report-level maps to 'note', and a repeated id is listed once in the driver", () => {
+    const repeated: Finding[] = [
+      { id: "content/note", level: "report", path: "docs/b.md", message: "first" },
+      { id: "content/note", level: "report", path: "docs/b.md", message: "second" },
+    ];
+    const out = JSON.parse(formatSarif(repeated));
+    // The rule id appears once even though two findings carry it.
+    expect(out.runs[0].tool.driver.rules).toEqual([{ id: "content/note" }]);
+    // report → "note"; both findings still become their own result.
+    expect(out.runs[0].results.map((r: { level: string }) => r.level)).toEqual(["note", "note"]);
   });
 });

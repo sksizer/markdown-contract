@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 
 import { contract, section, sections } from "../index.js";
 import { ContractBuildError } from "./grammar.js";
+import { parse } from "./projection.js";
 import { defaultRegistry, makeCtx } from "./registry.js";
 import { forbids, requires, textRule } from "./text-constraints.js";
 import type { BlockNode, Ctx, SectionNode } from "./types.js";
@@ -219,6 +220,35 @@ describe("requires purity (AC-5)", () => {
   it("forbids IS the absence form — max:0 is fine", () => {
     expect(() => forbids([{ pattern: "x", max: 0 }])).not.toThrow();
     expect(() => forbids([{ pattern: "x" }])).not.toThrow();
+  });
+
+  it("names a regex needle as /source/ in the absence-form error", () => {
+    expect(() => requires([{ regex: "foo|bar", max: 0 }])).toThrow(/\/foo\|bar\//);
+  });
+});
+
+// ── scope text spans every block kind (code + table cells are searched too) ───────────────
+
+describe("scope text is reconstructed from every block kind", () => {
+  const doc = [
+    "## Notes", // 1
+    "", // 2
+    "```txt", // 3
+    "findme in code", // 4
+    "```", // 5
+    "", // 6
+    "| Header |", // 7
+    "| ------ |", // 8
+    "| tablecell |", // 9
+  ].join("\n");
+  const notes = parse(doc).root.sections[0]!;
+
+  it("a required phrase living only in a fenced code block is found", () => {
+    expect(requires([{ pattern: "findme in code" }]).run(notes, ctx)).toEqual([]);
+  });
+
+  it("a required phrase living only in a table cell is found", () => {
+    expect(requires([{ pattern: "tablecell" }]).run(notes, ctx)).toEqual([]);
   });
 });
 
