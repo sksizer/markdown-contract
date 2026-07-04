@@ -70,7 +70,6 @@ const c11: ConsumptionFixture = {
       ]),
       rules: [
         docRule("task/post-mortem-when-worked", (doc, ctx) =>
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           isWorked((doc.frontmatter as any).status) && !(doc.body as any).section("Post-mortem")
             ? [
                 ctx.finding({
@@ -85,64 +84,53 @@ const c11: ConsumptionFixture = {
   reads: [
     {
       label: "doc.frontmatter.id === 'T-AB12'",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.frontmatter as any).id,
       equals: "T-AB12",
     },
     {
       label: "doc.frontmatter.status === 'open/ready'",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.frontmatter as any).status,
       equals: "open/ready",
     },
     {
       label: "doc.body['Files to touch'] === doc.body.filesToTouch — same SectionView",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any)["Files to touch"] === (doc.body as any).filesToTouch,
       equals: true,
     },
     {
       label: "doc.body.filesToTouch.rowCount === 2",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).filesToTouch.rowCount,
       equals: 2,
     },
     {
       label:
         "files.find(r => r.Kind === 'delete')?.Location === undefined — typed lookup, none here",
-      get: (doc) =>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (doc.body as any).filesToTouch.find((r: any) => r.Kind === "delete")?.Location,
+      get: (doc) => (doc.body as any).filesToTouch.find((r: any) => r.Kind === "delete")?.Location,
       equals: undefined,
     },
     {
       label: "doc.body.acceptanceCriteria.lists[0].items.length === 2",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).acceptanceCriteria.lists[0].items.length,
       equals: 2,
     },
     {
       label: "doc.body.today === undefined — optional + absent on this doc",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).today,
       equals: undefined,
     },
     {
       label: "doc.body.postMortem === undefined — absent on an open task",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).postMortem,
       equals: undefined,
     },
     {
       label:
         "pm?.sections.whatWorked.text() === undefined — pm absent, optional chaining short-circuits",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).postMortem?.sections.whatWorked.text(),
       equals: undefined,
     },
     {
       label: "pm?.sections['Acceptance criteria coverage'] === undefined — pm absent",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).postMortem?.sections["Acceptance criteria coverage"],
       equals: undefined,
     },

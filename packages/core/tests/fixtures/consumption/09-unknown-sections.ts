@@ -25,25 +25,21 @@ const c09: ConsumptionFixture = {
   reads: [
     {
       label: "doc.body.status.text() === 'On track.'",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).status.text(),
       equals: "On track.",
     },
     {
       label: "doc.body.appendix.text() === 'Source dashboards.'",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).appendix.text(),
       equals: "Source dashboards.",
     },
     {
       label: "doc.body.unknown.length === 1",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).unknown.length,
       equals: 1,
     },
     {
       label: "doc.body.unknown[0].name === 'Risks' — heading text is the only handle",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).unknown[0].name,
       equals: "Risks",
     },
@@ -51,19 +47,16 @@ const c09: ConsumptionFixture = {
       // Reconciled: the `## Risks` heading is on line 13, positioned with col by the projection;
       // the provenance's bare `{ line: 13 }` was shorthand. The model preserves positions verbatim.
       label: "doc.body.unknown[0].pos === { line: 13, col: 1 } — heading SourcePos, intact",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).unknown[0].pos,
       equals: { line: 13, col: 1 },
     },
     {
       label: "doc.body.unknown[0].text() === 'Capacity headroom is thin.'",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).unknown[0].text(),
       equals: "Capacity headroom is thin.",
     },
     {
       label: "doc.body.unknown.map(s => s.name) === ['Risks']",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).unknown.map((s: any) => s.name),
       equals: ["Risks"],
     },

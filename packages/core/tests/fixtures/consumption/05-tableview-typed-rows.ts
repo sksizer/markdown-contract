@@ -29,13 +29,11 @@ const c05: ConsumptionFixture = {
   reads: [
     {
       label: "files.columns === ['File', 'Kind', 'Location']",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).files.columns,
       equals: ["File", "Kind", "Location"],
     },
     {
       label: "files.rowCount === 3",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).files.rowCount,
       equals: 3,
     },
@@ -44,31 +42,26 @@ const c05: ConsumptionFixture = {
       // is the TABLE block's SourcePos — the table starts on line 3 (heading line 1, blank line 2),
       // with col, as the projection positions it. The provenance's `{ line: 1 }` named the heading.
       label: "files.pos === { line: 3, col: 1 } — the table block's SourcePos",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).files.pos,
       equals: { line: 3, col: 1 },
     },
     {
       label: "files.column('Kind') — the enum union column",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).files.column("Kind"),
       equals: ["add", "modify", "delete"],
     },
     {
       label: "files.column('File') — string[] column",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).files.column("File"),
       equals: ["grammar.ts", "leaves.ts", "legacy.ts"],
     },
     {
       label: "files.find(r => r.Kind === 'delete')?.File === 'legacy.ts'",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).files.find((r: any) => r.Kind === "delete")?.File,
       equals: "legacy.ts",
     },
     {
       label: "files.find((r, i) => i === 0)?.File === 'grammar.ts'",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).files.find((_r: any, i: number) => i === 0)?.File,
       equals: "grammar.ts",
     },
@@ -77,7 +70,6 @@ const c05: ConsumptionFixture = {
       // separator 4, grammar.ts 5, leaves.ts 6, legacy.ts 7), positioned with col by the
       // projection; the provenance's `{ line: 6 }` miscounted (it skipped the separator row).
       label: "files.rowPos(2) === { line: 7, col: 1 } — the legacy.ts row's source line",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).files.rowPos(2),
       equals: { line: 7, col: 1 },
     },

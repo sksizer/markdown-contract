@@ -18,13 +18,11 @@ const c01: ConsumptionFixture = {
     {
       label: "doc.body.overview.name === 'Overview'",
       // body is typed `unknown` on the generic Doc; fixtures navigate the dual-key facade dynamically.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).overview.name,
       equals: "Overview",
     },
     {
       label: "doc.body.overview.text() === the section prose",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       get: (doc) => (doc.body as any).overview.text(),
       equals: "A one-paragraph summary of the thing.",
     },
