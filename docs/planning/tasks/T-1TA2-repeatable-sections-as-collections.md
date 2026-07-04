@@ -1,16 +1,18 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-1TA2
 status: in-progress
-created: '2026-07-04'
+created: 2026-07-04
 related: []
 tags: []
 need_human_review: false
 impact: medium
 complexity: medium
-readiness_verified_at: '2026-07-04T09:47:11Z'
-last_reviewed: '2026-07-04'
+readiness_verified_at: 2026-07-04T09:47:11Z
+last_reviewed: 2026-07-04
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/224
 ---
 # Repeatable sections: let a heading recur as peers, surfaced as a collection in the model
 
