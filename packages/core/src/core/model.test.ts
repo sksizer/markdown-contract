@@ -5,13 +5,17 @@
  * for a declared vs an undeclared anchor, nested `sections` recursion, `text("prose")` vs
  * `text("all")`, and the `TableView` surface (iteration / `column` / `find` / `rowPos`). These
  * build the model through the public `read()` door, so they exercise the same path consumers do.
+ *
+ * `read()` returns the typed `Doc<F, B>`, so a declared heading reads back off its exact-name key
+ * (`doc.body.Files`, fully typed). The lowerCamelCase alias and `.section(name)` accessor are the
+ * DYNAMIC dual-key surface (by design — see `tests/expect.ts`); reads that exercise them narrow with
+ * the shared `group` / `asSection` / `asTable` helpers rather than casting to `any`.
  */
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
+import { asSection, asTable, group } from "../../tests/expect.js";
 import type { Infer, SectionGroup, SectionView, TableView } from "../index.js";
 import { contract, gap, list, optional, section, sections, table } from "../index.js";
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 const PATH = { path: "model.test.md" };
 
@@ -21,8 +25,8 @@ describe("unknown partitioning", () => {
       body: sections({ order: "none", allowUnknown: true }, [section("Alpha"), section("Beta")]),
     });
     const doc = c.read("## Alpha\n\na\n\n## Beta\n\nb\n", PATH);
-    expect((doc.body as any).unknown).toEqual([]);
-    expect((doc.body as any).alpha.name).toBe("Alpha");
+    expect(doc.body.unknown).toEqual([]);
+    expect(doc.body.Alpha.name).toBe("Alpha");
   });
 
   test("a section matching no declared slot lands in unknown (document order), not a key", () => {
@@ -34,15 +38,14 @@ describe("unknown partitioning", () => {
       ]),
     });
     const doc = c.read("## Title\n\nt\n\n## Status\n\non track\n\n## Risks\n\nthin\n", PATH);
-    const body = doc.body as any;
-    expect(body.unknown.length).toBe(1);
-    expect(body.unknown[0].name).toBe("Risks");
-    expect(body.unknown[0].text()).toBe("thin");
+    expect(doc.body.unknown.length).toBe(1);
+    expect(doc.body.unknown[0]?.name).toBe("Risks");
+    expect(doc.body.unknown[0]?.text()).toBe("thin");
     // An unknown section is NOT an enumerable dual-key key.
-    expect(Object.keys(body)).not.toContain("Risks");
-    expect(Object.keys(body)).not.toContain("risks");
+    expect(Object.keys(doc.body)).not.toContain("Risks");
+    expect(Object.keys(doc.body)).not.toContain("risks");
     // …but `.section()` (the dynamic/edge accessor) still reaches it.
-    expect(body.section("Risks")?.name).toBe("Risks");
+    expect(doc.body.section("Risks")?.name).toBe("Risks");
   });
 
   test("unknown and section are non-enumerable; an empty group deep-equals {}", () => {
@@ -50,7 +53,7 @@ describe("unknown partitioning", () => {
     const doc = c.read("## Solo\n\nx\n\n### Child\n\ny\n", PATH);
     // `Solo` declares no `children` grammar, so the H3 `Child` is undeclared at the nested level
     // and lands in unknown (non-enumerable) — the nested group still has no enumerable keys.
-    const childGroup = (doc.body as any).solo.sections as SectionGroup;
+    const childGroup: SectionGroup = doc.body.Solo.sections;
     expect(childGroup).toEqual({});
     expect(Object.keys(childGroup)).toEqual([]);
     expect(typeof childGroup.section).toBe("function");
@@ -67,11 +70,12 @@ describe("absence", () => {
       ]),
     });
     const doc = c.read("## Present\n\nhere\n", PATH);
-    const body = doc.body as any;
+    // `Maybe` is `optional(...)`-wrapped → not a typed key; it reads through the dynamic surface.
+    const body = group(doc.body);
     expect(body.maybe).toBeUndefined();
-    expect(body["Maybe"]).toBeUndefined();
+    expect(body.Maybe).toBeUndefined();
     expect(body.section("Maybe")).toBeUndefined();
-    expect(body.maybe?.text()).toBeUndefined();
+    expect(asSection(body.maybe)?.text()).toBeUndefined();
   });
 });
 
@@ -81,10 +85,9 @@ describe("dual-key — three paths, one view", () => {
       body: sections({ order: "none", allowUnknown: true }, [section("Files to touch")]),
     });
     const doc = c.read("## Files to touch\n\nprose\n", PATH);
-    const body = doc.body as any;
-    const exact = body["Files to touch"];
-    const camel = body.filesToTouch;
-    const accessed = body.section("Files to touch");
+    const exact = doc.body["Files to touch"];
+    const camel = asSection(group(doc.body).filesToTouch);
+    const accessed = doc.body.section("Files to touch");
     expect(exact).toBe(camel);
     expect(accessed).toBe(exact); // a non-promoted prose section: all three are the SectionView
     expect(exact.name).toBe("Files to touch");
@@ -95,11 +98,10 @@ describe("dual-key — three paths, one view", () => {
       body: sections({}, [section("Files", { content: table({ columns: ["File", "Kind"] }) })]),
     });
     const doc = c.read("## Files\n\n| File | Kind |\n| - | - |\n| a.ts | add |\n", PATH);
-    const body = doc.body as any;
-    expect(body["Files"]).toBe(body.files); // bracket === dotted (the promoted TableView)
-    expect(body.files.kind).toBe("table");
-    expect(body.files.rowCount).toBe(1);
-    expect(body.section("Files").name).toBe("Files"); // the underlying SectionView
+    expect(doc.body.Files).toBe(asTable(group(doc.body).files)); // bracket === dotted (the promoted TableView)
+    expect(doc.body.Files.kind).toBe("table");
+    expect(doc.body.Files.rowCount).toBe(1);
+    expect(doc.body.section("Files")?.name).toBe("Files"); // the underlying SectionView
   });
 });
 
@@ -128,26 +130,26 @@ describe("byAnchor — declared vs undeclared", () => {
 
   test("a declared anchor resolves to a kind-discriminated BlockView", () => {
     const doc = build().read(src, PATH);
-    const b = (doc as any).byAnchor("components");
-    expect(b?.kind).toBe("table");
+    const b = asTable(doc.byAnchor("components"));
+    expect(b.kind).toBe("table");
     expect(b.columns).toEqual(["#", "Component"]);
   });
 
   test("an undeclared anchor still resolves dynamically (Record<string,string> table)", () => {
     const doc = build().read(src, PATH);
-    const b = (doc as any).byAnchor("extra");
-    expect(b?.kind).toBe("table");
-    expect(b.rows[0].Option).toBe("A");
+    const b = asTable(doc.byAnchor("extra"));
+    expect(b.kind).toBe("table");
+    expect(b.rows[0]?.Option).toBe("A");
     // section-scoped byAnchor reaches the same block; a missing id is undefined.
-    expect((doc.body as any).decision.byAnchor("extra")?.kind).toBe("table");
-    expect((doc.body as any).decision.byAnchor("nope")).toBeUndefined();
-    expect((doc as any).byAnchor("nope")).toBeUndefined();
+    expect(doc.body.Decision.byAnchor("extra")?.kind).toBe("table");
+    expect(doc.body.Decision.byAnchor("nope")).toBeUndefined();
+    expect(doc.byAnchor("nope")).toBeUndefined();
   });
 
   test("named-table record fields surface each ^anchor-bound table on the SectionView", () => {
     const doc = build().read(src, PATH);
-    expect((doc.body as any).decision.components.rowCount).toBe(1);
-    expect((doc.body as any).decision.components.column("Component")).toEqual(["parser"]);
+    expect(asTable(doc.body.Decision.components).rowCount).toBe(1);
+    expect(asTable(doc.body.Decision.components).column("Component")).toEqual(["parser"]);
   });
 });
 
@@ -160,8 +162,8 @@ describe("byAnchor — section-level anchor is NOT a block-level hit", () => {
 
   test("the section id surfaces on SectionView.anchors but byAnchor returns undefined", () => {
     const doc = build().read(src, PATH);
-    expect((doc.body as any).notes.anchors).toContain("section-id");
-    expect((doc.body as any).notes.byAnchor("section-id")).toBeUndefined();
+    expect(doc.body.Notes.anchors).toContain("section-id");
+    expect(doc.body.Notes.byAnchor("section-id")).toBeUndefined();
   });
 });
 
@@ -181,13 +183,13 @@ describe("nested sections recursion", () => {
       "## Post-mortem\n\n### What worked\n\ngood\n\n### What did not\n\nbad\n",
       PATH,
     );
-    const nested = (doc.body as any).postMortem.sections;
-    expect(nested.whatWorked.text()).toBe("good");
-    expect(nested["What did not"].text()).toBe("bad");
-    expect(nested.section("What worked").name).toBe("What worked");
+    const nested = doc.body["Post-mortem"].sections;
+    expect(asSection(nested.whatWorked).text()).toBe("good");
+    expect(asSection(nested["What did not"]).text()).toBe("bad");
+    expect(nested.section("What worked")?.name).toBe("What worked");
     expect(nested.unknown).toEqual([]);
     // one level deeper still empty-equals {}
-    expect(nested.whatWorked.sections).toEqual({});
+    expect(asSection(nested.whatWorked).sections).toEqual({});
   });
 });
 
@@ -204,7 +206,7 @@ describe("text() scope", () => {
       "## Intro\n\nfirst line\nwrapped second line\n\n### Detail\n\ndeep prose\n",
       PATH,
     );
-    const intro = (doc.body as any).intro;
+    const intro = doc.body.Intro;
     // soft wrap collapsed to a space; nested subsection prose excluded
     expect(intro.text()).toBe("first line wrapped second line");
     expect(intro.text("prose")).toBe("first line wrapped second line");
@@ -219,7 +221,7 @@ describe("anchors aggregation", () => {
     const c = contract({ body: sections({}, [section("Summary")]) });
     const doc = c.read("## Summary\n\nthe blurb\n^summary\n", PATH);
     // `^summary` binds to the paragraph block in the projection, but it is still the section's id.
-    expect((doc.body as any).summary.anchors).toEqual(["summary"]);
+    expect(doc.body.Summary.anchors).toEqual(["summary"]);
   });
 });
 
@@ -245,20 +247,20 @@ describe("TableView surface", () => {
 
   test("iteration yields each row keyed by column name", () => {
     const doc = c.read(src, PATH);
-    const files = (doc.body as any).files as TableView;
+    const files = doc.body.Files;
     const seen: string[] = [];
-    for (const row of files) seen.push((row as any).File);
+    for (const row of files) seen.push(row.File);
     expect(seen).toEqual(["grammar.ts", "legacy.ts"]);
   });
 
   test("column / find / rowPos / rowCount / columns / pos", () => {
     const doc = c.read(src, PATH);
-    const files = (doc.body as any).files as TableView;
+    const files = doc.body.Files;
     expect(files.rowCount).toBe(2);
     expect(files.columns).toEqual(["File", "Kind"]);
-    expect(files.column("Kind" as any)).toEqual(["add", "delete"]);
-    expect((files.find((r: any) => r.Kind === "delete") as any)?.File).toBe("legacy.ts");
-    expect(files.find((_r: any, i: number) => i === 0)).toBeDefined();
+    expect(files.column("Kind")).toEqual(["add", "delete"]);
+    expect(files.find((r) => r.Kind === "delete")?.File).toBe("legacy.ts");
+    expect(files.find((_r, i) => i === 0)).toBeDefined();
     // header line 3, separator 4, row 0 line 5, row 1 line 6
     expect(files.rowPos(0)).toEqual({ line: 5, col: 1 });
     expect(files.rowPos(1)).toEqual({ line: 6, col: 1 });
@@ -272,9 +274,9 @@ describe("frontmatter and the doc shape", () => {
       body: sections({ order: "none", allowUnknown: true }, [section("Body")]),
     });
     const doc = c.read("---\nid: X-1\n---\n\n## Body\n\nx\n", PATH);
-    expect((doc.frontmatter as any).id).toBe("X-1");
-    expect(typeof (doc as any).byAnchor).toBe("function");
-    expect((doc.body as any).body.name).toBe("Body");
+    expect(doc.frontmatter.id).toBe("X-1");
+    expect(typeof doc.byAnchor).toBe("function");
+    expect(doc.body.Body.name).toBe("Body");
   });
 
   test("a list leaf surfaces as a ListView on SectionView.lists", () => {
@@ -284,10 +286,10 @@ describe("frontmatter and the doc shape", () => {
       ]),
     });
     const doc = c.read("## Checks\n\n- [ ] one\n- [x] two\n", PATH);
-    const lists = (doc.body as any).checks.lists;
+    const lists = doc.body.Checks.lists;
     expect(lists.length).toBe(1);
-    expect(lists[0].items.length).toBe(2);
-    expect(lists[0].kind).toBe("list");
+    expect(lists[0]?.items.length).toBe(2);
+    expect(lists[0]?.kind).toBe("list");
   });
 });
 
@@ -320,33 +322,33 @@ describe("typed cell read-back (T-SCRB)", () => {
 
   test("a declared transforming cell reads back its parsed object, sourced from the cache", () => {
     const doc = c.read(src, PATH);
-    const files = (doc.body as any).files as TableView;
+    const files = doc.body.Files;
     // row 0: `path#symbol` → { path, symbol }
-    expect((files.rows[0] as any).Location).toEqual({
+    expect(files.rows[0]?.Location).toEqual({
       path: "src/core/leaves.ts",
       symbol: "table",
     });
-    expect((files.rows[0] as any).Location.path).toBe("src/core/leaves.ts");
+    expect(files.rows[0]?.Location.path).toBe("src/core/leaves.ts");
     // row 1: bare `path` → { path } (no symbol)
-    expect((files.rows[1] as any).Location).toEqual({ path: "src/core/types.ts" });
+    expect(files.rows[1]?.Location).toEqual({ path: "src/core/types.ts" });
   });
 
   test("an undeclared column stays a raw string; a declared enum cell reads back its string", () => {
     const doc = c.read(src, PATH);
-    const files = (doc.body as any).files as TableView;
-    expect((files.rows[0] as any).Change).toBe("make table() generic");
-    expect(typeof (files.rows[0] as any).Change).toBe("string");
-    expect((files.rows[0] as any).Kind).toBe("modify");
+    const files = doc.body.Files;
+    expect(files.rows[0]?.Change).toBe("make table() generic");
+    expect(typeof files.rows[0]?.Change).toBe("string");
+    expect(files.rows[0]?.Kind).toBe("modify");
   });
 
   test("column()/find() see the typed value for a declared cell", () => {
     const doc = c.read(src, PATH);
-    const files = (doc.body as any).files as TableView;
-    expect(files.column("Location" as any)).toEqual([
+    const files = doc.body.Files;
+    expect(files.column("Location")).toEqual([
       { path: "src/core/leaves.ts", symbol: "table" },
       { path: "src/core/types.ts" },
     ]);
-    expect((files.find((r: any) => r.Location.path === "src/core/types.ts") as any)?.Change).toBe(
+    expect(files.find((r) => r.Location.path === "src/core/types.ts")?.Change).toBe(
       "confirm the Row slot",
     );
   });
@@ -354,8 +356,8 @@ describe("typed cell read-back (T-SCRB)", () => {
   test("AC-5 — the typed value rides only on the model; the projected tree rows stay raw strings", () => {
     const result = c.validate(src, PATH);
     // Model: the row exposes the parsed object.
-    const files = (result.doc?.body as any).files as TableView;
-    expect((files.rows[0] as any).Location).toEqual({
+    const files = result.doc?.body.Files;
+    expect(files?.rows[0]?.Location).toEqual({
       path: "src/core/leaves.ts",
       symbol: "table",
     });
@@ -373,9 +375,9 @@ describe("typed cell read-back (T-SCRB)", () => {
       body: sections({}, [section("Files", { content: table({ columns: ["File", "Kind"] }) })]),
     });
     const doc = plain.read("## Files\n\n| File | Kind |\n| - | - |\n| a.ts | add |\n", PATH);
-    const files = (doc.body as any).files as TableView;
+    const files = doc.body.Files;
     expect(files.rows[0]).toEqual({ File: "a.ts", Kind: "add" });
-    expect(typeof (files.rows[0] as any).Kind).toBe("string");
+    expect(typeof files.rows[0]?.Kind).toBe("string");
   });
 
   test("AC-3 — an undeclared byAnchor table reads back raw-string rows", () => {
@@ -384,9 +386,9 @@ describe("typed cell read-back (T-SCRB)", () => {
       "\n",
     );
     const doc = c2.read(src2, PATH);
-    const t = (doc as any).byAnchor("extra") as TableView;
+    const t = asTable(doc.byAnchor("extra"));
     expect(t.rows[0]).toEqual({ Option: "A", Note: "slow" });
-    expect(typeof (t.rows[0] as any).Option).toBe("string");
+    expect(typeof t.rows[0]?.Option).toBe("string");
   });
 });
 
@@ -416,7 +418,7 @@ const typedSpec = contract({
   ]),
 });
 
-// Through `read()`: `doc.body["Files"]` promotes to the typed `TableView<Row>`.
+// Through `read()`: `doc.body.Files` promotes to the typed `TableView<Row>`.
 type ReadRow = Resolve<
   ReturnType<typeof typedSpec.read>["body"]["Files"] extends TableView<infer R> ? R : never
 >;
@@ -458,7 +460,7 @@ describe("AC-1 — the model is additive; reading doc never changes findings", (
 
     const b = c.validate(src, PATH);
     void b.doc; // force the lazy model build
-    void (b.doc as any)?.body; // and a navigation through it
+    void b.doc?.body; // and a navigation through it
     const findingsAfterDoc = JSON.stringify(b.findings);
 
     expect(findingsAfterDoc).toBe(findingsWithoutDoc);
