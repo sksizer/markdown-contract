@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-1TA2
-status: open/ready
+status: in-progress
 created: '2026-07-04'
 related: []
 tags: []
@@ -10,6 +10,7 @@ need_human_review: false
 impact: medium
 complexity: medium
 readiness_verified_at: '2026-07-04T09:47:11Z'
+last_reviewed: '2026-07-04'
 ---
 # Repeatable sections: let a heading recur as peers, surfaced as a collection in the model
 
@@ -105,3 +106,19 @@ heading key-collision handling) as the inverse of the collision it guards agains
 T-KCOL keeps the per-level-uniqueness rule and stops the inferer emitting a contract
 that violates it; this task is the larger feature that makes repeated peers a
 first-class, validated shape.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
