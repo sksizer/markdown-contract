@@ -9,6 +9,7 @@ tags: []
 need_human_review: false
 impact: medium
 complexity: medium
+readiness_verified_at: '2026-07-04T09:47:11Z'
 ---
 # Repeatable sections: let a heading recur as peers, surfaced as a collection in the model
 
