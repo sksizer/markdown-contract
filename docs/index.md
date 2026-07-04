@@ -66,6 +66,7 @@ Milestones are product releases; order is ascending `version`. Source:
 | — | [[M-0003-config-inference]] | Config inference & `init` scaffolding |
 | — | [[M-0008-single-exec-distribution]] | Single-binary prototype — one Bun executable: CLI + self-contained web-UI daemon |
 | — | [[M-0010 Quality Tooling]] | Code quality tooling — coverage, lint, metrics, and package hygiene |
+| — | [[M-0011-structured-cells]] | Structured cells — typed transforms, typed read-back, position preservation |
 
 **Deferred / emerging / obsoleted** — milestones not in effect today
 (planned, draft, or closed), rendered as a table:
@@ -79,7 +80,6 @@ Milestones are product releases; order is ascending `version`. Source:
 | — | [[M-0006-documentation-site]] | Published documentation site | closed/done |
 | — | [[M-0007-example-use-case-catalog]] | Example use-case catalog — the categorized basis for the docs and marketing site | closed/done |
 | — | [[M-0009-local-web-ui-vault-dashboard]] | Local web UI & vault dashboard — the bundled daemon surface | open/planned |
-| — | [[M-0011-structured-cells]] | Structured cells — typed transforms, typed read-back, position preservation | open/planned |
 
 ## Features
 
