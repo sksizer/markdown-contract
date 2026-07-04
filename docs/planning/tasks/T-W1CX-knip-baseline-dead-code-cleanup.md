@@ -2,9 +2,9 @@
 type: task
 schema_version: '5'
 id: T-W1CX
-status: open/ready
+status: in-progress
 created: '2026-07-01'
-last_reviewed: '2026-07-03'
+last_reviewed: '2026-07-04'
 related:
 - '[[M-0010 Quality Tooling]]'
 tags:
@@ -99,3 +99,19 @@ and explained.
 ## Discovery context
 
 - Surfaced by the [[T-HIL6]] post-mortem: T-HIL6 captured the baseline but deliberately deleted nothing (deletion was out of scope). This is the named downstream cleanup.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
