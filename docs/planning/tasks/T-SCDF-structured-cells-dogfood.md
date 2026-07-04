@@ -1,28 +1,30 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-SCDF
 status: in-progress
-created: '2026-06-30'
+created: 2026-06-30
 related:
-- '[[M-0011-structured-cells]]'
-- '[[D-0015-structured-cells]]'
-- '[[DR-0002-typed-consumption]]'
+  - "[[M-0011-structured-cells]]"
+  - "[[D-0015-structured-cells]]"
+  - "[[DR-0002-typed-consumption]]"
 depends_on:
-- '[[T-SCRB-typed-row-read-back]]'
-- '[[T-SCLI-list-item-transforms]]'
-- '[[T-SCPP-cell-position-preservation]]'
+  - "[[T-SCRB-typed-row-read-back]]"
+  - "[[T-SCLI-list-item-transforms]]"
+  - "[[T-SCPP-cell-position-preservation]]"
 tags:
-- structured-cells
-- dogfood
-- consumption
-- closeout
+  - structured-cells
+  - dogfood
+  - consumption
+  - closeout
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: supervised
-last_reviewed: '2026-07-04'
-readiness_verified_at: '2026-07-04T09:42:01Z'
+last_reviewed: 2026-07-04
+readiness_verified_at: 2026-07-04T09:42:01Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/223
 ---
 # Dogfood structured cells on a realistic worked contract and close the milestone
 
