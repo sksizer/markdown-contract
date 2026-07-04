@@ -145,6 +145,12 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Friction and automation gaps
 
-- The `--line`/`--json` quality-gate mode spuriously FAILed on output volume: its `spawnSync(..., {encoding:"utf-8"})` default 1 MB `maxBuffer` SIGTERM-kills a verb whose captured stdout exceeds 1 MB (biome's verbose code-frames for 59 `useLiteralKeys` infos hit 1.12 MB), while `--log` mode (stdio inherit) is immune — the wrapper should raise `maxBuffer` (or stream) so a chatty-but-passing verb isn't misreported as failing.
-- AC-2's grep scope (`apps`, `sites`) reached beyond the task's stated `## Files to touch`, surfacing a real out-of-scope suppression in a Storybook config the task assumed absent — task specs whose ACs grep a wider scope than their Files-to-touch table should reconcile the two, or note the wider scope explicitly.
-- The list-item transform surface (fixture c13) isn't on the typed model yet (`SectionValue` only promotes tables, not lists), so it needed a local typed-cast boundary rather than a shared helper — a follow-up could extend `TableView`-style promotion to typed list items.
+- The `--line`/`--json` quality-gate mode spuriously FAILed on output volume: its `spawnSync(..., {encoding:"utf-8"})` default 1 MB `maxBuffer` SIGTERM-kills a verb whose captured stdout exceeds 1 MB (biome's verbose code-frames for 59 `useLiteralKeys` infos hit 1.12 MB), while `--log` mode (stdio inherit) is immune — the wrapper should raise `maxBuffer` (or stream) so a chatty-but-passing verb isn't misreported as failing. → [[T-O6U0-quality-gate-raise-maxbuffer]]
+- AC-2's grep scope (`apps`, `sites`) reached beyond the task's stated `## Files to touch`, surfacing a real out-of-scope suppression in a Storybook config the task assumed absent — task specs whose ACs grep a wider scope than their Files-to-touch table should reconcile the two, or note the wider scope explicitly. → [[T-N0HI-task-ac-scope-matches-files-to-touch]]
+- The list-item transform surface (fixture c13) isn't on the typed model yet (`SectionValue` only promotes tables, not lists), so it needed a local typed-cast boundary rather than a shared helper — a follow-up could extend `TableView`-style promotion to typed list items. → [[T-SCLI-list-item-transforms]]
+
+### Spawned follow-up tasks
+
+- [[T-O6U0-quality-gate-raise-maxbuffer]] (https://github.com/sksizer/dev/pull/640) — spawned, Upstream-plugin (sdlc): raise `maxBuffer` (or stream) in the quality-gate `spawnSync` wrapper so chatty-but-passing verbs aren't misreported as FAIL.
+- [[T-N0HI-task-ac-scope-matches-files-to-touch]] (https://github.com/sksizer/dev/pull/641) — spawned, Upstream-plugin (sdlc): reconcile a task spec's AC grep scope with its Files-to-touch table.
+- [[T-SCLI-list-item-transforms]] — linked to existing open/ready task: extend `TableView`-style promotion to typed list items via `ListView` (the list analogue this bullet asks for).

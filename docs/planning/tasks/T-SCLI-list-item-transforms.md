@@ -8,6 +8,7 @@ related:
 - '[[M-0011-structured-cells]]'
 - '[[D-0015-structured-cells]]'
 - '[[D-0005-consumption-oom]]'
+- '[[T-JGCX-biome-noexplicitany-source-fix]]'
 depends_on:
 - '[[T-SCRB-typed-row-read-back]]'
 tags:
@@ -115,6 +116,27 @@ const raw: string[] = [...notes].map((i) => i.text); // items stay raw strings, 
 ## Dependencies
 
 - [[T-SCRB-typed-row-read-back]] — establishes the capture overlay + the `section()` / `sections()` / `Infer` threading pattern this mirrors for lists.
+
+## Discovery context
+
+Linked from the [[T-JGCX-biome-noexplicitany-source-fix]] post-mortem
+(/sdlc:task-work, 2026-07-04): the "list-item transform surface isn't on the
+typed model yet" friction bullet is exactly this task's scope.
+
+### Dedup search (spawn-from-post-mortem)
+
+Bullet: The list-item transform surface (fixture c13) isn't on the typed model yet (SectionValue only promotes tables, not lists), so it needed a local typed-cast boundary rather than a shared helper — a follow-up could extend TableView-style promotion to typed list items.
+Keywords searched: tableview-style, sectionvalue, typed-cast, list-item, transform, follow-up, promotion, promotes
+Excluded: T-JGCX-biome-noexplicitany-source-fix
+Top candidates (score / status / headline):
+  - 25 / closed/done / T-SCTC-table-cell-transform-capture — Keep the transform output at validate-time and cache it on the projection table node
+  - 17 / closed/done / T-SCRB-typed-row-read-back — Thread `z.output<cells>` to a typed `TableView` row read-back through `read()` and `Infer`
+  - 15 / open/ready / T-SCLI-list-item-transforms — Keep `everyItem` transform output and read back typed list items through `ListView`
+  - 12 / closed/done / T-SCFX-structured-cells-fixture-scaffold — Scaffold the structured-cells fixtures and enable gates (`cell-typed` / `list-typed` / `cell-pos`)
+  - 9 / open/ready / T-SCPA-paragraph-transform-adr — Decide the paragraph-transform generalization (design-only ADR + scoped follow-ons)
+Decision: SPAWNED
+Decision (overridden): LINKED-EXISTING → T-SCLI-list-item-transforms
+Rationale: The script's higher-scored candidates (T-SCTC, T-SCRB) are the already-closed table-cell version of this mechanism; T-SCLI (open/ready, score 15) is the exact list-item follow-up the bullet asks for — "read back typed list items through `ListView`" is the `ListView` analogue of the requested `TableView`-style promotion. Linking to it avoids spawning a duplicate.
 
 ## Post-mortem
 
