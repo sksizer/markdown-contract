@@ -9,8 +9,8 @@ import {
   sections,
   table,
 } from "../../../src/index.js";
-import type { ConsumptionFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { asSection, group } from "../../expect.js";
+import { defineConsumptionFixture, loadSource } from "../../harness.js";
 
 // Provenance: consumption/11-real-task-consumed.md
 // The capstone: the live §5.2 TaskContract read end-to-end on a real open Task — dual-key access,
@@ -35,7 +35,7 @@ const TaskFrontmatter = z
 const isWorked = (status: string): boolean =>
   status.startsWith("in-progress/") || status.startsWith("closed/");
 
-const c11: ConsumptionFixture = {
+const c11 = defineConsumptionFixture({
   id: "c11",
   title: "Real Task consumed end-to-end",
   component: "consumption",
@@ -69,9 +69,10 @@ const c11: ConsumptionFixture = {
         ),
       ]),
       rules: [
-        docRule("task/post-mortem-when-worked", (doc, ctx) =>
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          isWorked((doc.frontmatter as any).status) && !(doc.body as any).section("Post-mortem")
+        // `docRule` hands back a bare `Doc<F>` (its `body` is the dynamic surface); the frontmatter
+        // type is supplied so `doc.frontmatter.status` reads typed, and the body goes through `group`.
+        docRule<{ status: string }>("task/post-mortem-when-worked", (doc, ctx) =>
+          isWorked(doc.frontmatter.status) && !group(doc.body).section("Post-mortem")
             ? [
                 ctx.finding({
                   id: "task/post-mortem-when-worked",
@@ -85,68 +86,59 @@ const c11: ConsumptionFixture = {
   reads: [
     {
       label: "doc.frontmatter.id === 'T-AB12'",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.frontmatter as any).id,
+      get: (doc) => doc.frontmatter.id,
       equals: "T-AB12",
     },
     {
       label: "doc.frontmatter.status === 'open/ready'",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.frontmatter as any).status,
+      get: (doc) => doc.frontmatter.status,
       equals: "open/ready",
     },
     {
       label: "doc.body['Files to touch'] === doc.body.filesToTouch — same SectionView",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any)["Files to touch"] === (doc.body as any).filesToTouch,
+      get: (doc) => doc.body["Files to touch"] === group(doc.body).filesToTouch,
       equals: true,
     },
     {
       label: "doc.body.filesToTouch.rowCount === 2",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any).filesToTouch.rowCount,
+      get: (doc) => doc.body["Files to touch"].rowCount,
       equals: 2,
     },
     {
       label:
         "files.find(r => r.Kind === 'delete')?.Location === undefined — typed lookup, none here",
-      get: (doc) =>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (doc.body as any).filesToTouch.find((r: any) => r.Kind === "delete")?.Location,
+      get: (doc) => doc.body["Files to touch"].find((r) => r.Kind === "delete")?.Location,
       equals: undefined,
     },
     {
       label: "doc.body.acceptanceCriteria.lists[0].items.length === 2",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any).acceptanceCriteria.lists[0].items.length,
+      get: (doc) => doc.body["Acceptance criteria"].lists[0]?.items.length,
       equals: 2,
     },
     {
+      // `Today` / `Post-mortem` are `optional(...)`-wrapped → not typed keys; the dynamic surface
+      // resolves them (to undefined here, since both are absent on this open task).
       label: "doc.body.today === undefined — optional + absent on this doc",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any).today,
+      get: (doc) => group(doc.body).today,
       equals: undefined,
     },
     {
       label: "doc.body.postMortem === undefined — absent on an open task",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any).postMortem,
+      get: (doc) => group(doc.body).postMortem,
       equals: undefined,
     },
     {
       label:
         "pm?.sections.whatWorked.text() === undefined — pm absent, optional chaining short-circuits",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any).postMortem?.sections.whatWorked.text(),
+      get: (doc) => asSection(asSection(group(doc.body).postMortem)?.sections.whatWorked)?.text(),
       equals: undefined,
     },
     {
       label: "pm?.sections['Acceptance criteria coverage'] === undefined — pm absent",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any).postMortem?.sections["Acceptance criteria coverage"],
+      get: (doc) => asSection(group(doc.body).postMortem)?.sections["Acceptance criteria coverage"],
       equals: undefined,
     },
   ],
-};
+});
 
 export default c11;

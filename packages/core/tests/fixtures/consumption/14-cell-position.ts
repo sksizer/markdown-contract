@@ -1,21 +1,19 @@
 import { contract, section, sections, table } from "../../../src/index.js";
-import type { ConsumptionFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { defineConsumptionFixture, loadSource } from "../../harness.js";
 
 // Provenance: consumption/14-cell-position.md  (gate: cell-pos — D-0015 / M-0011)
 // Position preservation: a transformed cell keeps its SOURCE geometry. `cellPos(row, col)` returns
 // the per-cell `SourcePos` (its own `col`, not just the row's line), and `inlineSpans(row, col)`
 // returns the ranges of the inline-code spans inside the cell — here each Location cell is a single
 // `` `path` `` inline-code span. Both accessors landed with T-SCPP (`TableView.cellPos` /
-// `Doc.inlineSpans`); they are still reached through `(doc.body as any)` / `(doc as any)` casts
-// because this navigates the dynamic dual-key model facade (`doc.body.files` is untyped there).
+// `Doc.inlineSpans`) and are reached off the typed exact-heading key `doc.body.Files`.
 // An inline span is `{ start, end, raw }` with mdast-native endpoints — `start` on the opening
 // backtick, `end` one column PAST the closing backtick — and `raw` the verbatim backticked source.
 //
 // `peerless`: position accessors are a typed-model surface v1 YAML does not express, so there is
 // no `.contract.yaml` twin for this fixture (see tests/yaml-parity.test.ts).
 
-const c14: ConsumptionFixture = {
+const c14 = defineConsumptionFixture({
   id: "c14",
   title: "Per-cell position and inline-code spans preserved",
   component: "cell-pos",
@@ -34,25 +32,22 @@ const c14: ConsumptionFixture = {
     {
       label: "cellPos(row, 'Location').col — the first Location cell's own source column",
       get: (doc) => {
-        // biome-ignore lint/suspicious/noExplicitAny: fixtures navigate the dynamic dual-key model facade
-        const files = (doc.body as any).files;
-        return files.cellPos(files.rows[0], "Location").col;
+        const files = doc.body.Files;
+        return files.cellPos(files.rows[0]!, "Location").col;
       },
       equals: 3,
     },
     {
       label: "inlineSpans(row, 'Location') — the inline-code span range inside the first cell",
       get: (doc) => {
-        // biome-ignore lint/suspicious/noExplicitAny: fixtures navigate the dynamic dual-key model facade
-        const files = (doc.body as any).files;
-        // biome-ignore lint/suspicious/noExplicitAny: fixtures navigate the dynamic dual-key model facade
-        return (doc as any).inlineSpans(files.rows[0], "Location");
+        const files = doc.body.Files;
+        return doc.inlineSpans(files.rows[0]!, "Location");
       },
       equals: [
         { start: { line: 5, col: 3 }, end: { line: 5, col: 23 }, raw: "`src/core/leaves.ts`" },
       ],
     },
   ],
-};
+});
 
 export default c14;

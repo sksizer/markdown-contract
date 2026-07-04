@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { contract, section, sections, table } from "../../../src/index.js";
-import type { ConsumptionFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { defineConsumptionFixture, loadSource } from "../../harness.js";
 
 // Provenance: consumption/15-no-transform-parity.md  (gate: consumption — runs today)
 // Backward-compat guard for D-0015 / M-0011: a contract with NO transforming cells reads back
@@ -12,7 +11,7 @@ import { loadSource } from "../../harness.js";
 // three transform/position fixtures (c12–c14) stay skipped under their `false` gates. It keeps its
 // real `.contract.yaml` twin (a no-transform contract round-trips through v1 YAML).
 
-const c15: ConsumptionFixture = {
+const c15 = defineConsumptionFixture({
   id: "c15",
   title: "No-transform contract reads back byte-identical rows",
   component: "consumption",
@@ -35,14 +34,12 @@ const c15: ConsumptionFixture = {
   reads: [
     {
       label: "files.rowCount === 3",
-      // biome-ignore lint/suspicious/noExplicitAny: fixtures navigate the dynamic dual-key model facade
-      get: (doc) => (doc.body as any).files.rowCount,
+      get: (doc) => doc.body.Files.rowCount,
       equals: 3,
     },
     {
       label: "files.rows — raw string rows, unchanged (no transform applied)",
-      // biome-ignore lint/suspicious/noExplicitAny: fixtures navigate the dynamic dual-key model facade
-      get: (doc) => (doc.body as any).files.rows,
+      get: (doc) => doc.body.Files.rows,
       equals: [
         { Location: "src/core/leaves.ts", Kind: "modify", Change: "make table() generic" },
         { Location: "src/core/types.ts", Kind: "modify", Change: "confirm the Row slot" },
@@ -51,17 +48,15 @@ const c15: ConsumptionFixture = {
     },
     {
       label: "files.column('Location') === the raw cell strings, verbatim",
-      // biome-ignore lint/suspicious/noExplicitAny: fixtures navigate the dynamic dual-key model facade
-      get: (doc) => (doc.body as any).files.column("Location"),
+      get: (doc) => doc.body.Files.column("Location"),
       equals: ["src/core/leaves.ts", "src/core/types.ts", "src/legacy.ts"],
     },
     {
       label: "files.find(r => r.Kind === 'delete')?.Location === 'src/legacy.ts'",
-      // biome-ignore lint/suspicious/noExplicitAny: fixtures navigate the dynamic dual-key model facade
-      get: (doc) => (doc.body as any).files.find((r: any) => r.Kind === "delete")?.Location,
+      get: (doc) => doc.body.Files.find((r) => r.Kind === "delete")?.Location,
       equals: "src/legacy.ts",
     },
   ],
-};
+});
 
 export default c15;

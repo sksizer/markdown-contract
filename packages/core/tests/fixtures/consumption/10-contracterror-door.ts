@@ -1,13 +1,12 @@
 import { z } from "zod";
 import { contract, maxWords, optional, section, sections } from "../../../src/index.js";
-import type { ConsumptionFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { defineConsumptionFixture, loadSource } from "../../harness.js";
 
 // Provenance: consumption/10-contracterror-door.md
 // read() is the model-only door: on an error-level finding it throws ContractError (not undefined).
 // Reuses validation v18b's DecisionContract + its FAIL document (required ## Decision absent), which
 // yields one error-level structure/section-missing finding — so read() throws.
-const c10: ConsumptionFixture = {
+const c10 = defineConsumptionFixture({
   id: "c10",
   title: "The ContractError door",
   component: "consumption",
@@ -31,6 +30,6 @@ const c10: ConsumptionFixture = {
       ]),
     }),
   throws: "ContractError",
-};
+});
 
 export default c10;

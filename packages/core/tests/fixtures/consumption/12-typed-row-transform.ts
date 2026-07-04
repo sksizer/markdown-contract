@@ -1,13 +1,15 @@
 import { z } from "zod";
 import { contract, section, sections, table } from "../../../src/index.js";
-import type { ConsumptionFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { defineConsumptionFixture, loadSource } from "../../harness.js";
 
 // Provenance: consumption/12-typed-row-transform.md  (gate: cell-typed — D-0015 / M-0011)
 // Typed table-row read-back: the `Location` cell TRANSFORMS its source string into a typed
 // `{ path, symbol? }` value, so the row reads back as that structure (not the raw string). A row
 // whose Location carries a `#symbol` suffix parses to `{ path, symbol }`; a bare path parses to
 // `{ path }`. `Kind` is a plain enum (no transform). Skipped until T-SCTC/T-SCRB flip `cell-typed`.
+//
+// The sole `content: table(...)` promotes `doc.body.Files` to the typed `TableView<Row>`, so the
+// transformed `Location` cell reads back typed directly off the exact-heading key — no cast needed.
 //
 // `peerless`: v1 YAML has no way to express a Zod `.transform()`, so there is no `.contract.yaml`
 // twin for this fixture (see tests/yaml-parity.test.ts).
@@ -18,7 +20,7 @@ const Location = z.string().transform((raw) => {
   return symbol ? { path, symbol } : { path };
 });
 
-const c12: ConsumptionFixture = {
+const c12 = defineConsumptionFixture({
   id: "c12",
   title: "Typed table row via a transforming cell",
   component: "cell-typed",
@@ -42,30 +44,25 @@ const c12: ConsumptionFixture = {
   reads: [
     {
       label: "files.rows[0].Location === { path: 'src/core/leaves.ts', symbol: 'table' }",
-      // biome-ignore lint/suspicious/noExplicitAny: fixtures navigate the dynamic dual-key model facade
-      get: (doc) => (doc.body as any).files.rows[0].Location,
+      get: (doc) => doc.body.Files.rows[0]?.Location,
       equals: { path: "src/core/leaves.ts", symbol: "table" },
     },
     {
       label: "files.rows[0].Location.path — the parsed path field of the typed cell",
-      // biome-ignore lint/suspicious/noExplicitAny: fixtures navigate the dynamic dual-key model facade
-      get: (doc) => (doc.body as any).files.rows[0].Location.path,
+      get: (doc) => doc.body.Files.rows[0]?.Location.path,
       equals: "src/core/leaves.ts",
     },
     {
       label: "files.rows[1].Location === { path: 'src/core/types.ts' } — a symbol-less cell",
-      // biome-ignore lint/suspicious/noExplicitAny: fixtures navigate the dynamic dual-key model facade
-      get: (doc) => (doc.body as any).files.rows[1].Location,
+      get: (doc) => doc.body.Files.rows[1]?.Location,
       equals: { path: "src/core/types.ts" },
     },
     {
       label: "files.find(r => r.Kind === 'delete')?.Location.path === 'src/legacy.ts'",
-      get: (doc) =>
-        // biome-ignore lint/suspicious/noExplicitAny: fixtures navigate the dynamic dual-key model facade
-        (doc.body as any).files.find((r: any) => r.Kind === "delete")?.Location.path,
+      get: (doc) => doc.body.Files.find((r) => r.Kind === "delete")?.Location.path,
       equals: "src/legacy.ts",
     },
   ],
-};
+});
 
 export default c12;

@@ -1,10 +1,9 @@
 import { contract, section, sections } from "../../../src/index.js";
-import type { ConsumptionFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { defineConsumptionFixture, loadSource } from "../../harness.js";
 
 // Provenance: consumption/01-read-the-model-door.md
 // Contract.read() — the model-only door. Reuses validation v01's one-required-section contract.
-const c01: ConsumptionFixture = {
+const c01 = defineConsumptionFixture({
   id: "c01",
   title: "The read() door",
   component: "consumption",
@@ -17,18 +16,16 @@ const c01: ConsumptionFixture = {
   reads: [
     {
       label: "doc.body.overview.name === 'Overview'",
-      // body is typed `unknown` on the generic Doc; fixtures navigate the dual-key facade dynamically.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any).overview.name,
+      // `Overview` is a declared heading → the typed `SectionView` reads back directly.
+      get: (doc) => doc.body.Overview.name,
       equals: "Overview",
     },
     {
       label: "doc.body.overview.text() === the section prose",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any).overview.text(),
+      get: (doc) => doc.body.Overview.text(),
       equals: "A one-paragraph summary of the thing.",
     },
   ],
-};
+});
 
 export default c01;

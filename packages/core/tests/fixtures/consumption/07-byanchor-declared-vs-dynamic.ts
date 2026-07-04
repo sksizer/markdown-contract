@@ -1,12 +1,12 @@
 import { contract, section, sections, table } from "../../../src/index.js";
-import type { ConsumptionFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { asTable } from "../../expect.js";
+import { defineConsumptionFixture, loadSource } from "../../harness.js";
 
 // Provenance: consumption/07-byanchor-declared-vs-dynamic.md
 // byAnchor(id) → BlockView | undefined, at doc and section scope; declared anchors are typed fields,
 // an undeclared anchor is reachable only dynamically. Reuses validation v15b's DecisionContract
 // (two declared tables; an extra undeclared ^extra table) + its "## Decision" sample document.
-const c07: ConsumptionFixture = {
+const c07 = defineConsumptionFixture({
   id: "c07",
   title: "byAnchor — declared vs dynamic",
   component: "consumption",
@@ -23,51 +23,46 @@ const c07: ConsumptionFixture = {
         }),
       ]),
     }),
+  // `byAnchor` returns the discriminated `BlockView | undefined` (`.kind` reads typed); a table hit
+  // is narrowed to its `TableView` with `asTable` to reach `columns` / `rows`.
   reads: [
     {
       label: "doc.byAnchor('extra')?.kind === 'table' — doc-wide search, BlockView discriminant",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc as any).byAnchor("extra")?.kind,
+      get: (doc) => doc.byAnchor("extra")?.kind,
       equals: "table",
     },
     {
       label: "byAnchor('extra') narrowed: b.columns === ['Option', 'Note']",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc as any).byAnchor("extra").columns,
+      get: (doc) => asTable(doc.byAnchor("extra")).columns,
       equals: ["Option", "Note"],
     },
     {
       label: "byAnchor('extra') narrowed: b.rows[1].Option === 'B' — typed string, no row typing",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc as any).byAnchor("extra").rows[1].Option,
+      get: (doc) => asTable(doc.byAnchor("extra")).rows[1]?.Option,
       equals: "B",
     },
     {
       label:
         "doc.byAnchor('components')?.kind === 'table' — declared anchor reachable dynamically too",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc as any).byAnchor("components")?.kind,
+      get: (doc) => doc.byAnchor("components")?.kind,
       equals: "table",
     },
     {
       label: "byAnchor('components') narrowed: c.rows[0]['#'] === '1' — Record<string,string> here",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc as any).byAnchor("components").rows[0]["#"],
+      get: (doc) => asTable(doc.byAnchor("components")).rows[0]?.["#"],
       equals: "1",
     },
     {
       label: "doc.body.decision.byAnchor('extra')?.kind === 'table' — section-scoped search",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any).decision.byAnchor("extra")?.kind,
+      get: (doc) => doc.body.Decision.byAnchor("extra")?.kind,
       equals: "table",
     },
     {
       label: "doc.body.decision.byAnchor('missing') === undefined — no such anchor in this section",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      get: (doc) => (doc.body as any).decision.byAnchor("missing"),
+      get: (doc) => doc.body.Decision.byAnchor("missing"),
       equals: undefined,
     },
   ],
-};
+});
 
 export default c07;

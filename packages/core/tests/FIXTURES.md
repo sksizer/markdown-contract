@@ -77,23 +77,27 @@ tighten the position when the component lands. `findings: []` is a passing docum
 ### Consumption
 
 ```ts
-const c05: ConsumptionFixture = {
+const c05 = defineConsumptionFixture({
   id: "c05",
   title: "TableView typed rows",
   component: "consumption",
   source: loadSource(import.meta.url, "./05-tableview-typed-rows.md"), // single-case → bare stem
   build: () => contract({ /* … */ }),
   reads: [
-    { label: "rowCount", get: (doc) => (doc.body as any).files.rowCount, equals: 3 },
-    { label: "column(Kind)", get: (doc) => (doc.body as any).files.column("Kind"), equals: ["add", "modify", "delete"] },
+    { label: "rowCount", get: (doc) => doc.body.Files.rowCount, equals: 3 },
+    { label: "column(Kind)", get: (doc) => doc.body.Files.column("Kind"), equals: ["add", "modify", "delete"] },
   ],
   // or, for the error door:  throws: "ContractError",
-};
+});
 ```
 
 `reads` run against `read()`'s `doc`; each `get(doc)` is compared with `toEqual(equals)`. Use
-`throws: "ContractError"` for the strict-door failure cases. `doc.body` is typed `unknown` on
-the generic `Doc`, so fixtures navigate the dual-key facade with a local cast.
+`throws: "ContractError"` for the strict-door failure cases. `defineConsumptionFixture` infers the
+contract's `F`/`B` from `build`, so `doc` is the typed `Doc<F, B>`: a declared heading reads back
+off its exact-name key (`doc.body.Files`, or `doc.body["Files to touch"]` when the heading is not a
+bare identifier), fully typed. The lowerCamelCase alias and `.section(name)` accessor are the
+dynamic dual-key surface — narrow those through the `group()` / `asSection()` / `asTable()` helpers
+in `tests/expect.ts`, never `any`.
 
 ## Incremental greening
 
@@ -161,8 +165,9 @@ cell-typed → list-typed → cell-pos
 | `15-no-transform-parity` | `consumption` | a **no-transform** contract reads back **byte-identical** raw string rows — the "no golden moves" guard. |
 
 All three transform/position gates seed `false`, so `c12`–`c14` are **skipped** (green, not
-failing) until each component lands and flips its flag. Because `build()` is lazy and the reads
-navigate through `(doc.body as any)` / `(doc as any)`, the fixtures type-check against the stubbed
+failing) until each component lands and flips its flag. Because `build()` is lazy and the reads go
+through the typed model (a sole `content: table(...)` promotes `doc.body.Files` to `TableView<Row>`),
+the fixtures type-check against the stubbed
 typed surface (`table()` generic over its `cells`, `LeafSpec._row`, `TableView<Row>`) even though
 the transform-capture, read-back, and position accessors do not exist yet. `c12`–`c14` are
 `peerless` — v1 YAML cannot express a Zod `.transform()` (nor the position accessors), so they
