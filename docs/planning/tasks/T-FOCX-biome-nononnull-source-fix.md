@@ -16,6 +16,7 @@ tags:
 need_human_review: false
 impact: medium
 complexity: medium
+readiness_verified_at: '2026-07-04T02:06:16Z'
 ---
 # Fix noNonNullAssertion warnings with real narrowing and promote the rule
 
