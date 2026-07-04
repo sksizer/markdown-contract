@@ -79,7 +79,30 @@ export function table(s: {
   return { kind: "table", schema: PLACEHOLDER_SCHEMA, config: s };
 }
 
-/** A list leaf: ordered/unordered, per-item schema or checkbox gate, min items. */
+/**
+ * A list leaf: ordered/unordered, per-item schema or checkbox gate, min items. Generic (T-SCLI) over
+ * the `everyItem` schema so its return type carries the read-back item shape (`z.output<everyItem>`)
+ * forward on `LeafSpec._item`, which `section()` → `sections()` → `Infer` thread into `read()`'s
+ * `ListView<Item>` — the list analogue of `table()`'s `RowOf` capture.
+ *
+ * Overloads keep the additive/opt-in guarantee: a `list({ everyItem: <ZodType> })` whose schema
+ * `.transform()`s reads back the typed `z.output` items; a `"checkbox"` gate or NO `everyItem` reads
+ * back the raw `ListItem` default (AC-3). The runtime is an inert passthrough — the item read-back
+ * itself lives in `model.ts#listView`.
+ */
+export function list<I extends z.core.$ZodType>(s: {
+  ordered?: boolean;
+  everyItem: I;
+  minItems?: number;
+}): LeafSpec<unknown, z.output<I>>;
+export function list(s: { ordered?: boolean; everyItem?: "checkbox"; minItems?: number }): LeafSpec;
+// Runtime/dynamic path (the declarative YAML loader builds its config from parsed data, typed with
+// the placeholder `ZodType`): accepts a non-literal config and reads back the untyped default item.
+export function list(s: {
+  ordered?: boolean;
+  everyItem?: "checkbox" | ZodType;
+  minItems?: number;
+}): LeafSpec;
 export function list(s: {
   ordered?: boolean;
   everyItem?: "checkbox" | ZodType;

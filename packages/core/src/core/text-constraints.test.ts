@@ -23,6 +23,24 @@ function para(line: number, text: string): BlockNode {
   return { kind: "paragraph", text, pos: { line, col: 1 }, inlineSpans: () => [] };
 }
 
+/** A heading-direct unordered list block with a live (unused-here) sparse typed-item overlay. */
+function listBlock(
+  line: number,
+  items: { text: string; pos: { line: number; col: number } }[],
+): BlockNode {
+  const typedStore = new Map<number, unknown>();
+  return {
+    kind: "list",
+    ordered: false,
+    pos: { line, col: 1 },
+    items,
+    typedItem: (i) => typedStore.get(i),
+    setTypedItem: (i, value) => {
+      typedStore.set(i, value);
+    },
+  };
+}
+
 /** A minimal projected `SectionNode` for direct-run unit cases. */
 function sectionNode(
   name: string,
@@ -117,15 +135,10 @@ describe("count bounds (AC-3)", () => {
 
   it("a satisfied minimum emits nothing — DONE markers counted across list items", () => {
     const node = sectionNode("Checklist", 1, [
-      {
-        kind: "list",
-        ordered: false,
-        pos: { line: 3, col: 1 },
-        items: [
-          { text: "Step one DONE", pos: { line: 3, col: 3 } },
-          { text: "Step two DONE", pos: { line: 4, col: 3 } },
-        ],
-      },
+      listBlock(3, [
+        { text: "Step one DONE", pos: { line: 3, col: 3 } },
+        { text: "Step two DONE", pos: { line: 4, col: 3 } },
+      ]),
     ]);
     expect(requires([{ pattern: "DONE", min: 2 }]).run(node, ctx)).toEqual([]);
   });

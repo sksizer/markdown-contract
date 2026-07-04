@@ -143,7 +143,24 @@ export type BlockNode =
       anchor?: string;
       pos: SourcePos;
     }
-  | { kind: "list"; ordered: boolean; items: ListItem[]; anchor?: string; pos: SourcePos }
+  | {
+      kind: "list";
+      ordered: boolean;
+      items: ListItem[];
+      /**
+       * A1 — the sparse typed overlay beside the raw `items` (the list analogue of the table
+       * `typed(row, col)` overlay). Returns the cached `z.output` of a declared `everyItem` schema
+       * for the item at index `i`, or `undefined` when no transform cached a value there (the common
+       * case — a plain list, or a `"checkbox"` gate, caches nothing). Populated by the content
+       * plane's EXISTING per-item `safeParse` pass; it rides on a closure, not an enumerable
+       * property, so it never serializes onto the public `tree`.
+       */
+      typedItem(i: number): unknown | undefined;
+      /** Internal writer — the content plane caches a successful item `safeParse`'s output here. */
+      setTypedItem(i: number, value: unknown): void;
+      anchor?: string;
+      pos: SourcePos;
+    }
   | { kind: "code"; lang: string | null; value: string; anchor?: string; pos: SourcePos }
   | {
       kind: "paragraph";
@@ -192,14 +209,17 @@ export type BlockKind = "table" | "list" | "code" | "paragraph";
 /**
  * A content leaf — a structural kind-gate (checked first) plus a content Zod schema over the node.
  *
- * `Row` is a phantom (never present at runtime) carrying the leaf's typed read-back shape — for a
- * `table(...)` leaf, the row a transforming `cells` map projects to (`z.output` per cell, e.g. a
- * `Location` cell that `.transform()`s a string into `{ path, symbol? }`). `table()` is generic
- * over its `cells` map so its return type surfaces that row here; the real per-column literal
- * wiring into `Infer` / `TableView<Row>` lands in T-SCRB. Defaults to `unknown`, so a bare
- * `LeafSpec` (and the non-table leaves) are unchanged.
+ * `Row` and `Item` are phantoms (never present at runtime) carrying the leaf's typed read-back shape:
+ *   - `Row` — for a `table(...)` leaf, the row a transforming `cells` map projects to (`z.output` per
+ *     cell, e.g. a `Location` cell that `.transform()`s a string into `{ path, symbol? }`);
+ *   - `Item` — for a `list(...)` leaf, the item a transforming `everyItem` schema projects to
+ *     (`z.output<everyItem>`, e.g. an `AC-1: …` string parsed into `{ ref, text }` — T-SCLI).
+ * `table()` / `list()` are generic over their schemas so their return type surfaces the read-back
+ * shape here; `section()` → `sections()` → `Infer` thread it into `TableView<Row>` / `ListView<Item>`
+ * (T-SCRB / T-SCLI). Both default to `unknown`, so a bare `LeafSpec` (and the untyped leaves) are
+ * unchanged.
  */
-export interface LeafSpec<Row = unknown> {
+export interface LeafSpec<Row = unknown, Item = unknown> {
   kind: BlockKind;
   schema: ZodType;
   /**
@@ -210,6 +230,8 @@ export interface LeafSpec<Row = unknown> {
   config?: unknown;
   /** phantom — the typed row a transforming `cells` map reads back to; never present at runtime. */
   readonly _row?: Row;
+  /** phantom — the typed item a transforming `everyItem` schema reads back to; never at runtime. */
+  readonly _item?: Item;
 }
 
 /** `order` and `allowUnknown` are independent knobs over a level's content model. */
@@ -356,10 +378,17 @@ export interface TableView<Row = Record<string, string>> extends Iterable<Row> {
   cellPos(row: Row, name: string): SourcePos;
 }
 
-export interface ListView extends Iterable<ListItem> {
+/**
+ * A list block addressed through the model. `Item` defaults to the raw `ListItem` (each `.text` a
+ * string); a `list({ everyItem })` whose schema `.transform()`s reads each item back as its typed
+ * `z.output<everyItem>` (T-SCLI), the list analogue of `TableView<Row>`. The typed items flow only
+ * through this model — the projected `tree` items stay raw. `Infer`'s `ListView<Item>` types them
+ * statically for a declared transforming list; an undeclared / no-transform list stays `ListItem`.
+ */
+export interface ListView<Item = ListItem> extends Iterable<Item> {
   kind: "list";
   ordered: boolean;
-  items: ListItem[];
+  items: Item[];
   length: number;
   pos: SourcePos;
 }
@@ -406,8 +435,13 @@ export interface SectionGroup {
  * A heading-delimited section — holds blocks and nested sections; **not** itself a `BlockView`.
  * A `content` record of `^anchor`-bound tables also surfaces each as a named `TableView` field
  * (`doc.body.decision.components`), hence the `TableView` arm of the index signature.
+ *
+ * `LI` (T-SCLI) is the typed list-item read-back shape: it defaults to the raw `ListItem`, but a
+ * section whose sole `content` is a transforming `list({ everyItem })` refines to `SectionView<Item>`
+ * so its `.lists` read back as `ListView<Item>` (the list analogue of the "heading is the table"
+ * promotion — same runtime `SectionView`, refined type). Every other section keeps the default.
  */
-export interface SectionView {
+export interface SectionView<LI = ListItem> {
   name: string;
   pos: SourcePos;
   anchors: string[];
@@ -416,7 +450,7 @@ export interface SectionView {
   /** the sole table, if exactly one (untyped) */
   table?: TableView<Record<string, string>>;
   tables: TableView<Record<string, string>>[];
-  lists: ListView[];
+  lists: ListView<LI>[];
   byAnchor(id: string): BlockView | undefined;
   /** same dual-key shape as `doc.body` */
   sections: SectionGroup;
@@ -427,7 +461,7 @@ export interface SectionView {
     | string[]
     | TableView<Record<string, string>>
     | TableView<Record<string, string>>[]
-    | ListView[]
+    | ListView<LI>[]
     | SectionGroup
     | ((scope?: "prose" | "all") => string)
     | ((id: string) => BlockView | undefined)
@@ -456,16 +490,23 @@ export type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never
   : never;
 
 /**
- * The typed value a declared section's dual-key key binds (T-SCRB). A section whose sole `content`
- * is a single transforming `table(...)` leaf PROMOTES to that table's typed `TableView<Row>` (the
- * "heading is the table" case, §6 — `Row` being `RowOf<cols, cells>`); every other section (prose,
- * a non-table leaf, a `content` record, or no content) binds its `SectionView`.
+ * The typed value a declared section's dual-key key binds (T-SCRB / T-SCLI). Two typed cases:
+ *   - a section whose sole `content` is a transforming `table(...)` leaf PROMOTES to that table's
+ *     typed `TableView<Row>` (the "heading is the table" case, §6 — `Row` being `RowOf<cols, cells>`);
+ *   - a section whose sole `content` is a transforming `list({ everyItem })` leaf refines to
+ *     `SectionView<Item>`, so its `.lists` read back as `ListView<Item>` (`Item = z.output<everyItem>`).
+ * The list case keeps the runtime `SectionView` (lists do not promote — the model exposes them on
+ * `.lists`); only the item type is refined. Every other section (prose, a non-typed leaf, a `content`
+ * record, or no content) binds the plain `SectionView`. `Item` is checked before `Row` so a list leaf
+ * (whose `_row` phantom is `unknown`) is not mistaken for a table.
  */
 export type SectionValue<O> = O extends { content: infer Ct }
-  ? Ct extends LeafSpec<infer Row>
-    ? unknown extends Row
-      ? SectionView
-      : TableView<Row>
+  ? Ct extends LeafSpec<infer Row, infer Item>
+    ? unknown extends Item
+      ? unknown extends Row
+        ? SectionView
+        : TableView<Row>
+      : SectionView<Item>
     : SectionView
   : SectionView;
 

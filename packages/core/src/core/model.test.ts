@@ -8,7 +8,7 @@
  */
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import type { Infer, SectionGroup, SectionView, TableView } from "../index.js";
+import type { Infer, ListItem, ListView, SectionGroup, SectionView, TableView } from "../index.js";
 import { contract, gap, list, optional, section, sections, table } from "../index.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -441,6 +441,145 @@ const plainSpec = contract({
 type PlainRow =
   ReturnType<typeof plainSpec.read>["body"]["Files"] extends TableView<infer R> ? R : never;
 type _AC3_stringDefault = Expect<Equal<PlainRow, Record<string, string>>>;
+
+describe("typed list-item read-back (T-SCLI)", () => {
+  // A transforming item: `AC-1: do the thing` → { ref, text }, cached by the content plane's per-item
+  // parse and read back here. `calls` counts transform invocations to prove the read-back is
+  // cache-sourced (the transform is not re-run when the view's items are read).
+  let calls = 0;
+  const criterion = z.string().transform((raw) => {
+    calls++;
+    const [ref = "", ...rest] = raw.split(":");
+    return { ref: ref.trim(), text: rest.join(":").trim() };
+  });
+  const c = contract({
+    body: sections({}, [
+      section("Acceptance criteria", { content: list({ everyItem: criterion, minItems: 1 }) }),
+    ]),
+  });
+  const src = ["## Acceptance criteria", "", "- AC-1: scaffold it", "- AC-2: stub it"].join("\n");
+
+  // Typed navigation — the feature under test types `body["Acceptance criteria"]` as
+  // `SectionView<Item>` (Item = `z.output<everyItem>`), so its `.lists` are `ListView<Item>` with
+  // no `as any`. Read through the exact heading key (dual-key, runtime-valid).
+  test("AC-1 — a transforming everyItem reads items back as the parsed value, from the cache", () => {
+    const doc = c.read(src, PATH);
+    const view = doc.body["Acceptance criteria"].lists[0];
+    if (!view) throw new Error("expected a list view");
+    expect(view.items).toEqual([
+      { ref: "AC-1", text: "scaffold it" },
+      { ref: "AC-2", text: "stub it" },
+    ]);
+    expect([...view]).toEqual(view.items); // iterating the ListView yields the same typed items
+  });
+
+  test("AC-1 — the transform is not re-run when reading items back from the view", () => {
+    calls = 0;
+    const doc = c.read(src, PATH);
+    const afterValidate = calls; // however many times validate ran it (once per item)
+    expect(afterValidate).toBeGreaterThan(0); // it DID run during validate, populating the cache
+    const view = doc.body["Acceptance criteria"].lists[0];
+    if (!view) throw new Error("expected a list view");
+    // Read the items several ways; none re-runs the transform — the values come from the cache.
+    void view.items[0];
+    void [...view];
+    void view.items[1];
+    expect(calls).toBe(afterValidate);
+  });
+
+  test("AC-5 — typed items ride only on the model; the projected tree items stay raw", () => {
+    const result = c.validate(src, PATH);
+    const doc = result.doc;
+    if (!doc) throw new Error("expected a valid doc");
+    const view = doc.body["Acceptance criteria"].lists[0];
+    expect(view?.items[0]).toEqual({ ref: "AC-1", text: "scaffold it" });
+    // Projection: the SAME list block's raw `items` are untouched strings — the transform output
+    // rides on the sparse `typedItem(...)` overlay the model reads, never on `tree` (AC-5).
+    const block = result.tree.root.sections[0]?.blocks.find((b) => b.kind === "list");
+    expect(block?.kind).toBe("list");
+    if (block?.kind !== "list") throw new Error("expected a list block");
+    expect(block.items[0]?.text).toBe("AC-1: scaffold it"); // raw item, not the parsed object
+    expect(block.typedItem(0)).toEqual({ ref: "AC-1", text: "scaffold it" });
+  });
+
+  test("AC-3 — a list with no everyItem reads back raw ListItems (each .text a string)", () => {
+    const plain = contract({ body: sections({}, [section("Notes", { content: list({}) })]) });
+    const doc = plain.read("## Notes\n\n- a\n- b\n", PATH);
+    const view = doc.body.Notes.lists[0];
+    if (!view) throw new Error("expected a list view");
+    expect(view.items.map((i) => i.text)).toEqual(["a", "b"]);
+    expect(typeof view.items[0]?.text).toBe("string");
+  });
+
+  test("AC-3 — a checkbox list reads back raw ListItems (the typed store stays empty)", () => {
+    const cb = contract({
+      body: sections({}, [section("Todo", { content: list({ everyItem: "checkbox" }) })]),
+    });
+    const doc = cb.read("## Todo\n\n- [ ] a\n- [x] b\n", PATH);
+    const view = doc.body.Todo.lists[0];
+    if (!view) throw new Error("expected a list view");
+    expect(view.items[0]).toMatchObject({ text: "a", checked: false });
+    expect(view.items[1]).toMatchObject({ text: "b", checked: true });
+  });
+});
+
+// ── Type-level assertions (AC-2, list side) ──────────────────────────────────────────
+// Compile-time proof that the item read back through `read()` and `Infer` is `z.output<everyItem>`
+// for a transforming list and the raw `ListItem` otherwise — the per-item literal inference. The
+// section is NOT promoted (unlike the sole-table case): `doc.body["Acceptance criteria"]` stays a
+// `SectionView`, but a typed one — `SectionView<Item>` — so its `.lists` are `ListView<Item>`.
+const criterionCell = z.string().transform((raw) => {
+  const [ref = "", ...rest] = raw.split(":");
+  return { ref: ref.trim(), text: rest.join(":").trim() };
+});
+const typedListSpec = contract({
+  body: sections({}, [
+    section("Acceptance criteria", {
+      content: list({ everyItem: criterionCell, minItems: 1 }),
+    }),
+  ]),
+});
+
+// Through `read()`: `doc.body["Acceptance criteria"]` refines to `SectionView<Item>`.
+type ReadItem = Resolve<
+  ReturnType<typeof typedListSpec.read>["body"]["Acceptance criteria"] extends SectionView<infer LI>
+    ? LI
+    : never
+>;
+// Through `Infer`: the same typed item.
+type InferItem = Resolve<
+  Infer<typeof typedListSpec>["body"]["Acceptance criteria"] extends SectionView<infer LI>
+    ? LI
+    : never
+>;
+// And the `.lists` field carries the typed `ListView<Item>` end to end.
+type ListsItem = ReturnType<
+  typeof typedListSpec.read
+>["body"]["Acceptance criteria"]["lists"] extends ListView<infer LI>[]
+  ? Resolve<LI>
+  : never;
+
+// a transforming everyItem → its parsed `z.output` (NOT a raw `ListItem`)
+type _AC2_readItem = Expect<Equal<ReadItem, z.output<typeof criterionCell>>>;
+type _AC2_inferItem = Expect<Equal<InferItem, z.output<typeof criterionCell>>>;
+type _AC2_listsItem = Expect<Equal<ListsItem, z.output<typeof criterionCell>>>;
+// the item is NOT the raw `ListItem` — the typing actually flowed through
+type _AC2_notRaw = Expect<Equal<Equal<ReadItem, ListItem>, false>>;
+
+// AC-3 (type level): a list with NO `everyItem` keeps the raw `ListItem` default (raw otherwise).
+const plainListSpec = contract({
+  body: sections({}, [section("Notes", { content: list({}) })]),
+});
+type PlainItem =
+  ReturnType<typeof plainListSpec.read>["body"]["Notes"] extends SectionView<infer LI> ? LI : never;
+type _AC3_rawDefault = Expect<Equal<PlainItem, ListItem>>;
+// A `"checkbox"` gate likewise keeps the raw `ListItem`.
+const checkboxSpec = contract({
+  body: sections({}, [section("Todo", { content: list({ everyItem: "checkbox" }) })]),
+});
+type CheckboxItem =
+  ReturnType<typeof checkboxSpec.read>["body"]["Todo"] extends SectionView<infer LI> ? LI : never;
+type _AC3_checkboxRaw = Expect<Equal<CheckboxItem, ListItem>>;
 
 describe("AC-1 — the model is additive; reading doc never changes findings", () => {
   test("findings are identical whether or not doc is accessed", () => {

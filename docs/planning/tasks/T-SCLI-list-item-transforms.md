@@ -37,7 +37,7 @@ Extend the "keep the transform output" mechanism from table cells to list items 
 | `packages/core/src/core/content.ts#validateList` | For `everyItem: ZodType`, runs `zod.safeParse(item.text)` per item, branches on `res.success`, emits `content/list/item-kind` on failure — and **discards `res.data`**. |
 | `packages/core/src/core/model.ts#listView` | Returns `node.items` as raw projection items (each `.text` a string); no typed item path. |
 | `packages/core/src/core/types.ts#ListView` | `ListView extends Iterable<ListItem>` with raw-string items; no `z.output<everyItem>` carry. |
-| `packages/core/src/core/leaves.ts#list` | `list({ everyItem?: "checkbox" | ZodType, ... })` carries no literal type out for the item schema. |
+| `packages/core/src/core/leaves.ts#list` | `list({ everyItem?: "checkbox" \| ZodType, ... })` carries no literal type out for the item schema. |
 | `packages/core/tests/fixtures/consumption/` | Typed list-item fixtures authored by `T-SCFX`, skipped under `list-typed: false`. |
 
 ## Proposed
@@ -124,12 +124,24 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `packages/core/src/core/model.test.ts` "reads items back … from the cache" + "transform is not re-run" (a call-counter proves the read is cache-sourced), and consumption fixture `[c13]` under `core:test`.
+- AC-2: auto — compile-time type-level assertions in `model.test.ts` (`z.output<everyItem>` reached through `read()` and `Infer`; raw `ListItem` for the checkbox/no-everyItem defaults), enforced by `bunx moon run core:typecheck`.
+- AC-3: auto — `content.test.ts` (checkbox and no-`everyItem` lists cache nothing) + `model.test.ts` raw read-back + the raw-default type-level asserts.
+- AC-4: auto — `content.test.ts` "a failing item emits exactly one `content/list/item-kind` finding and caches nothing there".
+- AC-5: auto — `packages/core/tests/components.ts` `"list-typed": true`; `[c13]` fixture runs and passes; `core:test` (697 pass) shows no previously-passing fixture changed.
+- AC-6: auto — `bunx moon run core:build`, `core:typecheck`, `core:test`, and `core:lint` all exit 0; the baseline-gated quality gate reports `OK 5/5`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The shipped table-cell slice (`T-SCTC` + `T-SCRB`) was an exact mirror template: the sparse `typed(row,col)` overlay and the `section()` → `sections()` → `Infer` literal-type threading transferred cleanly to the list `typedItem(i)` / `LeafSpec._item` analogue with no new architecture.
+- The baseline-gated quality gate (`--diff-against-baseline`) subtracted pre-existing drift and reported `OK 5/5` with zero new drift on the first clean run.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Quality gate `--line`/`--diff-against-baseline` mode captures each verb via `spawnSync` with a 1 MB per-stream `maxBuffer`; the repo's ~1.04 MB of pre-existing biome warnings overflow it and surface a spurious `core:lint` ENOBUFS/SIGTERM FAIL in the worktree (only `--log`, stdio-inherit, runs clean) — the quality runner should raise the `maxBuffer` or stream verb output to a temp file so large pre-existing lint output can't spuriously fail the gate. → [[T-VJKB-quality-gate-stream-verb-output]]
+- The ensure-ready touchpoint gate hard-failed the spec over an unescaped `|` inside an inline-code span in a `## Today` table cell (`"checkbox" | ZodType`), which the table parser read as a 3-cell row — a cosmetic markdown-escaping bug downshifted an otherwise implementation-ready task — `sdlc task gap-report`'s touchpoint table parser should tolerate pipes inside backtick code spans (or `\|`-escaped pipes) rather than counting them as column delimiters. → [[T-I8UZ-gap-report-code-span-pipes]]
+
+### Spawned follow-up tasks
+
+- [[T-VJKB-quality-gate-stream-verb-output]] (https://github.com/sksizer/dev/pull/638) — Upstream-plugin (sdlc): stream quality-gate verb output to a temp file (or raise the per-stream maxBuffer) so large pre-existing lint output can't spuriously fail the baseline gate; spawned.
+- [[T-I8UZ-gap-report-code-span-pipes]] (https://github.com/sksizer/dev/pull/639) — Upstream-plugin (sdlc): make `sdlc task gap-report`'s touchpoint table parser ignore pipes inside backtick code spans rather than treating them as column delimiters; spawned.
