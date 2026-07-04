@@ -1,16 +1,18 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-1GIL
 status: in-progress
-created: '2026-07-04'
+created: 2026-07-04
 related: []
 tags: []
 need_human_review: false
 impact: medium
 complexity: medium
-readiness_verified_at: '2026-07-04T09:42:37Z'
-last_reviewed: '2026-07-04'
+readiness_verified_at: 2026-07-04T09:42:37Z
+last_reviewed: 2026-07-04
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/221
 ---
 # Vendor the C-0004 projection fixture into packages/core instead of reaching out to a repo-root planning doc
 
