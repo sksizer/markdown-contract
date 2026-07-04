@@ -2,12 +2,14 @@
 type: backlog
 schema_version: '1'
 id: B-QF64
-last_reviewed: '2026-07-01'
+last_reviewed: '2026-07-04'
 tags:
 - monorepo
 - moon
 - bun
 - dx
+status: promoted/task
+result: '[[T-6WHH-assert-pinned-moon-version]]'
 ---
 # Guard that `bunx moon` resolves the pinned `@moonrepo/cli`, not a shadowing global proto moon
 
