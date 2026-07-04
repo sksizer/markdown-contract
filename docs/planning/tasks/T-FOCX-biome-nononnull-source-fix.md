@@ -1,23 +1,25 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-FOCX
 status: in-progress
-created: '2026-07-03'
+created: 2026-07-03
 related:
-- '[[M-0010 Quality Tooling]]'
-- '[[T-0MVN-biome-lint-format]]'
-- '[[T-JGCX-biome-noexplicitany-source-fix]]'
+  - "[[M-0010 Quality Tooling]]"
+  - "[[T-0MVN-biome-lint-format]]"
+  - "[[T-JGCX-biome-noexplicitany-source-fix]]"
 tags:
-- quality
-- lint
-- biome
-- tech-debt
+  - quality
+  - lint
+  - biome
+  - tech-debt
 need_human_review: false
 impact: medium
 complexity: medium
-readiness_verified_at: '2026-07-04T02:06:16Z'
-last_reviewed: '2026-07-04'
+readiness_verified_at: 2026-07-04T02:06:16Z
+last_reviewed: 2026-07-04
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/214
 ---
 # Fix noNonNullAssertion warnings with real narrowing and promote the rule
 
