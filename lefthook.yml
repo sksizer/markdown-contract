@@ -7,7 +7,7 @@
 #
 # Bypass (for an intentional WIP commit/push):
 #   git commit --no-verify     # skip the pre-commit Biome check
-#   git push   --no-verify     # skip the pre-push typecheck + test gates
+#   git push   --no-verify     # skip the pre-push build + typecheck + test gates
 
 pre-commit:
   parallel: true
@@ -21,6 +21,8 @@ pre-commit:
 pre-push:
   commands:
     # The heavier cached gates — mirrors what CI enforces. moon parallelizes and
-    # caches the two tasks, so a clean tree is a fast cache hit.
+    # caches the three tasks, so a clean tree is a fast cache hit. `core:build`
+    # exercises .d.ts declaration emit, catching regressions (TS4023-family) that
+    # `core:typecheck` (tsc --noEmit) alone lets through.
     gates:
-      run: bunx moon run core:typecheck core:test
+      run: bunx moon run core:build core:typecheck core:test

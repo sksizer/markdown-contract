@@ -38,7 +38,7 @@ push to `main` (build settings: [`sites/docs/README.md`](sites/docs/README.md)).
 - **Git hooks** are managed by [lefthook](https://lefthook.dev) and arm
   automatically on install (the root `prepare` script and `worktree_init` both
   run `lefthook install`). `pre-commit` runs Biome over staged files;
-  `pre-push` runs the `core:typecheck` + `core:test` gates. Bypass an
+  `pre-push` runs the `core:build` + `core:typecheck` + `core:test` gates. Bypass an
   individual run with `git commit --no-verify` / `git push --no-verify`.
 
 ```sh
