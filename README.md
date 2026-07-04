@@ -45,6 +45,10 @@ report-only), and the planning-docs contract gate (`core:lint-docs`). When the
 template grows or changes a layer, mirror the delta here — and when a quality
 practice proves out here first, upstream it to the template.
 
+The module/test conventions layer is captured in
+[`CONVENTIONS.md`](CONVENTIONS.md) — the human-facing counterpart of the
+template's `CONVENTIONS.md`.
+
 ## Toolchain
 
 - **Bun** is the canonical dev package manager and the fast task runner: one
