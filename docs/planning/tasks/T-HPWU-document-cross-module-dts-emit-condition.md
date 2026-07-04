@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-HPWU
-status: open/ready
+status: in-progress
 created: '2026-07-04'
 related:
 - T-QX1Q-gate-covers-declaration-emit
@@ -11,6 +11,7 @@ need_human_review: false
 impact: medium
 complexity: small
 readiness_verified_at: '2026-07-04T17:53:47Z'
+last_reviewed: '2026-07-04'
 ---
 # Document the cross-module condition for reproducing .d.ts declaration-emit regressions
 
@@ -132,3 +133,19 @@ passes the build.
 ## Discovery context
 
 Spawned by /sdlc:spawn-task-pr on 2026-07-04 UTC from [[T-QX1Q-gate-covers-declaration-emit]] in git@github.com:sksizer/markdown-contract.git.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
