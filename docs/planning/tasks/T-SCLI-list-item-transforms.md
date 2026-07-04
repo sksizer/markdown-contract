@@ -1,28 +1,28 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-SCLI
-status: in-progress
-created: 2026-06-30
+status: closed/done
+created: '2026-06-30'
 related:
-  - "[[M-0011-structured-cells]]"
-  - "[[D-0015-structured-cells]]"
-  - "[[D-0005-consumption-oom]]"
+- '[[M-0011-structured-cells]]'
+- '[[D-0015-structured-cells]]'
+- '[[D-0005-consumption-oom]]'
 depends_on:
-  - "[[T-SCRB-typed-row-read-back]]"
+- '[[T-SCRB-typed-row-read-back]]'
 tags:
-  - structured-cells
-  - consumption
-  - typed-model
-  - lists
+- structured-cells
+- consumption
+- typed-model
+- lists
 need_human_review: false
 impact: medium
 complexity: medium
 autonomy: supervised
-last_reviewed: 2026-07-04
-readiness_verified_at: 2026-07-04T02:10:48Z
+last_reviewed: '2026-07-04'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/215
+- https://github.com/sksizer/markdown-contract/pull/215
+completion_note: 'Shipped via #215.'
 ---
 # Keep `everyItem` transform output and read back typed list items through `ListView`
 
