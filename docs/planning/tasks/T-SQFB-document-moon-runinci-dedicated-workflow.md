@@ -1,17 +1,18 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-SQFB
 status: open/ready
-created: 2026-07-01
-last_reviewed: 2026-07-03
+created: '2026-07-01'
+last_reviewed: '2026-07-03'
 related:
-  - "[[M-0010 Quality Tooling]]"
+- '[[M-0010 Quality Tooling]]'
 tags:
-  - quality
+- quality
 need_human_review: false
 impact: low
 complexity: small
+autonomy: autonomous/pr
 ---
 # Document moon runInCI:false + dedicated side-gate workflow pattern
 
