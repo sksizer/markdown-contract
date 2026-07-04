@@ -92,6 +92,9 @@ function parseCliArgs(argv: string[]) {
   });
 }
 
+/** The parsed CLI flag bag (`parseArgs` values) threaded into the command handlers. */
+type CliValues = ReturnType<typeof parseCliArgs>["values"];
+
 /**
  * The pure, testable CLI core. Parses `argv` (everything after `node bin`), loads the
  * config, runs the corpus, formats the findings, and returns the exit code plus the
@@ -122,63 +125,33 @@ export async function runCli(argv: string[], opts?: { cwd?: string }): Promise<C
   if (positionals.length === 0) return { code: 2, stdout: "", stderr: USAGE };
 
   const [command, ...rest] = positionals;
+  if (command === "init") return runInit(cwd, rest, values);
+  if (command === "validate") return runValidate(cwd, rest, values);
+  return {
+    code: 2,
+    stdout: "",
+    stderr: `markdown-contract: unknown command "${command}"\n${USAGE}`,
+  };
+}
 
-  if (command === "init") {
-    return runInit(cwd, rest, values);
-  }
-
-  if (command !== "validate") {
-    return {
-      code: 2,
-      stdout: "",
-      stderr: `markdown-contract: unknown command "${command}"\n${USAGE}`,
-    };
-  }
-
+/**
+ * `markdown-contract validate <path>` — resolve the run root + `CorpusConfig`, run the corpus, and
+ * format the findings. Both inline `--contract` and file `--config` forms compile to one
+ * CorpusConfig run through the same `runCorpus`. Exit codes: `0`/`1` from `runCorpus`, `2` for a
+ * usage/config error raised here.
+ */
+async function runValidate(cwd: string, rest: string[], values: CliValues): Promise<CliResult> {
   const format = values.format ?? "human";
-  if (!VALID_FORMATS.has(format)) {
-    return {
-      code: 2,
-      stdout: "",
-      stderr: `markdown-contract: unknown --format "${format}" (expected human|json|sarif)`,
-    };
-  }
-
   const pathArg = rest[0];
   const contracts = values.contract ?? [];
   const paths = values.path ?? [];
 
-  // The contract binding comes from EITHER an inline `--contract` (one binary, config-less
-  // parameterization — D-0008 § CLI parameterization) OR a `--config` file, never both.
-  if (contracts.length > 0 && values.config !== undefined) {
-    return {
-      code: 2,
-      stdout: "",
-      stderr: `markdown-contract: use either --contract or --config, not both\n${USAGE}`,
-    };
-  }
-  if (contracts.length === 0 && paths.length > 0) {
-    return {
-      code: 2,
-      stdout: "",
-      stderr: `markdown-contract: --path requires a matching --contract\n${USAGE}`,
-    };
-  }
+  const argError = validateRunArgs(format, contracts, paths, values.config);
+  if (argError) return argError;
 
-  // Resolve the run root (the runner's cwd) and the `CorpusConfig`. Both inline and
-  // file-config forms compile to one CorpusConfig run through the same `runCorpus`.
-  let config: CorpusConfig;
-  let runRoot: string;
-  try {
-    if (contracts.length > 0) {
-      ({ config, runRoot } = buildInlineConfig(cwd, contracts, paths, pathArg));
-    } else {
-      runRoot = pathArg ? resolve(cwd, pathArg) : cwd;
-      config = await loadConfig(cwd, values.config);
-    }
-  } catch (err) {
-    return { code: 2, stdout: "", stderr: `markdown-contract: ${(err as Error).message}` };
-  }
+  const resolved = await resolveRunConfig(cwd, values.config, contracts, paths, pathArg);
+  if ("error" in resolved) return resolved.error;
+  const { config, runRoot } = resolved;
 
   if (!existsSync(runRoot)) {
     return {
@@ -193,32 +166,118 @@ export async function runCli(argv: string[], opts?: { cwd?: string }): Promise<C
   const include = [...(values.glob ?? []), ...(values.include ?? [])];
   const exclude = values.exclude ?? [];
 
-  let result: ReturnType<typeof runCorpus>;
-  try {
-    result = runCorpus(config, {
-      cwd: runRoot,
-      include: include.length > 0 ? include : undefined,
-      exclude: exclude.length > 0 ? exclude : undefined,
-    });
-  } catch (err) {
-    // A runtime failure inside the runner (e.g. a contract throwing) is a config/usage
-    // problem from the CLI's vantage: exit 2 with the message rather than crash.
-    return { code: 2, stdout: "", stderr: `markdown-contract: ${(err as Error).message}` };
+  const ran = runCorpusGuarded(config, runRoot, include, exclude);
+  if ("error" in ran) return ran.error;
+
+  return {
+    code: ran.result.exitCode,
+    stdout: formatOutput(format, ran.result, config),
+    stderr: "",
+  };
+}
+
+/**
+ * The usage guards for `validate`: an unknown `--format`, `--contract` + `--config` together, or
+ * `--path` with no `--contract`. Returns the `code: 2` result to short-circuit on, or `null` when
+ * the flags are coherent. The contract binding comes from EITHER an inline `--contract` (config-less
+ * parameterization — D-0008 § CLI parameterization) OR a `--config` file, never both.
+ */
+function validateRunArgs(
+  format: string,
+  contracts: string[],
+  paths: string[],
+  config: string | undefined,
+): CliResult | null {
+  if (!VALID_FORMATS.has(format)) {
+    return {
+      code: 2,
+      stdout: "",
+      stderr: `markdown-contract: unknown --format "${format}" (expected human|json|sarif)`,
+    };
   }
+  if (contracts.length > 0 && config !== undefined) {
+    return {
+      code: 2,
+      stdout: "",
+      stderr: `markdown-contract: use either --contract or --config, not both\n${USAGE}`,
+    };
+  }
+  if (contracts.length === 0 && paths.length > 0) {
+    return {
+      code: 2,
+      stdout: "",
+      stderr: `markdown-contract: --path requires a matching --contract\n${USAGE}`,
+    };
+  }
+  return null;
+}
 
-  // The human format gains an additive run summary (total + per-contract counts) above the
-  // findings report; json/sarif are byte-for-byte the bare finding outputs (summary is human-only).
-  const stdout =
-    format === "json"
-      ? formatJson(result.findings)
-      : format === "sarif"
-        ? formatSarif(result.findings)
-        : `${formatRunSummary(
-            result.stats,
-            config.rules.map((r) => r.name),
-          )}\n\n${formatHuman(result.findings)}`;
+/**
+ * Resolve the run root (the runner's cwd) and the `CorpusConfig` — inline `--contract` builds it
+ * directly; otherwise the `--config` file is loaded. A throw from either (bad/missing config, etc.)
+ * becomes a `code: 2` error result.
+ */
+async function resolveRunConfig(
+  cwd: string,
+  configFlag: string | undefined,
+  contracts: string[],
+  paths: string[],
+  pathArg: string | undefined,
+): Promise<{ config: CorpusConfig; runRoot: string } | { error: CliResult }> {
+  try {
+    if (contracts.length > 0) {
+      return buildInlineConfig(cwd, contracts, paths, pathArg);
+    }
+    const runRoot = pathArg ? resolve(cwd, pathArg) : cwd;
+    return { config: await loadConfig(cwd, configFlag), runRoot };
+  } catch (err) {
+    return {
+      error: { code: 2, stdout: "", stderr: `markdown-contract: ${(err as Error).message}` },
+    };
+  }
+}
 
-  return { code: result.exitCode, stdout, stderr: "" };
+/**
+ * Run the corpus, mapping a runtime failure inside the runner (e.g. a contract throwing) to a
+ * `code: 2` error result — from the CLI's vantage that is a config/usage problem, not a crash.
+ */
+function runCorpusGuarded(
+  config: CorpusConfig,
+  runRoot: string,
+  include: string[],
+  exclude: string[],
+): { result: ReturnType<typeof runCorpus> } | { error: CliResult } {
+  try {
+    return {
+      result: runCorpus(config, {
+        cwd: runRoot,
+        include: include.length > 0 ? include : undefined,
+        exclude: exclude.length > 0 ? exclude : undefined,
+      }),
+    };
+  } catch (err) {
+    return {
+      error: { code: 2, stdout: "", stderr: `markdown-contract: ${(err as Error).message}` },
+    };
+  }
+}
+
+/**
+ * Render the findings for the chosen `format`. The human format gains an additive run summary
+ * (total + per-contract counts) above the findings report; json/sarif are byte-for-byte the bare
+ * finding outputs (the summary is human-only).
+ */
+function formatOutput(
+  format: string,
+  result: ReturnType<typeof runCorpus>,
+  config: CorpusConfig,
+): string {
+  if (format === "json") return formatJson(result.findings);
+  if (format === "sarif") return formatSarif(result.findings);
+  return `${formatRunSummary(
+    result.stats,
+    config.rules.map((r) => r.name),
+  )}\n\n${formatHuman(result.findings)}`;
 }
 
 /** The parsed-flag bag `runCli` threads into `runInit` (the `init`-relevant subset of `parseArgs` values). */
@@ -275,98 +334,29 @@ function runInit(cwd: string, roots: string[], flags: InitFlags): CliResult {
     };
   }
 
-  // --depth parses to a non-negative integer; a bad value is a usage error.
-  let depth: number | undefined;
-  if (flags.depth !== undefined) {
-    depth = Number(flags.depth);
-    if (!Number.isInteger(depth) || depth < 0) {
-      return {
-        code: 2,
-        stdout: "",
-        stderr: `markdown-contract: --depth must be a non-negative integer (got '${flags.depth}')`,
-      };
-    }
-  }
+  // --depth / --max-const-len / --min-const-examples parse to integers; a bad value is a usage error.
+  const nums = parseInitNumericFlags(flags);
+  if ("error" in nums) return nums.error;
 
-  // --max-const-len: a non-negative integer (0 disables string const/enum). Bad value → usage error.
-  let maxConstStringLength: number | undefined;
-  if (flags["max-const-len"] !== undefined) {
-    maxConstStringLength = Number(flags["max-const-len"]);
-    if (!Number.isInteger(maxConstStringLength) || maxConstStringLength < 0) {
-      return {
-        code: 2,
-        stdout: "",
-        stderr: `markdown-contract: --max-const-len must be a non-negative integer (got '${flags["max-const-len"]}')`,
-      };
-    }
-  }
-
-  // --min-const-examples: an integer >= 1 (1 restores pinning on a single example). Bad value → usage error.
-  let minConstExamples: number | undefined;
-  if (flags["min-const-examples"] !== undefined) {
-    minConstExamples = Number(flags["min-const-examples"]);
-    if (!Number.isInteger(minConstExamples) || minConstExamples < 1) {
-      return {
-        code: 2,
-        stdout: "",
-        stderr: `markdown-contract: --min-const-examples must be an integer >= 1 (got '${flags["min-const-examples"]}')`,
-      };
-    }
-  }
-
-  const include = [...(flags.glob ?? []), ...(flags.include ?? [])];
-  const exclude = flags.exclude ?? [];
-  const scope = {
-    include: include.length > 0 ? include : undefined,
-    exclude: exclude.length > 0 ? exclude : undefined,
-  };
+  const scope = buildInitScope(flags);
 
   const absRoots = roots.map((r) => (isAbsolute(r) ? r : resolve(cwd, r)));
-  for (const root of absRoots) {
-    if (!existsSync(root)) {
-      return { code: 2, stdout: "", stderr: `markdown-contract: path not found: ${root}` };
-    }
-  }
+  const rootsError = checkRootsExist(absRoots);
+  if (rootsError) return rootsError;
 
-  // Default the write target to the SINGLE inferred root, so the config, `contracts/`, and the
-  // root-relative globs share one base and `init <dir> --check` finds what `init <dir>` wrote from
-  // any cwd. A multi-root run has no single natural base, so it keeps the cwd fallback (with a
-  // warning below). Explicit `--out` overrides both, silently.
-  const multiRootCwdFallback = !flags.out && absRoots.length > 1;
-  const outDir = flags.out
-    ? isAbsolute(flags.out)
-      ? flags.out
-      : resolve(cwd, flags.out)
-    : absRoots.length === 1
-      ? absRoots[0]!
-      : cwd;
-  const multiRootWarning = multiRootCwdFallback
-    ? "init: multiple roots — writing the scaffold to the current directory (pass --out <dir> to choose)"
-    : "";
+  const { outDir, warning: multiRootWarning } = resolveInitOutDir(flags, cwd, absRoots);
 
   // --check: verify an EXISTING config against the tree(s); never infer or write.
   if (flags.check === true) {
     return runInitCheck(absRoots, scope);
   }
 
-  const opts: InferOptions = {
-    meta: flags.meta === true,
-    relax: flags.relax === true,
-    inline: flags.inline === true,
-    inferBounds: flags["infer-bounds"] === true,
-    ...(depth !== undefined ? { depth } : {}),
-    ...(maxConstStringLength !== undefined ? { maxConstStringLength } : {}),
-    ...(minConstExamples !== undefined ? { minConstExamples } : {}),
-    ...scope,
-  };
+  const opts = buildInferOptions(flags, scope, nums);
 
   // Infer one result per root, then merge into the files to write (and verify per root).
-  let results: InferResult[];
-  try {
-    results = absRoots.map((root) => inferConfig(root, opts));
-  } catch (err) {
-    return { code: 2, stdout: "", stderr: `markdown-contract: ${(err as Error).message}` };
-  }
+  const inferred = inferAll(absRoots, opts);
+  if ("error" in inferred) return inferred.error;
+  const results = inferred.results;
 
   const files = mergeFiles(results, opts);
 
@@ -375,28 +365,8 @@ function runInit(cwd: string, roots: string[], flags: InitFlags): CliResult {
     return { code: 0, stdout: renderDryRun(files, results), stderr: "" };
   }
 
-  // Refuse to clobber an existing config (the router, or any per-contract file) without --force.
-  if (flags.force !== true) {
-    const clash = files.map((f) => resolve(outDir, f.path)).find((p) => existsSync(p));
-    if (clash !== undefined) {
-      return {
-        code: 2,
-        stdout: "",
-        stderr: `markdown-contract: refusing to overwrite ${clash} (pass --force to overwrite)`,
-      };
-    }
-  }
-
-  // Write every file under --out.
-  try {
-    for (const file of files) {
-      const abs = resolve(outDir, file.path);
-      mkdirSync(dirname(abs), { recursive: true });
-      writeFileSync(abs, file.content, "utf8");
-    }
-  } catch (err) {
-    return { code: 2, stdout: "", stderr: `markdown-contract: ${(err as Error).message}` };
-  }
+  const writeError = writeInitFiles(files, outDir, flags.force === true);
+  if (writeError) return writeError;
 
   // Self-check: load each root's contracts back and run them over that root (accept-by-construction).
   const selfCheckErrors = selfCheck(results, absRoots, scope);
@@ -407,6 +377,164 @@ function runInit(cwd: string, roots: string[], flags: InitFlags): CliResult {
   return selfCheckErrors.length > 0
     ? { code: 1, stdout: summary, stderr: multiRootWarning }
     : { code: 0, stdout: summary, stderr: multiRootWarning };
+}
+
+/** The parsed numeric `init` knobs, or the `code: 2` usage error for the first bad value. */
+interface InitNumericFlags {
+  depth?: number;
+  maxConstStringLength?: number;
+  minConstExamples?: number;
+}
+
+/**
+ * Parse `--depth` / `--max-const-len` / `--min-const-examples` (each an optional integer with a
+ * lower bound). Returns the parsed values, or the `code: 2` usage error for the first bad flag.
+ */
+function parseInitNumericFlags(flags: InitFlags): InitNumericFlags | { error: CliResult } {
+  const depth = parseIntFlag(
+    flags.depth,
+    0,
+    (raw) => `markdown-contract: --depth must be a non-negative integer (got '${raw}')`,
+  );
+  if ("error" in depth) return depth;
+  const maxLen = parseIntFlag(
+    flags["max-const-len"],
+    0,
+    (raw) => `markdown-contract: --max-const-len must be a non-negative integer (got '${raw}')`,
+  );
+  if ("error" in maxLen) return maxLen;
+  const minEx = parseIntFlag(
+    flags["min-const-examples"],
+    1,
+    (raw) => `markdown-contract: --min-const-examples must be an integer >= 1 (got '${raw}')`,
+  );
+  if ("error" in minEx) return minEx;
+  return {
+    depth: depth.value,
+    maxConstStringLength: maxLen.value,
+    minConstExamples: minEx.value,
+  };
+}
+
+/** Parse one optional integer flag with a lower bound, or the `code: 2` usage error `message(raw)`. */
+function parseIntFlag(
+  raw: string | undefined,
+  min: number,
+  message: (raw: string) => string,
+): { value: number | undefined } | { error: CliResult } {
+  if (raw === undefined) return { value: undefined };
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < min) {
+    return { error: { code: 2, stdout: "", stderr: message(raw) } };
+  }
+  return { value };
+}
+
+/** The `--glob` / `--include` / `--exclude` scope, as `validate` (undefined when empty). */
+function buildInitScope(flags: InitFlags): { include?: string[]; exclude?: string[] } {
+  const include = [...(flags.glob ?? []), ...(flags.include ?? [])];
+  const exclude = flags.exclude ?? [];
+  return {
+    include: include.length > 0 ? include : undefined,
+    exclude: exclude.length > 0 ? exclude : undefined,
+  };
+}
+
+/** The first non-existent root as a `code: 2` error, or `null` when every root exists. */
+function checkRootsExist(absRoots: string[]): CliResult | null {
+  for (const root of absRoots) {
+    if (!existsSync(root)) {
+      return { code: 2, stdout: "", stderr: `markdown-contract: path not found: ${root}` };
+    }
+  }
+  return null;
+}
+
+/**
+ * Resolve the write target and any multi-root warning. Default the target to the SINGLE inferred
+ * root, so the config, `contracts/`, and the root-relative globs share one base and
+ * `init <dir> --check` finds what `init <dir>` wrote from any cwd. A multi-root run has no single
+ * natural base, so it keeps the cwd fallback (with a warning). Explicit `--out` overrides both.
+ */
+function resolveInitOutDir(
+  flags: InitFlags,
+  cwd: string,
+  absRoots: string[],
+): { outDir: string; warning: string } {
+  const multiRootCwdFallback = !flags.out && absRoots.length > 1;
+  const outDir = flags.out
+    ? isAbsolute(flags.out)
+      ? flags.out
+      : resolve(cwd, flags.out)
+    : absRoots.length === 1
+      ? absRoots[0]!
+      : cwd;
+  const warning = multiRootCwdFallback
+    ? "init: multiple roots — writing the scaffold to the current directory (pass --out <dir> to choose)"
+    : "";
+  return { outDir, warning };
+}
+
+/** Assemble the `InferOptions` from the boolean flags, the parsed numeric knobs, and the scope. */
+function buildInferOptions(
+  flags: InitFlags,
+  scope: { include?: string[]; exclude?: string[] },
+  nums: InitNumericFlags,
+): InferOptions {
+  return {
+    meta: flags.meta === true,
+    relax: flags.relax === true,
+    inline: flags.inline === true,
+    inferBounds: flags["infer-bounds"] === true,
+    ...(nums.depth !== undefined ? { depth: nums.depth } : {}),
+    ...(nums.maxConstStringLength !== undefined
+      ? { maxConstStringLength: nums.maxConstStringLength }
+      : {}),
+    ...(nums.minConstExamples !== undefined ? { minConstExamples: nums.minConstExamples } : {}),
+    ...scope,
+  };
+}
+
+/** Infer one result per root, or the `code: 2` error result for a throw (e.g. a heading clash). */
+function inferAll(
+  absRoots: string[],
+  opts: InferOptions,
+): { results: InferResult[] } | { error: CliResult } {
+  try {
+    return { results: absRoots.map((root) => inferConfig(root, opts)) };
+  } catch (err) {
+    return {
+      error: { code: 2, stdout: "", stderr: `markdown-contract: ${(err as Error).message}` },
+    };
+  }
+}
+
+/**
+ * Write every inferred file under `outDir`, refusing to clobber an existing config (the router, or
+ * any per-contract file) without `--force`. Returns a `code: 2` error result on a clash or a write
+ * failure, or `null` on success.
+ */
+function writeInitFiles(files: InferredFile[], outDir: string, force: boolean): CliResult | null {
+  if (!force) {
+    const clash = files.map((f) => resolve(outDir, f.path)).find((p) => existsSync(p));
+    if (clash !== undefined) {
+      return {
+        code: 2,
+        stdout: "",
+        stderr: `markdown-contract: refusing to overwrite ${clash} (pass --force to overwrite)`,
+      };
+    }
+  }
+  try {
+    for (const file of files) {
+      const abs = resolve(outDir, file.path);
+      mkdirSync(dirname(abs), { recursive: true });
+      writeFileSync(abs, file.content, "utf8");
+    }
+  } catch (err) {
+    return { code: 2, stdout: "", stderr: `markdown-contract: ${(err as Error).message}` };
+  }
+  return null;
 }
 
 /**
