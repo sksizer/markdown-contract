@@ -85,8 +85,9 @@ conventions-layer delta.
 
 - Rewriting or expanding the conventions themselves — this is a relocation,
   not an editorial pass.
-- Moving `.claude/CLAUDE.md` (the worktree-per-effort instruction) — that file
-  is purely agent-operational.
+- The untracked local agent-config file under the `.claude/` settings directory
+  (the worktree-per-effort instruction) — purely agent-operational and not part
+  of the repo's committed docs.
 - Adding new convention categories to match the template's `CONVENTIONS.md`
   content (e.g. its error-handling notes, if any) — mirror structure now,
   reconcile content later if the template's file proves richer.
