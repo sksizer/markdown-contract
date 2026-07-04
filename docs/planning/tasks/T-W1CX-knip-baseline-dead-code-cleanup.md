@@ -1,17 +1,18 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-W1CX
 status: open/ready
-created: 2026-07-01
-last_reviewed: 2026-07-03
+created: '2026-07-01'
+last_reviewed: '2026-07-03'
 related:
-  - "[[M-0010 Quality Tooling]]"
+- '[[M-0010 Quality Tooling]]'
 tags:
-  - quality
+- quality
 need_human_review: false
 impact: medium
 complexity: small
+readiness_verified_at: '2026-07-04T00:46:18Z'
 ---
 # Delete dead code from the knip baseline (T-HIL6 follow-up)
 
