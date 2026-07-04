@@ -5,7 +5,7 @@ id: B-D16O
 tags:
 - docs
 - decisions
-last_reviewed: '2026-07-02'
+last_reviewed: '2026-07-04'
 ---
 
 # Reorder the D-0016 example suite so cross-cutting mechanics precede the per-node examples
