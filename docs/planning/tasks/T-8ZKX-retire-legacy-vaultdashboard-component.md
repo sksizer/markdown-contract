@@ -108,12 +108,18 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `git rm` of `VaultDashboard.vue` + `VaultDashboard.stories.ts`; existence check confirms both gone under `components/`, prototype typecheck and Storybook build pass.
+- AC-2: auto — `command grep -rn` under `apps/daemon-web-prototype` finds no import of `VaultStatusCard.vue`/`FindingsList.vue`/`RunSummary.vue` (zero code references to any deleted component); all three plus their stories deleted.
+- AC-3: auto — Storybook build's `storybook-static/index.json` lists exactly one dashboard entry, `Screens/Dashboard` (from `pages/index.stories.ts`); `Screens/VaultDashboard` is gone (`Screens/VaultDetail` is a distinct detail screen, not a dashboard).
+- AC-4: auto — prototype `bun run typecheck` (`nuxt prepare && vue-tsc --noEmit`) exits 0; `bun run lint:deps` (knip) exits 0 with no unused-file findings; repo quality gate `OK 6/6` baseline-gated (no new drift).
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The orphan set was clean and grep-confirmable: each leaf was imported only by the legacy `VaultDashboard.vue` (and its own story), so the removal was mechanical — nine files, 741 deletions, one comment reword, no code untangling.
+- `lint:deps` (knip) and the Storybook static build gave direct, automatable signal for AC-4 and AC-3 respectively, so no AC needed a human spot-check — the whole run auto-verified.
+- The `VaultSummary` "drop only if unreferenced" branch resolved cleanly to "keep": grep showed it still feeds the kit components / design tokens / mocks, so the live model was never at risk.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The implementation-ready gate failed on an imprecise prose path citation (`pages/index.stories.ts` vs the real `apps/daemon-web-prototype/pages/index.stories.ts`) in the non-required `## Discovery context` section — a one-word fix, but it forced a body edit outside the gate and nearly downshifted a materially-ready spec to needs-definition. `/sdlc:task-auto-define` should emit repo-root-relative paths in prose citations (or the path claim-resolver should treat a unique-basename suffix match as satisfied, or at least demote it from `disqualifier` to `warning`, in non-required narrative sections).
+- Retiring the components left stale references to the deleted files in the app's own docs — `apps/daemon-web-prototype/README.md` (the `components/` file-tree at lines ~74-77 and the variant-convention example table at ~124-127) and `apps/daemon-web-prototype/CONVENTIONS.md` (naming-convention examples at lines 19-22 citing `FindingsList`/`VaultStatusCard`/`RunSummary`/`VaultDashboard`). These are prose/examples, not imports, so no AC or knip caught them, and they sit outside this task's declared `## Files to touch`; a follow-up should freshen the README file-tree and repoint the convention examples to surviving components.
