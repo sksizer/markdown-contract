@@ -1,24 +1,24 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-R0OE
-status: in-progress
-created: 2026-07-04
+status: closed/done
+created: '2026-07-04'
 related:
-  - "[[M-0010 Quality Tooling]]"
-  - "[[T-79GV-vitest-coverage]]"
+- '[[M-0010 Quality Tooling]]'
+- '[[T-79GV-vitest-coverage]]'
 tags:
-  - quality
-  - coverage
-  - testing
+- quality
+- coverage
+- testing
 need_human_review: false
 impact: medium
 complexity: medium
 autonomy: autonomous/pr
-readiness_verified_at: 2026-07-04T19:21:51Z
-last_reviewed: 2026-07-04
+last_reviewed: '2026-07-04'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/237
+- https://github.com/sksizer/markdown-contract/pull/237
+completion_note: 'Shipped via #237.'
 ---
 # Raise coverage floors toward node-template parity (best effort on branches)
 
