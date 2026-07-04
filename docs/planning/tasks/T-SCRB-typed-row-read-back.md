@@ -2,7 +2,7 @@
 type: task
 schema_version: "5"
 id: T-SCRB
-status: in-progress
+status: closed/done
 created: 2026-06-30
 related:
   - "[[M-0011-structured-cells]]"
@@ -24,6 +24,7 @@ last_reviewed: 2026-07-03
 readiness_verified_at: 2026-07-03T03:22:32Z
 prs:
   - https://github.com/sksizer/markdown-contract/pull/192
+completion_note: "Shipped via #192."
 ---
 # Thread `z.output<cells>` to a typed `TableView` row read-back through `read()` and `Infer`
 
