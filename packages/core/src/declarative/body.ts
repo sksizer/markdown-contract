@@ -58,35 +58,48 @@ function compileNode(node: unknown, path: string): Spec {
   }
   const isOptional = node.optional === true;
   let spec: Spec;
-
   if ("oneOf" in node) {
-    const names = node.oneOf;
-    if (!Array.isArray(names) || names.length === 0 || !names.every((s) => typeof s === "string")) {
-      throw new DeclarativeError(`${path}.oneOf must be a non-empty list of section names`);
-    }
-    spec = oneOf(names as string[], sectionOpts(node, path));
+    spec = compileOneOf(node, path);
   } else if ("gap" in node) {
-    const g = node.gap;
-    spec = gap(isMap(g) ? { min: num(g.min), max: num(g.max) } : {});
+    spec = compileGap(node);
   } else if ("section" in node) {
-    const name = node.section;
-    if (typeof name !== "string") {
-      throw new DeclarativeError(`${path}.section must be a heading name (string)`);
-    }
-    const aliases = node.aliases;
-    if (
-      aliases !== undefined &&
-      (!Array.isArray(aliases) || !aliases.every((s) => typeof s === "string"))
-    ) {
-      throw new DeclarativeError(`${path}.aliases must be a list of alias spellings`);
-    }
-    const names = Array.isArray(aliases) ? [name, ...(aliases as string[])] : name;
-    spec = section(names, sectionOpts(node, path));
+    spec = compileSectionNode(node, path);
   } else {
     throw new DeclarativeError(`${path}: a body node needs one of section / oneOf / gap`);
   }
-
   return isOptional ? optional(spec) : spec;
+}
+
+/** Compile a `oneOf: [...]` node into a `oneOf(names, opts)` spec. */
+function compileOneOf(node: Record<string, unknown>, path: string): Spec {
+  const names = node.oneOf;
+  if (!Array.isArray(names) || names.length === 0 || !names.every((s) => typeof s === "string")) {
+    throw new DeclarativeError(`${path}.oneOf must be a non-empty list of section names`);
+  }
+  return oneOf(names as string[], sectionOpts(node, path));
+}
+
+/** Compile a `gap: { min?, max? }` node into a `gap(...)` spec. */
+function compileGap(node: Record<string, unknown>): Spec {
+  const g = node.gap;
+  return gap(isMap(g) ? { min: num(g.min), max: num(g.max) } : {});
+}
+
+/** Compile a `section: <name>` node (with optional `aliases`) into a `section(...)` spec. */
+function compileSectionNode(node: Record<string, unknown>, path: string): Spec {
+  const name = node.section;
+  if (typeof name !== "string") {
+    throw new DeclarativeError(`${path}.section must be a heading name (string)`);
+  }
+  const aliases = node.aliases;
+  if (
+    aliases !== undefined &&
+    (!Array.isArray(aliases) || !aliases.every((s) => typeof s === "string"))
+  ) {
+    throw new DeclarativeError(`${path}.aliases must be a list of alias spellings`);
+  }
+  const names = Array.isArray(aliases) ? [name, ...(aliases as string[])] : name;
+  return section(names, sectionOpts(node, path));
 }
 
 function sectionOpts(node: Record<string, unknown>, path: string): SectionOpts | undefined {

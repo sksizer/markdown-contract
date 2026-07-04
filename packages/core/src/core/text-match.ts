@@ -232,56 +232,71 @@ export interface TextFindingInput {
  * registry default (`error`) via `ctx.finding`. A satisfied entry yields no findings.
  */
 export function buildTextFindings(input: TextFindingInput): Finding[] {
-  const { kind, spec, match, scopeKey, scope, scopePos, ctx } = input;
-  const { count, positions } = match;
+  const { kind, spec } = input;
   const { min, max } = boundsFor(kind, spec);
-  const repr = specRepr(spec);
-  const note = spec.note ? ` — ${spec.note}` : "";
-  const out: Finding[] = [];
+  const derived: DerivedTextFinding = {
+    ...input,
+    min,
+    max,
+    repr: specRepr(spec),
+    note: spec.note ? ` — ${spec.note}` : "",
+  };
+  return kind === "requires" ? requiresFindings(derived) : forbidsFindings(derived);
+}
 
-  const countFinding = (expected: string): Finding =>
-    ctx.finding({
-      id: synthesizeTextId("count", scopeKey, spec),
-      level: spec.level,
-      message: `${repr} found ${count} times, expected ${expected}${note}`,
-      pos: scopePos,
-    });
+/** {@link TextFindingInput} plus the bound / message pieces both branches share. */
+interface DerivedTextFinding extends TextFindingInput {
+  min: number;
+  max: number | undefined;
+  repr: string;
+  note: string;
+}
 
-  if (kind === "requires") {
-    if (count < min) {
-      if (min === 1) {
-        out.push(
-          ctx.finding({
-            id: synthesizeTextId("requires", scopeKey, spec),
-            level: spec.level,
-            message: `required phrase ${repr} not found in ${scopeLabel(scopeKey, scope)}${note}`,
-            pos: scopePos,
-          }),
-        );
-      } else {
-        out.push(countFinding(`at least ${min}`));
-      }
-    } else if (max !== undefined && count > max) {
-      out.push(countFinding(`at most ${max}`));
+/** A `text/count` finding (`… found N times, expected …`), pinned at the scope heading. */
+function countFinding(d: DerivedTextFinding, expected: string): Finding {
+  return d.ctx.finding({
+    id: synthesizeTextId("count", d.scopeKey, d.spec),
+    level: d.spec.level,
+    message: `${d.repr} found ${d.match.count} times, expected ${expected}${d.note}`,
+    pos: d.scopePos,
+  });
+}
+
+/** The `requires` findings: a `text/requires` miss (`min: 1`), else a `text/count` bound violation. */
+function requiresFindings(d: DerivedTextFinding): Finding[] {
+  const count = d.match.count;
+  if (count < d.min) {
+    if (d.min === 1) {
+      return [
+        d.ctx.finding({
+          id: synthesizeTextId("requires", d.scopeKey, d.spec),
+          level: d.spec.level,
+          message: `required phrase ${d.repr} not found in ${scopeLabel(d.scopeKey, d.scope)}${d.note}`,
+          pos: d.scopePos,
+        }),
+      ];
     }
-  } else {
-    // forbids — max defaults to 0
-    if (count > (max ?? 0)) {
-      if ((max ?? 0) === 0) {
-        for (const pos of positions) {
-          out.push(
-            ctx.finding({
-              id: synthesizeTextId("forbids", scopeKey, spec),
-              level: spec.level,
-              message: `forbidden phrase ${repr} present${note}`,
-              pos,
-            }),
-          );
-        }
-      } else {
-        out.push(countFinding(`at most ${max}`));
-      }
-    }
+    return [countFinding(d, `at least ${d.min}`)];
   }
-  return out;
+  if (d.max !== undefined && count > d.max) {
+    return [countFinding(d, `at most ${d.max}`)];
+  }
+  return [];
+}
+
+/** The `forbids` findings: a `text/forbids` per hit (`max: 0`), else a `text/count` overflow. */
+function forbidsFindings(d: DerivedTextFinding): Finding[] {
+  const max = d.max ?? 0;
+  if (d.match.count <= max) return [];
+  if (max === 0) {
+    return d.match.positions.map((pos) =>
+      d.ctx.finding({
+        id: synthesizeTextId("forbids", d.scopeKey, d.spec),
+        level: d.spec.level,
+        message: `forbidden phrase ${d.repr} present${d.note}`,
+        pos,
+      }),
+    );
+  }
+  return [countFinding(d, `at most ${max}`)];
 }

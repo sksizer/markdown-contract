@@ -94,6 +94,22 @@ function toPosix(p: string): string {
   return sep === "/" ? p : p.split(sep).join("/");
 }
 
+/** Whether `posixRel` survives the optional global include/exclude pre-filter (AND-narrowing). */
+function passesPreFilter(
+  posixRel: string,
+  include: ReturnType<typeof picomatch> | null,
+  exclude: ReturnType<typeof picomatch> | null,
+): boolean {
+  if (exclude && exclude(posixRel)) return false;
+  if (include && !include(posixRel)) return false;
+  return true;
+}
+
+/** Index of the FIRST compiled rule whose include matches and exclude does not, or -1 when none. */
+function firstMatchingRule(rules: CompiledRule[], posixRel: string): number {
+  return rules.findIndex((r) => r.include(posixRel) && !(r.exclude && r.exclude(posixRel)));
+}
+
 /**
  * Recursively collect every file under `root`, returned as paths RELATIVE to `root`
  * with POSIX separators (so they feed both the glob matchers and `ctx.path`). The
@@ -172,9 +188,8 @@ export function runCorpus(
 
   for (const rel of files) {
     const posixRel = toPosix(rel);
-    if (exclude && exclude(posixRel)) continue;
-    if (include && !include(posixRel)) continue;
-    const idx = rules.findIndex((r) => r.include(posixRel) && !(r.exclude && r.exclude(posixRel)));
+    if (!passesPreFilter(posixRel, include, exclude)) continue;
+    const idx = firstMatchingRule(rules, posixRel);
     if (idx === -1) continue;
     matchedByRule[idx] = (matchedByRule[idx] ?? 0) + 1;
     filesMatched += 1;

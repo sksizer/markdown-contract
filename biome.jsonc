@@ -19,15 +19,15 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        // Per-function cognitive-complexity gate (T-0MVN). Enforced at "error" so
-        // `biome ci` blocks NEW regressions, with the ceiling pinned to 46 = the
-        // current maximum in the codebase (declarative/text.ts). 16 functions
-        // already exceed biome's default of 15; they are tracked for a follow-up
-        // refactor and deliberately NOT touched in this behavior-preserving
-        // reformat — the gate stops the worst function from getting worse.
+        // Per-function cognitive-complexity gate (T-0MVN, ratcheted by T-D8TE).
+        // Enforced at "error" so `biome ci` blocks regressions, with the ceiling
+        // at biome's recommended value of 15. The few parser/inference-core
+        // functions that genuinely read best as a single flat dispatch carry a
+        // scoped `biome-ignore lint/complexity/noExcessiveCognitiveComplexity`
+        // with a per-function rationale.
         "noExcessiveCognitiveComplexity": {
           "level": "error",
-          "options": { "maxAllowedComplexity": 46 }
+          "options": { "maxAllowedComplexity": 15 }
         }
       },
       // noExplicitAny (104 sites) and noNonNullAssertion (185 sites) are pervasive
