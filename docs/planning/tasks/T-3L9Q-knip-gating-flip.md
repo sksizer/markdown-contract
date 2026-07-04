@@ -17,6 +17,7 @@ tags:
 need_human_review: false
 impact: medium
 complexity: medium
+autonomy: autonomous/pr
 ---
 # Flip knip from report-only to a blocking CI gate
 

@@ -16,6 +16,7 @@ tags:
 need_human_review: false
 impact: medium
 complexity: medium
+autonomy: autonomous/pr
 ---
 # Fix noNonNullAssertion warnings with real narrowing and promote the rule
 

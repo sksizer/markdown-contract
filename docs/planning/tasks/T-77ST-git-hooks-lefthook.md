@@ -15,6 +15,7 @@ need_human_review: false
 impact: medium
 complexity: small
 readiness_verified_at: '2026-07-04T00:46:14Z'
+autonomy: autonomous/pr
 ---
 # Add lefthook pre-commit hooks and EditorConfig
 

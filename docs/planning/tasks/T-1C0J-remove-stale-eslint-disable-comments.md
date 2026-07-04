@@ -1,22 +1,23 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-1C0J
 status: open/ready
-created: 2026-07-02
-last_reviewed: 2026-07-03
+created: '2026-07-02'
+last_reviewed: '2026-07-03'
 related:
-  - "[[M-0010 Quality Tooling]]"
-  - "[[T-0MVN-biome-lint-format]]"
+- '[[M-0010 Quality Tooling]]'
+- '[[T-0MVN-biome-lint-format]]'
 tags:
-  - quality
-  - lint
-  - cleanup
-  - biome
-  - tech-debt
+- quality
+- lint
+- cleanup
+- biome
+- tech-debt
 need_human_review: false
 impact: low
 complexity: small
+autonomy: autonomous/pr
 ---
 # Remove stale eslint-disable comments from test fixtures now that Biome is the linter
 
