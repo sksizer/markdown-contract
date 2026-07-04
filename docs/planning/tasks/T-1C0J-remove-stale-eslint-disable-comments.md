@@ -18,6 +18,7 @@ need_human_review: false
 impact: low
 complexity: small
 autonomy: autonomous/pr
+readiness_verified_at: '2026-07-04T07:39:14Z'
 ---
 # Remove stale eslint-disable comments from test fixtures now that Biome is the linter
 
