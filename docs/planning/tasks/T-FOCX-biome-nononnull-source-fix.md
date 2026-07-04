@@ -163,12 +163,17 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `bunx biome lint --only=style/noNonNullAssertion --max-diagnostics=none .` reports 0 findings (checked 338 files, 0 warnings/errors for the rule).
+- AC-2: auto — `biome.jsonc` has `"noNonNullAssertion": "error"`; `grep -rn "biome-ignore lint/style/noNonNullAssertion"` across `packages/` and `apps/` returns 0 (well under the ≤4 budget; none needed in `structure.ts`).
+- AC-3: auto — `sdlc quality run` reports `OK 5/5` (core:build, core:typecheck, core:lint, core:test with 686 tests, core:package-check).
+- AC-4: auto — `grep` finds 0 per-fixture `byName` copies under `packages/core/tests/fixtures/infer/`; one shared throwing `byName` lives in `packages/core/tests/expect.ts`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The task's sub-pattern census (per-file, per-idiom `Map.get()!` / length-guarded `arr[0]!` / cursor-loop / parallel-array breakdown) made the 31-site production sweep mechanical rather than exploratory — the implementer followed the plan file-by-file with `core:test` after each.
+- The `expectDefined` (asserts signature) + `first` + throwing `byName` helper collapsed the bulk of the ~167 test/fixture sites, and the `def()` upgrade in `infer.test.ts` folded ~50 of its 78 on its own.
+- Baseline-gated `sdlc quality run --diff-against-baseline` confirmed zero new drift in one command, cleanly separating this branch's work from pre-existing state.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Honest inline `if (x === undefined)` guards in `structure.ts` pushed `matchLevel`/`checkStrict` past the `noExcessiveCognitiveComplexity` error ceiling (46), which failed `biome ci` even though the noNonNullAssertion-only check was clean — a rule-interaction the spec only soft-referenced via [[T-D8TE-ratchet-biome-complexity-ceiling]]. Resolved mid-flight with the `mustGet` invariant helper (narrows without adding a branch), which the Approach had anticipated. Gap: when a lint-source fix trades findings in one rule for control-flow that can trip an interacting rule's *error* ceiling, task-work has no pre-flight signal for it — a "run the full gate, not just the targeted rule" note in the Approach (or a scan of co-located error-level rules on the touched files) would surface the clash before implementation instead of during it.
