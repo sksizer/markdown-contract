@@ -14,6 +14,7 @@ need_human_review: false
 impact: low
 complexity: small
 autonomy: autonomous/pr
+readiness_verified_at: '2026-07-04T19:21:54Z'
 ---
 # Extract engineering conventions into a human-facing CONVENTIONS.md
 
