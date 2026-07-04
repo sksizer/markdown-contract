@@ -137,12 +137,19 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `bun run lint:deps` exits 0 on the committed clean tree (re-run after each triage edit).
+- AC-2: agent-manual — added a scratch `export const __knipGateProbe` to `routes.ts`, confirmed `bun run lint:deps` exited 1 (`Unused exports (1)`), then reverted; the knip step in `knip.yml` no longer carries `continue-on-error` (remaining matches are comment text only, verified with `grep -nE '^\s*continue-on-error:'` → none).
+- AC-3: auto — `grep lint:deps sdlc.yaml` confirms `bun run lint:deps` is in `quality_checks`.
+- AC-4: auto — `git diff origin/main..HEAD -- .github/workflows/ci.yml` is empty; the `moon run` list is untouched.
+- AC-5: auto — `bunx moon run core:build core:typecheck core:lint core:test` exits 0 (686 tests pass); the baseline-gated `sdlc quality run` also reports `OK 5/5`.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The deterministic readiness gate, start-commit, and baseline capture all ran first-try with no manual intervention.
+- `knip.json`'s own configuration hints named the exact redundant entry patterns to drop, so that triage was mechanical.
+- Baseline-gating the quality run cleanly subtracted the pre-existing `packages/core` biome-warning noise, so the gate flagged only this branch's (zero) new drift.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The task's written 2026-07-03 inventory had already drifted from the live `bun run lint:deps` output (the `nuxt` findings it listed were gone; the real set was smaller) — the implementer had to re-run and re-triage against reality. The Approach's "re-run to refresh the inventory" step anticipated this, so it cost only a re-run, not a stall. No automation change needed beyond keeping point-in-time inventories advisory.
+- Step 7's baseline-gated `quality run` failed first with `baseline not found` because the baseline was captured under the main repo's `.sdlc/quality-baselines/` while the gate, run from the worktree, defaulted to the worktree's dir — needed an explicit `--baseline-dir` pointing at the main repo. task-work Step 7 could pass `--baseline-dir <main-repo>/.sdlc/quality-baselines` by default so the worktree-run gate always finds the Step 3a baseline without operator intervention.
