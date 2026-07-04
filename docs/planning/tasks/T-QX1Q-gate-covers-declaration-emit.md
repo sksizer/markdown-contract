@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-QX1Q
-status: open/ready
+status: in-progress
 created: '2026-07-04'
 related:
 - T-W1CX-knip-baseline-dead-code-cleanup
@@ -12,6 +12,7 @@ impact: medium
 complexity: small
 autonomy: autonomous/pr
 readiness_verified_at: '2026-07-04T15:51:38Z'
+last_reviewed: '2026-07-04'
 ---
 # Make the quality gate catch .d.ts declaration-emit regressions that tsc --noEmit misses
 
@@ -123,3 +124,19 @@ already-correct `quality_checks` coverage is asserted and kept, not re-added.
 Spawned by /sdlc:spawn-task-pr on 2026-07-04 UTC from
 [[T-W1CX-knip-baseline-dead-code-cleanup]] in
 git@github.com:sksizer/markdown-contract.git.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
