@@ -14,8 +14,9 @@
  *   - a parse → stringify → re-parse round-trip preserving the dialect constructs
  *     (the D-0002 round-trip proof).
  *
- * It also reads a real provenance document (`docs/planning/capabilities/C-0004…md`) to
- * prove the projection holds on a genuine entity file, not just inline snippets.
+ * It also reads a vendored snapshot of a real provenance document (the C-0004
+ * capability doc, under `tests/fixtures/projection/`) to prove the projection holds
+ * on a genuine entity file, not just inline snippets.
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -439,13 +440,12 @@ describe("dialect round-trip (D-0002 proof)", () => {
 
 describe("real document (provenance entity file)", () => {
   test("the C-0004 capability doc projects: H1 title, H2 sections, frontmatter, ^summary", () => {
-    // docs/planning lives at the workspace root, not inside packages/core, so
-    // this real-document fixture climbs out of the package (src/core → package
-    // root → packages/ → workspace root). See T-WKSP post-mortem: a follow-up may
-    // vendor this doc as a package-local fixture to restore package isolation.
+    // A byte-for-byte snapshot of the C-0004 capability doc, vendored package-local
+    // under tests/fixtures/projection/ so the suite stays self-contained (no climb
+    // out of packages/core to the workspace-root docs/planning tree — T-1GIL).
     const path = fileURLToPath(
       new URL(
-        "../../../../docs/planning/capabilities/C-0004-dialect-aware-projection.md",
+        "../../tests/fixtures/projection/C-0004-dialect-aware-projection.md",
         import.meta.url,
       ),
     );
