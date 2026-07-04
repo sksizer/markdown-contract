@@ -2,9 +2,9 @@
 type: task
 schema_version: '5'
 id: T-D8TE
-status: open/ready
+status: in-progress
 created: '2026-07-02'
-last_reviewed: '2026-07-03'
+last_reviewed: '2026-07-04'
 related:
 - '[[M-0010 Quality Tooling]]'
 - '[[T-0MVN-biome-lint-format]]'
@@ -100,3 +100,19 @@ ceiling; behavior is unchanged (the full test suite stays green).
 Captured from the [[T-0MVN-biome-lint-format]] post-mortem: the ceiling was set to today's
 maximum (46) as a deliberate regression-gate rather than refactoring 16 functions inside a
 behavior-preserving reformat PR.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
