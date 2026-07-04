@@ -204,6 +204,107 @@ describe("gap({min,max}) bounds", () => {
   });
 });
 
+describe("repeatable sections (T-1TA2)", () => {
+  test("AC-1 — a declared-repeatable heading repeated as peers validates cleanly", () => {
+    const c = contract({
+      body: sections({ order: "none", allowUnknown: true }, [
+        section("Entry", { repeatable: true }),
+      ]),
+    });
+    const source = ["## Entry", "", "a", "", "## Entry", "", "b", "", "## Entry", "", "c", ""].join(
+      "\n",
+    );
+    // No structure/duplicate-section, no structure/key-collision — the peers are the collection.
+    expect(c.validate(source, ctx).findings).toEqual([]);
+  });
+
+  test("AC-3 — the SAME heading repeated but NOT declared repeatable still errors", () => {
+    const c = contract({
+      body: sections({ order: "none", allowUnknown: true }, [section("Entry")]),
+    });
+    const source = ["## Entry", "", "a", "", "## Entry", "", "b", ""].join("\n");
+    expect(ids(c.validate(source, ctx).findings)).toEqual(["structure/duplicate-section"]);
+  });
+
+  test("min/max — too few occurrences → structure/repeat-count", () => {
+    const c = contract({
+      body: sections({ order: "none", allowUnknown: true }, [
+        section("Entry", { repeatable: true, min: 2, max: 3 }),
+      ]),
+    });
+    const one = ["## Entry", "", "a", ""].join("\n");
+    const findings = c.validate(one, ctx).findings;
+    expect(ids(findings)).toEqual(["structure/repeat-count"]);
+    expect(findings[0]?.level).toBe("error");
+    expect(findings[0]?.message).toContain("at least 2");
+  });
+
+  test("min/max — too many occurrences → structure/repeat-count (pinned at the surplus)", () => {
+    const c = contract({
+      body: sections({ order: "none", allowUnknown: true }, [
+        section("Entry", { repeatable: true, min: 2, max: 3 }),
+      ]),
+    });
+    const four = [
+      "## Entry",
+      "",
+      "## Entry",
+      "",
+      "## Entry",
+      "",
+      "## Entry", // the 4th — one past max
+      "",
+    ].join("\n");
+    const findings = c.validate(four, ctx).findings;
+    expect(ids(findings)).toEqual(["structure/repeat-count"]);
+    expect(findings[0]?.message).toContain("at most 3");
+    expect(findings[0]?.pos?.line).toBe(7); // the 4th ## Entry
+  });
+
+  test("min/max — a count within [min,max] passes", () => {
+    const c = contract({
+      body: sections({ order: "none", allowUnknown: true }, [
+        section("Entry", { repeatable: true, min: 2, max: 3 }),
+      ]),
+    });
+    const two = ["## Entry", "", "## Entry", ""].join("\n");
+    expect(c.validate(two, ctx).findings).toEqual([]);
+  });
+
+  test("a required repeatable slot that is entirely absent is section-missing, not repeat-count", () => {
+    const c = contract({
+      body: sections({ order: "none", allowUnknown: true }, [
+        section("Title"),
+        section("Entry", { repeatable: true, min: 2 }),
+      ]),
+    });
+    expect(ids(c.validate("## Title\n\nx\n", ctx).findings)).toEqual(["structure/section-missing"]);
+  });
+
+  test("consecutive repeats under order: strict do not misfire structure/section-order", () => {
+    const c = contract({
+      body: sections({ order: "strict", allowUnknown: false }, [
+        section("Title"),
+        section("Entry", { repeatable: true }),
+        section("End"),
+      ]),
+    });
+    const source = ["## Title", "", "## Entry", "", "## Entry", "", "## End", ""].join("\n");
+    expect(c.validate(source, ctx).findings).toEqual([]);
+  });
+
+  test("repeats under order: recognized-relative stay in order", () => {
+    const c = contract({
+      body: sections({ order: "recognized-relative", allowUnknown: true }, [
+        section("Title"),
+        section("Entry", { repeatable: true }),
+      ]),
+    });
+    const source = ["## Title", "", "## Entry", "", "## Entry", ""].join("\n");
+    expect(c.validate(source, ctx).findings).toEqual([]);
+  });
+});
+
 describe("duplicate-section pins the later occurrence", () => {
   test("a repeated sibling heading flags the second", () => {
     const c = contract({

@@ -601,3 +601,101 @@ describe("AC-1 — the model is additive; reading doc never changes findings", (
     expect(findingsAfterDoc).toBe(findingsWithoutDoc);
   });
 });
+
+describe("repeatable slot → an array in the model (T-1TA2, AC-2)", () => {
+  test("a prose repeatable slot binds an array of SectionViews, positionally indexable", () => {
+    const c = contract({
+      body: sections({ order: "none", allowUnknown: true }, [
+        section("Entry", { repeatable: true }),
+      ]),
+    });
+    const doc = c.read(
+      ["## Entry", "", "first", "", "## Entry", "", "second", "", "## Entry", "", "third", ""].join(
+        "\n",
+      ),
+      PATH,
+    );
+    const body = doc.body as any;
+    // Both dual-key paths reach the same array; length N; positionally indexable.
+    expect(Array.isArray(body.entry)).toBe(true);
+    expect(body.entry).toBe(body["Entry"]);
+    expect(body.entry).toHaveLength(3);
+    expect(body.entry[0].name).toBe("Entry");
+    expect(body.entry[0].text()).toBe("first");
+    expect(body.entry[1].text()).toBe("second");
+    expect(body.entry[2].text()).toBe("third");
+    // `.section(name)` keeps returning the FIRST occurrence's SectionView (byExact first-wins).
+    expect(body.section("Entry").text()).toBe("first");
+    // The repeated declared heading is NOT an unknown.
+    expect(body.unknown).toEqual([]);
+  });
+
+  test("a sole content:table() repeatable slot binds an array of promoted TableViews", () => {
+    const c = contract({
+      body: sections({ order: "none", allowUnknown: true }, [
+        section("Release", { repeatable: true, content: table({ columns: ["Version", "Date"] }) }),
+      ]),
+    });
+    const doc = c.read(
+      [
+        "## Release",
+        "",
+        "| Version | Date       |",
+        "| ------- | ---------- |",
+        "| 1.0     | 2026-01-01 |",
+        "",
+        "## Release",
+        "",
+        "| Version | Date       |",
+        "| ------- | ---------- |",
+        "| 2.0     | 2026-02-02 |",
+        "",
+      ].join("\n"),
+      PATH,
+    );
+    const body = doc.body as any;
+    expect(body.release).toHaveLength(2);
+    expect(body.release[0].kind).toBe("table");
+    expect(body.release[0].rows[0].Version).toBe("1.0");
+    expect(body.release[1].rows[0].Version).toBe("2.0");
+  });
+
+  test("a single occurrence of a repeatable slot is still an array of length 1", () => {
+    const c = contract({
+      body: sections({ order: "none", allowUnknown: true }, [
+        section("Entry", { repeatable: true }),
+      ]),
+    });
+    const doc = c.read("## Entry\n\nonly\n", PATH);
+    const body = doc.body as any;
+    expect(Array.isArray(body.entry)).toBe(true);
+    expect(body.entry).toHaveLength(1);
+    expect(body.entry[0].text()).toBe("only");
+  });
+});
+
+// ── Type-level assertions (AC-2, repeatable side) ─────────────────────────────────────
+// Compile-time proof that a `repeatable: true` slot binds an ARRAY of the inner value — a
+// `SectionView[]` for a prose slot, a `TableView<Row>[]` for a promoted-table slot — through both
+// `read()` and `Infer`. `Equal` / `Expect` / `Resolve` are defined above.
+const repeatProseSpec = contract({
+  body: sections({ order: "none", allowUnknown: true }, [section("Entry", { repeatable: true })]),
+});
+type ReadEntry = ReturnType<typeof repeatProseSpec.read>["body"]["Entry"];
+type InferEntry = Infer<typeof repeatProseSpec>["body"]["Entry"];
+type _AC2_readProseArray = Expect<Equal<ReadEntry, SectionView[]>>;
+type _AC2_inferProseArray = Expect<Equal<InferEntry, SectionView[]>>;
+
+const repeatTableSpec = contract({
+  body: sections({ order: "none", allowUnknown: true }, [
+    section("Release", { repeatable: true, content: table({ columns: ["Version", "Date"] }) }),
+  ]),
+});
+type ReadRelease = ReturnType<typeof repeatTableSpec.read>["body"]["Release"];
+type _AC2_readTableArray = Expect<Equal<ReadRelease, TableView<Record<string, string>>[]>>;
+// A non-repeatable prose slot still binds a single `SectionView` (not an array) — no regression.
+const nonRepeatSpec = contract({
+  body: sections({ order: "none", allowUnknown: true }, [section("Entry")]),
+});
+type NonRepeatEntry = ReturnType<typeof nonRepeatSpec.read>["body"]["Entry"];
+type _AC2_singleStillScalar = Expect<Equal<NonRepeatEntry, SectionView>>;
