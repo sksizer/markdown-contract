@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-UDPO
-status: in-progress
+status: closed/done
 created: '2026-07-03'
 related:
 - '[[M-0008-single-exec-distribution]]'
@@ -26,8 +26,10 @@ need_human_review: false
 impact: high
 complexity: medium
 autonomy: supervised
-readiness_verified_at: '2026-07-03T23:38:41Z'
-last_reviewed: '2026-07-03'
+last_reviewed: '2026-07-04'
+prs:
+- https://github.com/sksizer/markdown-contract/pull/205
+completion_note: 'Shipped via #205.'
 ---
 # Extract the M-0008 single-binary prototype into examples/single-binary — minimal two-faces example
 
