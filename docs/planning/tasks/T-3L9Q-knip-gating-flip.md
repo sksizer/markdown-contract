@@ -1,26 +1,26 @@
 ---
 type: task
-schema_version: "5"
+schema_version: '5'
 id: T-3L9Q
-status: in-progress
-created: 2026-07-03
+status: closed/done
+created: '2026-07-03'
 related:
-  - "[[M-0010 Quality Tooling]]"
-  - "[[T-HIL6-knip-dead-code]]"
-  - "[[T-W1CX-knip-baseline-dead-code-cleanup]]"
+- '[[M-0010 Quality Tooling]]'
+- '[[T-HIL6-knip-dead-code]]'
+- '[[T-W1CX-knip-baseline-dead-code-cleanup]]'
 depends_on:
-  - "[[T-W1CX]]"
+- '[[T-W1CX]]'
 tags:
-  - quality
-  - knip
-  - ci
+- quality
+- knip
+- ci
 need_human_review: false
 impact: medium
 complexity: medium
-readiness_verified_at: 2026-07-04T02:06:01Z
-last_reviewed: 2026-07-04
+last_reviewed: '2026-07-04'
 prs:
-  - https://github.com/sksizer/markdown-contract/pull/213
+- https://github.com/sksizer/markdown-contract/pull/213
+completion_note: 'Shipped via #213.'
 ---
 # Flip knip from report-only to a blocking CI gate
 
