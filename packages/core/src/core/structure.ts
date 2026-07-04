@@ -61,34 +61,35 @@ function unwrap(spec: Spec): { inner: SectionSpec | OneOfSpec | GapSpec; optiona
   return { inner: spec, optional: false };
 }
 
+/** Build a slot from a section/oneOf's shared shape — names, optionality, and the repeatable bounds. */
+function makeSlot(
+  specIdx: number,
+  names: string[],
+  optional: boolean,
+  opts: SectionOpts | undefined,
+): Slot {
+  return {
+    specIdx,
+    names,
+    optional: optional || opts?.optional === true,
+    repeatable: opts?.repeatable === true,
+    ...(opts?.min !== undefined ? { min: opts.min } : {}),
+    ...(opts?.max !== undefined ? { max: opts.max } : {}),
+    opts,
+  };
+}
+
 /** Project the declared `Spec[]` into the ordered list of section/oneOf slots (gaps excluded). */
 function slotsOf(specs: readonly Spec[]): Slot[] {
   const slots: Slot[] = [];
   specs.forEach((spec, specIdx) => {
     const { inner, optional } = unwrap(spec);
-    if (inner.kind === "gap") return;
     if (inner.kind === "section") {
       const s = inner as SectionSpec;
-      slots.push({
-        specIdx,
-        names: s.names,
-        optional: optional || s.opts?.optional === true,
-        repeatable: s.opts?.repeatable === true,
-        ...(s.opts?.min !== undefined ? { min: s.opts.min } : {}),
-        ...(s.opts?.max !== undefined ? { max: s.opts.max } : {}),
-        opts: s.opts,
-      });
+      slots.push(makeSlot(specIdx, s.names, optional, s.opts));
     } else if (inner.kind === "oneOf") {
       const o = inner as OneOfSpec;
-      slots.push({
-        specIdx,
-        names: o.names,
-        optional: optional || o.opts?.optional === true,
-        repeatable: o.opts?.repeatable === true,
-        ...(o.opts?.min !== undefined ? { min: o.opts.min } : {}),
-        ...(o.opts?.max !== undefined ? { max: o.opts.max } : {}),
-        opts: o.opts,
-      });
+      slots.push(makeSlot(specIdx, o.names, optional, o.opts));
     }
   });
   return slots;
@@ -168,28 +169,34 @@ function checkRepeatBounds(nodes: SectionNode[], slots: Slot[], ctx: Ctx, out: F
   for (const slot of slots) {
     if (!slot.repeatable) continue;
     if (slot.min === undefined && slot.max === undefined) continue;
-    const matches = nodes.filter((n) => slot.names.includes(n.name));
-    const count = matches.length;
-    const label = slot.names.join("’ / ‘");
-    if (slot.max !== undefined && count > slot.max) {
-      const offender = matches[slot.max]; // the first occurrence past the bound
-      out.push(
-        ctx.finding({
-          id: "structure/repeat-count",
-          message: `repeatable section ‘${label}’ occurs ${count} times; expected at most ${slot.max}`,
-          ...(offender ? { pos: offender.pos } : {}),
-        }),
-      );
-    } else if (slot.min !== undefined && count > 0 && count < slot.min) {
-      const first = matches[0];
-      out.push(
-        ctx.finding({
-          id: "structure/repeat-count",
-          message: `repeatable section ‘${label}’ occurs ${count} times; expected at least ${slot.min}`,
-          ...(first ? { pos: first.pos } : {}),
-        }),
-      );
-    }
+    emitRepeatBound(slot, nodes, ctx, out);
+  }
+}
+
+/** Emit `structure/repeat-count` for one repeatable slot whose occurrence count falls outside its
+ *  declared `min` / `max`. `max` bites at the first surplus occurrence; `min` bites once present. */
+function emitRepeatBound(slot: Slot, nodes: SectionNode[], ctx: Ctx, out: Finding[]): void {
+  const matches = nodes.filter((n) => slot.names.includes(n.name));
+  const count = matches.length;
+  const label = slot.names.join("’ / ‘");
+  if (slot.max !== undefined && count > slot.max) {
+    const offender = matches[slot.max]; // the first occurrence past the bound
+    out.push(
+      ctx.finding({
+        id: "structure/repeat-count",
+        message: `repeatable section ‘${label}’ occurs ${count} times; expected at most ${slot.max}`,
+        ...(offender ? { pos: offender.pos } : {}),
+      }),
+    );
+  } else if (slot.min !== undefined && count > 0 && count < slot.min) {
+    const first = matches[0];
+    out.push(
+      ctx.finding({
+        id: "structure/repeat-count",
+        message: `repeatable section ‘${label}’ occurs ${count} times; expected at least ${slot.min}`,
+        ...(first ? { pos: first.pos } : {}),
+      }),
+    );
   }
 }
 

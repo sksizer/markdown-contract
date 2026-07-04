@@ -321,8 +321,7 @@ function sectionGroup(nodes: SectionNode[], seq: SectionSeq | undefined): Sectio
   // (a `SectionView`, or a promoted `TableView`) collected in document order under the slot's
   // dual-key key. The first occurrence establishes the key and position; later peers append. A
   // non-repeatable slot binds a single value, exactly as before.
-  type Element = SectionView | TableView;
-  const declaredKeyed: { name: string; value: Element | Element[] }[] = [];
+  const declaredKeyed: { name: string; value: SectionElement | SectionElement[] }[] = [];
   const repeatAt = new Map<string, number>(); // exact heading name → index into declaredKeyed
   const unknown: SectionView[] = [];
   // Exact-name → SectionView, over EVERY section (declared and unknown) for `.section(name)`.
@@ -335,18 +334,8 @@ function sectionGroup(nodes: SectionNode[], seq: SectionSeq | undefined): Sectio
       unknown.push(view);
       continue;
     }
-    const element: Element = promotedTable(view, opts) ?? view;
-    if (opts?.repeatable === true) {
-      const at = repeatAt.get(node.name);
-      if (at === undefined) {
-        repeatAt.set(node.name, declaredKeyed.length);
-        declaredKeyed.push({ name: node.name, value: [element] });
-      } else {
-        (declaredKeyed[at]!.value as Element[]).push(element);
-      }
-    } else {
-      declaredKeyed.push({ name: node.name, value: element });
-    }
+    const element: SectionElement = promotedTable(view, opts) ?? view;
+    bindDeclaredElement(declaredKeyed, repeatAt, node.name, element, opts?.repeatable === true);
   }
 
   // Start from a bare object so its OWN enumerable keys are only the dual-key section keys.
@@ -381,6 +370,34 @@ function sectionGroup(nodes: SectionNode[], seq: SectionSeq | undefined): Sectio
   }
 
   return group;
+}
+
+/** The value a declared section binds: a `SectionView`, or the `TableView` it promotes to. */
+type SectionElement = SectionView | TableView;
+
+/**
+ * Append `element` to the declared-keyed list under `name`. A repeatable slot (T-1TA2) gathers its
+ * occurrences into one array — the first occurrence establishes the key and position, later peers
+ * append; a non-repeatable slot binds the single value.
+ */
+function bindDeclaredElement(
+  declaredKeyed: { name: string; value: SectionElement | SectionElement[] }[],
+  repeatAt: Map<string, number>,
+  name: string,
+  element: SectionElement,
+  repeatable: boolean,
+): void {
+  if (!repeatable) {
+    declaredKeyed.push({ name, value: element });
+    return;
+  }
+  const at = repeatAt.get(name);
+  if (at === undefined) {
+    repeatAt.set(name, declaredKeyed.length);
+    declaredKeyed.push({ name, value: [element] });
+  } else {
+    (declaredKeyed[at]!.value as SectionElement[]).push(element);
+  }
 }
 
 /**
