@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-64SI
-status: open/ready
+status: in-progress
 created: '2026-07-02'
 related:
 - '[[M-0003-config-inference]]'
@@ -19,6 +19,7 @@ impact: medium
 complexity: small
 autonomy: supervised
 readiness_verified_at: '2026-07-04T00:46:23Z'
+last_reviewed: '2026-07-04'
 ---
 # init defaults the scaffold write to the single inferred root, not cwd
 
@@ -133,3 +134,19 @@ keeps the cwd default with a warning.
   verifying [[M-0003-config-inference]]: a fresh `init <dir> --meta` → `init <dir>
   --check` round-trip failed with "no config to --check" until the scaffold was moved
   into `<dir>` by hand.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
