@@ -6,7 +6,7 @@ tags:
 - api
 - consumption
 - projection
-last_reviewed: '2026-06-30'
+last_reviewed: '2026-07-04'
 ---
 
 # 2.0 API: a unified document tree exposing OOM, raw text, line iterator, and mdast at every level
