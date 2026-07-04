@@ -17,6 +17,7 @@ import c12 from "./12-typed-row-transform.js";
 import c13 from "./13-typed-list-items.js";
 import c14 from "./14-cell-position.js";
 import c15 from "./15-no-transform-parity.js";
+import c16 from "./16-typed-task-contract.js";
 
 export const consumptionFixtures: ConsumptionFixture[] = [
   c01,
@@ -34,4 +35,5 @@ export const consumptionFixtures: ConsumptionFixture[] = [
   c13,
   c14,
   c15,
+  c16,
 ];

@@ -159,16 +159,23 @@ cell-typed → list-typed → cell-pos
 | `13-typed-list-items` | `list-typed` | each list item reads back as the transformed `{ ref, text }`. |
 | `14-cell-position` | `cell-pos` | `cellPos(row, "Location").col` and the cell's `inlineSpans(...)` ranges. |
 | `15-no-transform-parity` | `consumption` | a **no-transform** contract reads back **byte-identical** raw string rows — the "no golden moves" guard. |
+| `16-typed-task-contract` | `cell-pos` | the end-to-end **dogfood** — a transforming `Location` cell + `Kind` enum + a transforming `Dependencies` list + `cellPos`/`inlineSpans`, all on one realistic task doc. |
 
-All three transform/position gates seed `false`, so `c12`–`c14` are **skipped** (green, not
-failing) until each component lands and flips its flag. Because `build()` is lazy and the reads
-navigate through `(doc.body as any)` / `(doc as any)`, the fixtures type-check against the stubbed
-typed surface (`table()` generic over its `cells`, `LeafSpec._row`, `TableView<Row>`) even though
-the transform-capture, read-back, and position accessors do not exist yet. `c12`–`c14` are
-`peerless` — v1 YAML cannot express a Zod `.transform()` (nor the position accessors), so they
+**Milestone state.** All three transform/position gates (`cell-typed`, `list-typed`, `cell-pos`)
+are now **`true`** in `tests/components.ts` — M-0011 is closed. `c12`–`c14` and the `c16` dogfood
+therefore **all run**: no structured-cells fixture is skipped. `c16` is the assembled proof — one
+realistic task-shaped document that exercises a transforming cell (`Location` → `{ path, symbol? }`),
+a `Kind` enum, a transforming `Dependencies` list (`{ ref, text }`), and per-cell positions
+(`cellPos` / `inlineSpans`) TOGETHER, reading every value back typed with no consumer re-parse.
+Two engine behaviours the dogfood pins down: the cell transform receives the source text with its
+backticks **already flattened off** (the projection strips inline-code before the schema runs, so
+`Location` parses the unbackticked `path#symbol`), and `Doc.inlineSpans` matches its row by **raw
+string content**, so the span lookup re-forms the raw cell string from the transformed row (whereas
+`TableView.cellPos` matches by reference and takes the typed row directly). `c12`–`c14` and `c16`
+are `peerless` — v1 YAML cannot express a Zod `.transform()` (nor the position accessors), so they
 carry no `.contract.yaml` twin. `c15` is gated on `consumption` (already `true`), so it **runs**
-today and its assertion actually demonstrates the no-transform parity; it keeps a real
-`.contract.yaml` twin (a no-transform contract round-trips through v1 YAML).
+today and its assertion demonstrates the no-transform parity; it keeps a real `.contract.yaml` twin
+(a no-transform contract round-trips through v1 YAML).
 
 ## Inference fixtures
 
