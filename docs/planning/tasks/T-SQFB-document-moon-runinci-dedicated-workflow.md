@@ -1,19 +1,21 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-SQFB
 status: in-progress
-created: '2026-07-01'
-last_reviewed: '2026-07-04'
+created: 2026-07-01
+last_reviewed: 2026-07-04
 related:
-- '[[M-0010 Quality Tooling]]'
+  - "[[M-0010 Quality Tooling]]"
 tags:
-- quality
+  - quality
 need_human_review: false
 impact: low
 complexity: small
 autonomy: autonomous/pr
-readiness_verified_at: '2026-07-04T07:38:27Z'
+readiness_verified_at: 2026-07-04T07:38:27Z
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/218
 ---
 # Document moon runInCI:false + dedicated side-gate workflow pattern
 
