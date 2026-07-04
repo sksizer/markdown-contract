@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-8ZKX
-status: open/ready
+status: in-progress
 created: '2026-07-04'
 related: []
 tags: []
@@ -10,6 +10,7 @@ need_human_review: false
 impact: medium
 complexity: medium
 readiness_verified_at: '2026-07-04T11:22:14Z'
+last_reviewed: '2026-07-04'
 ---
 # Retire or reconcile the legacy VaultDashboard component now that pages/index.vue is the dashboard
 
@@ -99,3 +100,19 @@ Promoted from [[B-8ZKX-retire-legacy-vaultdashboard-component]]. The cleanup was
 explicitly left out of scope by T-6RFC, which scoped itself to `pages/index.vue` +
 `pages/index.stories.ts` and used the distinct title `Screens/Dashboard` to avoid a
 sidebar collision.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-04. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
