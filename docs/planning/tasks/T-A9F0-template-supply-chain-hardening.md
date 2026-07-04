@@ -1,21 +1,23 @@
 ---
 type: task
-schema_version: '5'
+schema_version: "5"
 id: T-A9F0
 status: in-progress
-created: '2026-07-04'
+created: 2026-07-04
 related:
-- '[[M-0010 Quality Tooling]]'
+  - "[[M-0010 Quality Tooling]]"
 tags:
-- quality
-- security
-- dependencies
+  - quality
+  - security
+  - dependencies
 need_human_review: false
 impact: medium
 complexity: small
 autonomy: autonomous/pr
-readiness_verified_at: '2026-07-04T17:53:18Z'
-last_reviewed: '2026-07-04'
+readiness_verified_at: 2026-07-04T17:53:18Z
+last_reviewed: 2026-07-04
+prs:
+  - https://github.com/sksizer/markdown-contract/pull/235
 ---
 # Adopt node-template supply-chain hardening: Dependabot cooldown + exact devDependency pins
 
