@@ -52,6 +52,26 @@ const KIND_FRAMING: Record<CatalogExample["artifact_kind"], string> = {
 	mixed: "Commands, code, and output together; comments mark which is which.",
 };
 
+/** Short human label for the artifact kind, shown in each example's metadata caption. */
+const KIND_LABEL: Record<CatalogExample["artifact_kind"], string> = {
+	cli: "CLI transcript",
+	code: "TypeScript",
+	yaml: "YAML",
+	mixed: "Mixed",
+};
+
+/** Per-category link into the hand-authored Reference section (src/content/docs/reference/). */
+const REFERENCE_LINKS: Record<CategoryKey, { href: string; label: string }> = {
+	cli: { href: "/reference/cli/", label: "CLI reference" },
+	"inference-init": { href: "/reference/cli/", label: "CLI reference (init)" },
+	"declarative-yaml": { href: "/reference/yaml/", label: "Declarative YAML reference" },
+	"validation-planes": { href: "/reference/api/", label: "Library API reference" },
+	"consume-as-data": { href: "/reference/model/", label: "Typed model reference" },
+	dialect: { href: "/reference/dialect/", label: "Dialect reference" },
+	"embed-and-ci": { href: "/reference/api/", label: "Library API reference" },
+	"real-world-schemas": { href: "/reference/yaml/", label: "Declarative YAML reference" },
+};
+
 /** Site path of an example page. */
 const examplePath = (category: CategoryKey, id: string): string =>
 	`/examples/${category}/${id.toLowerCase()}/`;
@@ -67,6 +87,29 @@ function fence(body: string, lang: string): string {
 /** Serialize page frontmatter through the YAML emitter (never hand-escaped). */
 const frontmatter = (data: Record<string, unknown>): string =>
 	`---\n${stringifyYaml(data)}---`;
+
+/**
+ * The "Continue" footer on each example page: previous/next rung (within the category, in rank
+ * order — the same order as the sidebar), the category overview, the whole-catalog browse index,
+ * and the category's Reference page. Makes every page self-navigating without the sidebar.
+ */
+function exampleFooter(category: CatalogCategory, example: CatalogExample): string {
+	const rung = category.examples.findIndex((e) => e.id === example.id);
+	const prev = category.examples[rung - 1];
+	const next = category.examples[rung + 1];
+	const ref = REFERENCE_LINKS[category.category];
+	const lines = [
+		prev
+			? `- **Previous:** [${prev.id}: ${prev.name}](${examplePath(category.category, prev.id)})`
+			: "- **Previous:** _first rung of this ladder_",
+		next
+			? `- **Next:** [${next.id}: ${next.name}](${examplePath(category.category, next.id)})`
+			: "- **Next:** _last rung of this ladder_",
+		`- **Ladder:** [${category.title} overview](/examples/${category.category}/) · [All examples](/examples/)`,
+		`- **Reference:** [${ref.label}](${ref.href})`,
+	];
+	return ["## Continue", "", lines.join("\n"), ""].join("\n");
+}
 
 const PLANNED_ASIDE = [
 	":::caution[Planned]",
@@ -108,6 +151,8 @@ function examplePage(
 	return [
 		frontmatter(fm),
 		"",
+		`\`${example.id}\` · rung ${example.rank} of ${category.examples.length} · ${KIND_LABEL[example.artifact_kind]}${planned ? " · _planned_" : ""}`,
+		"",
 		"## What it demonstrates",
 		"",
 		example.demonstrates,
@@ -125,6 +170,7 @@ function examplePage(
 		"",
 		surfaces,
 		"",
+		exampleFooter(category, example),
 	].join("\n");
 }
 
@@ -148,6 +194,52 @@ function categoryIndexPage(category: CatalogCategory): string {
 		"real CLI and library output.",
 		"",
 		rows,
+		"",
+		`Or browse [all example ladders](/examples/), or open the [${REFERENCE_LINKS[category.category].label}](${REFERENCE_LINKS[category.category].href}) for the underlying spec.`,
+		"",
+	].join("\n");
+}
+
+/**
+ * The whole-catalog browse index at `/examples/` — every ladder and every rung on one page,
+ * grouped by category in spine order. A stable landing for the sidebar "All examples" entry and
+ * the per-page footer's "All examples" link; sits at the examples root, outside every
+ * `autogenerate` group, so it never disturbs the per-category sidebars.
+ */
+function allExamplesPage(catalog: CatalogCategory[]): string {
+	const fm = {
+		title: "All examples",
+		description:
+			"Every example ladder and rung at a glance — the whole markdown-contract catalog on one page.",
+		tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 2 },
+	};
+	const total = catalog.reduce((n, c) => n + c.examples.length, 0);
+	const sections = catalog
+		.map((cat, i) => {
+			const rungs = cat.examples
+				.map((e) => {
+					const planned = isPlanned(e) ? " _(planned)_" : "";
+					return `${e.rank}. [${e.id}: ${e.name}](${examplePath(cat.category, e.id)})${planned} — ${e.demonstrates}`;
+				})
+				.join("\n");
+			const ref = REFERENCE_LINKS[cat.category];
+			return [
+				`## ${i + 1}. [${cat.title}](/examples/${cat.category}/)`,
+				"",
+				`${cat.examples.length} rungs · reference: [${ref.label}](${ref.href})`,
+				"",
+				rungs,
+			].join("\n");
+		})
+		.join("\n\n");
+	return [
+		frontmatter(fm),
+		"",
+		`The catalog is a curriculum: **${catalog.length} ladders**, **${total} examples**, each rung`,
+		"building on the one before it. Read a ladder top to bottom, or jump to the rung you need —",
+		"every shipped artifact is regression-checked against the real CLI and library.",
+		"",
+		sections,
 		"",
 	].join("\n");
 }
@@ -215,7 +307,18 @@ function landingPage(catalog: CatalogCategory[]): string {
 		"regression-checked against the real CLI and library, so what you read is what",
 		"the tool actually does.",
 		"",
+		"Browse them all on the [All examples](/examples/) page, or follow a ladder in order:",
+		"",
 		tour,
+		"",
+		"## Reference",
+		"",
+		"When you want the underlying spec rather than a worked example, the reference",
+		"section documents every command, field, export, rule id, and dialect construct:",
+		"[CLI](/reference/cli/), [Declarative YAML](/reference/yaml/),",
+		"[Library API](/reference/api/), [typed model](/reference/model/),",
+		"[findings & rule ids](/reference/findings/), [dialect](/reference/dialect/), and the",
+		"[glossary](/reference/glossary/).",
 		"",
 	].join("\n");
 }
@@ -225,6 +328,7 @@ function main(): void {
 	const index = indexExamples(catalog);
 
 	rmSync(EXAMPLES_DIR, { recursive: true, force: true });
+	mkdirSync(EXAMPLES_DIR, { recursive: true });
 
 	let pages = 0;
 	for (const cat of catalog) {
@@ -240,6 +344,9 @@ function main(): void {
 			pages += 1;
 		}
 	}
+
+	writeFileSync(resolve(EXAMPLES_DIR, "index.md"), allExamplesPage(catalog));
+	pages += 1;
 
 	writeFileSync(resolve(DOCS_DIR, "index.md"), landingPage(catalog));
 	pages += 1;

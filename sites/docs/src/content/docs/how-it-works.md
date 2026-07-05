@@ -13,7 +13,7 @@ single parse.
 
 Each document is parsed with [remark/mdast](https://github.com/syntax-tree/mdast)
 (GitHub-flavored markdown plus YAML frontmatter), extended with an in-house
-dialect for the Obsidian conventions many docs corpora already use:
+[dialect](/reference/dialect/) for the Obsidian conventions many docs corpora already use:
 
 - line-terminal `^block-id` **anchors**, which make sections, tables, and
   blocks addressable,
@@ -61,16 +61,20 @@ Rule ids are namespaced, severity (`error` / `warn` / `report`) is contract
 data, and the CLI renders findings as human text, raw JSON, or SARIF 2.1.0 for
 code scanning.
 
+The finding record and its namespaced rule ids are catalogued in the [findings
+reference](/reference/findings/); the output formats and flags are in the [CLI
+reference](/reference/cli/).
+
 ## Validation and consumption are the same contract
 
-A compiled contract has two doors:
+A compiled contract has two doors (both in the [API reference](/reference/api/)):
 
 - `contract.validate(src, { path })` returns `{ findings, doc?, tree }` and
   **never throws** — the shape CI wants.
 - `contract.read(src, { path })` returns the typed `Doc` or throws a
   `ContractError` carrying the findings — the shape a consumer wants.
 
-The `Doc` is a navigable typed view of the document: `doc.frontmatter` is
+The `Doc` is a navigable typed view of the document (its full surface is the [model reference](/reference/model/)): `doc.frontmatter` is
 typed by the frontmatter schema; `doc.body` reaches sections by camelCase key
 (`doc.body.summary`) or exact heading (`doc.body.section("Summary")`); tables
 are iterable typed-row collections; anchors resolve with `doc.byAnchor(id)`.
@@ -123,5 +127,6 @@ The package is three layers, and imports flow one way:
 | `cli` | the `markdown-contract` bin: argv → runner → format → exit code. A thin shell over the library. |
 
 The engine carries no knowledge of any particular repository — corpora are
-described declaratively (see [Getting started](/getting-started/)) — and the
+described declaratively (see [Getting started](/getting-started/) and the
+[config reference](/reference/yaml/)) — and the
 validator is strictly **read-only**: it never rewrites a document.

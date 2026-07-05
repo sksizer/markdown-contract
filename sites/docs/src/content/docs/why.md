@@ -27,9 +27,9 @@ You declare a **contract** per document type: the frontmatter fields, the
 section structure, the shape of tables and lists, and any cross-cutting rules.
 From that single declaration you get both:
 
-- **Validation** — findings with `path:line` positions, ready for a terminal,
+- **Validation** — [findings](/reference/findings/) with `path:line` positions, ready for a terminal,
   JSON pipeline, or SARIF upload to code scanning.
-- **A typed model** — the same contract that checks a document also types it,
+- **A typed [model](/reference/model/)** — the same contract that checks a document also types it,
   so `doc.frontmatter.status` and `doc.body.summary.text()` are ordinary typed
   reads, not string spelunking.
 
@@ -51,7 +51,7 @@ A few forces shaped how the library works:
 - **Read-only by design.** The validator never rewrites your documents.
   Formatting, repair, and normalization are deliberately someone else's job.
 - **Generic engine, declarative corpus.** The engine carries no knowledge of
-  any particular repository. A `markdown-contract.yaml` maps directories and
+  any particular repository. A [`markdown-contract.yaml`](/reference/yaml/) maps directories and
   globs to contracts, so validating a whole docs tree is configuration, not
   code — and simple contracts need no TypeScript at all.
 
@@ -75,10 +75,14 @@ A few forces shaped how the library works:
   frontmatter fields, its sections in order, its table columns — and that
   declaration can be walked to emit an empty-but-valid **skeleton**: the
   headings in the right order, a frontmatter block with starter values, a
-  table's header row. Generating that stub is the exact dual of the `init`
+  table's header row. Generating that stub is the exact dual of the [`init`](/reference/cli/)
   command, which already infers a contract *from* a folder of documents.
   Emitting *shape* (never prose) is the core of a template engine, and a
   contract already carries everything such a scaffolder would need.
+
+:::note[See also]
+The [reference](/reference/glossary/) section is the spec behind this overview — the [glossary](/reference/glossary/) defines the load-bearing terms (*contract*, *finding*, *plane*, *dialect*), and each mechanism has its own page: [findings](/reference/findings/), [model](/reference/model/), [CLI](/reference/cli/), [YAML](/reference/yaml/), and [API](/reference/api/).
+:::
 
 Next: [How it works](/how-it-works/) for the technical approach, or
 [Getting started](/getting-started/) to run it.
