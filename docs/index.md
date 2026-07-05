@@ -137,6 +137,7 @@ link inline; single-file ADRs transclude their `^summary`.
 | [[D-0009-config-inference]] | ![[D-0009-config-inference#^summary]] |
 | [[D-0010-monorepo-tooling]] | ![[D-0010-monorepo-tooling#^summary]] |
 | [[D-0011-declarative-text-constraints]] | ![[D-0011-declarative-text-constraints#^summary]] |
+| [[D-0017-repeatable-sections]] | ![[D-0017-repeatable-sections#^summary]] |
 
 **Emerging / obsoleted:**
 
