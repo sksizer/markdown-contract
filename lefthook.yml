@@ -24,5 +24,11 @@ pre-push:
     # caches the three tasks, so a clean tree is a fast cache hit. `core:build`
     # exercises .d.ts declaration emit, catching regressions (TS4023-family) that
     # `core:typecheck` (tsc --noEmit) alone lets through.
+    #
+    # Manual run caveat: `bunx lefthook run pre-push` skips its gates (reports
+    # "no matching push files") on a branch with no upstream / no unpushed commits,
+    # so demonstrating a gate failure by hand needs `bunx lefthook run pre-push
+    # --all-files` (or a real `git push`). The gate fires correctly on an actual
+    # push; only the manual dry-run is affected.
     gates:
       run: bunx moon run core:build core:typecheck core:test
