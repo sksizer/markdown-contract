@@ -2,7 +2,7 @@
 type: task
 schema_version: '5'
 id: T-TH8U
-status: open/ready
+status: in-progress
 created: '2026-07-04'
 related:
 - T-QX1Q-gate-covers-declaration-emit
@@ -11,6 +11,7 @@ need_human_review: false
 impact: medium
 complexity: small
 readiness_verified_at: '2026-07-05T05:11:09Z'
+last_reviewed: '2026-07-05'
 ---
 # Note the lefthook pre-push manual-run caveat (needs --all-files without unpushed commits)
 
@@ -97,3 +98,19 @@ skipped invocation as a passing gate.
 
 Spawned by /sdlc:spawn-task-pr on 2026-07-04 UTC from
 [[T-QX1Q-gate-covers-declaration-emit]] in `git@github.com:sksizer/markdown-contract.git`.
+
+## Post-mortem
+
+_Captured by /sdlc:task-work on 2026-07-05. PR: pending._
+
+### Acceptance criteria coverage
+
+_TBD — filled at Step 8._
+
+### What worked
+
+_TBD — filled at Step 8._
+
+### Friction and automation gaps
+
+_TBD — filled at Step 8._
