@@ -105,12 +105,15 @@ _Captured by /sdlc:task-work on 2026-07-05. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `git diff origin/main -- lefthook.yml` shows a "Manual run caveat" note in the `pre-push:` comment block stating `bunx lefthook run pre-push` skips gates on a branch with no unpushed commits and that `--all-files` (or a real `git push`) is required by hand.
+- AC-2: auto — `git diff origin/main -- README.md` shows an equivalent caveat sentence appended to the **Git hooks** bullet, worded consistently with the hook comment.
+- AC-3: auto — the two-dot diff against `origin/main` is limited to a comment in `lefthook.yml` and prose in `README.md`; the `run: bunx moon run core:build core:typecheck core:test` line and all gate/arming behavior are unchanged (`+12/-1`, no `run:` change). Baseline-gated `sdlc quality run` reported `OK 6/6` with no new drift.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The deterministic readiness gate (`task gap-report`) passed cleanly on the first run — all required sections present, tables well-formed, no placeholders — so Step 5a needed no auto-define pass.
+- Baseline-gated quality run cleanly separated the 15 pre-existing findings from this branch's zero new drift, so a docs-only change gated in one shot.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- Step 7's `quality run --diff-against-baseline` defaults its `--baseline-dir` to the *worktree's* `.sdlc/quality-baselines`, but Step 3a captured the baseline in the *main repo's* `.sdlc/quality-baselines`; the first gate invocation errored `baseline not found` until `--baseline-dir <main-repo>/.sdlc/quality-baselines` was passed explicitly — the skill's Step 7 invocation should pass the main-repo baseline dir (as Step 3a does) so the default worktree-relative resolution does not miss the captured baseline.
