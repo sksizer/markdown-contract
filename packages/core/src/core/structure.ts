@@ -42,6 +42,12 @@ interface Slot {
   /** the admissible heading spellings (alias set for oneOf / `section([...])`) */
   names: string[];
   optional: boolean;
+  /** repeatable slot (T-1TA2) — its heading may recur as peers; occurrences fill this one slot */
+  repeatable: boolean;
+  /** minimum occurrence count for a repeatable slot, if declared */
+  min?: number;
+  /** maximum occurrence count for a repeatable slot, if declared */
+  max?: number;
   /** the section opts (content / children / rules / anchor), if any */
   opts?: SectionOpts;
 }
@@ -55,28 +61,35 @@ function unwrap(spec: Spec): { inner: SectionSpec | OneOfSpec | GapSpec; optiona
   return { inner: spec, optional: false };
 }
 
+/** Build a slot from a section/oneOf's shared shape — names, optionality, and the repeatable bounds. */
+function makeSlot(
+  specIdx: number,
+  names: string[],
+  optional: boolean,
+  opts: SectionOpts | undefined,
+): Slot {
+  return {
+    specIdx,
+    names,
+    optional: optional || opts?.optional === true,
+    repeatable: opts?.repeatable === true,
+    ...(opts?.min !== undefined ? { min: opts.min } : {}),
+    ...(opts?.max !== undefined ? { max: opts.max } : {}),
+    opts,
+  };
+}
+
 /** Project the declared `Spec[]` into the ordered list of section/oneOf slots (gaps excluded). */
 function slotsOf(specs: readonly Spec[]): Slot[] {
   const slots: Slot[] = [];
   specs.forEach((spec, specIdx) => {
     const { inner, optional } = unwrap(spec);
-    if (inner.kind === "gap") return;
     if (inner.kind === "section") {
       const s = inner as SectionSpec;
-      slots.push({
-        specIdx,
-        names: s.names,
-        optional: optional || s.opts?.optional === true,
-        opts: s.opts,
-      });
+      slots.push(makeSlot(specIdx, s.names, optional, s.opts));
     } else if (inner.kind === "oneOf") {
       const o = inner as OneOfSpec;
-      slots.push({
-        specIdx,
-        names: o.names,
-        optional: optional || o.opts?.optional === true,
-        opts: o.opts,
-      });
+      slots.push(makeSlot(specIdx, o.names, optional, o.opts));
     }
   });
   return slots;
@@ -85,6 +98,11 @@ function slotsOf(specs: readonly Spec[]): Slot[] {
 /** The index of the first slot whose name set contains `name`, or -1 (unknown). */
 function slotForName(slots: Slot[], name: string): number {
   return slots.findIndex((s) => s.names.includes(name));
+}
+
+/** Whether `name` matches a declared REPEATABLE slot (T-1TA2) — its peers are admitted, not errors. */
+function isRepeatableName(slots: Slot[], name: string): boolean {
+  return slots.some((s) => s.repeatable && s.names.includes(name));
 }
 
 // ── The per-level match ──────────────────────────────────────────────────────────
@@ -97,6 +115,92 @@ interface Assigned {
 }
 
 /**
+ * Duplicate-heading and camelCase key-collision detection at one level (D-0003). A heading
+ * matching a declared REPEATABLE slot is exempt — its peers are the collection the slot admits,
+ * so neither `structure/duplicate-section` (exact repeat) nor `structure/key-collision` fires for
+ * it (T-1TA2). Every other heading keeps today's per-level-uniqueness rule (AC-3).
+ */
+function checkDuplicateHeadings(
+  nodes: SectionNode[],
+  slots: Slot[],
+  ctx: Ctx,
+  out: Finding[],
+): void {
+  const seenName = new Map<string, SectionNode>();
+  const seenKey = new Map<string, string>(); // camelKey → first heading text
+  for (const node of nodes) {
+    if (seenName.has(node.name)) {
+      if (!isRepeatableName(slots, node.name)) {
+        out.push(
+          ctx.finding({
+            id: "structure/duplicate-section",
+            message: `duplicate section ‘${node.name}’; a heading must not repeat at one level`,
+            pos: node.pos,
+          }),
+        );
+      }
+      continue; // a duplicate cannot also collide a new key
+    }
+    seenName.set(node.name, node);
+    const key = toCamelKey(node.name);
+    if (key === "") continue;
+    const firstHeading = seenKey.get(key);
+    if (firstHeading === undefined) {
+      seenKey.set(key, node.name);
+    } else if (firstHeading !== node.name && !isRepeatableName(slots, node.name)) {
+      out.push(
+        ctx.finding({
+          id: "structure/key-collision",
+          message: `‘${node.name}’ and ‘${firstHeading}’ collapse to the same key ‘${key}’; headings must yield distinct keys at one level`,
+          pos: node.pos,
+        }),
+      );
+    }
+  }
+}
+
+/**
+ * Repeatable-slot occurrence bounds (min / max) → `structure/repeat-count` (T-1TA2). A present
+ * repeatable slot outside its declared bounds is an error: `max` bites at the first surplus
+ * occurrence; `min` bites only once the slot is present (count 0 for a required slot is
+ * `structure/section-missing`, its absence — not its count).
+ */
+function checkRepeatBounds(nodes: SectionNode[], slots: Slot[], ctx: Ctx, out: Finding[]): void {
+  for (const slot of slots) {
+    if (!slot.repeatable) continue;
+    if (slot.min === undefined && slot.max === undefined) continue;
+    emitRepeatBound(slot, nodes, ctx, out);
+  }
+}
+
+/** Emit `structure/repeat-count` for one repeatable slot whose occurrence count falls outside its
+ *  declared `min` / `max`. `max` bites at the first surplus occurrence; `min` bites once present. */
+function emitRepeatBound(slot: Slot, nodes: SectionNode[], ctx: Ctx, out: Finding[]): void {
+  const matches = nodes.filter((n) => slot.names.includes(n.name));
+  const count = matches.length;
+  const label = slot.names.join("’ / ‘");
+  if (slot.max !== undefined && count > slot.max) {
+    const offender = matches[slot.max]; // the first occurrence past the bound
+    out.push(
+      ctx.finding({
+        id: "structure/repeat-count",
+        message: `repeatable section ‘${label}’ occurs ${count} times; expected at most ${slot.max}`,
+        ...(offender ? { pos: offender.pos } : {}),
+      }),
+    );
+  } else if (slot.min !== undefined && count > 0 && count < slot.min) {
+    const first = matches[0];
+    out.push(
+      ctx.finding({
+        id: "structure/repeat-count",
+        message: `repeatable section ‘${label}’ occurs ${count} times; expected at least ${slot.min}`,
+        ...(first ? { pos: first.pos } : {}),
+      }),
+    );
+  }
+}
+
+/**
  * Match one level: `nodes` (the sibling sections at this depth) against `specs` under
  * `opts`. Emits findings into `out`, then recurses into declared sections' `children`.
  */
@@ -106,7 +210,7 @@ function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Findin
   const allowUnknown = seq.opts.allowUnknown ?? true;
   const slots = slotsOf(specs);
 
-  checkDuplicatesAndCollisions(nodes, ctx, out);
+  checkDuplicateHeadings(nodes, slots, ctx, out);
 
   // Assign each section to its declared slot (first occurrence binds the slot).
   const assigned: Assigned[] = nodes.map((node) => ({
@@ -116,43 +220,9 @@ function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Findin
 
   checkAliasAmbiguity(assigned, slots, ctx, out);
   checkMissingSlots(assigned, slots, nodes, ctx, out);
+  checkRepeatBounds(nodes, slots, ctx, out);
   checkOrderAndUnknowns(order, allowUnknown, nodes, specs, slots, assigned, ctx, out);
   runPresentSlotChecks(assigned, slots, ctx, out);
-}
-
-/** Duplicate headings (exact) and camelCase key collisions (distinct headings) at one level. */
-function checkDuplicatesAndCollisions(nodes: SectionNode[], ctx: Ctx, out: Finding[]): void {
-  const seenName = new Map<string, SectionNode>();
-  const seenKey = new Map<string, string>(); // camelKey → first heading text
-  for (const node of nodes) {
-    const prior = seenName.get(node.name);
-    if (prior) {
-      out.push(
-        ctx.finding({
-          id: "structure/duplicate-section",
-          message: `duplicate section ‘${node.name}’; a heading must not repeat at one level`,
-          pos: node.pos,
-        }),
-      );
-      continue; // a duplicate cannot also collide a new key
-    }
-    seenName.set(node.name, node);
-    const key = toCamelKey(node.name);
-    if (key !== "") {
-      const firstHeading = seenKey.get(key);
-      if (firstHeading !== undefined && firstHeading !== node.name) {
-        out.push(
-          ctx.finding({
-            id: "structure/key-collision",
-            message: `‘${node.name}’ and ‘${firstHeading}’ collapse to the same key ‘${key}’; headings must yield distinct keys at one level`,
-            pos: node.pos,
-          }),
-        );
-      } else if (firstHeading === undefined) {
-        seenKey.set(key, node.name);
-      }
-    }
-  }
 }
 
 /** oneOf / alias ambiguity: a second distinct spelling filling an already-filled multi-name slot. */
@@ -161,6 +231,7 @@ function checkAliasAmbiguity(assigned: Assigned[], slots: Slot[], ctx: Ctx, out:
   for (const a of assigned) {
     if (a.slotIdx === null) continue;
     const slot = slots[a.slotIdx]!;
+    if (slot.repeatable) continue; // a repeatable slot admits every spelling of its peers (T-1TA2)
     if (slot.names.length <= 1) continue; // single-spelling slot: handled by duplicate-section above
     const boundHeading = slotBoundBy.get(a.slotIdx);
     if (boundHeading === undefined) {
@@ -319,6 +390,11 @@ function checkStrict(
     if (unwrap(s).inner.kind === "gap") gapCount.set(i, 0);
   });
 
+  // How many document sections a slot at `specIdx` has consumed so far (T-1TA2). A repeatable slot
+  // stays on the cursor to absorb consecutive matching peers, so its fill count can exceed one; a
+  // filled repeatable slot behaves like a satisfied (optional) one when a later slot arrives.
+  const slotFill = new Map<number, number>();
+
   /** Does `name` match a section/oneOf slot whose specIdx is ≥ `fromSpecIdx`? */
   function matchesSlotFrom(name: string, fromSpecIdx: number): number | null {
     for (const slot of slots) {
@@ -333,6 +409,7 @@ function checkStrict(
     const node = nodes[docIdx]!;
 
     if (specIdx >= specs.length) {
+      // Past the declared sequence — a trailing gap absorbs extras, else an unknown is out of place.
       admitPastSequence(node, specs, slots, allowUnknown, gapCount, ctx, out);
       docIdx++;
       continue;
@@ -356,15 +433,22 @@ function checkStrict(
     // A section/oneOf slot at the cursor.
     const slot = slots.find((s) => s.specIdx === specIdx)!;
     if (slot.names.includes(node.name)) {
-      specIdx++;
+      slotFill.set(specIdx, (slotFill.get(specIdx) ?? 0) + 1);
+      // A repeatable slot stays on the cursor to consume consecutive matching peers (T-1TA2);
+      // a normal slot advances past it after a single match.
+      if (!slot.repeatable) specIdx++;
       docIdx++;
       continue;
     }
 
+    // A repeatable slot that has already consumed ≥1 peer is satisfied — treat it like an
+    // optional slot as the walk moves on (its bounds are checked separately as repeat-count).
+    const repeatSatisfied = slot.repeatable && (slotFill.get(specIdx) ?? 0) > 0;
+
     // Doesn't match the cursor slot. If it matches a later slot, it jumped ahead of this one.
     const later = matchesSlotFrom(node.name, specIdx + 1);
     if (later !== null) {
-      if (!slot.optional) {
+      if (!slot.optional && !repeatSatisfied) {
         out.push(
           ctx.finding({
             id: "structure/section-order",
@@ -379,8 +463,8 @@ function checkStrict(
       continue;
     }
 
-    // The cursor slot is optional and unmatched → skip it and retry the section.
-    if (slot.optional) {
+    // The cursor slot is optional (or a satisfied repeatable) and unmatched → skip it, retry section.
+    if (slot.optional || repeatSatisfied) {
       specIdx++;
       continue;
     }

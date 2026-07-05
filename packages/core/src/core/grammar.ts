@@ -121,6 +121,44 @@ function unwrapInner(spec: Spec): SectionSpec | OneOfSpec | GapSpec {
 }
 
 /**
+ * The build-time repeatable-bounds guard (T-1TA2): `min` / `max` are meaningful only on a
+ * `repeatable: true` slot, and `min` must not exceed `max`. A violation throws
+ * `contract/repeat-bounds` at construction (mirroring the key-collision throw), so a malformed
+ * repeatable declaration is caught at definition time rather than as a document finding.
+ */
+function assertRepeatBounds(opts: SectionOpts | undefined, label: string): void {
+  if (!opts) return;
+  const { repeatable, min, max } = opts;
+  if (repeatable !== true) {
+    if (min !== undefined || max !== undefined) {
+      throw new ContractBuildError(
+        "contract/repeat-bounds",
+        `section ‘${label}’ declares min/max without ‘repeatable: true’; occurrence bounds apply only to a repeatable slot`,
+      );
+    }
+    return;
+  }
+  if (min !== undefined && (!Number.isInteger(min) || min < 0)) {
+    throw new ContractBuildError(
+      "contract/repeat-bounds",
+      `section ‘${label}’ has a non-integer or negative min ${min}`,
+    );
+  }
+  if (max !== undefined && (!Number.isInteger(max) || max < 0)) {
+    throw new ContractBuildError(
+      "contract/repeat-bounds",
+      `section ‘${label}’ has a non-integer or negative max ${max}`,
+    );
+  }
+  if (min !== undefined && max !== undefined && min > max) {
+    throw new ContractBuildError(
+      "contract/repeat-bounds",
+      `section ‘${label}’ has min ${min} greater than max ${max}`,
+    );
+  }
+}
+
+/**
  * Declare a required section by name, or by an alias set (`string[]`). Generic (T-SCRB) over the
  * name(s) and the `SectionOpts` so its result carries the typed value the section's dual-key key
  * binds — a promoted `TableView<Row>` when its sole `content` is a `table(...)` leaf (the `Row`
@@ -132,6 +170,7 @@ export function section<
   const O extends SectionOpts = SectionOpts,
 >(name: Names, opts?: O): SectionSpec<SectionValue<O>, NamesTupleOf<Names>> {
   const names: string[] = Array.isArray(name) ? [...name] : [name as string];
+  assertRepeatBounds(opts, names[0] ?? "");
   const spec: SectionSpec = { kind: "section", names, ...(opts ? { opts } : {}) };
   return spec as unknown as SectionSpec<SectionValue<O>, NamesTupleOf<Names>>;
 }
@@ -144,6 +183,7 @@ export function optional(spec: Spec): Spec {
 
 /** Declare a choice over interchangeable spellings at one position. */
 export function oneOf(names: string[], opts?: SectionOpts): Spec {
+  assertRepeatBounds(opts, names[0] ?? "");
   const spec: OneOfSpec = { kind: "oneOf", names, ...(opts ? { opts } : {}) };
   return spec;
 }

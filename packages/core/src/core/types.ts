@@ -250,6 +250,18 @@ export interface SectionOpts {
   rules?: Rule[];
   /** require a `^block-id`, e.g. "summary" */
   anchor?: string;
+  /**
+   * Repeatable slot (T-1TA2). When `true`, the declared heading may recur as peers at one level:
+   * the structure plane admits every occurrence (no `structure/duplicate-section` / `key-collision`),
+   * and the consumption model binds the slot's dual-key key to an ARRAY of the per-occurrence value
+   * (a `SectionView`, or a promoted `TableView<Row>`) in document order. Non-repeatable slots keep
+   * today's per-level-uniqueness rule (D-0003); a bare `section("Name")` is unchanged.
+   */
+  repeatable?: boolean;
+  /** Minimum occurrence count for a repeatable slot (below → `structure/repeat-count`). Requires `repeatable: true`. */
+  min?: number;
+  /** Maximum occurrence count for a repeatable slot (above → `structure/repeat-count`). Requires `repeatable: true`. */
+  max?: number;
 }
 
 /**
@@ -427,6 +439,7 @@ export interface SectionGroup {
     | SectionView
     | TableView<Record<string, string>>
     | SectionView[]
+    | TableView<Record<string, string>>[]
     | ((name: string) => SectionView | undefined)
     | undefined;
 }
@@ -500,7 +513,17 @@ export type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never
  * record, or no content) binds the plain `SectionView`. `Item` is checked before `Row` so a list leaf
  * (whose `_row` phantom is `unknown`) is not mistaken for a table.
  */
-export type SectionValue<O> = O extends { content: infer Ct }
+export type SectionValue<O> = O extends { repeatable: true }
+  ? SectionValueBase<O>[]
+  : SectionValueBase<O>;
+
+/**
+ * The per-occurrence typed value a section binds, before the repeatable wrap. This is the base
+ * computation {@link SectionValue} keeps for a non-repeatable slot; a `repeatable: true` slot binds
+ * an ARRAY of this (T-1TA2), so `section(name, { repeatable: true, content: table(...) })` reads back
+ * `TableView<Row>[]` and a bare repeatable prose section reads back `SectionView[]`.
+ */
+export type SectionValueBase<O> = O extends { content: infer Ct }
   ? Ct extends LeafSpec<infer Row, infer Item>
     ? unknown extends Item
       ? unknown extends Row

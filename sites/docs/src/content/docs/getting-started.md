@@ -109,6 +109,30 @@ doc.frontmatter.status;   // "proposed" | "accepted" | "superseded"
 doc.body.summary.text();  // the Summary section's prose
 ```
 
+## Repeatable sections
+
+Sometimes a heading is *meant* to recur — a per-entry `## Entry`, a changelog's
+`## Release`. Declare the slot **repeatable** and its peers validate instead of
+tripping the duplicate-section rule, and surface as a positional array on the
+model. In YAML the keys ride on the section node:
+
+```yaml
+body:
+  sections:
+    - section: Entry
+      repeatable: true          # may recur as peers
+    - section: Release
+      repeatable: true
+      min: 1                    # optional occurrence bounds -> structure/repeat-count
+      max: 12
+```
+
+The same in code is `section("Entry", { repeatable: true })`. Reading back,
+`doc.body.entry` is a `SectionView[]` in document order (a `TableView<Row>[]`
+when the section's sole content is a `table(...)`), while
+`doc.body.section("Entry")` still returns the first occurrence. See
+[How it works](/how-it-works/#repeatable-sections) for the full model.
+
 ## Embed it
 
 The CLI is a thin shell — everything it does is a library call away. Validate

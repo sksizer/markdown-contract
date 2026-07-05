@@ -12,7 +12,7 @@ import v12 from "../../tests/fixtures/validation/12-list-leaf-checkbox-minitems.
 import v14 from "../../tests/fixtures/validation/14-nested-children-subsections.js";
 import type { ValidationFixture } from "../../tests/harness.js";
 import type { Finding } from "../core/types.js";
-import { loadContract } from "./index.js";
+import { compileContractObject, DeclarativeError, loadContract } from "./index.js";
 
 // Compare on the fields a YAML contract must reproduce exactly: id / level / line.
 const shape = (findings: Finding[]): Array<{ id: string; level: string; line?: number }> =>
@@ -50,4 +50,51 @@ describe("body + leaf compiler — parity with the TS fixtures (sample)", () => 
   it("v12 — list checkbox + minItems", () => expectParity(v12, "12-list-leaf-checkbox-minitems"));
   it("v14 — nested children subsections", () =>
     expectParity(v14, "14-nested-children-subsections"));
+});
+
+describe("body compiler — repeatable slot (T-1TA2, AC-4)", () => {
+  const build = (node: Record<string, unknown>) =>
+    compileContractObject({
+      body: { order: "none", allowUnknown: true, sections: [node] },
+    });
+  const ctx = { path: "fixture.md" };
+
+  it("repeatable: true compiles to a slot that admits repeated peers", () => {
+    const c = build({ section: "Entry", repeatable: true });
+    const src = ["## Entry", "", "a", "", "## Entry", "", "b", ""].join("\n");
+    expect(c.validate(src, ctx).findings).toEqual([]);
+  });
+
+  it("min/max compile through and enforce structure/repeat-count", () => {
+    const c = build({ section: "Entry", repeatable: true, min: 2, max: 3 });
+    expect(c.validate("## Entry\n\na\n", ctx).findings.map((f) => f.id)).toEqual([
+      "structure/repeat-count",
+    ]);
+  });
+
+  it("repeatable must be a boolean (DeclarativeError)", () => {
+    expect(() => build({ section: "Entry", repeatable: "true" })).toThrow(DeclarativeError);
+  });
+
+  it("min must be a number (DeclarativeError)", () => {
+    expect(() => build({ section: "Entry", repeatable: true, min: "lots" })).toThrow(
+      DeclarativeError,
+    );
+  });
+
+  it("also compiles from a full YAML contract document", () => {
+    const yaml = [
+      "mcVersion: 1",
+      "kind: contract",
+      "body:",
+      "  order: none",
+      "  allowUnknown: true",
+      "  sections:",
+      "    - section: Entry",
+      "      repeatable: true",
+    ].join("\n");
+    const c = loadContract(yaml);
+    const src = ["## Entry", "", "a", "", "## Entry", "", "b", ""].join("\n");
+    expect(c.validate(src, ctx).findings).toEqual([]);
+  });
 });

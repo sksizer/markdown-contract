@@ -578,6 +578,18 @@ function sampleList(list: string[], n = 5): string {
     : `${list.slice(0, n).join(", ")} (and ${list.length - n} more)`;
 }
 
+/** Drop repeats from a list, keeping the first occurrence of each value (order preserved). */
+function dedupePreservingOrder(names: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const name of names) {
+    if (seen.has(name)) continue;
+    seen.add(name);
+    out.push(name);
+  }
+  return out;
+}
+
 /**
  * Generalize the body plane (D-0009 § Step 3 — sections + order + unknown admission). Lists
  * the group's complete observed section vocabulary in the detected order; required = universal,
@@ -602,18 +614,43 @@ function inferBody(
   | {
       order: Order;
       allowUnknown: boolean;
-      sections: Array<{ section: string; aliases?: string[]; optional?: boolean }>;
+      sections: Array<{
+        section: string;
+        aliases?: string[];
+        optional?: boolean;
+        repeatable?: boolean;
+      }>;
     }
   | undefined {
-  const { order, sections } = detectOrder(docs);
+  const { order, sections: detected } = detectOrder(docs);
+  // Dedupe the detected spine: a heading repeated as peers in one doc (a repeatable slot) appears
+  // once in the contract. `detectOrder`'s `none` / `recognized-relative` paths already dedupe via
+  // the union; the `strict` path echoes `docs[0]`'s sequence verbatim, so collapse it here (T-1TA2).
+  const sections = dedupePreservingOrder(detected);
   if (sections.length === 0) return undefined;
+
+  // A spelling that appears ≥2 times as peers within ANY single doc is a repeatable slot (T-1TA2):
+  // its exact-duplicate peers must validate (not `structure/duplicate-section`), so the inferred
+  // contract accepts its own corpus. (`ParsedDoc.sections` preserves per-doc duplicates.) Distinct
+  // key-colliding spellings are handled below unchanged — repeatable is only for exact duplicates.
+  const repeatedSpellings = new Set<string>();
+  for (const doc of docs) {
+    const counts = new Map<string, number>();
+    for (const name of doc.sections) counts.set(name, (counts.get(name) ?? 0) + 1);
+    for (const [name, n] of counts) if (n >= 2) repeatedSpellings.add(name);
+  }
 
   const byKey = groupSpellingsByKey(sections);
 
-  const entries: Array<{ section: string; aliases?: string[]; optional?: boolean }> = [];
+  const entries: Array<{
+    section: string;
+    aliases?: string[];
+    optional?: boolean;
+    repeatable?: boolean;
+  }> = [];
   const emitted = new Set<string>(); // primary spellings already emitted
   for (const name of sections) {
-    emitSectionEntry(name, byKey, emitted, docs, sink, entries);
+    emitSectionEntry(name, byKey, emitted, repeatedSpellings, docs, sink, entries);
   }
 
   return relax
@@ -644,9 +681,10 @@ function emitSectionEntry(
   name: string,
   byKey: Map<string, string[]>,
   emitted: Set<string>,
+  repeatedSpellings: Set<string>,
   docs: ParsedDoc[],
   sink: InferSink,
-  entries: Array<{ section: string; aliases?: string[]; optional?: boolean }>,
+  entries: Array<{ section: string; aliases?: string[]; optional?: boolean; repeatable?: boolean }>,
 ): void {
   const key = toCamelKey(name);
   const spellings = key === "" ? [name] : byKey.get(key)!;
@@ -658,9 +696,13 @@ function emitSectionEntry(
   const aliases = spellings.slice(1);
   // Required iff every doc carries at least ONE of the (merged) spellings.
   const required = docs.every((d) => spellings.some((s) => d.sections.includes(s)));
-  const entry: { section: string; aliases?: string[]; optional?: boolean } = { section: primary };
+  const entry: { section: string; aliases?: string[]; optional?: boolean; repeatable?: boolean } = {
+    section: primary,
+  };
   if (aliases.length > 0) entry.aliases = aliases;
   if (!required) entry.optional = true;
+  // Repeatable when any of the slot's spellings recurs as peers within one doc (T-1TA2).
+  if (spellings.some((s) => repeatedSpellings.has(s))) entry.repeatable = true;
   entries.push(entry);
 
   if (aliases.length > 0) recordAliasMerge(spellings, key, primary, docs, sink);

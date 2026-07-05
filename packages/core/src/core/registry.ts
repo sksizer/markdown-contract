@@ -22,6 +22,7 @@ export const STRUCTURE_LEVELS: Record<string, FindingLevel> = {
   "structure/block-missing": "error",
   "structure/block-kind": "error",
   "structure/gap-count": "error",
+  "structure/repeat-count": "error",
   "structure/heading-depth-jump": "warn",
 };
 

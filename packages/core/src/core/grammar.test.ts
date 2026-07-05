@@ -46,6 +46,44 @@ describe("the body-grammar combinators build tagged spec data", () => {
   });
 });
 
+describe("repeatable bounds (T-1TA2)", () => {
+  test("section(name, { repeatable: true }) rides the flag through onto the spec", () => {
+    expect(section("Entry", { repeatable: true })).toEqual({
+      kind: "section",
+      names: ["Entry"],
+      opts: { repeatable: true },
+    });
+  });
+
+  test("repeatable with valid min/max builds cleanly", () => {
+    expect(() => section("Entry", { repeatable: true, min: 1, max: 3 })).not.toThrow();
+  });
+
+  test("min without repeatable throws ContractBuildError (contract/repeat-bounds)", () => {
+    try {
+      section("Entry", { min: 1 });
+      throw new Error("expected section() to throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(ContractBuildError);
+      expect((e as ContractBuildError).id).toBe("contract/repeat-bounds");
+    }
+  });
+
+  test("max without repeatable throws ContractBuildError", () => {
+    expect(() => section("Entry", { max: 2 })).toThrow(ContractBuildError);
+  });
+
+  test("min greater than max throws ContractBuildError", () => {
+    try {
+      section("Entry", { repeatable: true, min: 3, max: 1 });
+      throw new Error("expected section() to throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(ContractBuildError);
+      expect((e as ContractBuildError).id).toBe("contract/repeat-bounds");
+    }
+  });
+});
+
 describe("build-time key-collision guard", () => {
   test("two sibling names that collapse to one camelCase key throw ContractBuildError", () => {
     expect(() => sections({}, [section("Files to touch"), section("Files To Touch")])).toThrow(

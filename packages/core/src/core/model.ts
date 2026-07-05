@@ -316,7 +316,13 @@ function sectionGroup(nodes: SectionNode[], seq: SectionSeq | undefined): Sectio
   // is a single `table(...)` leaf PROMOTES to that table's `TableView` — the "heading is the
   // table" case (proposed-shape §6 "Naming a table as a field", first row). The `.section(name)`
   // accessor always hands back the underlying `SectionView`, promoted or not.
-  const declaredKeyed: { view: SectionView; value: SectionView | TableView }[] = [];
+  //
+  // A declared REPEATABLE slot (T-1TA2) instead binds an ARRAY: every matching occurrence's value
+  // (a `SectionView`, or a promoted `TableView`) collected in document order under the slot's
+  // dual-key key. The first occurrence establishes the key and position; later peers append. A
+  // non-repeatable slot binds a single value, exactly as before.
+  const declaredKeyed: { name: string; value: SectionElement | SectionElement[] }[] = [];
+  const repeatAt = new Map<string, number>(); // exact heading name → index into declaredKeyed
   const unknown: SectionView[] = [];
   // Exact-name → SectionView, over EVERY section (declared and unknown) for `.section(name)`.
   const byExact = new Map<string, SectionView>();
@@ -324,11 +330,12 @@ function sectionGroup(nodes: SectionNode[], seq: SectionSeq | undefined): Sectio
     const opts = optsFor(seq, node.name);
     const view = sectionView(node, opts);
     if (!byExact.has(view.name)) byExact.set(view.name, view); // first occurrence wins
-    if (declared.has(node.name)) {
-      declaredKeyed.push({ view, value: promotedTable(view, opts) ?? view });
-    } else {
+    if (!declared.has(node.name)) {
       unknown.push(view);
+      continue;
     }
+    const element: SectionElement = promotedTable(view, opts) ?? view;
+    bindDeclaredElement(declaredKeyed, repeatAt, node.name, element, opts?.repeatable === true);
   }
 
   // Start from a bare object so its OWN enumerable keys are only the dual-key section keys.
@@ -353,13 +360,44 @@ function sectionGroup(nodes: SectionNode[], seq: SectionSeq | undefined): Sectio
   // declared-and-present sections only. First occurrence wins; a camel key never clobbers a
   // reserved member, an exact-name key, or a prior alias (collisions are a structure-plane
   // error, so first-wins keeps the access object stable).
-  for (const { view, value } of declaredKeyed) {
-    if (!(view.name in group)) group[view.name] = value;
-    const key = toCamelKey(view.name);
-    if (key !== "" && key !== view.name && !(key in group)) group[key] = value;
+  for (const { name, value } of declaredKeyed) {
+    // A repeatable slot's `value` is a mixed `(SectionView | TableView)[]`; the index signature
+    // splits it into `SectionView[] | TableView[]`, so widen through the signature's value type.
+    const bound = value as SectionGroup[string];
+    if (!(name in group)) group[name] = bound;
+    const key = toCamelKey(name);
+    if (key !== "" && key !== name && !(key in group)) group[key] = bound;
   }
 
   return group;
+}
+
+/** The value a declared section binds: a `SectionView`, or the `TableView` it promotes to. */
+type SectionElement = SectionView | TableView;
+
+/**
+ * Append `element` to the declared-keyed list under `name`. A repeatable slot (T-1TA2) gathers its
+ * occurrences into one array — the first occurrence establishes the key and position, later peers
+ * append; a non-repeatable slot binds the single value.
+ */
+function bindDeclaredElement(
+  declaredKeyed: { name: string; value: SectionElement | SectionElement[] }[],
+  repeatAt: Map<string, number>,
+  name: string,
+  element: SectionElement,
+  repeatable: boolean,
+): void {
+  if (!repeatable) {
+    declaredKeyed.push({ name, value: element });
+    return;
+  }
+  const at = repeatAt.get(name);
+  if (at === undefined) {
+    repeatAt.set(name, declaredKeyed.length);
+    declaredKeyed.push({ name, value: [element] });
+  } else {
+    (declaredKeyed[at]!.value as SectionElement[]).push(element);
+  }
 }
 
 /**

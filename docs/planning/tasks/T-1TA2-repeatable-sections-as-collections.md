@@ -66,8 +66,8 @@ direct peers. A decision record captures the OOM/structure contract change.
    keep the error behavior for non-repeatable slots unchanged.
 4. Extend the OOM in `model.ts` so a repeatable slot projects to a typed array view,
    leaving single-section slots as today.
-5. Extend the declarative DSL (`declarative/schema.ts` and its config parse) to express a
-   repeatable slot, and the inferer (`declarative/infer.ts`) to emit one when it sees a
+5. Extend the declarative DSL (`packages/core/src/declarative/body.ts` and its config parse) to express a
+   repeatable slot, and the inferer (`packages/core/src/declarative/infer.ts`) to emit one when it sees a
    heading recurring as direct peers (the inverse of the T-KCOL collision guard).
 6. Add unit tests at each plane (structure, model, declarative infer) with a fixture
    document that repeats a heading as peers.
@@ -115,12 +115,24 @@ _Captured by /sdlc:task-work on 2026-07-04. PR: pending._
 
 ### Acceptance criteria coverage
 
-_TBD — filled at Step 8._
+- AC-1: auto — `structure.test.ts` "AC-1 — a declared-repeatable heading repeated as peers validates cleanly"; also exercised end-to-end (contract with `section("Entry", { repeatable: true })` over a 3-peer doc → no `structure/duplicate-section` / `structure/key-collision`, zero error findings).
+- AC-2: auto — `model.test.ts` "repeatable slot → an array in the model" (runtime prose + promoted-table) plus type-level `_AC2_*` assertions checked by `tsc`; end-to-end confirmed `doc.body.Entry` / `doc.body.entry` are length-3 arrays, positionally indexable, elements typed as `SectionView`.
+- AC-3: auto — `structure.test.ts` "AC-3 — the SAME heading repeated but NOT declared repeatable still errors" (`structure/duplicate-section`); 722-test suite confirms no regression to the per-level-uniqueness rule.
+- AC-4: auto — `body.test.ts` "body compiler — repeatable slot" (DSL accepts `repeatable: true` + min/max) and `infer.test.ts` "repeatable-slot inference"; end-to-end confirmed the inferer emits `repeatable: true` for an exact-duplicate-peer corpus and the inferred contract accepts its own corpus (accept-by-construction).
+- AC-5: auto — `docs/planning/decisions/D-0017-repeatable-sections.md` committed (id D-0017, `status: open/accepted`), following the D-0005 shape and referencing D-0003 / D-0005.
 
 ### What worked
 
-_TBD — filled at Step 8._
+- The design threaded cleanly through the existing `SectionOpts` → `Slot` → `optsFor` machinery; no new grammar node was needed, and the phantom-type `SectionValue<O>` array-wrap slotted into the established T-SCRB typing.
+- The baseline-gated quality gate (`--diff-against-baseline`) cleanly subtracted the repo's ~337 pre-existing biome warnings, so the gate reported `OK 6/6` on branch-introduced drift only.
+- End-to-end verification via a throwaway script (build a contract, validate a repeated-peer doc, infer over a temp corpus) confirmed every AC behaviorally, not just through the unit suite.
 
 ### Friction and automation gaps
 
-_TBD — filled at Step 8._
+- The task spec's `## Approach` cited `declarative/schema.ts` for the DSL change, but the section-structure DSL actually compiles in `declarative/body.ts` (`schema.ts` is the value-schema Zod compiler) — the readiness gate's path-claim resolver flagged the abbreviated citations, and the true file only surfaced on reading the code. Auto-define could ground `## Approach` file citations against the codebase (resolve each cited path, and prefer the module that actually contains the named responsibility) so specs point at the real edit site. → [[T-RV1F-ground-approach-file-citations]]
+- The silent `--line` quality mode spuriously reported `FAIL bunx moon run core:lint`: the runner's `spawnSync` uses the default 1 MB `maxBuffer`, and biome's replayed pre-existing warnings (~1.04 MB) tripped `ENOBUFS`/`SIGTERM` → exit 1, while the baseline-gated `--line` run and a direct `moon run core:lint` both exit 0 with zero errors. The quality runner's `runOneSilent` should raise (or drop) `maxBuffer` so a verb's large-but-benign stdout can't masquerade as a failure. → [[T-HGPH-quality-runner-raise-maxbuffer]]
+
+### Spawned follow-up tasks
+
+- [[T-RV1F-ground-approach-file-citations]] (https://github.com/sksizer/dev/pull/660) — auto-define should ground `## Approach` file citations against the codebase; spawned as an `sdlc-meta` follow-up on `sksizer/dev`.
+- [[T-HGPH-quality-runner-raise-maxbuffer]] (https://github.com/sksizer/dev/pull/661) — the quality runner's `runOneSilent` should raise/drop `maxBuffer` so large-but-benign stdout can't fail a check; spawned as an `sdlc-meta` follow-up on `sksizer/dev`.
