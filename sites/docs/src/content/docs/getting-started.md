@@ -35,6 +35,9 @@ markdown-contract validate ./docs --format sarif > results.sarif        # or --f
 Findings print as `path:line level id — message`. Exit codes are CI-ready:
 **0** clean, **1** error-level findings, **2** usage or config error.
 
+The [CLI reference](/reference/cli/) lists every command, flag, and exit code, and
+the [findings reference](/reference/findings/) specifies the printed line format.
+
 ## Or let `init` write the config for you
 
 `init` reads an existing folder of markdown and infers a tight-but-accepting
@@ -49,7 +52,8 @@ markdown-contract init ./docs --check      # CI drift guard: fail if docs outgre
 ## Declare a contract in YAML — no code
 
 Simple contracts need no TypeScript. A contract document declares frontmatter
-fields and body sections:
+fields and body sections — the [YAML reference](/reference/yaml/) is the full
+field catalog:
 
 ```yaml
 # decision.contract.yaml
@@ -81,7 +85,8 @@ rules:
 
 ## Or author it in TypeScript
 
-The code API adds what YAML can't express: arbitrary Zod schemas, nested
+The code API (full surface in the [API reference](/reference/api/)) adds what
+YAML can't express: arbitrary Zod schemas, nested
 grammars, and custom rules — and it types the document for reading:
 
 ```ts
@@ -136,7 +141,8 @@ when the section's sole content is a `table(...)`), while
 ## Embed it
 
 The CLI is a thin shell — everything it does is a library call away. Validate
-a corpus from your own tooling with `runCorpus`:
+a corpus from your own tooling with `runCorpus` (see the [API
+reference](/reference/api/)):
 
 ```ts
 import { defineConfig, runCorpus } from "markdown-contract";
@@ -152,3 +158,9 @@ const { findings, exitCode, stats } = runCorpus(config, { cwd: repoRoot });
 The [examples](/examples/cli/) are the fastest way to learn the rest: eight
 short ladders of small, verified examples, each rung building on the last —
 from first CLI run to cross-document governance rules.
+
+When you need exhaustive detail, the **reference** section is the spec:
+[CLI](/reference/cli/), [YAML config & contracts](/reference/yaml/),
+[library API](/reference/api/), [typed model](/reference/model/),
+[findings](/reference/findings/), [dialect](/reference/dialect/), and the
+[glossary](/reference/glossary/).
