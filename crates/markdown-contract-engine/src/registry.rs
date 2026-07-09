@@ -28,8 +28,6 @@ pub const STRUCTURE_LEVELS: &[(&str, FindingLevel)] = &[
 ];
 
 /// The default severity for every content- and frontmatter-plane finding id (D-0004 / D-0001).
-/// The content plane itself lands next phase; the ids are registered now so severity
-/// resolution is complete from day one.
 pub const CONTENT_LEVELS: &[(&str, FindingLevel)] = &[
     ("content/table/column-missing", FindingLevel::Error),
     ("content/table/column-extra", FindingLevel::Error),

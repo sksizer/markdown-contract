@@ -15,7 +15,7 @@
 //! - node-local rules       — [`Rule`](crate::contract::Rule) carriers run here
 //!
 //! Kind and presence are structure; data shape is content (D-0001). This plane reads
-//! `LeafSpec::kind` only — the content checks land next phase.
+//! `LeafSpec::kind` only — the data checks are the content plane's ([`crate::content`]).
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -767,7 +767,8 @@ pub fn scan_heading_depth_jumps(root: &SectionNode, ctx: &Ctx) -> Vec<Finding> {
 // Each test is one fixture from `packages/core/tests/fixtures/validation/`: the same
 // contract (built programmatically), the same verbatim markdown, and the fixture's
 // pinned `{id, level?, line?}` expectations. The shared corpus harness over the
-// `.expected.json` goldens lands next phase; these inline ports pin parity until then.
+// `.expected.json` goldens (`tests/corpus.rs`) pins the declarative path; these
+// inline ports pin the programmatic builder path.
 
 #[cfg(test)]
 mod tests {
@@ -1061,7 +1062,7 @@ mod tests {
                 "Summary",
                 SectionOpts {
                     anchor: Some("summary".into()),
-                    content: Some(SectionContent::Single(LeafSpec::max_words(120))),
+                    content: Some(SectionContent::Single(LeafSpec::max_words(120.0))),
                     ..Default::default()
                 },
             )],

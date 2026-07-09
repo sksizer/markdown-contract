@@ -7,14 +7,15 @@
 //! invoked during validation — node rules per declared, present section, doc rules over
 //! the whole projected tree.
 //!
-//! Content-plane seams (TODO, next phase): [`Contract::frontmatter`] and
-//! [`LeafSpec::config`] exist and are carried inert — the structure plane reads only
-//! `LeafSpec::kind` (the kind-gate); the frontmatter schema, table/list/code/maxWords
-//! content checks, declarative text constraints, and the YAML loader land with the
-//! content plane and are skipped by `validate` until then.
+//! Content-plane data rides here too: [`Contract::frontmatter`] carries the compiled
+//! [`Schema`] the frontmatter plane runs, and [`LeafSpec::config`] carries the typed
+//! [`LeafConfig`] (columns / minRows / cells / everyItem / lang / maxWords) the content
+//! plane interprets. The structure plane still reads only `LeafSpec::kind` (the
+//! kind-gate); the data checks live in [`crate::content`].
 
 use crate::finding::Finding;
 use crate::registry::Ctx;
+use crate::schema::Schema;
 use crate::tree::{BlockKind, DocTree, SectionNode};
 
 // ── Rules: the programmatic escape (mirrors TS `rule` / `docRule`) ──────────────────
@@ -83,14 +84,68 @@ where
 
 // ── Leaves & section options ─────────────────────────────────────────────────────────
 
+/// Whether undeclared table columns are tolerated or reported (`content/table/column-extra`).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ExtraColumns {
+    #[default]
+    Ignore,
+    Error,
+}
+
+/// A `table(...)` leaf's content config — the TS `TableConfig`.
+#[derive(Debug, Clone, Default)]
+pub struct TableConfig {
+    pub columns: Vec<String>,
+    /// carried for the typed-model surface; the validating anchor binding is the
+    /// [`SectionContent::Anchored`] key
+    pub anchor: Option<String>,
+    pub min_rows: Option<f64>,
+    /// per-column typed cells, in declaration order
+    pub cells: Vec<(String, Schema)>,
+    pub extra_columns: ExtraColumns,
+}
+
+/// A list leaf's per-item check — the checkbox gate, or a schema over each item's text.
+#[derive(Debug, Clone)]
+pub enum EveryItem {
+    Checkbox,
+    Schema(Schema),
+}
+
+/// A `list(...)` leaf's content config — the TS `ListConfig`. (`ordered` rides along
+/// for the typed-model surface; the TS content plane does not check it, so neither
+/// does this one.)
+#[derive(Debug, Clone, Default)]
+pub struct ListConfig {
+    pub ordered: Option<bool>,
+    pub every_item: Option<EveryItem>,
+    pub min_items: Option<f64>,
+}
+
+/// A `code(...)` leaf's content config — the TS `CodeConfig`.
+#[derive(Debug, Clone, Default)]
+pub struct CodeConfig {
+    pub lang: Option<String>,
+}
+
+/// The typed content-plane config a leaf carries — what the TS builders stash on
+/// `LeafSpec.config`, with cell/item schemas already compiled.
+#[derive(Debug, Clone)]
+pub enum LeafConfig {
+    Table(TableConfig),
+    List(ListConfig),
+    Code(CodeConfig),
+    /// a paragraph word-count bound — the TS `maxWords(n)`
+    MaxWords(f64),
+}
+
 /// A content leaf: the structural kind-gate (checked by the structure plane) plus the
-/// inert `config` the content plane will interpret next phase.
-#[derive(Debug, Clone, PartialEq)]
+/// typed `config` the content plane interprets.
+#[derive(Debug, Clone)]
 pub struct LeafSpec {
     pub kind: BlockKind,
-    /// the raw leaf config (columns / minRows / everyItem / lang / maxWords …), carried
-    /// untouched for the content plane (TODO next phase — see module docs)
-    pub config: Option<serde_yaml::Value>,
+    /// the leaf's content config; `None` = kind-gate only (no data checks)
+    pub config: Option<LeafConfig>,
 }
 
 impl LeafSpec {
@@ -98,40 +153,56 @@ impl LeafSpec {
         Self { kind, config: None }
     }
 
-    /// A table leaf (kind-gate only this phase).
+    /// A table leaf with no data checks (kind-gate only).
     pub fn table() -> Self {
         Self::new(BlockKind::Table)
     }
 
-    /// A list leaf (kind-gate only this phase).
+    /// A table leaf with content checks — the TS `table({...})`.
+    pub fn table_with(config: TableConfig) -> Self {
+        Self {
+            kind: BlockKind::Table,
+            config: Some(LeafConfig::Table(config)),
+        }
+    }
+
+    /// A list leaf with no data checks (kind-gate only).
     pub fn list() -> Self {
         Self::new(BlockKind::List)
     }
 
-    /// A code leaf (kind-gate only this phase).
+    /// A list leaf with content checks — the TS `list({...})`.
+    pub fn list_with(config: ListConfig) -> Self {
+        Self {
+            kind: BlockKind::List,
+            config: Some(LeafConfig::List(config)),
+        }
+    }
+
+    /// A code leaf with no data checks (kind-gate only).
     pub fn code() -> Self {
         Self::new(BlockKind::Code)
     }
 
-    /// A paragraph leaf (kind-gate only this phase).
+    /// A code leaf pinned to a language — the TS `code({ lang })`.
+    pub fn code_with(config: CodeConfig) -> Self {
+        Self {
+            kind: BlockKind::Code,
+            config: Some(LeafConfig::Code(config)),
+        }
+    }
+
+    /// A paragraph leaf (kind-gate only).
     pub fn paragraph() -> Self {
         Self::new(BlockKind::Paragraph)
     }
 
-    /// A paragraph leaf bounding word count — the TS `maxWords(n)`; the bound itself is
-    /// content-plane config, inert this phase.
-    pub fn max_words(n: u64) -> Self {
-        let config = serde_yaml::to_value(std::collections::BTreeMap::from([("maxWords", n)])).ok();
+    /// A paragraph leaf bounding word count — the TS `maxWords(n)`.
+    pub fn max_words(n: f64) -> Self {
         Self {
             kind: BlockKind::Paragraph,
-            config,
+            config: Some(LeafConfig::MaxWords(n)),
         }
-    }
-
-    /// Attach a raw content-plane config (carried inert this phase).
-    pub fn with_config(mut self, config: serde_yaml::Value) -> Self {
-        self.config = Some(config);
-        self
     }
 }
 
@@ -285,18 +356,18 @@ pub fn sections(opts: LevelOpts, specs: Vec<Spec>) -> SectionSeq {
 
 // ── The contract ──────────────────────────────────────────────────────────────────────
 
-/// Placeholder for the frontmatter plane's declarative schema (TODO next phase — see
-/// module docs): carried on the contract, not yet validated.
-#[derive(Debug, Clone, PartialEq)]
+/// The frontmatter plane's compiled schema — an object [`Schema`] the plane runs over
+/// the parsed frontmatter data (the TS contract's `frontmatter` Zod object).
+#[derive(Debug, Clone)]
 pub struct FrontmatterSpec {
-    pub schema: serde_yaml::Value,
+    pub schema: Schema,
 }
 
-/// A compiled contract for one markdown class: frontmatter schema (inert this phase),
-/// body grammar, and doc-scoped rules.
+/// A compiled contract for one markdown class: frontmatter schema, body grammar, and
+/// doc-scoped rules.
 #[derive(Default)]
 pub struct Contract {
-    /// TODO(content plane): validated next phase; carried inert now (see module docs)
+    /// validated by the frontmatter plane (`frontmatter/*` findings)
     pub frontmatter: Option<FrontmatterSpec>,
     pub body: Option<SectionSeq>,
     /// cross-plane rules over the whole projected tree
@@ -320,7 +391,7 @@ impl Contract {
         self
     }
 
-    /// Set the (inert, next-phase) frontmatter schema.
+    /// Set the frontmatter schema.
     pub fn frontmatter(mut self, spec: FrontmatterSpec) -> Self {
         self.frontmatter = Some(spec);
         self
@@ -370,7 +441,7 @@ mod tests {
     #[test]
     fn max_words_is_a_paragraph_kind_leaf() {
         // `maxWords(n)` gates on a paragraph; the bound itself is content-plane config.
-        assert_eq!(LeafSpec::max_words(120).kind, BlockKind::Paragraph);
+        assert_eq!(LeafSpec::max_words(120.0).kind, BlockKind::Paragraph);
         assert_eq!(LeafSpec::table().kind, BlockKind::Table);
     }
 

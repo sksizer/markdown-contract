@@ -23,7 +23,8 @@ use comrak::{Arena, Options};
 
 use crate::dialect::{extract_trailing_anchor, is_standalone_anchor};
 use crate::finding::SourcePos;
-use crate::tree::{BlockNode, DocTree, ListItem, SectionNode};
+use crate::frontmatter::yaml_to_json;
+use crate::tree::{BlockNode, DocTree, Frontmatter, ListItem, SectionNode};
 
 // ── Frontmatter split (mirrors `splitFrontmatter` / `bodyAfterFrontmatter`) ─────────
 
@@ -34,16 +35,6 @@ pub struct FrontmatterSplit {
     pub raw: Option<String>,
     /// verbatim source after the closing fence's line terminator (whole doc when none)
     pub body: String,
-}
-
-/// The position-aware frontmatter block. `data` is the parsed YAML (best-effort;
-/// `None` when the YAML does not parse — the frontmatter plane that validates it
-/// lands next phase). `pos` is the opening `---` fence (line 1).
-#[derive(Debug, Clone, PartialEq)]
-pub struct Frontmatter {
-    pub raw: String,
-    pub data: Option<serde_yaml::Value>,
-    pub pos: SourcePos,
 }
 
 /// Is `line` (terminator already stripped) exactly a `---` fence, allowing trailing
@@ -106,27 +97,29 @@ pub fn split_frontmatter(md: &str) -> FrontmatterSplit {
 // ── parse_document — the public entry point ─────────────────────────────────────────
 
 /// Parse raw markdown (frontmatter + body) into the positioned projection. Positions in
-/// the returned tree are absolute document lines, matching the TS engine.
-pub fn parse_document(source: &str) -> (Option<Frontmatter>, DocTree) {
+/// the returned tree are absolute document lines, matching the TS engine. The
+/// frontmatter's `data` mirrors the TS `yaml` package's `toJS()` value shape (see
+/// [`yaml_to_json`]); `None` when the YAML does not parse.
+pub fn parse_document(source: &str) -> DocTree {
     let split = split_frontmatter(source);
     // `body` is a suffix of `source`; the lines before it shift every body sourcepos.
     let prefix_len = source.len() - split.body.len();
     let line_offset = source[..prefix_len].bytes().filter(|&b| b == b'\n').count() as u32;
 
     let frontmatter = split.raw.map(|raw| Frontmatter {
-        data: serde_yaml::from_str(&raw).ok(),
+        data: serde_yaml::from_str::<serde_yaml::Value>(&raw)
+            .ok()
+            .map(yaml_to_json),
         raw,
         pos: SourcePos::at(1, 1),
     });
 
     let root = project_body(&split.body, line_offset);
-    (
+    DocTree {
         frontmatter,
-        DocTree {
-            body: split.body,
-            root,
-        },
-    )
+        body: split.body,
+        root,
+    }
 }
 
 // ── comrak projection ────────────────────────────────────────────────────────────────
@@ -391,8 +384,8 @@ mod tests {
 
     #[test]
     fn one_section_one_paragraph() {
-        let (fm, tree) = parse_document("## Overview\n\nPlain prose.\n");
-        assert!(fm.is_none());
+        let tree = parse_document("## Overview\n\nPlain prose.\n");
+        assert!(tree.frontmatter.is_none());
         assert_eq!(tree.root.name, "");
         assert_eq!(tree.root.sections.len(), 1);
         let sec = &tree.root.sections[0];
@@ -411,7 +404,7 @@ mod tests {
 
     #[test]
     fn leading_h1_is_the_title_not_a_section() {
-        let (_, tree) = parse_document("# Widget notes\n\n## Background\n\nWidgets are small.");
+        let tree = parse_document("# Widget notes\n\n## Background\n\nWidgets are small.");
         assert_eq!(tree.root.name, "Widget notes");
         assert_eq!(tree.root.sections.len(), 1);
         assert_eq!(tree.root.sections[0].name, "Background");
@@ -475,8 +468,8 @@ mod tests {
     #[test]
     fn body_positions_are_absolute_document_lines() {
         let src = "---\nid: D-0099\nstatus: open/draft\ntitle: Adopt the widget protocol\n---\n\n# Adopt the widget protocol\n\n## Summary\n\nWe will adopt the widget protocol across all services.";
-        let (fm, tree) = parse_document(src);
-        let fm = fm.expect("frontmatter present");
+        let tree = parse_document(src);
+        let fm = tree.frontmatter.as_ref().expect("frontmatter present");
         assert_eq!(
             fm.raw,
             "id: D-0099\nstatus: open/draft\ntitle: Adopt the widget protocol"
@@ -494,7 +487,7 @@ mod tests {
     #[test]
     fn table_columns_rows_and_row_lines() {
         let src = "## Decision\n\n| # | Component | Resolution |\n| - | --------- | ---------- |\n| 1 | engine    | markdown-contract |";
-        let (_, tree) = parse_document(src);
+        let tree = parse_document(src);
         let BlockNode::Table {
             columns,
             rows,
@@ -522,7 +515,7 @@ mod tests {
     #[test]
     fn task_list_items_carry_checked_state_and_lines() {
         let src = "## Acceptance criteria\n\n- [ ] first thing\n- [x] second thing\n- plain item\n";
-        let (_, tree) = parse_document(src);
+        let tree = parse_document(src);
         let BlockNode::List { ordered, items, .. } = &tree.root.sections[0].blocks[0] else {
             panic!("expected a list");
         };
@@ -543,7 +536,7 @@ mod tests {
     #[test]
     fn fenced_code_is_opaque_and_keeps_its_lang() {
         let src = "## Example\n\n```ts\nconst x = 1;\n## not a heading\n```\n";
-        let (_, tree) = parse_document(src);
+        let tree = parse_document(src);
         let sec = &tree.root.sections[0];
         assert_eq!(sec.sections.len(), 0); // the ## inside the fence is verbatim (D2)
         let BlockNode::Code {
@@ -562,7 +555,7 @@ mod tests {
     #[test]
     fn paragraph_trailing_anchor_line_binds_to_the_paragraph() {
         let src = "## Summary\n\nProse line one.\n^summary\n";
-        let (_, tree) = parse_document(src);
+        let tree = parse_document(src);
         let block = &tree.root.sections[0].blocks[0];
         assert_eq!(block.anchor(), Some("summary"));
         let BlockNode::Paragraph { text, .. } = block else {
@@ -574,7 +567,7 @@ mod tests {
     #[test]
     fn standalone_anchor_paragraph_binds_to_the_preceding_block() {
         let src = "## Decision\n\n| A | B |\n| - | - |\n| 1 | 2 |\n\n^components\n";
-        let (_, tree) = parse_document(src);
+        let tree = parse_document(src);
         assert_eq!(tree.root.sections[0].blocks[0].anchor(), Some("components"));
     }
 
@@ -583,7 +576,7 @@ mod tests {
         // No blank line: GFM absorbs the `^id` line as a table row; the projection
         // lifts it back out as the table's anchor (15a fixture shape).
         let src = "## Decision\n\n| # | Component | Resolution |\n| - | --------- | ---------- |\n| 1 | Projection | mdast → DocTree |\n^components\n";
-        let (_, tree) = parse_document(src);
+        let tree = parse_document(src);
         let BlockNode::Table { rows, anchor, .. } = &tree.root.sections[0].blocks[0] else {
             panic!("expected a table");
         };
@@ -594,7 +587,7 @@ mod tests {
     #[test]
     fn standalone_anchor_with_no_block_is_section_level() {
         let src = "## Summary\n\n^orphan\n";
-        let (_, tree) = parse_document(src);
+        let tree = parse_document(src);
         assert_eq!(tree.root.sections[0].anchors, vec!["orphan".to_string()]);
         assert!(tree.root.sections[0].blocks.is_empty());
     }
@@ -604,7 +597,7 @@ mod tests {
     #[test]
     fn skipped_level_attaches_to_nearest_ancestor_with_true_depth() {
         let src = "## Decision\n\nProse.\n\n#### Components\n\nDeep.\n";
-        let (_, tree) = parse_document(src);
+        let tree = parse_document(src);
         let decision = &tree.root.sections[0];
         assert_eq!(decision.sections.len(), 1);
         assert_eq!(decision.sections[0].depth, 4); // TRUE depth, no synthesized H3 (D3)
@@ -614,14 +607,14 @@ mod tests {
     #[test]
     fn blockquote_content_is_not_hoisted() {
         let src = "## Notes\n\n> | A |\n> | - |\n> | 1 |\n";
-        let (_, tree) = parse_document(src);
+        let tree = parse_document(src);
         assert!(tree.root.sections[0].blocks.is_empty()); // D4
     }
 
     #[test]
     fn multiline_paragraph_flattens_with_soft_breaks_as_newlines() {
         let src = "## Summary\n\nline one\nline two\n";
-        let (_, tree) = parse_document(src);
+        let tree = parse_document(src);
         let BlockNode::Paragraph { text, .. } = &tree.root.sections[0].blocks[0] else {
             panic!()
         };
@@ -631,7 +624,7 @@ mod tests {
     #[test]
     fn wikilinks_survive_projection_intact() {
         let src = "## Refs\n\nsee [[D-0002]] and ![[Diagram]]\n";
-        let (_, tree) = parse_document(src);
+        let tree = parse_document(src);
         let BlockNode::Paragraph { text, .. } = &tree.root.sections[0].blocks[0] else {
             panic!()
         };

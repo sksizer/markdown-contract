@@ -136,10 +136,26 @@ impl SectionNode {
     }
 }
 
-/// The projected document: the verbatim body after frontmatter, and the synthetic root
-/// whose `sections` are the top-level H2s and whose `name` is the leading-H1 title.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// The position-aware frontmatter block. `data` is the parsed YAML projected to the
+/// JSON value shape the TS `yaml` package's `toJS()` yields (`None` when the YAML does
+/// not parse — the undefined case). `pos` is the opening `---` fence (line 1). The
+/// key-path → source-line index the frontmatter plane uses is derived from `raw` by
+/// [`crate::frontmatter::line_for_path`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct Frontmatter {
+    /// inter-fence YAML text, fences stripped
+    pub raw: String,
+    pub data: Option<serde_json::Value>,
+    pub pos: SourcePos,
+}
+
+/// The projected document: the frontmatter block (when present), the verbatim body
+/// after it, and the synthetic root whose `sections` are the top-level H2s and whose
+/// `name` is the leading-H1 title.
+#[derive(Debug, Clone, PartialEq)]
 pub struct DocTree {
+    /// the leading `---` YAML block, position-aware; `None` when absent
+    pub frontmatter: Option<Frontmatter>,
     /// verbatim source body after the frontmatter block (the whole doc when none)
     pub body: String,
     /// synthetic root (depth 1); `root.sections` are the top-level body sections

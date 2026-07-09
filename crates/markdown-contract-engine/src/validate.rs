@@ -5,17 +5,19 @@
 //!
 //! 1. parse `source` (or accept a pre-parsed [`DocTree`]);
 //! 2. the contract-independent outline check ([`scan_heading_depth_jumps`]);
-//! 3. the STRUCTURE plane ([`match_structure`]) — its kind-gate gates the content leaf;
-//! 4. TODO(content plane, next phase): the CONTENT plane (frontmatter schema + content
-//!    leaves) and the declarative TEXT constraints are not yet run — the contract fields
-//!    exist ([`Contract::frontmatter`], `LeafSpec::config`) and are skipped here;
-//! 5. the doc-scoped RULE plane ([`DocRule`](crate::contract::DocRule)s);
+//! 3. the STRUCTURE plane ([`match_structure`]) — its kind-gate gates the content leaf,
+//!    and node-local rules (including section-scoped text constraints) run with it;
+//! 4. the CONTENT plane ([`match_content`]) — the frontmatter schema plus each declared
+//!    section's content leaf over a present, correct-kind block;
+//! 5. the doc-scoped RULE plane ([`DocRule`](crate::contract::DocRule)s — including
+//!    document-scoped text constraints);
 //! 6. merge + deterministically SORT ([`sort_findings`]).
 //!
 //! The sort reproduces the TS comparator exactly: ascending `pos.line` (no-pos sorts
 //! first, as line 0), then `pos.col` (no-col as 0), then plane rank (frontmatter →
 //! structure → content → text → rule), then stable emission order.
 
+use crate::content::match_content;
 use crate::contract::Contract;
 use crate::finding::Finding;
 use crate::parse::parse_document;
@@ -53,8 +55,8 @@ pub fn sort_findings(mut findings: Vec<Finding>) -> Vec<Finding> {
 // ── The one-pass orchestration ────────────────────────────────────────────────────────
 
 /// Validate a pre-parsed tree against a contract: outline scan, structure plane (with
-/// node-local rules), doc-scoped rules, deterministic sort. The content and text planes
-/// are wired next phase (see module docs).
+/// node-local rules), content plane (frontmatter schema + content leaves), doc-scoped
+/// rules, deterministic sort.
 pub fn validate_tree(tree: &DocTree, contract: &Contract, path: &str) -> Vec<Finding> {
     let registry = Registry::default();
     let ctx = Ctx::new(path, &registry);
@@ -68,6 +70,10 @@ pub fn validate_tree(tree: &DocTree, contract: &Contract, path: &str) -> Vec<Fin
         findings.extend(match_structure(&tree.root, body, &ctx));
     }
 
+    // Content plane: the frontmatter schema plus each section's content leaf over a
+    // present, correct-kind block (guarded inside so it never re-reports the kind-gate).
+    findings.extend(match_content(tree, contract, &ctx));
+
     // Rule plane: doc-scoped rules over the projected tree.
     for r in &contract.rules {
         findings.extend(r.run(tree, &ctx));
@@ -76,12 +82,10 @@ pub fn validate_tree(tree: &DocTree, contract: &Contract, path: &str) -> Vec<Fin
     sort_findings(findings)
 }
 
-/// The string-in convenience: parse (frontmatter split + projection), then validate.
-/// The parsed frontmatter is not yet consumed — the frontmatter plane lands with the
-/// content plane (see module docs).
+/// The string-in convenience: parse (frontmatter split + projection), then validate
+/// every plane in the TS orchestration order.
 pub fn validate(source: &str, contract: &Contract, path: &str) -> Vec<Finding> {
-    let (_frontmatter, tree) = parse_document(source);
-    validate_tree(&tree, contract, path)
+    validate_tree(&parse_document(source), contract, path)
 }
 
 #[cfg(test)]
