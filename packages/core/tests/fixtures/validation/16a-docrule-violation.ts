@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, docRule, list, oneOf, optional, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/16a-docrule-violation.md
 // Edge on 16: both planes valid in isolation, yet the cross-plane combination is illegal.
@@ -61,12 +61,12 @@ const v16a: ValidationFixture = {
     {
       label: "pass — worked task that carries its Post-mortem",
       source: loadSource(import.meta.url, "./16a-docrule-violation.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./16a-docrule-violation.pass.expected.json"),
     },
     {
       label: "fail — closed/done, Post-mortem absent; only the cross-plane rule fires",
       source: loadSource(import.meta.url, "./16a-docrule-violation.fail.md"),
-      findings: [{ id: "task/post-mortem-when-worked", level: "error" }],
+      findings: loadExpected(import.meta.url, "./16a-docrule-violation.fail.expected.json"),
     },
   ],
 };

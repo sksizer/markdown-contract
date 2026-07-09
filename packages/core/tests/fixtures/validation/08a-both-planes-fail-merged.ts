@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/08a-both-planes-fail-merged.md
 // One document fails both planes; one pass returns both findings in one list,
@@ -29,15 +29,12 @@ const v08a: ValidationFixture = {
     {
       label: "pass — both planes satisfied",
       source: loadSource(import.meta.url, "./08a-both-planes-fail-merged.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./08a-both-planes-fail-merged.pass.expected.json"),
     },
     {
       label: "fail — invalid status enum and absent Context",
       source: loadSource(import.meta.url, "./08a-both-planes-fail-merged.fail.md"),
-      findings: [
-        { id: "frontmatter/enum", level: "error", line: 3 },
-        { id: "structure/section-missing" },
-      ],
+      findings: loadExpected(import.meta.url, "./08a-both-planes-fail-merged.fail.expected.json"),
     },
   ],
 };

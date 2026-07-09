@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, list, oneOf, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/20a-real-task-closed-without-completion-note.md
 // The frontmatter conditional closed/* ⇒ completion_note lives in the per-type Zod as a
@@ -68,12 +68,18 @@ const v20a: ValidationFixture = {
     {
       label: "pass — closed task carries its completion_note frontmatter key",
       source: loadSource(import.meta.url, "./20a-real-task-closed-without-completion-note.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./20a-real-task-closed-without-completion-note.pass.expected.json",
+      ),
     },
     {
       label: "fail — status closed/done with no completion_note key",
       source: loadSource(import.meta.url, "./20a-real-task-closed-without-completion-note.fail.md"),
-      findings: [{ id: "frontmatter/refine", level: "error" }],
+      findings: loadExpected(
+        import.meta.url,
+        "./20a-real-task-closed-without-completion-note.fail.expected.json",
+      ),
     },
   ],
 };

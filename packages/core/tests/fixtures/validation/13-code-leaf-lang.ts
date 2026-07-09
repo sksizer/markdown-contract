@@ -1,6 +1,6 @@
 import { code, contract, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/13-code-leaf-lang.md
 // The code({ lang }) content leaf: assert the fence's info-string language.
@@ -19,12 +19,12 @@ const v13: ValidationFixture = {
     {
       label: "pass — fence tagged ts matches declared lang",
       source: loadSource(import.meta.url, "./13-code-leaf-lang.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./13-code-leaf-lang.pass.expected.json"),
     },
     {
       label: "fail — fence tagged js does not match required ts",
       source: loadSource(import.meta.url, "./13-code-leaf-lang.fail.md"),
-      findings: [{ id: "content/code/lang", level: "error", line: 3 }],
+      findings: loadExpected(import.meta.url, "./13-code-leaf-lang.fail.expected.json"),
     },
   ],
 };

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/11-typed-cells-enum-pattern.md
 // table({ cells: { Col: ZodType } }) — per-cell Zod over a declared column. The
@@ -31,12 +31,12 @@ const v11: ValidationFixture = {
     {
       label: "pass — every Kind and Location cell conforms",
       source: loadSource(import.meta.url, "./11-typed-cells-enum-pattern.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./11-typed-cells-enum-pattern.pass.expected.json"),
     },
     {
       label: "fail — row 2 Kind outside the enum",
       source: loadSource(import.meta.url, "./11-typed-cells-enum-pattern.fail.md"),
-      findings: [{ id: "content/table/cell" }],
+      findings: loadExpected(import.meta.url, "./11-typed-cells-enum-pattern.fail.expected.json"),
     },
   ],
 };

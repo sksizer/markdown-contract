@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/18-oom-consumption-typed-views.md
 // The §6 object model as a consumer surface: read(), TableView iteration, byAnchor,
@@ -35,7 +35,10 @@ const v18: ValidationFixture = {
     {
       label: "pass — frontmatter matches; typed Files-to-touch table promotes to a field",
       source: loadSource(import.meta.url, "./18-oom-consumption-typed-views.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./18-oom-consumption-typed-views.pass.expected.json",
+      ),
     },
     {
       label: "fail — row 1 Kind 'rename' outside the enum; read() error door",
@@ -45,7 +48,10 @@ const v18: ValidationFixture = {
       // provenance's best-effort `table/cell`. Row-precise pos: the offending `rename` row is on
       // line 10 (frontmatter 1-4, blank 5, heading 6, blank 7, header 8, separator 9, data 10);
       // the provenance's `line: 5` miscounted.
-      findings: [{ id: "content/table/cell", level: "error", line: 10 }],
+      findings: loadExpected(
+        import.meta.url,
+        "./18-oom-consumption-typed-views.fail.expected.json",
+      ),
     },
   ],
 };

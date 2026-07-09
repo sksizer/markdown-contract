@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/11a-cell-enum-violation.md
 // One cell outside its declared z.enum → one localized cell finding. The provenance
@@ -28,12 +28,12 @@ const v11a: ValidationFixture = {
     {
       label: "pass — every Kind cell in the enum",
       source: loadSource(import.meta.url, "./11a-cell-enum-violation.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./11a-cell-enum-violation.pass.expected.json"),
     },
     {
       label: "fail — row 2 Kind is rename, outside the enum",
       source: loadSource(import.meta.url, "./11a-cell-enum-violation.fail.md"),
-      findings: [{ id: "content/table/cell", level: "error", line: 6 }],
+      findings: loadExpected(import.meta.url, "./11a-cell-enum-violation.fail.expected.json"),
     },
   ],
 };

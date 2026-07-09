@@ -1,6 +1,6 @@
 import { contract, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/21b-fence-contains-heading-line.md
 // Fence-awareness: a `##` line inside a fenced code block is opaque content, not a
@@ -26,7 +26,7 @@ const v21b: ValidationFixture = {
     {
       label: "pass — in-fence ## Decision is opaque; no spurious section",
       source: loadSource(import.meta.url, "./21b-fence-contains-heading-line.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./21b-fence-contains-heading-line.expected.json"),
     },
   ],
 };

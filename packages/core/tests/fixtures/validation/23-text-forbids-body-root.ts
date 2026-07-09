@@ -1,6 +1,6 @@
 import { contract, section, sections, textRule } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // D-0011 / C-0009 — body-root `forbids`: a phrase must be ABSENT from the WHOLE document.
 // `textRule({ forbids: [...] })` attaches to the contract's `rules` slot and compiles to a
@@ -38,12 +38,12 @@ const v23: ValidationFixture = {
     {
       label: "pass — the forbidden path class appears nowhere",
       source: loadSource(import.meta.url, "./23-text-forbids-body-root.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./23-text-forbids-body-root.pass.expected.json"),
     },
     {
       label: "fail — the document still reaches into }scripts/; the forbid fires at the line",
       source: loadSource(import.meta.url, "./23-text-forbids-body-root.fail.md"),
-      findings: [{ id: "text/forbids/doc/o9pijh", level: "error", line: 3 }],
+      findings: loadExpected(import.meta.url, "./23-text-forbids-body-root.fail.expected.json"),
     },
   ],
   note: "Synthesized id `text/forbids/doc/<hash>`; the whole-document scope uses the projected tree (T-5LHY), so the forbid pins at the exact offending source line (3).",

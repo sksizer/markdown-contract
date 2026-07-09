@@ -1,6 +1,6 @@
 import { contract, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/18a-camelcase-key-collision.md
 // A contract-BUILD-time guard: two section names that collapse to the same camelCase
@@ -26,7 +26,7 @@ const v18a: ValidationFixture = {
     {
       label: "pass — distinct camelCase keys; a conforming doc validates clean",
       source: loadSource(import.meta.url, "./18a-camelcase-key-collision.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./18a-camelcase-key-collision.expected.json"),
     },
   ],
 };

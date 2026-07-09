@@ -11,8 +11,13 @@
  *    lands), so the build runs only inside an *active* test — skipped fixtures type-check
  *    but never execute the stubs.
  *  - **Tolerant finding match.** Findings are compared on `{ id, level?, line? }` in the
- *    engine's deterministic order. `level`/`line` are asserted only when the fixture pins
+ *    engine's deterministic order. `level`/`line` are asserted only when the golden pins
  *    them, so a fixture can fix the id now and tighten position later.
+ *  - **Golden peers are the source of truth.** A validation case's expected findings live in
+ *    a language-neutral `<source-basename>.expected.json` peer beside the case's `.md` file
+ *    (D-0018 §D3), loaded via `loadExpected` — the fixture module keeps only build/label/source
+ *    wiring. The Rust corpus harness walks the same goldens via
+ *    `fixtures/validation/corpus-manifest.json`.
  *  - **Incremental greening.** A fixture runs only when `IMPLEMENTED[its component]` is true
  *    (see `components.ts`); otherwise it is skipped.
  *
@@ -51,11 +56,23 @@ export interface ExpectedFinding {
   line?: number;
 }
 
+/**
+ * Load a validation case's expected findings from its golden peer — the
+ * `<source-basename>.expected.json` file beside the case's `.md` input (D-0018 §D3: one
+ * language-neutral golden per case, shared with the Rust corpus harness). Mirrors
+ * `loadSource`: `metaUrl` is the fixture module's `import.meta.url`; `rel` is the peer
+ * (e.g. `./x.fail.expected.json`). The golden is a JSON array of `{ id, level?, line? }`
+ * in engine order; `[]` asserts a passing document.
+ */
+export function loadExpected(metaUrl: string, rel: string): ExpectedFinding[] {
+  return JSON.parse(readFileSync(new URL(rel, metaUrl), "utf8")) as ExpectedFinding[];
+}
+
 export interface ValidationCase {
   /** "pass — …" or a description of the failure variant. */
   label: string;
   source: string;
-  /** Expected findings in engine order; `[]` is a passing document. */
+  /** Expected findings in engine order (from the `.expected.json` golden); `[]` is a passing document. */
   findings: ExpectedFinding[];
 }
 

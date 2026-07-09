@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, gap, maxWords, optional, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/19a-real-decision-three-findings.md
 // The §5.3 combined-failure merge on a real Decision: one validate() pass trips
@@ -50,21 +50,23 @@ const v19a: ValidationFixture = {
     {
       label: "pass — conforming: status in enum, ^summary anchored, Why after Decision",
       source: loadSource(import.meta.url, "./19a-real-decision-three-findings.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./19a-real-decision-three-findings.pass.expected.json",
+      ),
     },
     {
       label: "fail — status open/draft, no ^summary, ## Why before ## Decision",
       source: loadSource(import.meta.url, "./19a-real-decision-three-findings.fail.md"),
-      findings: [
-        { id: "frontmatter/enum", level: "error", line: 3 },
-        { id: "structure/anchor-missing", level: "error", line: 10 },
-        // recognized-relative flags the LATER-declared section that appears out of order
-        // (## Decision, declared before Why) — the engine's established semantics (see
-        // structure fixture 04a). The example guessed the Why heading; the canonical
-        // engine line is the ## Decision heading. With ### Components added so the strict
-        // Decision child resolves, that lands on line 22.
-        { id: "structure/section-order", level: "error", line: 22 },
-      ],
+      // Golden note — structure/section-order: recognized-relative flags the LATER-declared
+      // section that appears out of order (## Decision, declared before Why) — the engine's
+      // established semantics (see structure fixture 04a). The example guessed the Why heading;
+      // the canonical engine line is the ## Decision heading. With ### Components added so the
+      // strict Decision child resolves, that lands on line 22.
+      findings: loadExpected(
+        import.meta.url,
+        "./19a-real-decision-three-findings.fail.expected.json",
+      ),
     },
   ],
 };

@@ -4,6 +4,13 @@ An exploratory mapping of the TypeScript fixture corpus (`tests/fixtures/{valida
 
 > The v1 YAML loader is not built yet — it is planned in milestone **M-0002** and specified in decision **D-0008** (`docs/planning/decisions/D-0008-declarative-contract-dsl.md`). These peers, and the pending parity test (`tests/yaml-parity.test.ts`), are forward-looking: they fix the target shape and document the coverage v1 will deliver, and the parity test activates once `markdown-contract/declarative` lands. v1 deliberately excludes the **code escape hatch** (`$ref`) and **cross-cutting rules** (`rule` / `docRule`) — see D-0008 § Out of scope — so every gap below is one of those deferred features.
 
+> **Golden peers / corpus manifest (D-0018 §D3).** Each validation case's expected findings
+> now live in a language-neutral `<source-basename>.expected.json` golden beside the case's
+> `.md`, and `validation/corpus-manifest.json` indexes the corpus for the Rust harness. Its
+> per-fixture `shared` flag is this table's tier mechanized: `true` iff the `.contract.yaml`
+> peer is **full** (present, no `# GAP:`, not `peerless`); **partial** and peerless fixtures
+> stay `shared: false` (TS-only). See `tests/FIXTURES.md` § Golden peers.
+
 ## Coverage
 
 | Tier | Count |

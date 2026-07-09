@@ -1,7 +1,7 @@
 import { extractVaultRefs } from "../../../src/core/dialect/index.js";
 import { contract, docRule, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Referential integrity, in-document arm (T-DREF / DIALECT-10): a docRule that pairs
 // `extractVaultRefs` (the dialect's wikilink recognizer) with `doc.byAnchor` (the doc-wide
@@ -55,12 +55,12 @@ const v26: ValidationFixture = {
     {
       label: "pass — [[#^target]] paired with a block carrying ^target; resolves in-doc",
       source: loadSource(import.meta.url, "./26-in-doc-dead-anchor.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./26-in-doc-dead-anchor.pass.expected.json"),
     },
     {
       label: "fail — [[#^ghost]] with no ^ghost anchor anywhere; the dead-anchor rule fires",
       source: loadSource(import.meta.url, "./26-in-doc-dead-anchor.fail.md"),
-      findings: [{ id: "dialect/in-doc-anchor-resolves", level: "error" }],
+      findings: loadExpected(import.meta.url, "./26-in-doc-dead-anchor.fail.expected.json"),
     },
   ],
 };

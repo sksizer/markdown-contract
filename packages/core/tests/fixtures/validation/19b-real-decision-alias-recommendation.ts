@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, gap, maxWords, oneOf, optional, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/19b-real-decision-alias-recommendation.md
 // oneOf on the real Decision contract: the required core slot is satisfied by any of
@@ -47,12 +47,18 @@ const v19b: ValidationFixture = {
     {
       label: "pass — ## Recommendation fills the required oneOf slot",
       source: loadSource(import.meta.url, "./19b-real-decision-alias-recommendation.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./19b-real-decision-alias-recommendation.pass.expected.json",
+      ),
     },
     {
       label: "fail — core heading renamed to ## Verdict, outside the alias set",
       source: loadSource(import.meta.url, "./19b-real-decision-alias-recommendation.fail.md"),
-      findings: [{ id: "structure/section-missing", level: "error" }],
+      findings: loadExpected(
+        import.meta.url,
+        "./19b-real-decision-alias-recommendation.fail.expected.json",
+      ),
     },
   ],
 };

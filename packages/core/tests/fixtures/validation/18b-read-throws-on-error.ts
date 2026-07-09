@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, maxWords, optional, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/18b-read-throws-on-error.md
 // The two-door contrast: read() throws on error-level findings, validate() never does.
@@ -35,12 +35,12 @@ const v18b: ValidationFixture = {
     {
       label: "pass — Decision section present; both doors agree",
       source: loadSource(import.meta.url, "./18b-read-throws-on-error.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./18b-read-throws-on-error.pass.expected.json"),
     },
     {
       label: "fail — Decision section absent; read() throws, validate() reports",
       source: loadSource(import.meta.url, "./18b-read-throws-on-error.fail.md"),
-      findings: [{ id: "structure/section-missing", level: "error", line: 8 }],
+      findings: loadExpected(import.meta.url, "./18b-read-throws-on-error.fail.expected.json"),
     },
   ],
 };

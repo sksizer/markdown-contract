@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, gap, oneOf, optional, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/21-real-milestone-or-skill-doctype.md
 // A third real entity contract (Milestone): a lenient body, a required Deliverables
@@ -42,18 +42,21 @@ const v21: ValidationFixture = {
     {
       label: "pass — conforming Milestone; H3 categories admitted by nested gap()",
       source: loadSource(import.meta.url, "./21-real-milestone-or-skill-doctype.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./21-real-milestone-or-skill-doctype.pass.expected.json",
+      ),
     },
     {
       label: "fail — status open/wip off-enum; ## Deliverables dropped",
       source: loadSource(import.meta.url, "./21-real-milestone-or-skill-doctype.fail.md"),
-      findings: [
-        { id: "frontmatter/enum", level: "error", line: 3 },
-        // section-missing localizes to the first body heading (## Goal, line 9) — the engine's
-        // established structure-plane behavior (see fixtures 01/14b/18b). The example guessed
-        // line 1; the canonical engine line is the first body heading.
-        { id: "structure/section-missing", level: "error", line: 9 },
-      ],
+      // Golden note — structure/section-missing localizes to the first body heading (## Goal,
+      // line 9) — the engine's established structure-plane behavior (see fixtures 01/14b/18b).
+      // The example guessed line 1; the canonical engine line is the first body heading.
+      findings: loadExpected(
+        import.meta.url,
+        "./21-real-milestone-or-skill-doctype.fail.expected.json",
+      ),
     },
   ],
 };

@@ -1,6 +1,6 @@
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/15a-declared-anchor-absent.md
 // Edge on 15: a declared content-record anchor that no block carries.
@@ -31,12 +31,12 @@ const v15a: ValidationFixture = {
     {
       label: "pass — both tables carry their ^anchor",
       source: loadSource(import.meta.url, "./15a-declared-anchor-absent.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./15a-declared-anchor-absent.pass.expected.json"),
     },
     {
       label: "fail — second table has no ^risks marker; binding unresolved",
       source: loadSource(import.meta.url, "./15a-declared-anchor-absent.fail.md"),
-      findings: [{ id: "structure/block-missing", level: "error", line: 1 }],
+      findings: loadExpected(import.meta.url, "./15a-declared-anchor-absent.fail.expected.json"),
     },
   ],
 };

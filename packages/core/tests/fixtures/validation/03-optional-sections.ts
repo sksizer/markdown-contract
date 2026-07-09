@@ -1,6 +1,6 @@
 import { contract, optional, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/03-optional-sections.md
 // optional(section(...)) — valid present or absent, no finding either way.
@@ -22,17 +22,17 @@ const v03: ValidationFixture = {
     {
       label: "pass — required pair present, optional Notes present",
       source: loadSource(import.meta.url, "./03-optional-sections.pass-1.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./03-optional-sections.pass-1.expected.json"),
     },
     {
       label: "pass — optional Notes omitted entirely",
       source: loadSource(import.meta.url, "./03-optional-sections.pass-2.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./03-optional-sections.pass-2.expected.json"),
     },
     {
       label: "fail — required Overview dropped; absent optional Notes is silent",
       source: loadSource(import.meta.url, "./03-optional-sections.fail.md"),
-      findings: [{ id: "structure/section-missing", level: "error" }],
+      findings: loadExpected(import.meta.url, "./03-optional-sections.fail.expected.json"),
     },
   ],
 };

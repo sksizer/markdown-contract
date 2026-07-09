@@ -1,6 +1,6 @@
 import { contract, oneOf, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/06b-oneof-two-members-present.md
 // Two distinct members of one oneOf set both present → an ambiguous slot. The
@@ -21,12 +21,12 @@ const v06b: ValidationFixture = {
     {
       label: "pass — exactly one alias member present",
       source: loadSource(import.meta.url, "./06b-oneof-two-members-present.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./06b-oneof-two-members-present.pass.expected.json"),
     },
     {
       label: "fail — both alias spellings present",
       source: loadSource(import.meta.url, "./06b-oneof-two-members-present.fail.md"),
-      findings: [{ id: "structure/duplicate-section" }],
+      findings: loadExpected(import.meta.url, "./06b-oneof-two-members-present.fail.expected.json"),
     },
   ],
 };

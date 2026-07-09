@@ -21,10 +21,13 @@ This is the **integration corpus** — it exercises the assembled pipeline and l
 | `tests/fixtures/consumption/*.ts` | One file per consumption example; `export default` a `ConsumptionFixture`. |
 | `tests/fixtures/{validation,consumption}/index.ts` | Barrels — import each fixture and list it. |
 | `tests/fixtures/{validation,consumption}/*.md` | Each case's input document (one `.md` per case; loaded via `loadSource`). |
+| `tests/fixtures/validation/*.expected.json` | Each validation case's **golden peer** — its expected findings as language-neutral JSON (one per case; loaded via `loadExpected`; D-0018 §D3). |
 | `tests/fixtures/{validation,consumption}/*.contract.yaml` | Per-fixture **v1 YAML contract peer** — the declarative-DSL expression of the fixture's contract (exploratory mapping; loader pending — M-0002 / D-0008). |
+| `tests/fixtures/validation/corpus-manifest.json` | The **corpus manifest** the Rust harness walks: per fixture its contract peer, `shared` flag, and each case's `.md` + `.expected.json` pair. |
 | `tests/validation.test.ts` / `tests/consumption.test.ts` | Feed the barrels to the runners. |
 | `tests/fixtures/YAML-MAPPING.md` | Fixture → v1-YAML coverage matrix (full / partial + gap reasons). |
 | `tests/yaml-parity.test.ts` | Asserts every fixture has a YAML peer; pending TS⇄YAML finding-parity suite (skipped until the loader lands). |
+| `tests/corpus-manifest.test.ts` | Pins `corpus-manifest.json` to the fixture modules (every fixture listed, files exist, goldens match) so the manifest can't drift. |
 
 ## Authoring a fixture
 
@@ -42,7 +45,7 @@ findings stay exact.
 
 ```ts
 import { contract, section, sections, table } from "../../../src/index.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 import type { ValidationFixture } from "../../harness.js";
 
 const v10b: ValidationFixture = {
@@ -58,10 +61,11 @@ const v10b: ValidationFixture = {
     }),
   cases: [
     { label: "pass — all declared columns present",
-      source: loadSource(import.meta.url, "./10b-table-missing-column.pass.md"), findings: [] },
+      source: loadSource(import.meta.url, "./10b-table-missing-column.pass.md"),
+      findings: loadExpected(import.meta.url, "./10b-table-missing-column.pass.expected.json") },
     { label: "fail — Change column dropped",
       source: loadSource(import.meta.url, "./10b-table-missing-column.fail.md"),
-      findings: [{ id: "content/table/column-missing", level: "error", line: 3 }] },
+      findings: loadExpected(import.meta.url, "./10b-table-missing-column.fail.expected.json") },
   ],
 };
 export default v10b;
@@ -70,9 +74,32 @@ export default v10b;
 Author the two peer documents beside it — `10b-table-missing-column.pass.md` and
 `…fail.md` — then add the fixture to `tests/fixtures/validation/index.ts`.
 
-`findings` is matched on `{ id, level?, line? }` in the engine's deterministic order. `id` is
-required; `level` and `line` are asserted **only when present**, so you can fix the id now and
-tighten the position when the component lands. `findings: []` is a passing document.
+### Golden peers — `<source-basename>.expected.json`
+
+A validation case's expected findings live in a **golden peer**, not an inline array
+(D-0018 §D3 — the goldens are language-neutral so the Rust corpus harness asserts the same
+files). The golden is named after the case's source document — `10b-table-missing-column.fail.md`
+↔ `10b-table-missing-column.fail.expected.json`, sitting beside it — and holds a JSON array of
+`{ "id", "level"?, "line"? }` in the engine's deterministic order:
+
+```json
+[
+  { "id": "content/table/column-missing", "level": "error", "line": 3 }
+]
+```
+
+The fixture module loads it with `loadExpected(import.meta.url, "./<file>.expected.json")`
+(mirroring `loadSource`). A **passing case gets an empty golden** (`[]`) — the absence of
+findings is an assertion too. Matching is unchanged: `id` is required; `level` and `line` are
+asserted **only when present** in the golden, so you can fix the id now and tighten the
+position when the component lands.
+
+Every new fixture is also added to `tests/fixtures/validation/corpus-manifest.json` — the
+per-fixture index (`id`, `contract` peer, `shared` flag, `cases: [{ source, expected }]`) the
+Rust harness walks. `shared: true` marks a fixture whose `.contract.yaml` fully expresses the
+contract (no `# GAP:`, not `peerless` — see `fixtures/YAML-MAPPING.md`); fixtures relying on
+programmatic escapes stay `shared: false` and remain TS-only. `tests/corpus-manifest.test.ts`
+fails if the manifest and the fixture modules drift.
 
 ### Consumption
 

@@ -1,6 +1,6 @@
 import { contract, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/14-nested-children-subsections.md
 // section({ children: sections(...) }) — a nested body grammar one level down.
@@ -24,12 +24,18 @@ const v14: ValidationFixture = {
     {
       label: "pass — child H3s match [Components, Resolution] in strict order",
       source: loadSource(import.meta.url, "./14-nested-children-subsections.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./14-nested-children-subsections.pass.expected.json",
+      ),
     },
     {
       label: "fail — H3s swapped; child grammar is strict, out of order",
       source: loadSource(import.meta.url, "./14-nested-children-subsections.fail.md"),
-      findings: [{ id: "structure/section-order", level: "error", line: 5 }],
+      findings: loadExpected(
+        import.meta.url,
+        "./14-nested-children-subsections.fail.expected.json",
+      ),
     },
   ],
 };

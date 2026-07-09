@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/07a-frontmatter-enum-and-unknown-key.md
 // Two frontmatter failures at once: an enum violation and a strict unknown-key
@@ -25,15 +25,18 @@ const v07a: ValidationFixture = {
     {
       label: "pass — valid status, no stray keys",
       source: loadSource(import.meta.url, "./07a-frontmatter-enum-and-unknown-key.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./07a-frontmatter-enum-and-unknown-key.pass.expected.json",
+      ),
     },
     {
       label: "fail — bad enum value plus an undeclared foo key",
       source: loadSource(import.meta.url, "./07a-frontmatter-enum-and-unknown-key.fail.md"),
-      findings: [
-        { id: "frontmatter/enum", level: "error", line: 3 },
-        { id: "frontmatter/unknown-key" },
-      ],
+      findings: loadExpected(
+        import.meta.url,
+        "./07a-frontmatter-enum-and-unknown-key.fail.expected.json",
+      ),
     },
   ],
 };

@@ -1,6 +1,6 @@
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/14b-content-before-first-subheading.md
 // Projection edge: pre-subheading blocks attach to the parent SectionNode.blocks;
@@ -26,14 +26,20 @@ const v14b: ValidationFixture = {
     {
       label: "pass — lead paragraph and table sit in Decision.blocks; child grammar still matches",
       source: loadSource(import.meta.url, "./14b-content-before-first-subheading.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./14b-content-before-first-subheading.pass.expected.json",
+      ),
     },
     {
       // The required ### Components child is absent and has no heading of its own, so the
       // section-missing finding carries no pos (absence-class; D-0001 A2) — line not pinned.
       label: "fail — ### Components heading dropped; required subsection absent",
       source: loadSource(import.meta.url, "./14b-content-before-first-subheading.fail.md"),
-      findings: [{ id: "structure/section-missing", level: "error" }],
+      findings: loadExpected(
+        import.meta.url,
+        "./14b-content-before-first-subheading.fail.expected.json",
+      ),
     },
   ],
 };

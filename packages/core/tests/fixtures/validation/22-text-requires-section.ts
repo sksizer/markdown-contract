@@ -1,6 +1,6 @@
 import { contract, requires, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // D-0011 / C-0009 — section-scoped `requires`: a phrase must be PRESENT in a section's subtree.
 // `requires([{ pattern }])` attaches to the section's `rules` slot and compiles to a node-local
@@ -27,12 +27,12 @@ const v22: ValidationFixture = {
     {
       label: "pass — Summary prose contains 'outcome'",
       source: loadSource(import.meta.url, "./22-text-requires-section.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./22-text-requires-section.pass.expected.json"),
     },
     {
       label: "fail — Summary never says 'outcome'; the require fires at the heading",
       source: loadSource(import.meta.url, "./22-text-requires-section.fail.md"),
-      findings: [{ id: "text/requires/summary/1tc7itx", level: "error", line: 1 }],
+      findings: loadExpected(import.meta.url, "./22-text-requires-section.fail.expected.json"),
     },
   ],
   note: "Synthesized per-entry id `text/requires/summary/<hash>`; the miss pins at the heading.",

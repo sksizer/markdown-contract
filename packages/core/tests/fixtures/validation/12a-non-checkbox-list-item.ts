@@ -1,6 +1,6 @@
 import { contract, list, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/12a-non-checkbox-list-item.md
 // Edge on 12: the everyItem: "checkbox" predicate fails on a single bare bullet.
@@ -25,12 +25,12 @@ const v12a: ValidationFixture = {
     {
       label: "pass — every bullet is a checkbox, clears minItems",
       source: loadSource(import.meta.url, "./12a-non-checkbox-list-item.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./12a-non-checkbox-list-item.pass.expected.json"),
     },
     {
       label: "fail — one plain bullet among three checkbox items",
       source: loadSource(import.meta.url, "./12a-non-checkbox-list-item.fail.md"),
-      findings: [{ id: "content/list/item-kind", level: "error", line: 5 }],
+      findings: loadExpected(import.meta.url, "./12a-non-checkbox-list-item.fail.expected.json"),
     },
   ],
 };

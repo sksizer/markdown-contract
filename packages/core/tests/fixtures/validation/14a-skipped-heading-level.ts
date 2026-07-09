@@ -1,6 +1,6 @@
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/14a-skipped-heading-level.md
 // Edge on 14: an H4 under an H2 skips H3. Resolved: the engine emits
@@ -30,12 +30,12 @@ const v14a: ValidationFixture = {
     {
       label: "pass — well-formed H3 Components nested under H2 Decision",
       source: loadSource(import.meta.url, "./14a-skipped-heading-level.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./14a-skipped-heading-level.pass.expected.json"),
     },
     {
       label: "fail — Components is H4, skipping H3",
       source: loadSource(import.meta.url, "./14a-skipped-heading-level.fail.md"),
-      findings: [{ id: "structure/heading-depth-jump", level: "warn", line: 5 }],
+      findings: loadExpected(import.meta.url, "./14a-skipped-heading-level.fail.expected.json"),
     },
   ],
 };

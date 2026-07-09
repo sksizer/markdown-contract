@@ -1,6 +1,6 @@
 import { contract, list, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/12b-list-below-minitems.md
 // The minItems floor (raised to 2): the count assertion fires, not everyItem.
@@ -23,12 +23,12 @@ const v12b: ValidationFixture = {
     {
       label: "pass — two checkbox items meet minItems: 2",
       source: loadSource(import.meta.url, "./12b-list-below-minitems.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./12b-list-below-minitems.pass.expected.json"),
     },
     {
       label: "fail — single-item list falls below minItems: 2",
       source: loadSource(import.meta.url, "./12b-list-below-minitems.fail.md"),
-      findings: [{ id: "content/list/min-items", level: "error", line: 3 }],
+      findings: loadExpected(import.meta.url, "./12b-list-below-minitems.fail.expected.json"),
     },
   ],
 };
