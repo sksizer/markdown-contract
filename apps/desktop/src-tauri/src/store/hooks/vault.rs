@@ -26,13 +26,26 @@ pub fn slug_id(name: &str) -> String {
     format!("vault-{}", if slug.is_empty() { "untitled" } else { &slug })
 }
 
+/// Reject a schedule the scheduler could never arm. Empty/absent means
+/// unscheduled and is always fine.
+fn validate_schedule(schedule: Option<&str>) -> Result<(), AppError> {
+    match schedule {
+        Some(expr) if !expr.is_empty() => {
+            crate::scheduler::validate_schedule(expr).map_err(AppError::Invalid)
+        }
+        _ => Ok(()),
+    }
+}
+
 /// Called before a vault is inserted: derives the slug id when the caller left
-/// it empty, and enforces the registry's path dedupe (one vault per path) —
-/// the flat-file registry semantics, kept in SQLite (D-0018 §D5).
+/// it empty, enforces the registry's path dedupe (one vault per path — the
+/// flat-file registry semantics, kept in SQLite, D-0018 §D5), and rejects
+/// invalid cron schedules at the seam.
 pub async fn before_create(store: &Store, vault: &mut Vault) -> Result<(), AppError> {
     if vault.id.is_empty() {
         vault.id = slug_id(&vault.name);
     }
+    validate_schedule(vault.schedule.as_deref())?;
     let existing = store.list_vaults(None, None).await?;
     if let Some(dup) = existing.iter().find(|v| v.path == vault.path) {
         return Err(AppError::Invalid(format!(
@@ -54,12 +67,16 @@ pub async fn after_create(_store: &Store, _vault: &Vault) -> Result<(), AppError
     Ok(())
 }
 
-/// Called before a vault is updated. Receives current state and pending changes.
+/// Called before a vault is updated: a pending schedule change must parse
+/// (clearing it with None is always fine).
 pub async fn before_update(
     _store: &Store,
     _current: &Vault,
-    _updates: &VaultUpdate,
+    updates: &VaultUpdate,
 ) -> Result<(), AppError> {
+    if let Some(schedule) = &updates.schedule {
+        validate_schedule(schedule.as_deref())?;
+    }
     Ok(())
 }
 
@@ -80,12 +97,28 @@ pub async fn after_delete(_store: &Store, _id: &str) -> Result<(), AppError> {
 
 #[cfg(test)]
 mod tests {
-    use super::slug_id;
+    use crate::schema::AppError;
+
+    use super::{slug_id, validate_schedule};
 
     #[test]
     fn slug_id_mirrors_the_registry_scheme() {
         assert_eq!(slug_id("My Docs"), "vault-my-docs");
         assert_eq!(slug_id("  Weird -- Name!  "), "vault-weird-name");
         assert_eq!(slug_id("!!!"), "vault-untitled");
+    }
+
+    #[test]
+    fn schedules_validate_at_the_seam() {
+        assert!(validate_schedule(None).is_ok());
+        assert!(
+            validate_schedule(Some("")).is_ok(),
+            "empty means unscheduled"
+        );
+        assert!(validate_schedule(Some("0 * * * *")).is_ok());
+        assert!(matches!(
+            validate_schedule(Some("every tuesday-ish")),
+            Err(AppError::Invalid(_))
+        ));
     }
 }

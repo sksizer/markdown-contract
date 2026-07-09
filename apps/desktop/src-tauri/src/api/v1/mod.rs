@@ -4,5 +4,6 @@
 //! function here — hand-written logic is never duplicated per transport.
 pub mod echo;
 pub mod generated;
+pub mod openers;
 pub mod scan;
 pub use generated::*;

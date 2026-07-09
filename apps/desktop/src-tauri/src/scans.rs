@@ -1,13 +1,28 @@
 //! Hand-written scan orchestration — the one place "scan a vault" is
 //! implemented, sitting BEHIND the generated API layer per D-0018 §D4 (the
 //! transports forward to api::v1::scan::scan_now, which forwards here; the
-//! future watcher/scheduler call here too with their own trigger).
+//! watcher/scheduler/startup/tray triggers call here too with their own
+//! trigger string). Every finished run is fanned out on the AppState's
+//! scan-completion broadcast — the seam notifications, the tray, and the
+//! webview "scan:completed" event hang off.
 
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::AppState;
-use crate::schema::{AppError, FindingRecord, ScanRun};
+use crate::schema::{AppError, FindingRecord, ScanRun, Vault};
+use crate::store::Store;
 use crate::store::generated::scan_run::ScanRunUpdate;
+
+/// One finished scan, broadcast from [`run_scan`]: the run, its vault, and
+/// the status of the vault's PREVIOUS finished run (None on the first scan) —
+/// exactly what transition-edge notification detection needs.
+#[derive(Debug, Clone)]
+pub struct ScanCompleted {
+    pub vault: Vault,
+    pub run: ScanRun,
+    pub previous_status: Option<String>,
+}
 
 /// Run one scan of `vault_id` now: persist a "running" ScanRun, call through
 /// the ScanEngine seam, persist each finding as a FindingRecord, and finalize
@@ -19,6 +34,7 @@ pub async fn run_scan(
 ) -> Result<ScanRun, AppError> {
     let store = state.store().await?;
     let vault = store.get_vault(vault_id).await?;
+    let previous_status = latest_finished_status(store, &vault.id).await?;
 
     let run_id = new_run_id(&vault.id);
     store
@@ -83,7 +99,64 @@ pub async fn run_scan(
             update.error_message = Some(Some(e.to_string()));
         }
     }
-    store.update_scan_run(&run_id, update).await
+    let run = store.update_scan_run(&run_id, update).await?;
+
+    state.notify_scan_completed(ScanCompleted {
+        vault,
+        run: run.clone(),
+        previous_status,
+    });
+    Ok(run)
+}
+
+/// Scan every registered vault with `trigger`, sequentially (no stampede).
+/// Per-vault failures are reported to stderr and don't stop the sweep — the
+/// startup sweep and the tray's "Scan all now" both want best-effort.
+pub async fn scan_all(state: &AppState, trigger: &str) {
+    let vaults = match state.store().await {
+        Ok(store) => match store.list_vaults(None, None).await {
+            Ok(vaults) => vaults,
+            Err(e) => {
+                eprintln!("scan_all({trigger}): listing vaults failed: {e}");
+                return;
+            }
+        },
+        Err(e) => {
+            eprintln!("scan_all({trigger}): store unavailable: {e}");
+            return;
+        }
+    };
+    for vault in vaults {
+        if let Err(e) = run_scan(state, &vault.id, trigger).await {
+            eprintln!("scan_all({trigger}): scanning '{}' failed: {e}", vault.id);
+        }
+    }
+}
+
+/// The status of the vault's most recent FINISHED run (skips in-flight
+/// "running" rows), or None when the vault has never completed a scan.
+async fn latest_finished_status(store: &Store, vault_id: &str) -> Result<Option<String>, AppError> {
+    let runs = store.list_scan_runs(None, None).await?;
+    Ok(runs
+        .into_iter()
+        .filter(|r| r.vault_id == vault_id && r.finished_at.is_some())
+        .max_by(|a, b| (&a.started_at, &a.id).cmp(&(&b.started_at, &b.id)))
+        .map(|r| r.status))
+}
+
+/// The most recent run per vault (including in-flight ones) — the tray menu's
+/// per-vault "current status" source.
+pub async fn latest_runs_by_vault(store: &Store) -> Result<HashMap<String, ScanRun>, AppError> {
+    let mut latest: HashMap<String, ScanRun> = HashMap::new();
+    for run in store.list_scan_runs(None, None).await? {
+        match latest.get(&run.vault_id) {
+            Some(cur) if (&cur.started_at, &cur.id) >= (&run.started_at, &run.id) => {}
+            _ => {
+                latest.insert(run.vault_id.clone(), run);
+            }
+        }
+    }
+    Ok(latest)
 }
 
 /// "run-<vault_id>-<epoch_nanos>-<seq>": time-ordered and collision-free even
@@ -221,6 +294,40 @@ mod tests {
 
         assert_eq!(run.status, "error");
         assert_eq!(run.error_message.as_deref(), Some("config unreadable"));
+    }
+
+    #[tokio::test]
+    async fn completions_broadcast_the_run_and_the_previous_status() {
+        let state = state_with(Arc::new(StubScanEngine)).await;
+        let vault = register_vault(&state).await;
+        let mut completions = state.subscribe_scan_completions();
+
+        run_scan(&state, &vault.id, "manual").await.unwrap();
+        let first = completions.recv().await.unwrap();
+        assert_eq!(first.vault.name, "My Docs");
+        assert_eq!(first.run.status, "green");
+        assert_eq!(
+            first.previous_status, None,
+            "first scan has no previous run"
+        );
+
+        run_scan(&state, &vault.id, "watch").await.unwrap();
+        let second = completions.recv().await.unwrap();
+        assert_eq!(second.previous_status.as_deref(), Some("green"));
+    }
+
+    #[tokio::test]
+    async fn scan_all_sweeps_every_vault() {
+        let state = state_with(Arc::new(StubScanEngine)).await;
+        let vault = register_vault(&state).await;
+
+        scan_all(&state, "startup").await;
+
+        let store = state.store().await.unwrap();
+        let latest = latest_runs_by_vault(store).await.unwrap();
+        let run = latest.get(&vault.id).expect("vault was swept");
+        assert_eq!(run.trigger, "startup");
+        assert_eq!(run.status, "green");
     }
 
     #[tokio::test]

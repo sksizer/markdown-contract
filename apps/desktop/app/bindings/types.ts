@@ -122,3 +122,18 @@ export type UpdateScanRunInput = {
   report_count?: number | null;
   error_message?: string | null | null;
 };
+
+// Long-tail types (emitted via ontogen-ts AST walker).
+export type OpenPreview = {
+  program: string;
+  args: string[];
+};
+
+export type OpenerInfo = {
+  app_id: string;
+  name: string;
+  command: string;
+  accepts_directories: boolean;
+  accepts_markdown: boolean;
+  sort_order: number;
+};

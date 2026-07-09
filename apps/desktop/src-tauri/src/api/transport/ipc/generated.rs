@@ -7,10 +7,10 @@ use std::sync::Arc;
 
 use tauri::State;
 
-use crate::api::v1::{echo, finding_record, opener_preference, scan, scan_run, vault};
+use crate::api::v1::{echo, finding_record, opener_preference, openers, scan, scan_run, vault};
 use crate::schema::{
     CreateFindingRecordInput, CreateOpenerPreferenceInput, CreateScanRunInput, CreateVaultInput,
-    FindingRecord, OpenerPreference, ScanRun, UpdateFindingRecordInput,
+    FindingRecord, OpenPreview, OpenerInfo, OpenerPreference, ScanRun, UpdateFindingRecordInput,
     UpdateOpenerPreferenceInput, UpdateScanRunInput, UpdateVaultInput, Vault,
 };
 use crate::store::Store;
@@ -232,6 +232,37 @@ pub async fn vault_delete(id: String, state: State<'_, Arc<AppState>>) -> Result
     vault::delete(&store, &id).await.map_err(|e| e.to_string())
 }
 
+// ── Openers IPC Commands ──
+
+#[tauri::command]
+pub async fn list_openers(state: State<'_, Arc<AppState>>) -> Result<Vec<OpenerInfo>, String> {
+    openers::list_openers(&state)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn open_path(
+    path: String,
+    app_id: String,
+    state: State<'_, Arc<AppState>>,
+) -> Result<(), String> {
+    openers::open_path(&state, path, app_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn preview_open(
+    path: String,
+    app_id: String,
+    state: State<'_, Arc<AppState>>,
+) -> Result<OpenPreview, String> {
+    openers::preview_open(&state, path, app_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 // ── Scan IPC Commands ──
 
 #[tauri::command]
@@ -268,6 +299,9 @@ pub fn ipc_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'sta
         vault_create,
         vault_update,
         vault_delete,
+        list_openers,
+        open_path,
+        preview_open,
         scan_now,
     ]
 }

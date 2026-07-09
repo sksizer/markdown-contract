@@ -5,6 +5,7 @@
 
 mod finding_record;
 mod opener_preference;
+mod openers;
 mod scan_run;
 mod vault;
 
@@ -12,6 +13,7 @@ pub mod dto;
 
 pub use finding_record::FindingRecord;
 pub use opener_preference::OpenerPreference;
+pub use openers::{OpenPreview, OpenerInfo};
 pub use scan_run::ScanRun;
 pub use vault::Vault;
 

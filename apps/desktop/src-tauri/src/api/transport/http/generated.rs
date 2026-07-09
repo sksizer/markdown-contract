@@ -15,10 +15,10 @@ use axum::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::api::v1::{echo, finding_record, opener_preference, scan, scan_run, vault};
+use crate::api::v1::{echo, finding_record, opener_preference, openers, scan, scan_run, vault};
 use crate::schema::{
     CreateFindingRecordInput, CreateOpenerPreferenceInput, CreateScanRunInput, CreateVaultInput,
-    FindingRecord, OpenerPreference, ScanRun, UpdateFindingRecordInput,
+    FindingRecord, OpenPreview, OpenerInfo, OpenerPreference, ScanRun, UpdateFindingRecordInput,
     UpdateOpenerPreferenceInput, UpdateScanRunInput, UpdateVaultInput, Vault,
 };
 use crate::store::Store;
@@ -275,6 +275,49 @@ async fn vault_delete(
         .map_err(|e| err(e.to_string()))
 }
 
+// ── Openers Handlers ──
+
+async fn list_openers(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<OpenerInfo>>, ApiError> {
+    openers::list_openers(&state)
+        .await
+        .map(Json)
+        .map_err(|e| err(e.to_string()))
+}
+
+#[derive(Deserialize)]
+struct OpenersOpenPathBody {
+    path: String,
+    app_id: String,
+}
+
+async fn open_path(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<OpenersOpenPathBody>,
+) -> Result<StatusCode, ApiError> {
+    openers::open_path(&state, body.path, body.app_id)
+        .await
+        .map(|_| StatusCode::NO_CONTENT)
+        .map_err(|e| err(e.to_string()))
+}
+
+#[derive(Deserialize)]
+struct OpenersPreviewOpenBody {
+    path: String,
+    app_id: String,
+}
+
+async fn preview_open(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<OpenersPreviewOpenBody>,
+) -> Result<Json<OpenPreview>, ApiError> {
+    openers::preview_open(&state, body.path, body.app_id)
+        .await
+        .map(Json)
+        .map_err(|e| err(e.to_string()))
+}
+
 // ── Scan Handlers ──
 
 #[derive(Deserialize)]
@@ -328,5 +371,8 @@ pub fn entity_routes() -> Router<Arc<AppState>> {
             "/api/vaults/:id",
             get(vault_get_by_id).put(vault_update).delete(vault_delete),
         )
+        .route("/api/openers/list", get(list_openers))
+        .route("/api/openers/open-path", post(open_path))
+        .route("/api/openers/preview-open", post(preview_open))
         .route("/api/scans/now", post(scan_now))
 }

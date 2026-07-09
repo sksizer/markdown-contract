@@ -34,14 +34,34 @@ ontogen = { git = "https://github.com/sksizer/rust-ontogen", rev = "81af0e941d2a
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# `tray-icon` for the resident system tray (D-0018 §D5); `image-png` so the
+# bundled PNG app icon decodes into the tray's `Image`.
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-opener = "2"
+# Desktop notifications on scan status transitions (D-0018 §D5).
+tauri-plugin-notification = "2"
 serde = { workspace = true }
 serde_json = { workspace = true }
 # Generated persistence: SeaORM over SQLite (scan history — the layer D-0012 deferred).
 sea-orm = { version = "1", features = ["sqlx-sqlite", "runtime-tokio-rustls"] }
-tokio = { version = "1", features = ["sync"] }
+# `time` for the watcher debounce + scheduler sleeps; `rt` for spawn_blocking
+# around the blocking opener detection; `macros` for tokio::select in tests.
+tokio = { version = "1", features = ["sync", "time", "rt", "macros"] }
 thiserror = "2"
+# Scan-on-change (D-0018 §D5): recursive fs watcher per vault, mirroring the
+# Bun daemon's watcher semantics (apps/web/src/daemon/watcher.ts).
+notify = "8"
+# Scheduled scans (D-0018 §D5): cron parsing + next-occurrence math. croner is
+# the parser D-0018 names; chrono is its time vocabulary (clock only — no
+# oldtime/wasmbind baggage).
+croner = "3"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+# "Open in …" (D-0018 §D5): installed-app detection + launch strategies
+# (Obsidian URI scheme aware). Published on crates.io as of 0.4 — preferred
+# over the git rev. NOTE: its optional `specta` feature pins =2.0.0-rc.22,
+# which conflicts with this crate's rc.23 pin, so the feature stays off and
+# the wire DTOs (schema::openers) are hand-owned.
+path-opener = "0.4"
 # The generated DTOs derive specta::Type + schemars::JsonSchema (iron-log parity).
 specta = { version = "=2.0.0-rc.23", features = ["derive", "function"] }
 schemars = "0.8"

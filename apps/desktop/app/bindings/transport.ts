@@ -7,6 +7,8 @@ import type {
   CreateScanRunInput,
   CreateVaultInput,
   FindingRecord,
+  OpenPreview,
+  OpenerInfo,
   OpenerPreference,
   ScanRun,
   UpdateFindingRecordInput,
@@ -50,6 +52,9 @@ export interface Transport {
   vaultCreate(input: CreateVaultInput): Promise<Vault>;
   vaultUpdate(id: string, input: UpdateVaultInput): Promise<Vault>;
   vaultDelete(id: string): Promise<null>;
+  listOpeners(): Promise<OpenerInfo[]>;
+  openPath(path: string, appId: string): Promise<null>;
+  previewOpen(path: string, appId: string): Promise<OpenPreview>;
   scanNow(vaultId: string): Promise<ScanRun>;
 }
 
@@ -210,6 +215,19 @@ export function createHttpTransport(): Transport {
       await httpDelete(`/vaults/${encodeURIComponent(id)}`);
       return null;
     },
+    async listOpeners(): Promise<OpenerInfo[]> {
+      return httpGet("/openers/list");
+    },
+    async openPath(path: string, appId: string): Promise<null> {
+      await httpPost("/openers/open-path", { path, app_id: appId });
+      return null;
+    },
+    async previewOpen(path: string, appId: string): Promise<OpenPreview> {
+      return httpPost<OpenPreview>("/openers/preview-open", {
+        path,
+        app_id: appId,
+      });
+    },
     async scanNow(vaultId: string): Promise<ScanRun> {
       return httpPost<ScanRun>("/scans/now", { vault_id: vaultId });
     },
@@ -299,6 +317,16 @@ export function createIpcTransport(): Transport {
     async vaultDelete(id: string): Promise<null> {
       await invoke("vault_delete", { id });
       return null;
+    },
+    async listOpeners(): Promise<OpenerInfo[]> {
+      return invoke("list_openers");
+    },
+    async openPath(path: string, appId: string): Promise<null> {
+      await invoke("open_path", { path, appId });
+      return null;
+    },
+    async previewOpen(path: string, appId: string): Promise<OpenPreview> {
+      return invoke("preview_open", { path, appId });
     },
     async scanNow(vaultId: string): Promise<ScanRun> {
       return invoke("scan_now", { vaultId });
