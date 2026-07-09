@@ -6,10 +6,15 @@ import { describe, expect, it } from "bun:test";
 import { useVaults } from "./useVaults";
 
 describe("useVaults", () => {
-  it("exposes list, register, and scanNow over the generated transport", () => {
+  it("exposes the vault service surface over the generated transport", () => {
     const vaults = useVaults();
     expect(typeof vaults.list).toBe("function");
+    expect(typeof vaults.get).toBe("function");
     expect(typeof vaults.register).toBe("function");
+    expect(typeof vaults.update).toBe("function");
+    expect(typeof vaults.remove).toBe("function");
     expect(typeof vaults.scanNow).toBe("function");
+    expect(typeof vaults.runs).toBe("function");
+    expect(typeof vaults.findings).toBe("function");
   });
 });
