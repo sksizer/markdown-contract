@@ -1,0 +1,24 @@
+# The desktop app's Tauri v2 shell crate (D-0018 §D1). A workspace member of the
+# root Cargo.toml; edition/license/repository inherit from [workspace.package].
+[package]
+name = "markdown-contract-desktop"
+version = "0.1.0"
+description = "Tauri v2 shell for the markdown-contract desktop app"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+# The `_lib` suffix keeps the lib name distinct from the bin name — the collision
+# breaks Windows builds, see https://github.com/rust-lang/cargo/issues/8519.
+name = "markdown_contract_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { workspace = true }
+serde_json = { workspace = true }

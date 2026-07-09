@@ -1,0 +1,28 @@
+{
+  "name": "markdown-contract-desktop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The markdown-contract desktop app (D-0018 §D1): a Tauri v2 shell around a Nuxt 4 SPA, instantiated from template-tauri-nuxt and adapted to the workspace's Bun + moon conventions. The Nuxt app lives at this package root (bun workspace member); the Rust shell crate lives in src-tauri/.",
+  "scripts": {
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "typecheck": "nuxt typecheck",
+    "test": "bun test app",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.7.1",
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/plugin-opener": "^2.5.4",
+    "nuxt": "^4.4.5",
+    "tailwindcss": "^4.3.0",
+    "vue": "^3.5.34"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4",
+    "@types/bun": "1.3.14",
+    "typescript": "5.9.3",
+    "vue-tsc": "3.3.7"
+  }
+}

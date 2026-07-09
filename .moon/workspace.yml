@@ -13,6 +13,7 @@
 projects:
   core: "packages/core"
   web: "apps/web"
+  desktop: "apps/desktop"
   example-single-binary: "examples/single-binary"
   example-single-binary-nitro: "examples/single-binary-nitro"
   docs: "sites/docs"

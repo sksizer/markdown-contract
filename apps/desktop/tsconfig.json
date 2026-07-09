@@ -1,0 +1,6 @@
+{
+  // https://nuxt.com/docs/guide/concepts/typescript — the real config is
+  // generated into .nuxt/ by `nuxt prepare` (run implicitly by dev/generate/
+  // typecheck).
+  "extends": "./.nuxt/tsconfig.json"
+}

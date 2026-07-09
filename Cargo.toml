@@ -1,0 +1,16 @@
+# Rust workspace for the polyglot side of the repo (D-0018).
+# Members: the matched engine crate and the desktop app's Tauri crate.
+[workspace]
+resolver = "2"
+members = ["crates/markdown-contract-engine", "apps/desktop/src-tauri"]
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/sksizer/markdown-contract"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+regex = "1"
