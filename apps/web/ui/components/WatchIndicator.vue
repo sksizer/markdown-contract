@@ -9,10 +9,10 @@
  * shared useVaults stream to this). Accent colors are bound INLINE from
  * `statusTokens` (`var(--mc-status-…)` references). No Nuxt imports.
  */
-import { computed } from "vue";
 
+import { statusTokens } from "@markdown-contract/ui";
+import { computed } from "vue";
 import type { ConnectionState } from "../composables/useEventStream";
-import { statusTokens } from "../design/tokens";
 
 const props = withDefaults(
   defineProps<{

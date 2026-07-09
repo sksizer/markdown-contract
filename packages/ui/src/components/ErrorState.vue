@@ -9,7 +9,7 @@
  *
  * Pure presentational, accents bound inline from the error token. No Nuxt imports.
  */
-import { statusTokens } from "../../design/tokens";
+import { statusTokens } from "../tokens";
 
 withDefaults(
   defineProps<{

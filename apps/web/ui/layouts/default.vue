@@ -8,12 +8,12 @@
  * SSE live indicator (WatchIndicator over the ONE shared stream) plus daemon
  * liveness polled from GET /api/health.
  */
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
+import { statusTokens } from "@markdown-contract/ui";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import WatchIndicator from "~/components/WatchIndicator.vue";
 import { useApiBase } from "~/composables/useApi";
 import { useVaults } from "~/composables/useVaults";
-import { statusTokens } from "~/design/tokens";
 import type { HealthResponse } from "~/types";
 
 const { vaults, stream } = useVaults();

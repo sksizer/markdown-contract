@@ -10,9 +10,9 @@
  * children (design/tokens.ts). No Nuxt imports.
  */
 import { computed } from "vue";
-import { SEVERITY_ORDER } from "../../design/tokens";
-import { countByLevel } from "../../lib/findings";
-import type { Finding } from "../../types";
+import { countByLevel } from "../findings";
+import { SEVERITY_ORDER } from "../tokens";
+import type { Finding } from "../types";
 import FindingRow from "./FindingRow.vue";
 import SeverityBadge from "./SeverityBadge.vue";
 import StatusBadge from "./StatusBadge.vue";

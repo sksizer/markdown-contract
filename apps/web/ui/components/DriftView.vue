@@ -13,13 +13,13 @@
  * Pure presentational component: data in via props, no engine import, no Nuxt
  * auto-imports — so it renders identically in the app shell and in Storybook,
  * and can graft into a future apps/web unchanged. The added/removed/changed
- * accent colors are bound INLINE from a small local map (the design/tokens.ts
- * pattern); structural styling uses the shared `--mc-*` vars.
+ * accent colors are bound INLINE from a small local map (the tokens.ts pattern
+ * from @markdown-contract/ui); structural styling uses the shared `--mc-*` vars.
  */
+
+import { EmptyState, StatusBadge } from "@markdown-contract/ui";
 import { computed } from "vue";
 import type { DriftEntry, DriftKind, DriftResult } from "../types";
-import EmptyState from "./kit/EmptyState.vue";
-import StatusBadge from "./kit/StatusBadge.vue";
 
 const props = withDefaults(
   defineProps<{

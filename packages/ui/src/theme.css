@@ -1,0 +1,151 @@
+/*
+ * theme.css — the design-token layer: every `--mc-*` semantic custom property
+ * (surfaces, text, accent + focus, controls, the status/severity palette,
+ * radii, shadows), defined for light and overridden wholesale in
+ * `@media (prefers-color-scheme: dark)`.
+ *
+ * `tokens.ts` binds the status/severity accents inline as `var(--mc-status-…)`
+ * / `var(--mc-sev-…)` references, so this file is the ONLY place a color
+ * literal exists. It ships as `@markdown-contract/ui/theme.css`; each consuming
+ * app adds it to its CSS (before its own base/controls layers). Base styles and
+ * shared control classes stay app-side — this file defines variables only.
+ */
+
+:root {
+  --mc-font:
+    -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  --mc-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* surfaces — macOS window tone + white raised panels, hairline borders */
+  --mc-bg: #efeff1;
+  --mc-surface: #ffffff;
+  --mc-surface-2: #e9e9eb; /* inset wells: code blocks, input troughs, hovers */
+  --mc-sidebar: #e7e7ea; /* solid fallback when backdrop-filter is unavailable */
+  --mc-sidebar-translucent: rgba(234, 234, 237, 0.78);
+  --mc-border: rgba(0, 0, 0, 0.1); /* hairline */
+  --mc-border-strong: rgba(0, 0, 0, 0.24);
+  --mc-separator: rgba(0, 0, 0, 0.06); /* list/table row separators — fainter than border */
+  --mc-hover: rgba(20, 22, 28, 0.05);
+  --mc-active: rgba(20, 22, 28, 0.09);
+
+  /* controls — macOS push-button / field faces */
+  --mc-control-bg: #ffffff;
+  --mc-control-hover: #f3f3f5;
+  --mc-control-active: #e9e9eb;
+  --mc-field-bg: #ffffff;
+  --mc-track: rgba(0, 0, 0, 0.055); /* segmented control's recessed track */
+  --mc-scrollbar: rgba(0, 0, 0, 0.28);
+
+  /* text */
+  --mc-text: #1d1e22;
+  --mc-text-muted: #64656d;
+  --mc-text-faint: #8f9098;
+
+  /* accent + focus — macOS system blue; the ring is the mac focus glow */
+  --mc-accent: #007aff;
+  --mc-accent-hover: #0071ec;
+  --mc-on-accent: #ffffff;
+  --mc-focus: #007aff;
+  --mc-focus-ring: 0 0 0 3.5px color-mix(in srgb, var(--mc-accent) 35%, transparent);
+  --mc-selection: color-mix(
+    in srgb,
+    var(--mc-accent) 14%,
+    transparent
+  ); /* sidebar pills, list selection */
+
+  /* vault status accents (bound inline via tokens.ts) */
+  --mc-status-green: #1a7f37;
+  --mc-status-green-bg: #e3f2e8;
+  --mc-status-findings: #955d00;
+  --mc-status-findings-bg: #f8efd7;
+  --mc-status-drift: #7a4fd0;
+  --mc-status-drift-bg: #efe9fb;
+  --mc-status-running: #0a66c2;
+  --mc-status-running-bg: #e2eefa;
+  --mc-status-error: #cf222e;
+  --mc-status-error-bg: #fbe9ea;
+
+  /* finding severity accents (bound inline via tokens.ts) */
+  --mc-sev-error: #cf222e;
+  --mc-sev-error-bg: #fbe9ea;
+  --mc-sev-warn: #955d00;
+  --mc-sev-warn-bg: #f8efd7;
+  --mc-sev-report: #0a66c2;
+  --mc-sev-report-bg: #e2eefa;
+
+  --mc-radius: 6px;
+  --mc-radius-lg: 10px; /* grouped panels, modals — System Settings-style */
+  --mc-gap: 12px;
+
+  /* shadows — controls get a *very* subtle bottom-weighted lift; overlays float */
+  --mc-shadow-ctl: 0 0.5px 1px rgba(0, 0, 0, 0.08), 0 1px 1px rgba(0, 0, 0, 0.05);
+  --mc-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  --mc-shadow-overlay: 0 18px 50px rgba(15, 16, 20, 0.24), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+
+  /* the macOS popup-button up/down chevron for `.select` */
+  --mc-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='12' viewBox='0 0 8 12'%3E%3Cpath d='M1 4.5 4 1.5 7 4.5M1 7.5 4 10.5 7 7.5' fill='none' stroke='%2377787f' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* surfaces */
+    --mc-bg: #1e1f22;
+    --mc-surface: #26272b;
+    --mc-surface-2: #313237;
+    --mc-sidebar: #242529;
+    --mc-sidebar-translucent: rgba(32, 33, 37, 0.75);
+    --mc-border: rgba(255, 255, 255, 0.09);
+    --mc-border-strong: rgba(255, 255, 255, 0.22);
+    --mc-separator: rgba(255, 255, 255, 0.06);
+    --mc-hover: rgba(255, 255, 255, 0.055);
+    --mc-active: rgba(255, 255, 255, 0.1);
+
+    /* controls — dark macOS buttons are a raised light gray */
+    --mc-control-bg: #5a5b5f;
+    --mc-control-hover: #646569;
+    --mc-control-active: #6e6f73;
+    --mc-field-bg: #1c1d21;
+    --mc-track: rgba(255, 255, 255, 0.07);
+    --mc-scrollbar: rgba(255, 255, 255, 0.3);
+
+    /* text */
+    --mc-text: #e7e7ec;
+    --mc-text-muted: #a0a1ab;
+    --mc-text-faint: #74757e;
+
+    /* accent + focus */
+    --mc-accent: #0a84ff;
+    --mc-accent-hover: #2792ff;
+    --mc-on-accent: #ffffff;
+    --mc-focus: #0a84ff;
+    --mc-selection: color-mix(in srgb, var(--mc-accent) 28%, transparent);
+
+    /* vault status accents */
+    --mc-status-green: #57ab5a;
+    --mc-status-green-bg: #1f3226;
+    --mc-status-findings: #c69026;
+    --mc-status-findings-bg: #342a13;
+    --mc-status-drift: #b083f0;
+    --mc-status-drift-bg: #2d2440;
+    --mc-status-running: #539bf5;
+    --mc-status-running-bg: #1c2f47;
+    --mc-status-error: #e5534b;
+    --mc-status-error-bg: #3d2224;
+
+    /* finding severity accents */
+    --mc-sev-error: #e5534b;
+    --mc-sev-error-bg: #3d2224;
+    --mc-sev-warn: #c69026;
+    --mc-sev-warn-bg: #342a13;
+    --mc-sev-report: #539bf5;
+    --mc-sev-report-bg: #1c2f47;
+
+    /* shadows — dark buttons carry a faint top inner highlight instead */
+    --mc-shadow-ctl: inset 0 0.5px 0 rgba(255, 255, 255, 0.09), 0 1px 1px rgba(0, 0, 0, 0.28);
+    --mc-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+    --mc-shadow-overlay: 0 18px 50px rgba(0, 0, 0, 0.6), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+
+    --mc-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='12' viewBox='0 0 8 12'%3E%3Cpath d='M1 4.5 4 1.5 7 4.5M1 7.5 4 10.5 7 7.5' fill='none' stroke='%23a6a7af' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+}

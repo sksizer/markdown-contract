@@ -19,17 +19,18 @@
       ],
       "project": ["src/**/*.ts"]
     },
+    "packages/ui": {
+      "entry": ["src/**/*.test.ts"],
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["vue"]
+    },
     "apps/web": {
       "entry": ["src/daemon/index.ts", "src/**/*.test.ts"],
       "project": ["src/**/*.ts", "scripts/**/*.ts", "types/**/*.ts"],
-      "ignoreDependencies": ["vue", "vue-tsc"]
+      "ignoreDependencies": ["@markdown-contract/ui", "vue", "vue-tsc"]
     },
     "examples/single-binary": {
-      "entry": [
-        "src/daemon/index.ts",
-        "src/**/*.test.ts",
-        "types/api.ts"
-      ],
+      "entry": ["src/daemon/index.ts", "src/**/*.test.ts", "types/api.ts"],
       "project": ["src/**/*.ts", "scripts/**/*.ts", "types/**/*.ts"],
       "ignoreDependencies": ["vue", "vue-tsc"]
     },

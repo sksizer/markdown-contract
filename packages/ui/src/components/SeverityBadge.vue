@@ -8,7 +8,7 @@
  * imports.
  */
 import { computed } from "vue";
-import { type SeverityKey, severityTokens } from "../../design/tokens";
+import { type SeverityKey, severityTokens } from "../tokens";
 
 const props = defineProps<{
   level: SeverityKey;

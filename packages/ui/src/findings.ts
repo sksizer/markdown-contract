@@ -3,7 +3,7 @@
  * prototype's `mocks/builders.ts` — the only mock-layer function the components
  * actually depended on).
  */
-import type { Finding, FindingLevel } from "../types";
+import type { Finding, FindingLevel } from "./types";
 
 /** Tally findings per severity level (all three keys always present). */
 export function countByLevel(findings: Finding[]): Record<FindingLevel, number> {

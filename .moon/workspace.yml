@@ -12,6 +12,7 @@
 # gate is T-UTKU-web-ui-prototype-review).
 projects:
   core: "packages/core"
+  ui: "packages/ui"
   web: "apps/web"
   desktop: "apps/desktop"
   example-single-binary: "examples/single-binary"

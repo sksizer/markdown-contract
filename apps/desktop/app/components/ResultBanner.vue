@@ -13,12 +13,12 @@ defineProps<{
 <style scoped>
 .result {
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.95);
-  color: #333;
-  border-radius: 8px;
+  background: var(--mc-surface-2);
+  color: var(--mc-text);
+  border-radius: var(--mc-radius);
   margin-top: 1rem;
   font-weight: 500;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid var(--mc-accent);
   animation: slideIn 0.3s ease-out;
 }
 

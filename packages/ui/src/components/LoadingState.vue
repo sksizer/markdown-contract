@@ -10,7 +10,7 @@
  * Pure presentational, accent bound inline from the running token. No Nuxt imports.
  */
 import { computed } from "vue";
-import { statusTokens } from "../../design/tokens";
+import { statusTokens } from "../tokens";
 
 const props = withDefaults(
   defineProps<{

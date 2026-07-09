@@ -15,8 +15,11 @@ template's release tooling are dropped).
   `beforeDevCommand`/`beforeBuildCommand` (`bun run dev` / `bun run generate`)
   from this directory's parent — i.e. this package root, where those scripts live.
 
-The current surface is the template's IPC smoke test: the `echo` Tauri command
-(`src-tauri/src/lib.rs`) round-tripped from `app/app.vue`.
+The current surface is the vault-dashboard shell (D-0018 §D6) rendered from the
+shared kit (`@markdown-contract/ui`): Toolbar + the "no vaults tracked yet"
+empty state + the status language. The template's IPC smoke test — the `echo`
+Tauri command (`src-tauri/src/lib.rs`) round-tripped from `app/app.vue` — stays
+reachable in the landing page's dev section.
 
 ## Dev workflow
 

@@ -22,6 +22,9 @@ export default defineNuxtConfig({
   modules: ["@nuxt/ui"],
 
   css: [
+    // The shared kit's `--mc-*` design-token layer (light + dark), loaded first
+    // so the app's own layers can consume the variables (D-0018 §D6).
+    "@markdown-contract/ui/theme.css",
     // Kills the rubber-band overscroll bounce so the webview feels like an app.
     "~/assets/css/no-bounce.css",
     "~/assets/css/main.css",

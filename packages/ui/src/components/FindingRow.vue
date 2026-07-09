@@ -9,7 +9,7 @@
  * No Nuxt imports.
  */
 import { computed } from "vue";
-import type { Finding } from "../../types";
+import type { Finding } from "../types";
 import SeverityBadge from "./SeverityBadge.vue";
 
 const props = defineProps<{ finding: Finding }>();

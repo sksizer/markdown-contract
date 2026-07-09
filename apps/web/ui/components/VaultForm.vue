@@ -14,10 +14,10 @@
  * `.btn` / `.input` / `.field` classes from assets/css/main.css; status accents
  * come from `statusTokens` via StatusBadge.
  */
-import { computed, reactive, ref, watch } from "vue";
 
+import { StatusBadge } from "@markdown-contract/ui";
+import { computed, reactive, ref, watch } from "vue";
 import type { RegisterVaultRequest, VaultStatus } from "../types";
-import StatusBadge from "./kit/StatusBadge.vue";
 
 const props = withDefaults(
   defineProps<{

@@ -41,6 +41,10 @@ tasks:
       - 'nuxt.config.ts'
       - 'tsconfig.json'
       - 'package.json'
+      # the shared kit (@markdown-contract/ui) ships as SOURCE, compiled by this
+      # app's pipeline — so its source is a real input (workspace-relative).
+      - '/packages/ui/src/**/*'
+      - '/packages/ui/package.json'
     outputs:
       - '.output'
 
@@ -55,6 +59,9 @@ tasks:
       - 'nuxt.config.ts'
       - 'tsconfig.json'
       - 'package.json'
+      # vue-tsc re-checks the source-shipped kit under this app's tsconfig too
+      - '/packages/ui/src/**/*'
+      - '/packages/ui/package.json'
     options:
       cache: true
 

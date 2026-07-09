@@ -45,20 +45,20 @@ async function callEcho() {
 </template>
 
 <style scoped>
+/* Surfaced on the kit's theme tokens so the card reads in light AND dark
+   (the template styled it for its gradient landing page). */
 .demo-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: var(--mc-surface);
+  border-radius: var(--mc-radius-lg);
+  padding: 1.25rem;
+  border: 1px solid var(--mc-border);
 }
 
 .demo-title {
   margin-top: 0;
-  font-size: 1.5rem;
-  color: #fff;
-  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  color: var(--mc-text);
+  margin-bottom: 1rem;
 }
 
 .input-form {
@@ -69,12 +69,13 @@ async function callEcho() {
 
 .input-field {
   flex: 1;
-  padding: 0.75rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  font-size: 1rem;
-  background: rgba(255, 255, 255, 0.9);
-  color: #333;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius);
+  font-size: 0.95rem;
+  background: var(--mc-field-bg);
+  color: var(--mc-text);
+  box-shadow: var(--mc-shadow-inset);
   transition:
     border-color 0.3s,
     background 0.3s;
@@ -82,7 +83,7 @@ async function callEcho() {
 
 .input-field:focus {
   outline: none;
-  border-color: #a8edea;
-  background: #fff;
+  border-color: color-mix(in srgb, var(--mc-accent) 45%, var(--mc-border));
+  box-shadow: var(--mc-shadow-inset), var(--mc-focus-ring);
 }
 </style>

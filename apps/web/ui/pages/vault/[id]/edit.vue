@@ -15,6 +15,8 @@
  * revalidation whose live status lands through the SHARED SSE store
  * (useVaults) — the toolbar badge follows it with no extra wiring.
  */
+
+import { EmptyState, ErrorState, LoadingState, StatusBadge, Toolbar } from "@markdown-contract/ui";
 import { computed, onMounted, ref, watch } from "vue";
 import type { Document } from "yaml";
 import ConfigForm from "~/components/editor/ConfigForm.vue";
@@ -22,11 +24,6 @@ import ConfirmBar from "~/components/editor/ConfirmBar.vue";
 import ContractForm from "~/components/editor/ContractForm.vue";
 import FileList, { type FileListRow } from "~/components/editor/FileList.vue";
 import YamlPane from "~/components/editor/YamlPane.vue";
-import EmptyState from "~/components/kit/EmptyState.vue";
-import ErrorState from "~/components/kit/ErrorState.vue";
-import LoadingState from "~/components/kit/LoadingState.vue";
-import StatusBadge from "~/components/kit/StatusBadge.vue";
-import Toolbar from "~/components/kit/Toolbar.vue";
 import { apiErrorMessage, useApi } from "~/composables/useApi";
 import { useVaults } from "~/composables/useVaults";
 import {

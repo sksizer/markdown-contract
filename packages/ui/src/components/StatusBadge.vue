@@ -8,7 +8,7 @@
  * badge follows light/dark automatically). No Nuxt imports.
  */
 import { computed } from "vue";
-import { type StatusKey, statusTokens } from "../../design/tokens";
+import { type StatusKey, statusTokens } from "../tokens";
 
 const props = withDefaults(
   defineProps<{

@@ -12,11 +12,11 @@
  * Components bind these accent colors INLINE (e.g.
  * `:style="{ color: token.color, background: token.bg }"`). Every `color`/`bg`
  * is a `var(--mc-status-…)` / `var(--mc-sev-…)` REFERENCE, not a literal — the
- * light and dark values live in `assets/css/main.css`, so the whole visual
- * language follows `prefers-color-scheme` without any component changes. No hex
- * literal is ever bound from this module.
+ * light and dark values live in `theme.css` (imported by each consuming app),
+ * so the whole visual language follows `prefers-color-scheme` without any
+ * component changes. No hex literal is ever bound from this module.
  */
-import type { Finding, FindingLevel } from "../types";
+import type { Finding, FindingLevel } from "./types";
 
 // ── Status (vault-level state) ───────────────────────────────────────────────────
 

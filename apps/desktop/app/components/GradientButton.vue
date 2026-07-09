@@ -22,12 +22,17 @@ defineEmits<{
 
 <style scoped>
 .gradient-button {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  padding: 0.5rem 1.25rem;
+  /* the kit theme's accent, with the template's faint top-to-bottom gradient */
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--mc-accent) 87%, #fff),
+    var(--mc-accent)
+  );
+  color: var(--mc-on-accent);
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: var(--mc-radius);
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition:
