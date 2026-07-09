@@ -12,7 +12,11 @@ use crate::store::generated::scan_run::ScanRunUpdate;
 /// Run one scan of `vault_id` now: persist a "running" ScanRun, call through
 /// the ScanEngine seam, persist each finding as a FindingRecord, and finalize
 /// the run with counts + status ("green" | "findings" | "error").
-pub async fn run_scan(state: &AppState, vault_id: &str, trigger: &str) -> Result<ScanRun, AppError> {
+pub async fn run_scan(
+    state: &AppState,
+    vault_id: &str,
+    trigger: &str,
+) -> Result<ScanRun, AppError> {
     let store = state.store().await?;
     let vault = store.get_vault(vault_id).await?;
 
@@ -65,7 +69,14 @@ pub async fn run_scan(state: &AppState, vault_id: &str, trigger: &str) -> Result
             update.error_count = Some(errors);
             update.warn_count = Some(warns);
             update.report_count = Some(reports);
-            update.status = Some(if findings.is_empty() { "green" } else { "findings" }.to_string());
+            update.status = Some(
+                if findings.is_empty() {
+                    "green"
+                } else {
+                    "findings"
+                }
+                .to_string(),
+            );
         }
         Err(e) => {
             update.status = Some("error".to_string());
@@ -106,13 +117,19 @@ mod tests {
     struct FixedScanEngine(Result<Vec<EngineFinding>, String>);
 
     impl ScanEngine for FixedScanEngine {
-        fn scan(&self, _vault_path: &str, _config_path: &str) -> Result<Vec<EngineFinding>, ScanEngineError> {
+        fn scan(
+            &self,
+            _vault_path: &str,
+            _config_path: &str,
+        ) -> Result<Vec<EngineFinding>, ScanEngineError> {
             self.0.clone().map_err(ScanEngineError)
         }
     }
 
     async fn state_with(engine: Arc<dyn ScanEngine>) -> AppState {
-        let db = crate::persistence::db::connect("sqlite::memory:").await.unwrap();
+        let db = crate::persistence::db::connect("sqlite::memory:")
+            .await
+            .unwrap();
         crate::persistence::db::create_schema(&db).await.unwrap();
         AppState::new(Arc::new(db), engine)
     }
@@ -144,7 +161,10 @@ mod tests {
         assert_eq!(run.vault_id, "vault-my-docs");
         assert_eq!(run.trigger, "manual");
         assert_eq!(run.status, "green");
-        assert_eq!((run.error_count, run.warn_count, run.report_count), (0, 0, 0));
+        assert_eq!(
+            (run.error_count, run.warn_count, run.report_count),
+            (0, 0, 0)
+        );
         assert!(run.finished_at.is_some());
     }
 
@@ -174,7 +194,10 @@ mod tests {
         let run = run_scan(&state, &vault.id, "watch").await.unwrap();
 
         assert_eq!(run.status, "findings");
-        assert_eq!((run.error_count, run.warn_count, run.report_count), (1, 1, 0));
+        assert_eq!(
+            (run.error_count, run.warn_count, run.report_count),
+            (1, 1, 0)
+        );
         let store = state.store().await.unwrap();
         let records: Vec<_> = store
             .list_finding_records(None, None)

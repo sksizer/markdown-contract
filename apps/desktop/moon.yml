@@ -96,9 +96,10 @@ tasks:
       runInCI: false
       cache: true
 
-  # `cargo test -p markdown-contract-desktop` — the crate's unit tests (the
-  # `echo` IPC command). Same system-toolchain / workspace-root / runInCI: false
-  # reasoning as check-rust.
+  # `cargo test -p markdown-contract-desktop` — the crate's unit tests: the
+  # `echo` API command, the ScanEngine stub, the vault-slug hook, and the scan
+  # orchestration over in-memory SQLite (src-tauri/src/scans.rs). Same
+  # system-toolchain / workspace-root / runInCI: false reasoning as check-rust.
   test-rust:
     command: 'cargo test -p markdown-contract-desktop'
     toolchain: 'system'

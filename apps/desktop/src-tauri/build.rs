@@ -89,7 +89,10 @@ fn main() {
             "src/persistence/db/conversions/generated",
         )
         .dtos("src/schema/dto")
-        .store("src/store/generated", Some::<PathBuf>("src/store/hooks".into()))
+        .store(
+            "src/store/generated",
+            Some::<PathBuf>("src/store/hooks".into()),
+        )
         .api("src/api/v1/generated", "AppState")
         .servers(servers_config)
         .clients(clients_config);

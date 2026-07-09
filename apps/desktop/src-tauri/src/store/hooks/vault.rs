@@ -18,7 +18,11 @@ pub fn slug_id(name: &str) -> String {
         .chars()
         .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
         .collect();
-    let slug = slug.split('-').filter(|s| !s.is_empty()).collect::<Vec<_>>().join("-");
+    let slug = slug
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-");
     format!("vault-{}", if slug.is_empty() { "untitled" } else { &slug })
 }
 
@@ -37,7 +41,10 @@ pub async fn before_create(store: &Store, vault: &mut Vault) -> Result<(), AppEr
         )));
     }
     if existing.iter().any(|v| v.id == vault.id) {
-        return Err(AppError::Invalid(format!("vault id already registered: {}", vault.id)));
+        return Err(AppError::Invalid(format!(
+            "vault id already registered: {}",
+            vault.id
+        )));
     }
     Ok(())
 }

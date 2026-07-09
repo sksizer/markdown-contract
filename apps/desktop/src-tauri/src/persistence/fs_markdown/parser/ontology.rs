@@ -1,7 +1,9 @@
 /// Strip wikilink brackets from a string: "[[foo]]" → "foo", "bar" → "bar".
 /// No-op stub for projects that don't use markdown persistence.
 pub fn strip_wikilink(s: &str) -> String {
-    s.trim_start_matches("[[").trim_end_matches("]]").to_string()
+    s.trim_start_matches("[[")
+        .trim_end_matches("]]")
+        .to_string()
 }
 
 /// Strip wikilink brackets from an optional string.

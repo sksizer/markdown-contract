@@ -31,7 +31,11 @@ pub struct ScanEngineError(pub String);
 /// Synchronous by design: engine work is CPU/fs-bound, and callers that need
 /// to stay off the async executor can wrap the call in `spawn_blocking`.
 pub trait ScanEngine: Send + Sync {
-    fn scan(&self, vault_path: &str, config_path: &str) -> Result<Vec<EngineFinding>, ScanEngineError>;
+    fn scan(
+        &self,
+        vault_path: &str,
+        config_path: &str,
+    ) -> Result<Vec<EngineFinding>, ScanEngineError>;
 }
 
 /// Placeholder engine: every vault scans green. Replaced by the
@@ -39,7 +43,11 @@ pub trait ScanEngine: Send + Sync {
 pub struct StubScanEngine;
 
 impl ScanEngine for StubScanEngine {
-    fn scan(&self, _vault_path: &str, _config_path: &str) -> Result<Vec<EngineFinding>, ScanEngineError> {
+    fn scan(
+        &self,
+        _vault_path: &str,
+        _config_path: &str,
+    ) -> Result<Vec<EngineFinding>, ScanEngineError> {
         Ok(Vec::new())
     }
 }
