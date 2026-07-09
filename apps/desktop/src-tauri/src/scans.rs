@@ -52,9 +52,18 @@ pub async fn run_scan(
         })
         .await?;
 
-    // The engine seam. The stub is instant; once the real engine lands, this
-    // moves behind spawn_blocking so a large vault doesn't stall the executor.
-    let outcome = state.engine().scan(&vault.path, &vault.config_path);
+    // The engine seam, behind spawn_blocking: real scans are fs/CPU-bound (and
+    // the CLI fallback blocks on a child process), so a large vault must not
+    // stall the executor. A panicked/cancelled engine task becomes an error run.
+    let engine = state.engine_arc();
+    let (vault_path, config_path) = (vault.path.clone(), vault.config_path.clone());
+    let outcome = tokio::task::spawn_blocking(move || engine.scan(&vault_path, &config_path))
+        .await
+        .unwrap_or_else(|join_err| {
+            Err(crate::engine::ScanEngineError(format!(
+                "engine task failed: {join_err}"
+            )))
+        });
 
     let mut update = ScanRunUpdate {
         finished_at: Some(Some(now_iso8601())),
@@ -207,14 +216,14 @@ mod tests {
         AppState::new(Arc::new(db), engine)
     }
 
-    async fn register_vault(state: &AppState) -> Vault {
+    async fn register_vault_at(state: &AppState, path: &str, config_path: &str) -> Vault {
         let store = state.store().await.unwrap();
         store
             .create_vault(Vault {
                 id: String::new(), // the before_create hook slugs it from name
                 name: "My Docs".to_string(),
-                path: "/tmp/my-docs".to_string(),
-                config_path: "/tmp/my-docs/markdown-contract.yaml".to_string(),
+                path: path.to_string(),
+                config_path: config_path.to_string(),
                 watch_enabled: true,
                 schedule: None,
                 created_at: "2026-07-09T00:00:00Z".to_string(),
@@ -222,6 +231,10 @@ mod tests {
             })
             .await
             .unwrap()
+    }
+
+    async fn register_vault(state: &AppState) -> Vault {
+        register_vault_at(state, "/tmp/my-docs", "/tmp/my-docs/markdown-contract.yaml").await
     }
 
     #[tokio::test]
@@ -314,6 +327,59 @@ mod tests {
         run_scan(&state, &vault.id, "watch").await.unwrap();
         let second = completions.recv().await.unwrap();
         assert_eq!(second.previous_status.as_deref(), Some("green"));
+    }
+
+    // End-to-end with the REAL engine (the production EngineRouter over the
+    // mini-vault fixture): run_scan persists the native engine's finding as a
+    // FindingRecord, field for field.
+    #[tokio::test]
+    async fn the_real_engine_persists_finding_records_end_to_end() {
+        let vault_dir = crate::engine::fixture::TempVault::mini("scans-e2e");
+        let state = state_with(Arc::new(crate::engine::EngineRouter::default())).await;
+        let vault = register_vault_at(&state, vault_dir.path(), vault_dir.config_path()).await;
+
+        let run = run_scan(&state, &vault.id, "manual").await.unwrap();
+
+        assert_eq!(run.status, "findings");
+        assert_eq!(
+            (run.error_count, run.warn_count, run.report_count),
+            (1, 0, 0)
+        );
+        let store = state.store().await.unwrap();
+        let records: Vec<_> = store
+            .list_finding_records(None, None)
+            .await
+            .unwrap()
+            .into_iter()
+            .filter(|r| r.scan_run_id == run.id)
+            .collect();
+        assert_eq!(records.len(), 1);
+        let record = &records[0];
+        assert_eq!(record.finding_id, "structure/section-missing");
+        assert_eq!(record.level, "error");
+        assert_eq!(record.file_path, "docs/guide.md", "vault-relative path");
+        assert_eq!((record.line, record.col), (Some(1), Some(1)));
+        assert!(record.message.contains("Overview"));
+    }
+
+    // A vault whose config needs the TS engine, with no CLI installed: the run
+    // finishes as an error carrying the install pointer (never a silent green).
+    #[tokio::test]
+    async fn a_ts_engine_vault_without_the_cli_is_an_error_run() {
+        let vault_dir = crate::engine::fixture::TempVault::mini("scans-ts-vault");
+        crate::engine::fixture::write_code_ref_config(&vault_dir);
+        let router = crate::engine::EngineRouter::with_fallback(Arc::new(
+            crate::engine::CliScanEngine::new("markdown-contract-definitely-not-installed"),
+        ));
+        let state = state_with(Arc::new(router)).await;
+        let vault = register_vault_at(&state, vault_dir.path(), vault_dir.config_path()).await;
+
+        let run = run_scan(&state, &vault.id, "manual").await.unwrap();
+
+        assert_eq!(run.status, "error");
+        let message = run.error_message.unwrap();
+        assert!(message.contains("TypeScript engine"));
+        assert!(message.contains("npm install -g markdown-contract"));
     }
 
     #[tokio::test]

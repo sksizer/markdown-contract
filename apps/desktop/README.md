@@ -56,6 +56,29 @@ run + findings and broadcasts a completion (with the vault's previous status,
 for transition detection). The template's IPC smoke test — the `echo` command —
 stays reachable in the dashboard's dev section.
 
+## Scan engine (D-0018 §D2)
+
+Scans run **in-process** through `crates/markdown-contract-engine`
+(`src-tauri/src/engine/`): the vault's `markdown-contract.yaml` (a
+`kind: config` router, contract refs resolved relative to it — the same
+`loadConfigFile` semantics the Bun daemon uses) is compiled and the corpus
+runs over the vault root, so findings carry vault-relative paths.
+
+Vaults whose configs need the **TypeScript engine** fall back to shelling out
+to an installed CLI — `markdown-contract validate <vault> --config <file>
+--format json` — instead of failing or silently under-checking. The
+`EngineRouter` delegates when:
+
+- the config path is a `.js`/`.mjs` module, or the default YAML config is
+  absent but a `markdown-contract.config.js`/`.mjs` sits in the vault root;
+- loading hits a typed escape (`$ref` code escape, a `.js`/`.ts` contract
+  ref, or an `mcVersion` this build doesn't support).
+
+The CLI is looked up on `PATH` only (no `npx`/project-local resolution). If
+it's missing, the run finishes as status `error` with an install pointer
+(`npm install -g markdown-contract`). Any other load/run failure is an error
+run with the engine's own message.
+
 ## Dev workflow
 
 ```sh

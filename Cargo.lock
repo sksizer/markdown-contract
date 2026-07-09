@@ -2602,6 +2602,7 @@ dependencies = [
  "axum",
  "chrono",
  "croner",
+ "markdown-contract-engine",
  "notify",
  "ontogen",
  "ontogen-macros",

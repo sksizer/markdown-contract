@@ -34,6 +34,10 @@ ontogen = { git = "https://github.com/sksizer/rust-ontogen", rev = "81af0e941d2a
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+# The matched Rust engine (D-0018 §D2): declarative config/contract loading +
+# the native corpus runner behind the ScanEngine seam (src/engine/native.rs),
+# and the `Finding` interchange shape the CLI fallback's JSON parses into.
+markdown-contract-engine = { path = "../../../crates/markdown-contract-engine" }
 # `tray-icon` for the resident system tray (D-0018 §D5); `image-png` so the
 # bundled PNG app icon decodes into the tray's `Image`.
 tauri = { version = "2", features = ["tray-icon", "image-png"] }

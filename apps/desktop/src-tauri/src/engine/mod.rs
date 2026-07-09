@@ -1,8 +1,26 @@
 //! The scan-engine seam (D-0018 §D4): the hand-written trait the scan
-//! orchestration (src/scans.rs) calls through. The real
-//! `crates/markdown-contract-engine` implementation gets wired in the next
-//! phase; until then `StubScanEngine` keeps the IPC surface honest end-to-end
-//! (scan now → persisted green ScanRun).
+//! orchestration (src/scans.rs) calls through, plus the real implementations
+//! behind it — one responsibility per sibling module:
+//!
+//! - [`native`] — the in-process `markdown-contract-engine` adapter (D-0018 §D2).
+//! - [`cli`] — the TS-CLI fallback (`markdown-contract validate --format json`).
+//! - [`router`] — [`EngineRouter`], the production engine: native first, CLI
+//!   fallback when the vault's config needs the TypeScript engine.
+//! - [`map`] — engine `Finding` → [`EngineFinding`] mapping shared by both.
+//!
+//! `StubScanEngine` (every vault scans green) stays for tests.
+
+pub mod cli;
+pub mod map;
+pub mod native;
+pub mod router;
+
+#[cfg(test)]
+pub(crate) mod fixture;
+
+pub use cli::CliScanEngine;
+pub use native::NativeScanEngine;
+pub use router::EngineRouter;
 
 /// One finding as the engine reports it — the transport-free subset of the
 /// D-0001 finding shape the desktop persists per run.
@@ -28,8 +46,9 @@ pub struct ScanEngineError(pub String);
 
 /// Validate a vault (markdown tree root + contract config) into findings.
 ///
-/// Synchronous by design: engine work is CPU/fs-bound, and callers that need
-/// to stay off the async executor can wrap the call in `spawn_blocking`.
+/// Synchronous by design: engine work is CPU/fs-bound (the CLI fallback even
+/// blocks on a child process), and callers that need to stay off the async
+/// executor wrap the call in `spawn_blocking` (scans::run_scan does).
 pub trait ScanEngine: Send + Sync {
     fn scan(
         &self,
@@ -38,8 +57,8 @@ pub trait ScanEngine: Send + Sync {
     ) -> Result<Vec<EngineFinding>, ScanEngineError>;
 }
 
-/// Placeholder engine: every vault scans green. Replaced by the
-/// markdown-contract-engine adapter next phase.
+/// Test engine: every vault scans green. Production uses [`EngineRouter`];
+/// this stays as the neutral double for orchestration tests.
 pub struct StubScanEngine;
 
 impl ScanEngine for StubScanEngine {

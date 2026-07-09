@@ -26,7 +26,7 @@ use sea_orm::DatabaseConnection;
 use tauri::Manager;
 use tokio::sync::broadcast;
 
-use crate::engine::{ScanEngine, StubScanEngine};
+use crate::engine::{EngineRouter, ScanEngine};
 use crate::scans::ScanCompleted;
 use crate::schema::AppError;
 use crate::store::Store;
@@ -56,9 +56,16 @@ impl AppState {
         Ok(&self.store)
     }
 
-    /// The scan-engine seam (stubbed until markdown-contract-engine is wired).
+    /// The scan-engine seam (production: the [`EngineRouter`] — native
+    /// markdown-contract-engine with the TS-CLI fallback).
     pub fn engine(&self) -> &dyn ScanEngine {
         self.engine.as_ref()
+    }
+
+    /// The engine as an owned handle — for `spawn_blocking` off the executor
+    /// (engine scans are fs/CPU-bound and may block on a child process).
+    pub fn engine_arc(&self) -> Arc<dyn ScanEngine> {
+        self.engine.clone()
     }
 
     /// Publish one finished run (called by scans::run_scan). Send errors mean
@@ -85,7 +92,10 @@ fn boot_state(app: &tauri::App) -> Result<AppState, Box<dyn std::error::Error>> 
     let state = tauri::async_runtime::block_on(async move {
         let db = persistence::db::connect(&url).await?;
         persistence::db::create_schema(&db).await?;
-        Ok::<_, sea_orm::DbErr>(AppState::new(Arc::new(db), Arc::new(StubScanEngine)))
+        Ok::<_, sea_orm::DbErr>(AppState::new(
+            Arc::new(db),
+            Arc::new(EngineRouter::default()),
+        ))
     })?;
     Ok(state)
 }
