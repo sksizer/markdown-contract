@@ -6,5 +6,5 @@
 pub mod anchors;
 pub mod wikilinks;
 
-pub use anchors::{extract_trailing_anchor, is_standalone_anchor, TrailingAnchor};
-pub use wikilinks::{extract_vault_refs, VaultRef, VaultRefKind};
+pub use anchors::{TrailingAnchor, extract_trailing_anchor, is_standalone_anchor};
+pub use wikilinks::{VaultRef, VaultRefKind, extract_vault_refs};

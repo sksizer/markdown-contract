@@ -34,7 +34,10 @@ impl SourcePos {
 
     /// A full line + column position.
     pub fn at(line: u32, col: u32) -> Self {
-        Self { line, col: Some(col) }
+        Self {
+            line,
+            col: Some(col),
+        }
     }
 }
 
@@ -124,9 +127,18 @@ mod tests {
 
     #[test]
     fn levels_serialize_lowercase() {
-        assert_eq!(serde_json::to_string(&FindingLevel::Error).unwrap(), "\"error\"");
-        assert_eq!(serde_json::to_string(&FindingLevel::Warn).unwrap(), "\"warn\"");
-        assert_eq!(serde_json::to_string(&FindingLevel::Report).unwrap(), "\"report\"");
+        assert_eq!(
+            serde_json::to_string(&FindingLevel::Error).unwrap(),
+            "\"error\""
+        );
+        assert_eq!(
+            serde_json::to_string(&FindingLevel::Warn).unwrap(),
+            "\"warn\""
+        );
+        assert_eq!(
+            serde_json::to_string(&FindingLevel::Report).unwrap(),
+            "\"report\""
+        );
     }
 
     #[test]
@@ -145,7 +157,10 @@ mod tests {
         let f = Fix {
             description: "add the heading".into(),
             edit: Some(TextEdit {
-                range: EditRange { start: SourcePos::at(1, 1), end: SourcePos::at(1, 1) },
+                range: EditRange {
+                    start: SourcePos::at(1, 1),
+                    end: SourcePos::at(1, 1),
+                },
                 new_text: "## Overview\n".into(),
             }),
         };

@@ -100,7 +100,12 @@ pub struct FindingSpec {
 
 impl FindingSpec {
     pub fn new(id: impl Into<String>, message: impl Into<String>) -> Self {
-        Self { id: id.into(), message: message.into(), level: None, pos: None }
+        Self {
+            id: id.into(),
+            message: message.into(),
+            level: None,
+            pos: None,
+        }
     }
 
     /// Override the registry default level.
@@ -130,8 +135,17 @@ impl<'a> Ctx<'a> {
     /// Build a [`Finding`]: stamps `path`, fills `level` from the registry (defaulting to
     /// `"error"` for an unregistered id), carries `pos` only when supplied.
     pub fn finding(&self, spec: FindingSpec) -> Finding {
-        let level = spec.level.unwrap_or_else(|| self.registry.level_for(&spec.id));
-        Finding { id: spec.id, level, path: self.path.to_string(), pos: spec.pos, message: spec.message, fix: None }
+        let level = spec
+            .level
+            .unwrap_or_else(|| self.registry.level_for(&spec.id));
+        Finding {
+            id: spec.id,
+            level,
+            path: self.path.to_string(),
+            pos: spec.pos,
+            message: spec.message,
+            fix: None,
+        }
     }
 }
 
@@ -144,8 +158,14 @@ mod tests {
     #[test]
     fn registry_defaults_match_the_ts_tables() {
         let r = Registry::default();
-        assert_eq!(r.level_for("structure/section-missing"), FindingLevel::Error);
-        assert_eq!(r.level_for("structure/heading-depth-jump"), FindingLevel::Warn);
+        assert_eq!(
+            r.level_for("structure/section-missing"),
+            FindingLevel::Error
+        );
+        assert_eq!(
+            r.level_for("structure/heading-depth-jump"),
+            FindingLevel::Warn
+        );
         assert_eq!(r.level_for("summary/names-contract"), FindingLevel::Warn);
         assert_eq!(r.level_for("text/requires"), FindingLevel::Error);
         assert_eq!(r.level_for("totally/unregistered"), FindingLevel::Error);
@@ -155,7 +175,9 @@ mod tests {
     fn ctx_finding_stamps_path_and_default_level() {
         let r = Registry::default();
         let ctx = Ctx::new("docs/note.md", &r);
-        let f = ctx.finding(FindingSpec::new("structure/heading-depth-jump", "skip").pos(SourcePos::at(5, 1)));
+        let f = ctx.finding(
+            FindingSpec::new("structure/heading-depth-jump", "skip").pos(SourcePos::at(5, 1)),
+        );
         assert_eq!(f.level, FindingLevel::Warn);
         assert_eq!(f.path, "docs/note.md");
         assert_eq!(f.pos, Some(SourcePos::at(5, 1)));
@@ -165,7 +187,9 @@ mod tests {
     fn explicit_level_overrides_the_registry() {
         let r = Registry::default();
         let ctx = Ctx::new("a.md", &r);
-        let f = ctx.finding(FindingSpec::new("structure/section-missing", "m").level(FindingLevel::Report));
+        let f = ctx.finding(
+            FindingSpec::new("structure/section-missing", "m").level(FindingLevel::Report),
+        );
         assert_eq!(f.level, FindingLevel::Report);
     }
 

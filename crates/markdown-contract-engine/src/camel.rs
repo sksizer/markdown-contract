@@ -56,7 +56,10 @@ mod tests {
     #[test]
     fn heading_to_lower_camel() {
         assert_eq!(to_camel_key("Files to touch"), "filesToTouch");
-        assert_eq!(to_camel_key("Goal / Problem statement"), "goalProblemStatement");
+        assert_eq!(
+            to_camel_key("Goal / Problem statement"),
+            "goalProblemStatement"
+        );
         // Different capitalization collapses to the SAME key — the collision case.
         assert_eq!(to_camel_key("Files To Touch"), "filesToTouch");
     }
