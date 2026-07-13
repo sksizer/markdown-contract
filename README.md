@@ -3,9 +3,10 @@
 [![CI](https://github.com/sksizer/markdown-contract/actions/workflows/ci.yml/badge.svg)](https://github.com/sksizer/markdown-contract/actions/workflows/ci.yml)
 
 Bun workspace for **markdown-contract**. The publishable library + CLI lives in
-[`packages/core`](packages/core/); runtime apps (the single-binary prototype,
-the daemon-web UI prototype) live under `apps/`; websites — including the
-documentation site — live under `sites/`.
+[`packages/core`](packages/core/); the shared Vue UI kit in
+[`packages/ui`](packages/ui/) and the matched Rust engine in [`crates/`](crates/);
+runtime apps (the single-binary CLI + web-daemon vault dashboard, the desktop app)
+live under `apps/`; websites — including the documentation site — live under `sites/`.
 
 **Documentation:** <https://markdown-contract-docs.pages.dev/> — the
 [`sites/docs`](sites/docs/) Starlight site, auto-deployed to Cloudflare Pages on
@@ -16,11 +17,10 @@ push to `main` (build settings: [`sites/docs/README.md`](sites/docs/README.md)).
 | Path | Role |
 |---|---|
 | `packages/core` | The `markdown-contract` npm library + CLI. Runtime-neutral; the canonical published artifact. See [`packages/core/README.md`](packages/core/README.md). |
-| `packages/ui` | `@markdown-contract/ui` — the shared Vue component kit + design tokens (D-0018), consumed by `apps/web/ui` and `apps/desktop`. Source-shipped, never published. |
+| `packages/ui` | `@markdown-contract/ui` — the shared Vue component kit + design tokens (D-0018), consumed by both `apps/web/ui` and `apps/desktop`. Source-shipped, never published. |
 | `crates/markdown-contract-engine` | The matched Rust engine (D-0018): the declarative validation plane with finding parity to `packages/core`, held to the same fixture corpus goldens. fs-free core, wasm-ready. |
-| `apps/web` | The single-binary prototype (D-0012 "one binary, two faces"): CLI + localhost daemon serving the vault dashboard. See [`apps/web/README.md`](apps/web/README.md). |
+| `apps/web` | The single binary (D-0012 "one binary, two faces"): CLI when run bare, plus a `daemon` face — a loopback `Bun.serve` hosting the vault dashboard SPA + JSON API over the engine. See [`apps/web/README.md`](apps/web/README.md). |
 | `apps/desktop` | The desktop app (D-0018): Tauri v2 + Nuxt 4, native scans via the Rust engine, multi-vault tracking with watch/schedules/notifications/tray/open-in. See [`apps/desktop/README.md`](apps/desktop/README.md). |
-| `apps/daemon-web-prototype` | Nuxt + Storybook UI prototype of the daemon's vault dashboard. Mock data only; not a moon project. See [`apps/daemon-web-prototype/README.md`](apps/daemon-web-prototype/README.md). |
 | `sites/docs` | Astro + Starlight documentation site (M-0006), published to Cloudflare Pages; never published to npm. See [`sites/docs/README.md`](sites/docs/README.md). |
 | `docs/`, `contracts/` | Project planning docs and their contracts. |
 | `provenance/d0014/` | The originating ADR: proposed shape + decision log. |

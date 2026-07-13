@@ -28,25 +28,9 @@
       "entry": ["src/daemon/index.ts", "src/**/*.test.ts"],
       "project": ["src/**/*.ts", "scripts/**/*.ts", "types/**/*.ts"],
       "ignoreDependencies": ["@markdown-contract/ui", "vue", "vue-tsc"]
-    },
-    "examples/single-binary": {
-      "entry": ["src/daemon/index.ts", "src/**/*.test.ts", "types/api.ts"],
-      "project": ["src/**/*.ts", "scripts/**/*.ts", "types/**/*.ts"],
-      "ignoreDependencies": ["vue", "vue-tsc"]
-    },
-    "examples/single-binary-nitro": {
-      "entry": [
-        "src/bin.ts",
-        "ui/server/api/*.ts",
-        "ui/server/**/*.test.ts",
-        "ui/nuxt.config.ts",
-        "types/api.ts"
-      ],
-      "project": ["src/**/*.ts", "types/**/*.ts", "ui/server/**/*.ts"],
-      "ignoreDependencies": ["vue", "vue-tsc"]
     }
   },
-  "ignoreWorkspaces": ["apps/daemon-web-prototype"],
+  "ignoreWorkspaces": [],
   "ignoreDependencies": [],
   "ignoreBinaries": ["scc"]
 }

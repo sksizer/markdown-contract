@@ -1,6 +1,0 @@
-# Build outputs (the compiled binary and the Nitro server bundle) — never committed.
-dist/
-ui/.output/
-ui/.nuxt/
-ui/dist
-node_modules/
