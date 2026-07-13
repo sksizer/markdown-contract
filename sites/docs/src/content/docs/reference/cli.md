@@ -5,7 +5,7 @@ description: Complete reference for the markdown-contract command-line interface
 
 The `markdown-contract` binary has two subcommands: [`validate`](#validate) (check a tree of markdown against a contract) and [`init`](#init) (infer a starter contract from existing markdown). Both share the same glob-scoping flags and the same three-value [exit-code](#exit-codes) convention.
 
-This page is the exhaustive flag reference. For task-shaped walkthroughs see [/examples/cli/](/examples/cli/), [/examples/inference-init/](/examples/inference-init/), and [/examples/embed-and-ci/](/examples/embed-and-ci/).
+This page is the exhaustive flag reference. For task-shaped, end-to-end scenarios see the [recipes](/recipes/); for mechanism-by-mechanism walkthroughs see [/examples/cli/](/examples/cli/), [/examples/inference-init/](/examples/inference-init/), and [/examples/embed-and-ci/](/examples/embed-and-ci/).
 
 ## Overview
 
@@ -18,7 +18,7 @@ markdown-contract init <dir> ... [flags]
 
 The CLI writes findings to **stdout**, diagnostics (usage and config errors) to **stderr**, and exits with a [status code](#exit-codes) a CI job can gate on. It never mutates the documents it validates.
 
-Two global behaviours apply before any subcommand: `-h` / `--help` prints usage to stdout and exits `0`; invoking the binary with no arguments prints usage to stderr and exits `2`. An unrecognized subcommand also exits `2`.
+Two global behaviors apply before any subcommand: `-h` / `--help` prints usage to stdout and exits `0`; invoking the binary with no arguments prints usage to stderr and exits `2`. An unrecognized subcommand also exits `2`.
 
 ### Config auto-discovery
 
@@ -136,14 +136,14 @@ An out-of-range value for `--depth`, `--max-const-len`, or `--min-const-examples
 
 ### What it writes
 
-- **Single-contract mode** (default) — one `<name>.contract.yaml` per root, plus a synthesized `markdown-contract.yaml` router that references them all. The router is the discovery affordance that lets a later `validate <dir>` auto-discover the scaffold.
+- **Single-contract mode** (default) — one `<name>.contract.yaml` per root, plus a synthesized `markdown-contract.yaml` router that references them all. The router is what lets a later `validate <dir>` auto-discover the scaffold.
 - **`--meta` mode** — each root emits a self-contained `markdown-contract.yaml` plus its `contracts/` tree; a multi-root run keeps the first root's config as the discoverable router (files are de-duplicated by path, first wins).
 
 Files are written under `--out` (defaulting as described above), and `init` **refuses to overwrite** an existing router or contract file unless `--force` is given.
 
 ### Self-check
 
-After writing, `init` loads each root's contracts back and runs them over that root via the corpus runner (each root checked with itself as cwd, so run-root-relative globs route exactly the files inference saw). An error-level finding here means an emitted constraint is tighter than the data allows — an inferer bug. That case is reported loudly and exits `1`; a clean self-check exits `0`.
+After writing, `init` loads each root's contracts back and runs them over that root via the corpus runner. Each root is checked with itself as cwd, so run-root-relative globs route exactly the files inference saw. An error-level finding here means an emitted constraint is tighter than the data allows — an inferer bug. `init` reports that case loudly and exits `1`; a clean self-check exits `0`.
 
 ### `--check` (the CI drift gate)
 
@@ -180,14 +180,14 @@ The default. A run summary is prepended, followed by one line per finding, group
 <path>:<line> <level> <id> — <message>
 ```
 
-A finding with no position prints as `<path>` with no `:<line>`. A trailing line counts findings by level, and a clean corpus reports `No findings.` The prepended summary reports files scanned/matched/unmatched, gaining an `across K contracts` clause and a per-contract breakdown only when the config's rules are named (an inline `--contract` run has unnamed rules, so it prints just the total line):
+A finding with no position prints as `<path>` with no `:<line>`. A trailing line counts findings by level, and a clean corpus reports `No findings.` The prepended summary reports files scanned/matched/unmatched. It gains an `across K contracts` clause and a per-contract breakdown only when the config's rules are named; an inline `--contract` run has unnamed rules, so it prints just the total line:
 
 ```text
 Scanned 39 files; 38 matched across 6 contracts, 1 unmatched
   capability: 8
   ...
 
-docs/api.md:12 error structure/section-missing — required section "Parameters" is absent
+docs/api.md:12 error structure/section-missing — required section ‘Parameters’ is missing
 
 1 finding(s): 1 error, 0 warn, 0 report
 ```
@@ -198,7 +198,7 @@ The `Finding[]` array serialized with two-space indent, exactly as the runner re
 
 ### sarif
 
-A valid **SARIF 2.1.0** log for code-scanning surfaces (GitHub and others). A single run whose `tool.driver.name` is `markdown-contract`; `driver.rules` lists each distinct finding id seen (deduped, first-seen order), and each finding becomes one `result` with its `ruleId`, mapped `level`, `message.text`, and a `physicalLocation`. Finding levels map to SARIF as `error → error`, `warn → warning`, `report → note`; the `region.startLine` is included only when the finding has a position.
+A valid **SARIF 2.1.0** log for code-scanning surfaces (GitHub and others). The log holds a single run whose `tool.driver.name` is `markdown-contract`; `driver.rules` lists each distinct finding id seen (deduped, first-seen order), and each finding becomes one `result` with its `ruleId`, mapped `level`, `message.text`, and a `physicalLocation`. Finding levels map to SARIF as `error → error`, `warn → warning`, `report → note`; the `region.startLine` is included only when the finding has a position.
 
 ## Exit codes
 
@@ -216,4 +216,4 @@ markdown-contract validate docs --format sarif > results.sarif || {
 }
 ```
 
-See [/examples/embed-and-ci/](/examples/embed-and-ci/) for a full CI recipe, and [/how-it-works/](/how-it-works/) for how the runner produces the findings this CLI reports.
+See [Guard a folder of docs in CI](/recipes/guard-a-folder-in-ci/) for a full CI recipe (the other [CI guard recipes](/recipes/#guard-a-folder-or-folders-in-ci) cover changed-files runs, pre-commit hooks, and SARIF annotations), [/examples/embed-and-ci/](/examples/embed-and-ci/) for more gating patterns, and [/how-it-works/](/how-it-works/) for how the runner produces the findings this CLI reports.

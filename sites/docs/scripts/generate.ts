@@ -46,7 +46,7 @@ const FENCE_LANG: Record<CatalogExample["artifact_kind"], string> = {
 
 /** Per-kind framing: how the artifact is implemented and where its result shows. */
 const KIND_FRAMING: Record<CatalogExample["artifact_kind"], string> = {
-	cli: "A terminal session: the command as you'd run it, followed by the output it prints; trailing comments note the exit status.",
+	cli: "A terminal session: the command as you'd run it, followed by the output it prints; trailing comments note the exit status. The transcript is captured from a real run against the catalog's fixture config and files — not a from-scratch setup to re-type cold.",
 	code: "A TypeScript program against the library API; inline comments show the resulting values and behavior.",
 	yaml: "The declarative YAML artifact, verbatim — no code required.",
 	mixed: "Commands, code, and output together; comments mark which is which.",
@@ -58,6 +58,45 @@ const KIND_LABEL: Record<CatalogExample["artifact_kind"], string> = {
 	code: "TypeScript",
 	yaml: "YAML",
 	mixed: "Mixed",
+};
+
+/**
+ * One-sentence framing per ladder — what this category teaches and why you'd climb it. Rendered
+ * at the top of each category overview and leading the landing page's hero tour, so neither reads
+ * as an unlabeled link dump.
+ */
+const CATEGORY_BLURBS: Record<CategoryKey, string> = {
+	cli: "Drive `validate` from the terminal: output formats, file selection, config discovery, and the exit-code contract CI gates on.",
+	"inference-init":
+		"Let `init` write your first contract from docs you already have, tune how tight it infers, then re-run it as a drift gate.",
+	"declarative-yaml":
+		"Author contracts and corpus config as plain YAML — the full field, section, and routing vocabulary, no TypeScript.",
+	"validation-planes":
+		"Build contracts in code, one combinator at a time: structure grammar, Zod content, and custom rules, with findings from all three merged in order.",
+	"consume-as-data":
+		"The payoff of a passing contract: read the same document back as a typed model — frontmatter, sections, tables, anchors.",
+	dialect:
+		"The Obsidian conventions the parser understands — `^block-id` anchors, `[[wikilinks]]`, transclusions — and how contracts and the model use them.",
+	"embed-and-ci":
+		"Take the runner into your own tooling: in-process corpus runs, CI gates, JSON/SARIF pipelines, and editor integrations.",
+	"real-world-schemas":
+		"Full document templates assembled from everything before: ADRs, runbooks, postmortems, and cross-document governance.",
+};
+
+/**
+ * Optional per-category caution rendered on the category overview, for a ladder whose artifacts
+ * are known to diverge from the shipped surface (kept honest here until the catalog data or the
+ * library changes upstream).
+ */
+const CATEGORY_ASIDES: Partial<Record<CategoryKey, string>> = {
+	dialect: [
+		":::caution",
+		"Several rungs of this ladder import `extractVaultRefs` from the package root, but that",
+		"helper is currently internal (not re-exported at the root), so those imports do not work",
+		"against today's build — they are tracked as known failures of the artifact check. See",
+		"[what the dialect surface exports](/reference/dialect/) for what ships.",
+		":::",
+	].join("\n"),
 };
 
 /** Per-category link into the hand-authored Reference section (src/content/docs/reference/). */
@@ -91,9 +130,14 @@ const frontmatter = (data: Record<string, unknown>): string =>
 /**
  * The "Continue" footer on each example page: previous/next rung (within the category, in rank
  * order — the same order as the sidebar), the category overview, the whole-catalog browse index,
- * and the category's Reference page. Makes every page self-navigating without the sidebar.
+ * and the category's Reference page. Makes every page self-navigating without the sidebar. The
+ * last rung of a ladder hands off to the NEXT ladder (the curriculum spine), so no page dead-ends.
  */
-function exampleFooter(category: CatalogCategory, example: CatalogExample): string {
+function exampleFooter(
+	category: CatalogCategory,
+	example: CatalogExample,
+	nextCategory: CatalogCategory | undefined,
+): string {
 	const rung = category.examples.findIndex((e) => e.id === example.id);
 	const prev = category.examples[rung - 1];
 	const next = category.examples[rung + 1];
@@ -101,10 +145,12 @@ function exampleFooter(category: CatalogCategory, example: CatalogExample): stri
 	const lines = [
 		prev
 			? `- **Previous:** [${prev.id}: ${prev.name}](${examplePath(category.category, prev.id)})`
-			: "- **Previous:** _first rung of this ladder_",
+			: "- **Previous:** _none — this is the first rung_",
 		next
 			? `- **Next:** [${next.id}: ${next.name}](${examplePath(category.category, next.id)})`
-			: "- **Next:** _last rung of this ladder_",
+			: nextCategory
+				? `- **Next:** next ladder — [${nextCategory.title}](/examples/${nextCategory.category}/)`
+				: "- **Next:** _end of the catalog_ — [All examples](/examples/)",
 		`- **Ladder:** [${category.title} overview](/examples/${category.category}/) · [All examples](/examples/)`,
 		`- **Reference:** [${ref.label}](${ref.href})`,
 	];
@@ -113,9 +159,10 @@ function exampleFooter(category: CatalogCategory, example: CatalogExample): stri
 
 const PLANNED_ASIDE = [
 	":::caution[Planned]",
-	"This example describes a **planned** capability that has not shipped yet. The",
-	"artifact shows the intended shape; it is excluded from the artifact regression",
-	"check until the feature lands.",
+	"This example is catalogued as **planned**: its artifact is excluded from the",
+	"artifact regression check and shows an intended shape — which may lag behind,",
+	"or already be superseded by, the shipped implementation. The linked reference",
+	"page is authoritative for what ships today.",
 	":::",
 ].join("\n");
 
@@ -123,6 +170,7 @@ function examplePage(
 	category: CatalogCategory,
 	example: CatalogExample,
 	resolveId: (id: string) => { example: CatalogExample; category: CategoryKey } | undefined,
+	nextCategory: CatalogCategory | undefined,
 ): string {
 	const planned = isPlanned(example);
 	const fm: Record<string, unknown> = {
@@ -146,12 +194,15 @@ function examplePage(
 			)})`
 		: `**Builds on:** nothing — this is the first rung of [${category.title}](/examples/${category.category}/).`;
 
-	const surfaces = example.surfaces.map((s) => `- \`${s.replace(/`/g, "'")}\``).join("\n");
+	const surfaces = example.surfaces
+		.map((s) => s.replace(/\s*\([^()]*src\/[^()]*\)/g, ""))
+		.map((s) => `- \`${s.replace(/`/g, "'")}\``)
+		.join("\n");
 
 	return [
 		frontmatter(fm),
 		"",
-		`\`${example.id}\` · rung ${example.rank} of ${category.examples.length} · ${KIND_LABEL[example.artifact_kind]}${planned ? " · _planned_" : ""}`,
+		`\`${example.id}\` · rung ${example.rank} of ${category.examples.length} · ${KIND_LABEL[example.artifact_kind]}`,
 		"",
 		"## What it demonstrates",
 		"",
@@ -168,9 +219,11 @@ function examplePage(
 		"",
 		"## Surfaces exercised",
 		"",
+		`The commands, options, and API entry points this example touches — each is covered in the [${REFERENCE_LINKS[category.category].label}](${REFERENCE_LINKS[category.category].href}).`,
+		"",
 		surfaces,
 		"",
-		exampleFooter(category, example),
+		exampleFooter(category, example, nextCategory),
 	].join("\n");
 }
 
@@ -189,13 +242,23 @@ function categoryIndexPage(category: CatalogCategory): string {
 	return [
 		frontmatter(fm),
 		"",
+		CATEGORY_BLURBS[category.category],
+		"",
 		"Each example builds on the one before it — read the ladder in order, or jump",
 		"to the rung you need. Every shipped artifact is regression-checked against the",
 		"real CLI and library output.",
 		"",
+		...(CATEGORY_ASIDES[category.category] ? [CATEGORY_ASIDES[category.category], ""] : []),
+		...(category.examples.some(isPlanned)
+			? [
+					"Rungs marked _(planned)_ are excluded from that check: their artifacts show an",
+					"intended shape and are not verified against the real tool.",
+					"",
+				]
+			: []),
 		rows,
 		"",
-		`Or browse [all example ladders](/examples/), or open the [${REFERENCE_LINKS[category.category].label}](${REFERENCE_LINKS[category.category].href}) for the underlying spec.`,
+		`Or browse [all example ladders](/examples/), start from a task-shaped [recipe](/recipes/), or open the [${REFERENCE_LINKS[category.category].label}](${REFERENCE_LINKS[category.category].href}) for the underlying spec.`,
 		"",
 	].join("\n");
 }
@@ -257,7 +320,7 @@ function landingPage(catalog: CatalogCategory[]): string {
 			if (first?.rank !== 1) {
 				throw new Error(`${cat.category}: no rank-1 example for the hero tour`);
 			}
-			return `${i + 1}. **[${cat.title}](/examples/${cat.category}/)** — ${cat.examples.length} rungs, starting with [${first.id}: ${first.name}](${examplePath(cat.category, first.id)}).`;
+			return `${i + 1}. **[${cat.title}](/examples/${cat.category}/)** — ${CATEGORY_BLURBS[cat.category]} ${cat.examples.length} rungs; start at [${first.id}: ${first.name}](${examplePath(cat.category, first.id)}).`;
 		})
 		.join("\n");
 
@@ -271,7 +334,7 @@ function landingPage(catalog: CatalogCategory[]): string {
 		"you back two things from one parse:",
 		"",
 		"- **Validation** — findings with `path:line` positions, as human text, JSON, or",
-		"  SARIF, with CI-ready exit codes.",
+		"  SARIF for code scanning, with CI-ready exit codes.",
 		"- **A typed model** — the contract that *checks* a document also *types* it:",
 		"  `doc.frontmatter.status`, `doc.body.summary.text()`, iterable typed table rows.",
 		"",
@@ -288,7 +351,7 @@ function landingPage(catalog: CatalogCategory[]): string {
 		'decision.read(src, { path: "D-0001.md" });     // typed Doc: frontmatter + body model',
 		"```",
 		"",
-		"Contracts can also be pure YAML — no code at all — and a declarative config maps",
+		"Contracts can also be pure YAML — no code at all. A declarative config maps",
 		"directories and globs to contracts, so validating a whole docs tree is",
 		"configuration. See [Getting started](/getting-started/).",
 		"",
@@ -306,7 +369,7 @@ function landingPage(catalog: CatalogCategory[]): string {
 		"scenario-first, end-to-end solutions — [guard a folder of docs in",
 		"CI](/recipes/guard-a-folder-in-ci/), [validate several doc types in one",
 		"repo](/recipes/multiple-doc-types/), or [check an Astro content collection's",
-		"body](/recipes/astro-content-collections/) — each with the contract, the command,",
+		"body](/recipes/astro-content-collections/). Each gives you the contract, the command,",
 		"and the CI wiring, verified against the real tool.",
 		"",
 		"## Learn it by example",
@@ -340,7 +403,7 @@ function main(): void {
 	mkdirSync(EXAMPLES_DIR, { recursive: true });
 
 	let pages = 0;
-	for (const cat of catalog) {
+	for (const [i, cat] of catalog.entries()) {
 		const dir = resolve(EXAMPLES_DIR, cat.category);
 		mkdirSync(dir, { recursive: true });
 		writeFileSync(resolve(dir, "index.md"), categoryIndexPage(cat));
@@ -348,7 +411,7 @@ function main(): void {
 		for (const example of cat.examples) {
 			writeFileSync(
 				resolve(dir, `${example.id.toLowerCase()}.md`),
-				examplePage(cat, example, (id) => index.get(id)),
+				examplePage(cat, example, (id) => index.get(id), catalog[i + 1]),
 			);
 			pages += 1;
 		}

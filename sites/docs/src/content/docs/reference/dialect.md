@@ -95,7 +95,7 @@ block-bound `^id` rides on its block as `BlockNode.anchor`. Through the typed mo
   scoped to its own blocks.
 
 A contract can also *require* an anchor. Declaring `anchor` on a section (or
-declarative-DSL node) asks the structure plane to check that the matching `^block-id`
+declarative-YAML node) asks the structure plane to check that the matching `^block-id`
 is present; a declared anchor with no matching block-id in the document is a
 `structure/anchor-missing` finding. See the [model reference](/reference/model/) for
 `byAnchor` and the [findings reference](/reference/findings/) for `anchor-missing`.

@@ -8,7 +8,9 @@ sidebar:
 markdown-contract is a Node ESM package (Node ≥ 20) with a library API and a
 `markdown-contract` CLI. It is **not yet published to npm** — for now, build it
 from a checkout of the
-[source repository](https://github.com/sksizer/markdown-contract):
+[source repository](https://github.com/sksizer/markdown-contract). The
+workspace builds with [Bun](https://bun.sh) (install it first); the built
+library and CLI run on plain Node:
 
 ```sh
 git clone https://github.com/sksizer/markdown-contract
@@ -18,13 +20,16 @@ bunx moon run core:build       # tsc → packages/core/dist (library + CLI bin)
 ```
 
 The publishable package lives in `packages/core`; link it into your project
-with `npm link` / `bun link` from there, or run the CLI directly via
-`packages/core/dist/cli/index.js`.
+with `npm link` / `bun link` from there, or run the CLI as
+`node packages/core/dist/cli/index.js`.
 
 ## Validate from the terminal
 
 Point `validate` at a folder. Config is auto-discovered
-(`markdown-contract.yaml` in the working directory), or passed explicitly:
+(`markdown-contract.yaml` in the working directory), or passed explicitly.
+Both files are authored in the sections just below — if you're starting from
+scratch, write one of them first (or let `init` do it), since `validate`
+without any config exits 2:
 
 ```sh
 markdown-contract validate ./decisions                                  # uses markdown-contract.yaml
@@ -46,7 +51,7 @@ config — then immediately re-validates the folder against what it wrote:
 ```sh
 markdown-contract init ./docs              # writes markdown-contract.yaml, self-checks
 markdown-contract init ./docs --dry-run    # print what would be written
-markdown-contract init ./docs --check      # CI drift guard: fail if docs outgrew the config
+markdown-contract init ./docs --check      # CI drift gate: fail if docs outgrew the config
 ```
 
 ## Declare a contract in YAML — no code
@@ -117,26 +122,11 @@ doc.body.summary.text();  // the Summary section's prose
 ## Repeatable sections
 
 Sometimes a heading is *meant* to recur — a per-entry `## Entry`, a changelog's
-`## Release`. Declare the slot **repeatable** and its peers validate instead of
-tripping the duplicate-section rule, and surface as a positional array on the
-model. In YAML the keys ride on the section node:
-
-```yaml
-body:
-  sections:
-    - section: Entry
-      repeatable: true          # may recur as peers
-    - section: Release
-      repeatable: true
-      min: 1                    # optional occurrence bounds -> structure/repeat-count
-      max: 12
-```
-
-The same in code is `section("Entry", { repeatable: true })`. Reading back,
-`doc.body.entry` is a `SectionView[]` in document order (a `TableView<Row>[]`
-when the section's sole content is a `table(...)`), while
-`doc.body.section("Entry")` still returns the first occurrence. See
-[How it works](/how-it-works/#repeatable-sections) for the full model.
+`## Release`. Declare the slot `repeatable: true` (in YAML, or
+`section("Entry", { repeatable: true })` in code) and its peers validate
+instead of tripping the duplicate-section rule, reading back as a positional
+array on the model. See [How it works](/how-it-works/#repeatable-sections) for
+the mechanism, and the [YAML reference](/reference/yaml/) for the keys.
 
 ## Embed it
 
@@ -155,9 +145,15 @@ const { findings, exitCode, stats } = runCorpus(config, { cwd: repoRoot });
 
 ## Where next
 
-The [examples](/examples/cli/) are the fastest way to learn the rest: eight
-short ladders of small, verified examples, each rung building on the last —
-from first CLI run to cross-document governance rules.
+Have a concrete job — guard a folder in CI, enforce an ADR template, read docs
+back as typed data? Start from a [recipe](/recipes/): each is a scenario-first,
+end-to-end solution, and [guard a folder of docs in
+CI](/recipes/guard-a-folder-in-ci/) is the five-minute adoption path.
+
+The [examples](/examples/) are the fastest way to learn the rest: eight short
+ladders of small, verified examples (a few late rungs are badged *Planned*),
+each rung building on the last — from first CLI run to cross-document
+governance rules.
 
 When you need exhaustive detail, the **reference** section is the spec:
 [CLI](/reference/cli/), [YAML config & contracts](/reference/yaml/),

@@ -43,8 +43,8 @@ that is actually good at it:
   gate a body section), and `textRule`/`requires`/`forbids` declare text
   constraints without writing a function at all.
 
-The split is deliberate: schema languages and tree grammars are formally
-incomparable, so markdown-contract never forces one to fake the other. It is
+The split is deliberate: schema languages and tree grammars can each express
+checks the other cannot, so markdown-contract never forces one to fake the other. It is
 the same "grammar + datatype library + rules" shape the XML structured-authoring
 world (RELAX NG, Schematron) ran on for decades — applied to markdown.
 
@@ -54,7 +54,7 @@ Every mechanism reports the same record:
 
 ```ts
 { id: "structure/section-missing", level: "error", path: "D-9001.md",
-  pos: { line: 8, col: 1 }, message: "required section 'Decision' is missing" }
+  pos: { line: 8, col: 1 }, message: "required section ‘Decision’ is missing" }
 ```
 
 Rule ids are namespaced, severity (`error` / `warn` / `report`) is contract
@@ -74,7 +74,7 @@ A compiled contract has two doors (both in the [API reference](/reference/api/))
 - `contract.read(src, { path })` returns the typed `Doc` or throws a
   `ContractError` carrying the findings — the shape a consumer wants.
 
-The `Doc` is a navigable typed view of the document (its full surface is the [model reference](/reference/model/)): `doc.frontmatter` is
+The `Doc` is a navigable typed view of the document (full surface in the [model reference](/reference/model/)): `doc.frontmatter` is
 typed by the frontmatter schema; `doc.body` reaches sections by camelCase key
 (`doc.body.summary`) or exact heading (`doc.body.section("Summary")`); tables
 are iterable typed-row collections; anchors resolve with `doc.byAnchor(id)`.
@@ -94,14 +94,14 @@ section("Entry", { repeatable: true })                     // may recur as peers
 section("Release", { repeatable: true, min: 1, max: 12 })  // bounded count
 ```
 
-The declarative DSL takes the same keys on a section node — `repeatable: true`
+The declarative YAML takes the same keys on a section node — `repeatable: true`
 plus optional numeric `min` / `max`. Every occurrence fills the one slot, so N
-repeats validate (and consecutive repeats never misfire the order check);
-`min` / `max` bound the count, and a present slot outside them is a
-`structure/repeat-count` finding. A heading that recurs *without* being declared
+repeats validate (and consecutive repeats never misfire the order check).
+`min` / `max` bound the count, and a present slot whose count falls outside
+them is a `structure/repeat-count` finding. A heading that recurs *without* being declared
 repeatable still errors — the default is unchanged.
 
-In the typed model the slot's dual-key key binds a **positional array** in
+In the typed model the slot's key binds a **positional array** in
 document order — `doc.body.entry` is a `SectionView[]`, or a `TableView<Row>[]`
 when the section's sole content is a `table(...)`, each element the same value a
 single section would bind:
@@ -112,7 +112,7 @@ doc.body.entry[0].text()      // positionally indexed, typed by the inner shape
 doc.body.section("Entry")     // still the first occurrence's SectionView
 ```
 
-Because the shape is a first-class, validated one, `init` can emit it: a heading
+Because repeatability is part of the declared, validated shape, `init` can emit it: a heading
 it sees repeated as exact-duplicate peers becomes a repeatable slot, so the
 inferred contract accepts the folder it was read from.
 
@@ -128,5 +128,8 @@ The package is three layers, and imports flow one way:
 
 The engine carries no knowledge of any particular repository — corpora are
 described declaratively (see [Getting started](/getting-started/) and the
-[config reference](/reference/yaml/)) — and the
+[YAML reference](/reference/yaml/)) — and the
 validator is strictly **read-only**: it never rewrites a document.
+
+Next: [Getting started](/getting-started/) to run it, or pick a
+[recipe](/recipes/) to solve a concrete job end to end.

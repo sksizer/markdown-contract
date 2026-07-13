@@ -100,6 +100,12 @@
   2. Un-plan `DECLARATIVE-YAML-14…20`: the declarative `requires:` / `forbids:`
      text constraints they describe actually ship (`declarative/text.ts`, wired
      via `body.ts` / `load.ts`), so UC-13 is buildable today.
+- **Catalog corrections surfaced by the site review** (owned by T-CTLG, not the
+  site): `VALIDATION-PLANES-17` and `REAL-WORLD-SCHEMAS-16` are also stale
+  `planned` for the shipped text constraints; and `DECLARATIVE-YAML-18`'s
+  artifact uses `requires:` with `max: 0` as "the forbids dual", a form the
+  shipped compiler rejects outright ("use forbids(...) for an absence check") —
+  it should be authored as `forbids:`.
 
 ## Remaining
 

@@ -64,7 +64,7 @@ The compiled `Contract` has two methods, both taking a `ValidateCtx` — `{ path
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `findings` | `Finding[]` | Every plane's findings — frontmatter, structure, content, text, rule — merged and deterministically sorted. |
+| `findings` | `Finding[]` | Findings from every stage — frontmatter, structure, content, text, rule — merged and deterministically sorted. |
 | `doc?` | `Doc<F, B>` | The typed model. Present **iff** no error-level finding; built lazily on first access. |
 | `tree` | `DocTree` | The raw projection — always returned, valid or not. |
 
@@ -190,7 +190,7 @@ Named rules run custom predicates and mint findings under a contract-chosen name
 | `requires` | `requires(specs: TextMatchSpec[]): Rule` | A section-scoped rule requiring each phrase to be present (emits `text/requires`). |
 | `forbids` | `forbids(specs: TextMatchSpec[]): Rule` | A section-scoped rule forbidding each phrase (emits `text/forbids`). |
 
-`requires` / `forbids` / `textRule` are the TypeScript authoring surface for declarative text constraints (D-0011). Each `TextMatchSpec` supplies exactly one of `pattern` (a literal substring) or `regex` (a regex source), with optional `normalize` / `ignoreCase`, `min` / `max` count bounds, and `id` / `note` / `level`. A `requires` entry whose bound expresses absence (`max: 0`, or `max` below the effective minimum) is rejected at construction — use `forbids` for an absence check.
+`requires` / `forbids` / `textRule` are the TypeScript authoring surface for declarative text constraints (D-0011). Each `TextMatchSpec` supplies exactly one of `pattern` (a literal substring) or `regex` (a regex source), with optional `normalize` (default `true` — whitespace-flexible matching) / `ignoreCase`, `min` / `max` count bounds, and `id` / `note` / `level`. A `requires` entry whose bound expresses absence (`max: 0`, or `max` below the effective minimum) is rejected at construction — use `forbids` for an absence check.
 
 ```ts
 import { docRule, requires, forbids } from "markdown-contract";
@@ -318,7 +318,7 @@ The package version string. Still `0.0.0` — the package is pre-release and bui
 
 ## The typed model
 
-`Contract.read()` (and `ValidationResult.doc`) return a typed `Doc<F, B>` — the out-of-model view with `frontmatter`, a dual-key `body`, and typed `SectionView` / `TableView` / `ListView` accessors over the validated document. That surface is documented separately.
+`Contract.read()` (and `ValidationResult.doc`) return a typed `Doc<F, B>` — the typed model, with `frontmatter`, a dual-key `body`, and typed `SectionView` / `TableView` / `ListView` accessors over the validated document. That surface is documented separately.
 
 - [Model reference](/reference/model/) — `Doc`, `SectionView`, `TableView`, `ListView`, and the read-back types.
 - [YAML reference](/reference/yaml/) — the declarative front-end, at parity with the combinators above.

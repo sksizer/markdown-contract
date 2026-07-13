@@ -37,9 +37,10 @@ export default defineConfig({
 					// job, mirroring docs/example-recipes.md (the build checklist).
 					label: 'Recipes',
 					items: [
-						{ label: 'Overview', link: '/recipes/' },
+						{ label: 'All recipes', link: '/recipes/' },
 						{
 							label: 'Guard folders in CI',
+							collapsed: true,
 							items: [
 								{ label: 'Guard a folder in CI', link: '/recipes/guard-a-folder-in-ci/' },
 								{ label: 'Infer a contract with init', link: '/recipes/infer-a-contract-with-init/' },
@@ -53,6 +54,7 @@ export default defineConfig({
 						},
 						{
 							label: 'Site content',
+							collapsed: true,
 							items: [
 								{ label: 'Astro content collections', link: '/recipes/astro-content-collections/' },
 								{ label: 'Require code + checklist', link: '/recipes/require-code-and-checklist/' },
@@ -63,6 +65,7 @@ export default defineConfig({
 						},
 						{
 							label: 'Team templates',
+							collapsed: true,
 							items: [
 								{ label: 'Enforce the ADR template', link: '/recipes/enforce-adr-template/' },
 								{ label: 'Runbook: owner + rollback', link: '/recipes/runbook-owner-and-rollback/' },
@@ -72,12 +75,14 @@ export default defineConfig({
 						},
 						{
 							label: 'Obsidian vaults',
+							collapsed: true,
 							items: [
 								{ label: 'Require a ^summary anchor', link: '/recipes/require-a-summary-anchor/' },
 							],
 						},
 						{
 							label: 'Typed data',
+							collapsed: true,
 							items: [
 								{ label: 'Build an index from docs', link: '/recipes/build-an-index-from-frontmatter/' },
 								{ label: 'Assemble release notes', link: '/recipes/assemble-release-notes/' },
@@ -86,6 +91,7 @@ export default defineConfig({
 						},
 						{
 							label: 'Embed in your tooling',
+							collapsed: true,
 							items: [
 								{ label: 'Validate in your own build', link: '/recipes/validate-in-your-own-build/' },
 								{ label: 'Findings → editor diagnostics', link: '/recipes/findings-to-editor-diagnostics/' },
@@ -94,6 +100,7 @@ export default defineConfig({
 						},
 						{
 							label: 'Governance',
+							collapsed: true,
 							items: [
 								{ label: 'Enforce owner tree-wide', link: '/recipes/enforce-owner-across-tree/' },
 								{ label: 'Cross-document references', link: '/recipes/cross-document-references/' },
@@ -107,21 +114,21 @@ export default defineConfig({
 						// Whole-catalog browse index (generated at examples/index.md by scripts/generate.ts).
 						{ label: 'All examples', link: '/examples/' },
 						// cli — CLI Quickstart: Validate from the Terminal
-						{ label: 'CLI Quickstart', items: [{ autogenerate: { directory: 'examples/cli' } }] },
+						{ label: 'CLI Quickstart', collapsed: true, items: [{ autogenerate: { directory: 'examples/cli' } }] },
 						// inference-init — Scaffold and Guard: init, Inference, and Drift Checks
-						{ label: 'Scaffold & Guard', items: [{ autogenerate: { directory: 'examples/inference-init' } }] },
+						{ label: 'Scaffold & Guard', collapsed: true, items: [{ autogenerate: { directory: 'examples/inference-init' } }] },
 						// declarative-yaml — Declarative YAML: Contracts and Corpus Config, No Code
-						{ label: 'Declarative YAML', items: [{ autogenerate: { directory: 'examples/declarative-yaml' } }] },
+						{ label: 'Declarative YAML', collapsed: true, items: [{ autogenerate: { directory: 'examples/declarative-yaml' } }] },
 						// validation-planes — Authoring Contracts in Code: Structure, Content, and Custom Rules
-						{ label: 'Contracts in Code', items: [{ autogenerate: { directory: 'examples/validation-planes' } }] },
+						{ label: 'Contracts in Code', collapsed: true, items: [{ autogenerate: { directory: 'examples/validation-planes' } }] },
 						// consume-as-data — Consume as Typed Data: Reading the Document as a Model
-						{ label: 'Consume as Data', items: [{ autogenerate: { directory: 'examples/consume-as-data' } }] },
+						{ label: 'Consume as Data', collapsed: true, items: [{ autogenerate: { directory: 'examples/consume-as-data' } }] },
 						// dialect — Dialect: Anchors, Wikilinks, and Vault References
-						{ label: 'Dialect', items: [{ autogenerate: { directory: 'examples/dialect' } }] },
+						{ label: 'Dialect', collapsed: true, items: [{ autogenerate: { directory: 'examples/dialect' } }] },
 						// embed-and-ci — Embed and Automate: the Runner Library and CI Gates
-						{ label: 'Embed & Automate', items: [{ autogenerate: { directory: 'examples/embed-and-ci' } }] },
+						{ label: 'Embed & Automate', collapsed: true, items: [{ autogenerate: { directory: 'examples/embed-and-ci' } }] },
 						// real-world-schemas — Real-World Schemas: Document Templates and Cross-Document Governance
-						{ label: 'Real-World Schemas', items: [{ autogenerate: { directory: 'examples/real-world-schemas' } }] },
+						{ label: 'Real-World Schemas', collapsed: true, items: [{ autogenerate: { directory: 'examples/real-world-schemas' } }] },
 					],
 				},
 				{
@@ -130,6 +137,7 @@ export default defineConfig({
 					// order is stable and independent of per-page frontmatter.
 					label: 'Reference',
 					items: [
+						{ label: 'All reference', link: '/reference/' },
 						{ label: 'CLI', link: '/reference/cli/' },
 						{ label: 'Declarative YAML', link: '/reference/yaml/' },
 						{ label: 'Library API', link: '/reference/api/' },

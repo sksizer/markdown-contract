@@ -20,7 +20,7 @@ interface Finding {
   id: string;              // namespaced "area/.../name", e.g. "structure/section-missing"
   level: "error" | "warn" | "report";
   path: string;            // the source document's file path (for "<path>:<line>")
-  pos?: SourcePos;         // omitted for whole-document / absence findings
+  pos?: SourcePos;         // omitted when there is no line to point at
   message: string;
   fix?: { description: string; edit?: TextEdit };
 }
@@ -31,7 +31,7 @@ interface Finding {
 | `id` | The rule id — a namespaced `area/.../name` string. Stable across runs; safe to filter and route on. See the [catalog](#rule-id-catalog) below. |
 | `level` | Severity: `error`, `warn`, or `report`. Contract data, not a call-site choice — see [Levels](#levels). |
 | `path` | The document's file path, as stamped from `ctx.path`. This is a filesystem path for the `<path>:<line>` rendering, **not** a structural path into the document. |
-| `pos` | The source position when the finding is position-pinned; **omitted** for whole-document and absence findings (e.g. a missing required section that has no line to point at). |
+| `pos` | The source position when the finding is position-pinned; **omitted** only when there is no line to point at — a whole-document finding, or a missing required section in a document with no headings (otherwise `structure/section-missing` pins to the first body heading). |
 | `message` | A ready-to-print human sentence. |
 | `fix` | Optional, **provisional**. It only *describes* a remedy — the engine never edits documents. |
 
@@ -73,7 +73,7 @@ Two helpers key off `level`:
   reports the same breakdown.
 
 Because only `error` findings gate, the CLI exits `1` exactly when `hasErrors` is true. See
-[Exit codes](#output-formats) below and the [CLI reference](/reference/cli/).
+[Output formats](#output-formats) below and the CLI's [exit codes](/reference/cli/#exit-codes).
 
 :::note
 `report` is a valid level, but **no built-in engine rule defaults to it** — every engine-emitted id
@@ -88,7 +88,7 @@ The CLI renders the same `Finding[]` three ways. Keep these brief; the flags liv
 
 | Format | Shape |
 | --- | --- |
-| `human` | One line per finding: `path:line level id — message`, grouped by file (first-seen order), then a blank line and a summary count line. A finding with no `pos` prints as just `path`. An empty corpus prints `No findings.` |
+| `human` | One line per finding: `path:line level id — message`, grouped by file (first-seen order), then a blank line and a summary count line. A finding with no `pos` prints as just `path`. A clean run prints `No findings.` |
 | `json` | The raw `Finding[]`, serialized with two-space indent. Round-trips through `JSON.parse`. |
 | `sarif` | A valid SARIF 2.1.0 log — one run whose `tool.driver` is `markdown-contract`, `driver.rules` listing every distinct id seen, one `result` per finding, with a `region.startLine` when the finding has a `pos` (region omitted for whole-document findings). |
 
@@ -105,8 +105,8 @@ config error.
 
 ## Rule-ID catalog
 
-Every id below is emitted by the engine. Ids are grouped by **plane** — the stage that produces
-them. Unless noted, the default level is `error`; the one exception is `structure/heading-depth-jump`
+Every id below is emitted by the engine. Ids are grouped by the **stage that produces
+them** — a finer split than the three [validation planes](/how-it-works/#three-cooperating-planes): the frontmatter ids belong to the content plane, and the `text/*` ids to the rules plane. Unless noted, the default level is `error`; the one exception is `structure/heading-depth-jump`
 (`warn`).
 
 ### Structure plane

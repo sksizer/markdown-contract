@@ -166,8 +166,8 @@ the `sections(opts, specs)` grammar.
 
 | Key | Value | Meaning |
 | --- | --- | --- |
-| `order` | `none` \| `recognized-relative` \| `strict` | How strictly section order is enforced (`structure/section-order`). |
-| `allowUnknown` | boolean | Whether headings not named by the grammar are tolerated. |
+| `order` | `none` \| `recognized-relative` \| `strict` (default `none`) | How strictly section order is enforced (`structure/section-order`). |
+| `allowUnknown` | boolean (default `true`) | Whether headings not named by the grammar are tolerated. |
 | `sections` | list of **nodes** (required) | The ordered section grammar (below). |
 
 **Section-node grammar** — each entry in `sections` is a mapping with exactly
@@ -332,7 +332,7 @@ and a violated `min` / `max` occurrence bound is `text/count`.
 | --- | --- | --- |
 | `pattern` | string | A literal needle. |
 | `regex` | string | A regex source. Exactly one of `pattern` / `regex` is required. |
-| `normalize` | boolean | Whitespace-fold the literal before matching. |
+| `normalize` | boolean (default `true`) | Whitespace-fold the literal before matching; set `false` for exact-bytes matching. |
 | `ignoreCase` | boolean | Case-insensitive match. |
 | `min` / `max` | number | Count bounds on occurrences (`text/count`). |
 | `id` | string | Override the synthesized finding id. |

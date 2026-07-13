@@ -7,8 +7,8 @@ The [examples](/examples/) teach markdown-contract one **mechanism** at a time �
 the CLI, the combinators, the dialect. **Recipes** come at it from the other
 direction: each one starts from a **situation** you actually have and shows the
 whole solution end to end — the contract, the config, the command, and the CI
-wiring — then links down into the mechanism examples and up into the
-[reference](/reference/cli/) for the details.
+wiring. From there it links down into the mechanism examples and up into the
+[reference](/reference/) for the details.
 
 Every contract and config on these pages is compiled through the real
 declarative front-end, every terminal transcript is captured from the real CLI,

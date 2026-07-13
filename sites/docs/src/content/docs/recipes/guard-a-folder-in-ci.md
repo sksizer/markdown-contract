@@ -75,8 +75,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Install markdown-contract first — it's built from source until it's on
-      # npm; see Getting started. Then gate on the contract:
+      # markdown-contract isn't on npm yet — build it from source (the same
+      # steps as Getting started) so the gate below has a binary to run:
+      - uses: oven-sh/setup-bun@v2
+      - name: Install markdown-contract (build from source)
+        run: |
+          git clone https://github.com/sksizer/markdown-contract "$RUNNER_TEMP/markdown-contract"
+          cd "$RUNNER_TEMP/markdown-contract"
+          bun install
+          bunx moon run core:build
+          cd packages/core && npm link
       - run: markdown-contract validate docs/decisions --contract decision.contract.yaml
 ```
 

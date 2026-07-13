@@ -7,7 +7,7 @@ sidebar:
 
 Teams keep their durable knowledge in markdown — decision records, runbooks,
 planning docs, changelogs. It is the cheapest format people will actually keep
-writing: plain text, diffs well, works in every editor.
+writing: it's plain text, it diffs well, and it works in every editor.
 
 The trouble starts when you need to **rely** on those documents:
 
@@ -17,8 +17,9 @@ The trouble starts when you need to **rely** on those documents:
 
 Today the answers come from ad-hoc regex, a bespoke linter per repo, or a
 heavyweight CMS that takes the documents away from plain markdown. Existing
-markdown tooling validates frontmatter and then *transforms* the body — none of
-it lets you declare what a document's body must look like and check it.
+markdown tooling lints style (markdownlint, remark-lint), validates
+frontmatter, or *transforms* the body — none of it lets you declare a
+document type's required sections and shapes and check documents against them.
 markdown-contract fills that gap.
 
 ## One contract, two payoffs
@@ -66,14 +67,14 @@ A few forces shaped how the library works:
   said, a CMS needs three operations over a document type — *create* a
   conforming starting point, *validate* edits, and *read* the result into a
   typed model — and markdown-contract already delivers the last two from a
-  single contract. That same contract is the natural source of the first, so a
+  single contract. That same contract is the natural source of the first. A
   CMS's "new document", save-time validation, and typed reads could all rest on
   markdown-contract without those three ever drifting apart.
 - **Not a template engine — but it could be the basis for one.** Contracts
   validate documents (including your scaffolding templates); they never
   generate *content*. They do, however, declare a document's *shape* — its
-  frontmatter fields, its sections in order, its table columns — and that
-  declaration can be walked to emit an empty-but-valid **skeleton**: the
+  frontmatter fields, its sections in order, its table columns. Walking that
+  declaration emits an empty-but-valid **skeleton**: the
   headings in the right order, a frontmatter block with starter values, a
   table's header row. Generating that stub is the exact dual of the [`init`](/reference/cli/)
   command, which already infers a contract *from* a folder of documents.
@@ -81,7 +82,7 @@ A few forces shaped how the library works:
   contract already carries everything such a scaffolder would need.
 
 :::note[See also]
-The [reference](/reference/glossary/) section is the spec behind this overview — the [glossary](/reference/glossary/) defines the load-bearing terms (*contract*, *finding*, *plane*, *dialect*), and each mechanism has its own page: [findings](/reference/findings/), [model](/reference/model/), [CLI](/reference/cli/), [YAML](/reference/yaml/), and [API](/reference/api/).
+The [reference](/reference/) section is the spec behind this overview. The [glossary](/reference/glossary/) defines the load-bearing terms (*contract*, *finding*, *plane*, *dialect*), and each mechanism has its own page: [findings](/reference/findings/), [model](/reference/model/), [CLI](/reference/cli/), [YAML](/reference/yaml/), and [API](/reference/api/).
 :::
 
 Next: [How it works](/how-it-works/) for the technical approach, or

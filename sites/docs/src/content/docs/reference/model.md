@@ -257,4 +257,4 @@ Both take the projection's table `BlockNode` (from `section.blocks`) and the doc
 - [Consume as data](/examples/consume-as-data/) — worked examples reading a document's tables, sections, and frontmatter through the model.
 - [Dialect](/examples/dialect/) — anchors and wikilinks in the projection.
 - [API reference](/reference/api/) — the full `Contract`, `validate`, `read`, and `parse` signatures.
-- [Glossary](/reference/glossary/) — definitions for the terms this page leans on (projection, section group, dialect anchors).
+- [Glossary](/reference/glossary/) — definitions for the terms this page leans on (projection, SectionView, dual-key, dialect anchors).
