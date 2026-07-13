@@ -186,7 +186,7 @@ Any node may carry `optional: true`, which wraps it in `optional(...)`.
 | Key | Value | Meaning |
 | --- | --- | --- |
 | `aliases` | list of strings (`section` only) | Alternate spellings accepted for the heading. |
-| `anchor` | string | Require a `^anchor` on the section heading (`structure/anchor-missing`). |
+| `anchor` | string | Require the section to carry a `^anchor` — a block-bound or section-level anchor inside the section (not on the heading line); absence is `structure/anchor-missing`, pinned at the heading. |
 | `repeatable` | boolean | The slot may appear more than once (`structure/repeat-count`). |
 | `min` / `max` | number | Repeat-count bounds. Valid only on a repeatable slot; `min ≤ max` — otherwise a build-time `ContractBuildError` raised by `section()` / `oneOf()`. |
 | `content` | leaf or named-leaf map | Content requirements for the section body (below). |

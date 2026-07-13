@@ -205,8 +205,10 @@ section("Summary", {
 });
 ```
 
-:::caution[Planned]
-The **declarative-YAML** `requires:` / `forbids:` keys that compile to these builders (C-0009 / D-0011) are not yet wired through the YAML front-end. The library builders above ship and work today; the YAML surface that would author them is covered on the [YAML reference](/reference/yaml/).
+:::note
+The declarative-YAML `requires:` / `forbids:` keys compile onto these builders — a YAML-authored
+text constraint and its TS twin emit identical findings. See the [YAML reference](/reference/yaml/)
+and the [require / forbid phrases recipe](/recipes/require-or-forbid-phrases/).
 :::
 
 ## Presets

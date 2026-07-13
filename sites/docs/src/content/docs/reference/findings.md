@@ -187,10 +187,11 @@ findings still surface as synthesized `text/requires` / `text/forbids` / `text/c
 `doc` scope key.)
 :::
 
-:::caution[Planned]
-The **TypeScript** builders `requires` / `forbids` / `textRule` ship today. The **declarative YAML**
-`requires:` / `forbids:` keys they compile to (C-0009 / D-0011) are not yet wired — author text
-constraints through the TS API for now. See the [YAML reference](/reference/yaml/).
+:::note
+Text constraints are authorable both ways: the **TypeScript** builders `requires` / `forbids` /
+`textRule`, and the **declarative YAML** `requires:` / `forbids:` keys that compile onto them —
+identical findings either way. See the [YAML reference](/reference/yaml/) and the
+[require / forbid phrases recipe](/recipes/require-or-forbid-phrases/).
 :::
 
 ### Custom rule ids
