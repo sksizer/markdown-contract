@@ -10,7 +10,7 @@ import {
   table,
 } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/20b-real-task-non-checkbox-acs.md
 // Two content-leaf failures firing together on one real task: a Kind cell outside the
@@ -82,20 +82,22 @@ const v20b: ValidationFixture = {
     {
       label: "pass — both bugs fixed: Kind add, ACs are checkboxes",
       source: loadSource(import.meta.url, "./20b-real-task-non-checkbox-acs.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./20b-real-task-non-checkbox-acs.pass.expected.json",
+      ),
     },
     {
       label: "fail — Kind 'new' on row 2; both ACs plain bullets",
       source: loadSource(import.meta.url, "./20b-real-task-non-checkbox-acs.fail.md"),
-      findings: [
-        // Canonical content-plane ids (D-0001: content/<leaf>/<check>); the example used
-        // `content/enum` (cell) and `content/every-item` (list item) as best-effort sibling
-        // names — its own note flags these as an open question. A bad Kind cell is
-        // content/table/cell; a non-checkbox AC item is content/list/item-kind.
-        { id: "content/table/cell", level: "error", line: 19 },
-        { id: "content/list/item-kind", level: "error", line: 23 },
-        { id: "content/list/item-kind", level: "error", line: 24 },
-      ],
+      // Golden note: canonical content-plane ids (D-0001: content/<leaf>/<check>); the example
+      // used `content/enum` (cell) and `content/every-item` (list item) as best-effort sibling
+      // names — its own note flags these as an open question. A bad Kind cell is
+      // content/table/cell; a non-checkbox AC item is content/list/item-kind.
+      findings: loadExpected(
+        import.meta.url,
+        "./20b-real-task-non-checkbox-acs.fail.expected.json",
+      ),
     },
   ],
 };

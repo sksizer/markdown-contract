@@ -15,7 +15,9 @@ export default defineNuxtConfig({
 
   devtools: { enabled: false },
 
-  css: ["~/assets/css/main.css"],
+  // Token layer first (the shared kit's `--mc-*` custom properties), then the
+  // app's base + controls layers that consume them.
+  css: ["@markdown-contract/ui/theme.css", "~/assets/css/main.css"],
 
   runtimeConfig: {
     public: {

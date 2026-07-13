@@ -1,6 +1,6 @@
 import { contract, maxWords, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/09b-anchor-missing.md
 // The anchor-missing failure in isolation: content leaf valid, only the ^summary
@@ -19,12 +19,12 @@ const v09b: ValidationFixture = {
     {
       label: "pass — anchor present, prose under budget",
       source: loadSource(import.meta.url, "./09b-anchor-missing.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./09b-anchor-missing.pass.expected.json"),
     },
     {
       label: "fail — ^summary block-id absent, prose unchanged",
       source: loadSource(import.meta.url, "./09b-anchor-missing.fail.md"),
-      findings: [{ id: "structure/anchor-missing", level: "error", line: 1 }],
+      findings: loadExpected(import.meta.url, "./09b-anchor-missing.fail.expected.json"),
     },
   ],
 };

@@ -1,6 +1,6 @@
 import { contract, requires, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // D-0011 / C-0009 — `regex` match spec: a single regex entry expresses an OR-of-literals (the
 // v1 disjunction escape). The `Failure modes` section must document at least one lease failure
@@ -29,12 +29,12 @@ const v25: ValidationFixture = {
     {
       label: "pass — a LEASE-CONFLICT marker matches the alternation",
       source: loadSource(import.meta.url, "./25-text-regex.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./25-text-regex.pass.expected.json"),
     },
     {
       label: "fail — no lease marker present; the regex require fires at the heading",
       source: loadSource(import.meta.url, "./25-text-regex.fail.md"),
-      findings: [{ id: "text/requires/failureModes/17j7bdw", level: "error", line: 1 }],
+      findings: loadExpected(import.meta.url, "./25-text-regex.fail.expected.json"),
     },
   ],
   note: "Synthesized id `text/requires/failureModes/<hash>`; a regex miss pins at the heading.",

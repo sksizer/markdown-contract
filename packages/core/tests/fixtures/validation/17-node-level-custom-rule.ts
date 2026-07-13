@@ -1,7 +1,7 @@
 import type { SectionNode } from "../../../src/index.js";
 import { contract, rule, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/17-node-level-custom-rule.md
 // section({ rules: [rule(id, fn(node, ctx))] }) — a node-local custom rule: the
@@ -44,12 +44,12 @@ const v17: ValidationFixture = {
     {
       label: "pass — Summary prose contains 'outcome'",
       source: loadSource(import.meta.url, "./17-node-level-custom-rule.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./17-node-level-custom-rule.pass.expected.json"),
     },
     {
       label: "fail — Summary never says 'outcome'; rule fires at the heading",
       source: loadSource(import.meta.url, "./17-node-level-custom-rule.fail.md"),
-      findings: [{ id: "summary/mentions-outcome", level: "error", line: 1 }],
+      findings: loadExpected(import.meta.url, "./17-node-level-custom-rule.fail.expected.json"),
     },
   ],
 };

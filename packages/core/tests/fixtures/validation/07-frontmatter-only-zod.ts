@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/07-frontmatter-only-zod.md
 // contract({ frontmatter: ZodType }) — the frontmatter plane alone, strict Zod
@@ -24,12 +24,12 @@ const v07: ValidationFixture = {
     {
       label: "pass — well-formed frontmatter, no stray keys",
       source: loadSource(import.meta.url, "./07-frontmatter-only-zod.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./07-frontmatter-only-zod.pass.expected.json"),
     },
     {
       label: "fail — status outside the enum",
       source: loadSource(import.meta.url, "./07-frontmatter-only-zod.fail.md"),
-      findings: [{ id: "frontmatter/enum", level: "error", line: 3 }],
+      findings: loadExpected(import.meta.url, "./07-frontmatter-only-zod.fail.expected.json"),
     },
   ],
 };

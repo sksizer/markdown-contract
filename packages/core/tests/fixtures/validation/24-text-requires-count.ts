@@ -1,6 +1,6 @@
 import { contract, requires, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // D-0011 / C-0009 — occurrence count on a `requires` entry: a phrase must appear at least `min`
 // times in the bound scope. Here every checklist step must be marked `DONE` — the section
@@ -28,12 +28,12 @@ const v24: ValidationFixture = {
     {
       label: "pass — 'DONE' appears twice, meeting the minimum",
       source: loadSource(import.meta.url, "./24-text-requires-count.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./24-text-requires-count.pass.expected.json"),
     },
     {
       label: "fail — 'DONE' appears once, below min:2; the count fires at the heading",
       source: loadSource(import.meta.url, "./24-text-requires-count.fail.md"),
-      findings: [{ id: "text/count/checklist/9ms6i7", level: "error", line: 1 }],
+      findings: loadExpected(import.meta.url, "./24-text-requires-count.fail.expected.json"),
     },
   ],
   note: "Synthesized id `text/count/checklist/<hash>`; a below-min count pins at the heading.",

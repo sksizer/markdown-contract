@@ -1,6 +1,6 @@
 import { contract, gap, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/05b-gap-bounds.md
 // gap({ min, max }) bounds the admit-count of the window. Both bound violations
@@ -24,17 +24,17 @@ const v05b: ValidationFixture = {
     {
       label: "pass — one extra in the [1,2] window",
       source: loadSource(import.meta.url, "./05b-gap-bounds.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./05b-gap-bounds.pass.expected.json"),
     },
     {
       label: "fail (doc A) — zero extras, below min: 1",
       source: loadSource(import.meta.url, "./05b-gap-bounds.fail-1.md"),
-      findings: [{ id: "structure/gap-count" }],
+      findings: loadExpected(import.meta.url, "./05b-gap-bounds.fail-1.expected.json"),
     },
     {
       label: "fail (doc B) — three extras, above max: 2",
       source: loadSource(import.meta.url, "./05b-gap-bounds.fail-2.md"),
-      findings: [{ id: "structure/gap-count" }],
+      findings: loadExpected(import.meta.url, "./05b-gap-bounds.fail-2.expected.json"),
     },
   ],
 };

@@ -1,6 +1,6 @@
 import { contract, optional, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/03a-duplicate-section.md
 // A sibling heading repeated → structure/duplicate-section (id named in §6).
@@ -21,12 +21,12 @@ const v03a: ValidationFixture = {
     {
       label: "pass — Title then a single Overview",
       source: loadSource(import.meta.url, "./03a-duplicate-section.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./03a-duplicate-section.pass.expected.json"),
     },
     {
       label: "fail — Overview heading repeated",
       source: loadSource(import.meta.url, "./03a-duplicate-section.fail.md"),
-      findings: [{ id: "structure/duplicate-section", level: "error" }],
+      findings: loadExpected(import.meta.url, "./03a-duplicate-section.fail.expected.json"),
     },
   ],
 };

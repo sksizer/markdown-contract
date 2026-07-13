@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://moonrepo.dev/schemas/project.json
+#
+# The `ui` project (mapped to 'packages/ui' in .moon/workspace.yml) — the shared
+# Vue component kit (D-0018 §D6): kit components + design tokens + theme.css,
+# shipped as SOURCE (no build task — each consuming app compiles the .vue/.ts
+# files with its own pipeline, so there is no dist/ here by design).
+#
+# Authoring rule (T-U6W3, README.md § "Authoring moon tasks"): moon v2's
+# runtime-only toolchains do NOT put node_modules/.bin on PATH, so bun-toolchain
+# tasks invoke their runner via `bun run <script>`.
+
+layer: 'library'
+language: 'typescript'
+
+tasks:
+  # `bun run typecheck` (= vue-tsc --noEmit) — type-checks the kit source (.ts +
+  # .vue SFCs; the SFCs need the Vue-aware checker, not bare tsc) against the
+  # package's plain tsconfig. No outputs (pure check), so caching keys purely on
+  # inputs.
+  typecheck:
+    command: 'bun run typecheck'
+    toolchain: 'bun'
+    inputs:
+      - 'src/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `bun run test` (= bun test src) — the pure-TS unit peers (tokens.test.ts,
+  # findings.test.ts). Pinned to `bun test` mirroring apps/web and desktop: this
+  # package is private and bundler-consumed, not a published runtime-neutral
+  # artifact, so no Node gate (that gate is packages/core's).
+  test:
+    command: 'bun run test'
+    toolchain: 'bun'
+    inputs:
+      - 'src/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true

@@ -1,6 +1,6 @@
 import { contract, gap, optional, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/05-strict-prefix-gap-tail.md
 // order: "strict" + allowUnknown: false + gap(): a locked prefix then an open tail.
@@ -26,12 +26,12 @@ const v05: ValidationFixture = {
     {
       label: "pass — strict prefix, Risks in the gap, Appendix after",
       source: loadSource(import.meta.url, "./05-strict-prefix-gap-tail.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./05-strict-prefix-gap-tail.pass.expected.json"),
     },
     {
       label: "fail — Risks moved into the strict prefix before gap()",
       source: loadSource(import.meta.url, "./05-strict-prefix-gap-tail.fail.md"),
-      findings: [{ id: "structure/section-order" }],
+      findings: loadExpected(import.meta.url, "./05-strict-prefix-gap-tail.fail.expected.json"),
     },
   ],
 };

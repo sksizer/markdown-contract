@@ -57,3 +57,11 @@ docs/.obsidian/
 .output/
 # Nuxt dev symlink (ui/dist -> .nuxt/dist)
 apps/web/ui/dist
+# Nuxt build symlink (dist -> .output/public)
+apps/desktop/dist
+
+# Rust
+/target/
+
+# Tauri (apps/desktop/src-tauri) — generated permission/capability schemas
+apps/desktop/src-tauri/gen/

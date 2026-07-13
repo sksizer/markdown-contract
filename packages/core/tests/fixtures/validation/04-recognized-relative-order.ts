@@ -1,6 +1,6 @@
 import { contract, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/04-recognized-relative-order.md
 // order: "recognized-relative" — recognized sections keep declared order while
@@ -23,12 +23,12 @@ const v04: ValidationFixture = {
     {
       label: "pass — recognized order kept, Extra interleaves in a gap",
       source: loadSource(import.meta.url, "./04-recognized-relative-order.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./04-recognized-relative-order.pass.expected.json"),
     },
     {
       label: "fail — Overview precedes Title, recognized pair reversed",
       source: loadSource(import.meta.url, "./04-recognized-relative-order.fail.md"),
-      findings: [{ id: "structure/section-order", level: "error" }],
+      findings: loadExpected(import.meta.url, "./04-recognized-relative-order.fail.expected.json"),
     },
   ],
 };

@@ -1,6 +1,6 @@
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/10b-table-missing-column.md
 // A declared column absent from the table header. The id
@@ -23,12 +23,12 @@ const v10b: ValidationFixture = {
     {
       label: "pass — all declared columns present, two rows",
       source: loadSource(import.meta.url, "./10b-table-missing-column.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./10b-table-missing-column.pass.expected.json"),
     },
     {
       label: "fail — Change column dropped from the header",
       source: loadSource(import.meta.url, "./10b-table-missing-column.fail.md"),
-      findings: [{ id: "content/table/column-missing" }],
+      findings: loadExpected(import.meta.url, "./10b-table-missing-column.fail.expected.json"),
     },
   ],
 };

@@ -1,6 +1,6 @@
 import { contract, maxWords, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/09a-maxwords-exceeded.md
 // The content leaf fails (prose over the 120-word budget) while the anchor check
@@ -21,12 +21,12 @@ const v09a: ValidationFixture = {
     {
       label: "pass — anchored and under budget",
       source: loadSource(import.meta.url, "./09a-maxwords-exceeded.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./09a-maxwords-exceeded.pass.expected.json"),
     },
     {
       label: "fail — anchored but prose runs to 128 words",
       source: loadSource(import.meta.url, "./09a-maxwords-exceeded.fail.md"),
-      findings: [{ id: "content/max-words" }],
+      findings: loadExpected(import.meta.url, "./09a-maxwords-exceeded.fail.expected.json"),
     },
   ],
 };

@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://moonrepo.dev/schemas/project.json
+#
+# The `desktop` project (mapped to 'apps/desktop' in .moon/workspace.yml) — the
+# Tauri v2 + Nuxt 4 desktop app (D-0018 §D1), instantiated from
+# template-tauri-nuxt and adapted to Bun + moon. The Nuxt SPA lives at the
+# project root (it is the bun workspace member); the Rust shell crate lives in
+# src-tauri/ and is a member of the ROOT Cargo workspace (/Cargo.toml), so cargo
+# tasks address it with `-p markdown-contract-desktop` from the workspace root.
+#
+# Authoring rule (T-U6W3, README.md § "Authoring moon tasks"): moon v2's
+# runtime-only toolchains do NOT put node_modules/.bin on PATH, so bun-toolchain
+# tasks invoke their runner via `bun run <script>`. The cargo tasks run on the
+# `system` toolchain — Rust is not a moon-managed toolchain here; cargo comes
+# from the machine (rustup), like scc for metrics.
+
+layer: 'application'
+language: 'typescript'
+
+tasks:
+  # `bun run tauri dev` — the full desktop dev session: the tauri CLI runs
+  # `beforeDevCommand` ("bun run dev", the Nuxt dev server on :1420), compiles
+  # the src-tauri crate, and opens the webview window pointed at devUrl. Needs a
+  # desktop session (a display) plus the Tauri Linux system deps; in a headless
+  # container use desktop:generate + desktop:check-rust instead. `preset: server`
+  # marks it local + persistent, cache off, never a CI gate.
+  dev:
+    command: 'bun run tauri dev'
+    toolchain: 'bun'
+    preset: 'server'
+
+  # `bun run generate` (= nuxt generate) — the static SPA bundle the shell
+  # embeds: emits .output/public, which tauri.conf.json's frontendDist
+  # ("../.output/public") points at. This is also exactly what the tauri CLI's
+  # `beforeBuildCommand` runs before a bundle build.
+  generate:
+    command: 'bun run generate'
+    toolchain: 'bun'
+    inputs:
+      - 'app/**/*'
+      - 'public/**/*'
+      - 'nuxt.config.ts'
+      - 'tsconfig.json'
+      - 'package.json'
+      # the shared kit (@markdown-contract/ui) ships as SOURCE, compiled by this
+      # app's pipeline — so its source is a real input (workspace-relative).
+      - '/packages/ui/src/**/*'
+      - '/packages/ui/package.json'
+    outputs:
+      - '.output'
+
+  # `bun run typecheck` (= nuxt typecheck, vue-tsc under the hood) — type-checks
+  # the Nuxt app (app/**, nuxt.config.ts) against the generated .nuxt tsconfig.
+  # No outputs (pure check), so caching keys purely on inputs.
+  typecheck:
+    command: 'bun run typecheck'
+    toolchain: 'bun'
+    inputs:
+      - 'app/**/*'
+      - 'nuxt.config.ts'
+      - 'tsconfig.json'
+      - 'package.json'
+      # vue-tsc re-checks the source-shipped kit under this app's tsconfig too
+      - '/packages/ui/src/**/*'
+      - '/packages/ui/package.json'
+    options:
+      cache: true
+
+  # `bun run test` (= bun test app) — the frontend unit peers (app/**/*.test.ts,
+  # e.g. app/utils/echo.test.ts). Pinned to `bun test` mirroring apps/web: this
+  # app is Bun-run, not a published runtime-neutral artifact, so no Node gate.
+  test:
+    command: 'bun run test'
+    toolchain: 'bun'
+    inputs:
+      - 'app/**/*'
+      - 'tsconfig.json'
+      - 'package.json'
+    options:
+      cache: true
+
+  # `cargo check -p markdown-contract-desktop` — type/borrow-check the Tauri
+  # shell crate. `system` toolchain: cargo comes from the machine, and moon runs
+  # the command from the workspace root (where /Cargo.toml lives) via
+  # runFromWorkspaceRoot. runInCI: false — the shared CI runners have neither a
+  # Rust toolchain nor the Tauri Linux system deps (webkit2gtk/gtk3); a dedicated
+  # Rust workflow can pick these up later, like knip.yml does for lint-deps.
+  check-rust:
+    command: 'cargo check -p markdown-contract-desktop'
+    toolchain: 'system'
+    inputs:
+      - 'src-tauri/**/*'
+      - '/Cargo.toml'
+      - '/Cargo.lock'
+    options:
+      runFromWorkspaceRoot: true
+      runInCI: false
+      cache: true
+
+  # `cargo test -p markdown-contract-desktop` — the crate's unit tests: the
+  # `echo` API command, the ScanEngine stub, the vault-slug hook, and the scan
+  # orchestration over in-memory SQLite (src-tauri/src/scans.rs). Same
+  # system-toolchain / workspace-root / runInCI: false reasoning as check-rust.
+  test-rust:
+    command: 'cargo test -p markdown-contract-desktop'
+    toolchain: 'system'
+    inputs:
+      - 'src-tauri/**/*'
+      - '/Cargo.toml'
+      - '/Cargo.lock'
+    options:
+      runFromWorkspaceRoot: true
+      runInCI: false
+      cache: true

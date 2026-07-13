@@ -9,17 +9,21 @@
  * Data comes from the SHARED useVaults store — one fetch, one app-wide SSE
  * stream (the sidebar consumes the same rows); this page opens nothing itself.
  */
-import { computed, ref } from "vue";
 
-import EmptyState from "~/components/kit/EmptyState.vue";
-import ErrorState from "~/components/kit/ErrorState.vue";
-import LoadingState from "~/components/kit/LoadingState.vue";
-import SeverityBadge from "~/components/kit/SeverityBadge.vue";
-import StatusBadge from "~/components/kit/StatusBadge.vue";
-import Toolbar from "~/components/kit/Toolbar.vue";
+import {
+  countByLevel,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  SEVERITY_ORDER,
+  SeverityBadge,
+  STATUS_ORDER,
+  StatusBadge,
+  statusTokens,
+  Toolbar,
+} from "@markdown-contract/ui";
+import { computed, ref } from "vue";
 import { useVaults } from "~/composables/useVaults";
-import { SEVERITY_ORDER, STATUS_ORDER, statusTokens } from "~/design/tokens";
-import { countByLevel } from "~/lib/findings";
 import type { FindingLevel, VaultStatus, VaultStatusState } from "~/types";
 
 const props = defineProps<{

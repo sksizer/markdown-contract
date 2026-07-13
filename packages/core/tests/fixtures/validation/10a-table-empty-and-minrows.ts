@@ -1,6 +1,6 @@
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/10a-table-empty-and-minrows.md
 // A header-only table with the right columns but zero data rows. The provenance
@@ -23,12 +23,12 @@ const v10a: ValidationFixture = {
     {
       label: "pass — columns match and one data row",
       source: loadSource(import.meta.url, "./10a-table-empty-and-minrows.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./10a-table-empty-and-minrows.pass.expected.json"),
     },
     {
       label: "fail — data row dropped, header-only table",
       source: loadSource(import.meta.url, "./10a-table-empty-and-minrows.fail.md"),
-      findings: [{ id: "content/table/min-rows" }],
+      findings: loadExpected(import.meta.url, "./10a-table-empty-and-minrows.fail.expected.json"),
     },
   ],
 };

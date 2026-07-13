@@ -1,0 +1,21 @@
+{
+  // Checked by `vue-tsc --noEmit` (the .vue SFCs need the Vue-aware checker, not
+  // bare tsc). No Nuxt-generated config here — this package is plain Vue 3 + TS,
+  // shipped as source; each consuming app also re-checks it under its own
+  // pipeline. Options mirror apps/web's tsconfig, plus DOM for the components.
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "target": "ES2022",
+    "module": "Preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["@types/bun"]
+  },
+  "include": ["src"]
+}

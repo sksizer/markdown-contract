@@ -1,6 +1,6 @@
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/15b-undeclared-anchor-dynamic-access.md
 // An undeclared ^anchor rides along untyped, reachable only via doc.byAnchor — it
@@ -28,7 +28,10 @@ const v15b: ValidationFixture = {
     {
       label: "pass — ^extra is undeclared; imposes no finding, reachable only via byAnchor",
       source: loadSource(import.meta.url, "./15b-undeclared-anchor-dynamic-access.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./15b-undeclared-anchor-dynamic-access.expected.json",
+      ),
     },
   ],
 };

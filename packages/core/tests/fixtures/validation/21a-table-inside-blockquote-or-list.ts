@@ -1,6 +1,6 @@
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/21a-table-inside-blockquote-or-list.md
 // A projection edge: a section's table authored inside a blockquote. Resolved: D4 says the
@@ -24,12 +24,18 @@ const v21a: ValidationFixture = {
     {
       label: "pass — table at section top level projects to a table BlockNode",
       source: loadSource(import.meta.url, "./21a-table-inside-blockquote-or-list.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./21a-table-inside-blockquote-or-list.pass.expected.json",
+      ),
     },
     {
       label: "fail — table quoted inside a > blockquote; declared table unreachable",
       source: loadSource(import.meta.url, "./21a-table-inside-blockquote-or-list.fail.md"),
-      findings: [{ id: "structure/block-missing" }],
+      findings: loadExpected(
+        import.meta.url,
+        "./21a-table-inside-blockquote-or-list.fail.expected.json",
+      ),
     },
   ],
 };

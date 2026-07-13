@@ -1,0 +1,67 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* ── Shared desktop controls ─────────────────────────────────────────────────
+   The small, flat, macOS-toolbar-grade controls every screen uses, on the
+   kit's --mc-* tokens so they follow light/dark with the theme. */
+
+.mc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 550;
+  font-family: var(--mc-font);
+  color: var(--mc-text);
+  background: var(--mc-control-bg);
+  border: 1px solid var(--mc-border-strong);
+  border-radius: var(--mc-radius);
+  box-shadow: var(--mc-shadow-ctl);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+.mc-btn:hover {
+  background: var(--mc-control-hover);
+}
+.mc-btn:active {
+  background: var(--mc-control-active);
+}
+.mc-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.mc-btn--primary {
+  color: var(--mc-on-accent);
+  background: var(--mc-accent);
+  border-color: var(--mc-accent);
+}
+.mc-btn--primary:hover {
+  background: var(--mc-accent-hover);
+}
+.mc-btn--danger {
+  color: var(--mc-sev-error);
+}
+
+.mc-field {
+  padding: 4px 8px;
+  font-size: 12.5px;
+  font-family: var(--mc-font);
+  color: var(--mc-text);
+  background: var(--mc-field-bg);
+  border: 1px solid var(--mc-border);
+  border-radius: var(--mc-radius);
+  box-shadow: var(--mc-shadow-inset);
+}
+.mc-field:focus {
+  outline: none;
+  border-color: var(--mc-focus);
+  box-shadow: var(--mc-focus-ring);
+}
+
+.mc-error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--mc-sev-error);
+}

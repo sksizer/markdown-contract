@@ -13,21 +13,24 @@
  * (useVaults — this page opens no EventSource of its own) about this vault
  * re-pulls the row so watch-triggered runs land live.
  */
-import { computed, onMounted, ref, watch } from "vue";
 
+import {
+  ContractGroup,
+  countByLevel,
+  EmptyState,
+  ErrorState,
+  FindingRow,
+  LoadingState,
+  SEVERITY_ORDER,
+  SeverityBadge,
+  StatusBadge,
+  severityRank,
+  Toolbar,
+} from "@markdown-contract/ui";
+import { computed, onMounted, ref, watch } from "vue";
 import DriftView from "~/components/DriftView.vue";
-import ContractGroup from "~/components/kit/ContractGroup.vue";
-import EmptyState from "~/components/kit/EmptyState.vue";
-import ErrorState from "~/components/kit/ErrorState.vue";
-import FindingRow from "~/components/kit/FindingRow.vue";
-import LoadingState from "~/components/kit/LoadingState.vue";
-import SeverityBadge from "~/components/kit/SeverityBadge.vue";
-import StatusBadge from "~/components/kit/StatusBadge.vue";
-import Toolbar from "~/components/kit/Toolbar.vue";
 import { apiErrorMessage, useApi } from "~/composables/useApi";
 import { useVaults } from "~/composables/useVaults";
-import { SEVERITY_ORDER, severityRank } from "~/design/tokens";
-import { countByLevel } from "~/lib/findings";
 import type { Finding, InitVaultResponse, VaultStatus } from "~/types";
 
 const props = defineProps<{

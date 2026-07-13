@@ -1,6 +1,6 @@
 import { contract, rule, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/17a-node-rule-violation-with-pos.md
 // The localization half: the same node rule fires, carrying node.pos and its own
@@ -35,12 +35,18 @@ const v17a: ValidationFixture = {
     {
       label: "pass — prose contains 'contract'",
       source: loadSource(import.meta.url, "./17a-node-rule-violation-with-pos.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./17a-node-rule-violation-with-pos.pass.expected.json",
+      ),
     },
     {
       label: "fail — prose omits 'contract'; rule fires at warn level",
       source: loadSource(import.meta.url, "./17a-node-rule-violation-with-pos.fail.md"),
-      findings: [{ id: "summary/names-contract", level: "warn", line: 1 }],
+      findings: loadExpected(
+        import.meta.url,
+        "./17a-node-rule-violation-with-pos.fail.expected.json",
+      ),
     },
   ],
 };

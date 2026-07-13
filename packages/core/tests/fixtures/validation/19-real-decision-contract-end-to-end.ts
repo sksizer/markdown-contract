@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, gap, maxWords, optional, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/19-real-decision-contract-end-to-end.md
 // The §5.1 DecisionContract on a real SDLC Decision README: Zod frontmatter, a
@@ -62,21 +62,23 @@ const v19: ValidationFixture = {
     {
       label: "pass — conforming Decision on both planes",
       source: loadSource(import.meta.url, "./19-real-decision-contract-end-to-end.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./19-real-decision-contract-end-to-end.pass.expected.json",
+      ),
     },
     {
       label: "fail — status off-enum, ^summary dropped, Consequences before Decision",
       source: loadSource(import.meta.url, "./19-real-decision-contract-end-to-end.fail.md"),
-      findings: [
-        { id: "frontmatter/enum", level: "error" },
-        { id: "structure/anchor-missing", level: "error" },
-        // recognized-relative: ## Consequences (declared last) before ## Decision puts
-        // exactly one recognized section (Decision) out of order. The original mutation
-        // (Consequences before Context) would put BOTH Context and Decision after
-        // Consequences — two section-order findings; reordered to the single-violation
-        // case the example's one finding intends.
-        { id: "structure/section-order", level: "error" },
-      ],
+      // Golden note — structure/section-order: recognized-relative: ## Consequences (declared
+      // last) before ## Decision puts exactly one recognized section (Decision) out of order.
+      // The original mutation (Consequences before Context) would put BOTH Context and Decision
+      // after Consequences — two section-order findings; reordered to the single-violation case
+      // the example's one finding intends.
+      findings: loadExpected(
+        import.meta.url,
+        "./19-real-decision-contract-end-to-end.fail.expected.json",
+      ),
     },
   ],
 };

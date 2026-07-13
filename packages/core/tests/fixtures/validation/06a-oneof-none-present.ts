@@ -1,6 +1,6 @@
 import { contract, oneOf, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/06a-oneof-none-present.md
 // No member of a required oneOf set present → exactly one section-missing for the
@@ -21,12 +21,12 @@ const v06a: ValidationFixture = {
     {
       label: "pass — one declared spelling present",
       source: loadSource(import.meta.url, "./06a-oneof-none-present.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./06a-oneof-none-present.pass.expected.json"),
     },
     {
       label: "fail — only an undeclared ## Objective heading present",
       source: loadSource(import.meta.url, "./06a-oneof-none-present.fail.md"),
-      findings: [{ id: "structure/section-missing" }],
+      findings: loadExpected(import.meta.url, "./06a-oneof-none-present.fail.expected.json"),
     },
   ],
 };

@@ -1,6 +1,6 @@
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/10c-table-extra-column.md
 // extraColumns: "error" reports an undeclared column. Gaps & questions: Resolved
@@ -26,12 +26,12 @@ const v10c: ValidationFixture = {
     {
       label: "pass — only the three declared columns",
       source: loadSource(import.meta.url, "./10c-table-extra-column.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./10c-table-extra-column.pass.expected.json"),
     },
     {
       label: "fail — extra undeclared Owner column",
       source: loadSource(import.meta.url, "./10c-table-extra-column.fail.md"),
-      findings: [{ id: "content/table/column-extra", level: "error", line: 3 }],
+      findings: loadExpected(import.meta.url, "./10c-table-extra-column.fail.expected.json"),
     },
   ],
 };

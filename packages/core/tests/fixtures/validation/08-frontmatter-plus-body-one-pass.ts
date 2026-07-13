@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/08-frontmatter-plus-body-one-pass.md
 // Unified contract({ frontmatter, body }) — one pass merges both planes into one
@@ -29,15 +29,18 @@ const v08: ValidationFixture = {
     {
       label: "pass — both planes satisfied",
       source: loadSource(import.meta.url, "./08-frontmatter-plus-body-one-pass.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./08-frontmatter-plus-body-one-pass.pass.expected.json",
+      ),
     },
     {
       label: "fail — bad enum on one plane, missing Context on the other",
       source: loadSource(import.meta.url, "./08-frontmatter-plus-body-one-pass.fail.md"),
-      findings: [
-        { id: "frontmatter/enum", level: "error", line: 3 },
-        { id: "structure/section-missing", level: "error" },
-      ],
+      findings: loadExpected(
+        import.meta.url,
+        "./08-frontmatter-plus-body-one-pass.fail.expected.json",
+      ),
     },
   ],
 };

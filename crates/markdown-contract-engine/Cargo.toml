@@ -1,0 +1,27 @@
+# The matched Rust engine (D-0018 §D2) — fs-free, wasm32-compatible core.
+# comrak is pinned exactly: markdown line accounting is part of the parity
+# contract with the TS engine, and a parser bump can move sourcepos.
+#
+# The "native" feature (default on) gates the thin std::fs layer (directory
+# walking, config/contract file loading); `--no-default-features` builds the
+# fs-free core for wasm32-unknown-unknown.
+[package]
+name = "markdown-contract-engine"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = ["native"]
+# std::fs-backed corpus walking + config/contract file loading (excluded on wasm).
+native = []
+
+[dependencies]
+comrak = { version = "=0.53.0", default-features = false }
+globset = { version = "0.4", default-features = false }
+regex = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = "2"

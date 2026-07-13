@@ -1,6 +1,6 @@
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/10-table-leaf-columns-minrows.md
 // table({ columns, minRows }) content leaf. Gaps & questions: None. FAIL drops the
@@ -25,12 +25,12 @@ const v10: ValidationFixture = {
     {
       label: "pass — columns match and two data rows",
       source: loadSource(import.meta.url, "./10-table-leaf-columns-minrows.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./10-table-leaf-columns-minrows.pass.expected.json"),
     },
     {
       label: "fail — header-only table, zero data rows",
       source: loadSource(import.meta.url, "./10-table-leaf-columns-minrows.fail.md"),
-      findings: [{ id: "content/table/min-rows", level: "error", line: 3 }],
+      findings: loadExpected(import.meta.url, "./10-table-leaf-columns-minrows.fail.expected.json"),
     },
   ],
 };

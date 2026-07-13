@@ -6,7 +6,9 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/dist", "!**/coverage", "!bun.lockb"]
+    // apps/desktop/app/bindings is ontogen-generated TS (rewritten on every
+    // `cargo build` of src-tauri, D-0018 §D4) — generator style, not biome's.
+    "includes": ["**", "!**/dist", "!**/coverage", "!bun.lockb", "!apps/desktop/app/bindings"]
   },
   "formatter": {
     "enabled": true,

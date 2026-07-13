@@ -1,6 +1,6 @@
 import { contract, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/02a-one-of-several-missing.md
 // One of several required sections absent → exactly one section-missing finding.
@@ -22,12 +22,12 @@ const v02a: ValidationFixture = {
     {
       label: "pass — all three sections present",
       source: loadSource(import.meta.url, "./02a-one-of-several-missing.pass.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./02a-one-of-several-missing.pass.expected.json"),
     },
     {
       label: "fail — Overview omitted",
       source: loadSource(import.meta.url, "./02a-one-of-several-missing.fail.md"),
-      findings: [{ id: "structure/section-missing" }],
+      findings: loadExpected(import.meta.url, "./02a-one-of-several-missing.fail.expected.json"),
     },
   ],
 };

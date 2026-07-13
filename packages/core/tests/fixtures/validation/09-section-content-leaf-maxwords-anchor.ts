@@ -1,6 +1,6 @@
 import { contract, maxWords, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/09-section-content-leaf-maxwords-anchor.md
 // section() with a content leaf (maxWords) + a required anchor. Gaps & questions:
@@ -19,12 +19,18 @@ const v09: ValidationFixture = {
     {
       label: "pass — under budget and ^summary anchor present",
       source: loadSource(import.meta.url, "./09-section-content-leaf-maxwords-anchor.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./09-section-content-leaf-maxwords-anchor.pass.expected.json",
+      ),
     },
     {
       label: "fail — anchor dropped, prose still under budget",
       source: loadSource(import.meta.url, "./09-section-content-leaf-maxwords-anchor.fail.md"),
-      findings: [{ id: "structure/anchor-missing", level: "error", line: 1 }],
+      findings: loadExpected(
+        import.meta.url,
+        "./09-section-content-leaf-maxwords-anchor.fail.expected.json",
+      ),
     },
   ],
 };

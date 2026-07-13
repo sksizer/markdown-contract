@@ -1,6 +1,6 @@
 import { contract, list, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/12-list-leaf-checkbox-minitems.md
 // The `list()` content leaf: every item a checkbox, minItems floor.
@@ -24,12 +24,18 @@ const v12: ValidationFixture = {
     {
       label: "pass — all three items are checkboxes, count clears minItems",
       source: loadSource(import.meta.url, "./12-list-leaf-checkbox-minitems.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./12-list-leaf-checkbox-minitems.pass.expected.json",
+      ),
     },
     {
       label: "fail — third item is a plain bullet, everyItem violated",
       source: loadSource(import.meta.url, "./12-list-leaf-checkbox-minitems.fail.md"),
-      findings: [{ id: "content/list/item-kind", level: "error", line: 5 }],
+      findings: loadExpected(
+        import.meta.url,
+        "./12-list-leaf-checkbox-minitems.fail.expected.json",
+      ),
     },
   ],
 };

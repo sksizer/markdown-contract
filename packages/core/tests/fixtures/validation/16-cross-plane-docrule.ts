@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contract, docRule, oneOf, optional, section, sections } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/16-cross-plane-docrule.md
 // docRule(id, fn(doc)) — the only construct that sees both planes: a worked status
@@ -61,17 +61,17 @@ const v16: ValidationFixture = {
     {
       label: "pass — closed with Post-mortem; guard fires but section resolves",
       source: loadSource(import.meta.url, "./16-cross-plane-docrule.pass-1.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./16-cross-plane-docrule.pass-1.expected.json"),
     },
     {
       label: "pass — open, no section; isWorked false, rule short-circuits",
       source: loadSource(import.meta.url, "./16-cross-plane-docrule.pass-2.md"),
-      findings: [],
+      findings: loadExpected(import.meta.url, "./16-cross-plane-docrule.pass-2.expected.json"),
     },
     {
       label: "fail — closed/done with Post-mortem deleted; rule fires",
       source: loadSource(import.meta.url, "./16-cross-plane-docrule.fail.md"),
-      findings: [{ id: "task/post-mortem-when-worked", level: "error" }],
+      findings: loadExpected(import.meta.url, "./16-cross-plane-docrule.fail.expected.json"),
     },
   ],
 };

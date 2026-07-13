@@ -10,7 +10,7 @@ import {
   table,
 } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/20-real-task-contract-end-to-end.md
 // The full §5.2 TaskContract on a real SDLC Task: oneOf alias sets, a typed table
@@ -90,19 +90,22 @@ const v20: ValidationFixture = {
     {
       label: "pass — conforming open task; docRule dormant (status open/ready)",
       source: loadSource(import.meta.url, "./20-real-task-contract-end-to-end.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./20-real-task-contract-end-to-end.pass.expected.json",
+      ),
     },
     {
       label: "fail — AC-1 a plain bullet; Files-to-touch reduced to header-only",
       source: loadSource(import.meta.url, "./20-real-task-contract-end-to-end.fail.md"),
-      findings: [
-        // Canonical content-plane ids (D-0001: content/<leaf>/<check>); the example's
-        // `table/min-rows` / `list/every-item` were best-effort sibling names. Sorted by
-        // ascending pos.line: the header-only Files-to-touch table (line 20) precedes the
-        // plain-bullet AC list item (line 25).
-        { id: "content/table/min-rows", level: "error", line: 20 },
-        { id: "content/list/item-kind", level: "error", line: 25 },
-      ],
+      // Golden note: canonical content-plane ids (D-0001: content/<leaf>/<check>); the example's
+      // `table/min-rows` / `list/every-item` were best-effort sibling names. Sorted by ascending
+      // pos.line: the header-only Files-to-touch table (line 20) precedes the plain-bullet AC
+      // list item (line 25).
+      findings: loadExpected(
+        import.meta.url,
+        "./20-real-task-contract-end-to-end.fail.expected.json",
+      ),
     },
   ],
 };

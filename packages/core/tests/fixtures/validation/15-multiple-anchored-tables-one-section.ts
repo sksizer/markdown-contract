@@ -1,6 +1,6 @@
 import { contract, section, sections, table } from "../../../src/index.js";
 import type { ValidationFixture } from "../../harness.js";
-import { loadSource } from "../../harness.js";
+import { loadExpected, loadSource } from "../../harness.js";
 
 // Provenance: validation/15-multiple-anchored-tables-one-section.md
 // The content-record form: several anchor-bound table leaves in one section.
@@ -28,12 +28,18 @@ const v15: ValidationFixture = {
     {
       label: "pass — both anchored tables resolve and match their declared columns",
       source: loadSource(import.meta.url, "./15-multiple-anchored-tables-one-section.pass.md"),
-      findings: [],
+      findings: loadExpected(
+        import.meta.url,
+        "./15-multiple-anchored-tables-one-section.pass.expected.json",
+      ),
     },
     {
       label: "fail — risks table drops the declared Mitigation column",
       source: loadSource(import.meta.url, "./15-multiple-anchored-tables-one-section.fail.md"),
-      findings: [{ id: "content/table/column-missing", level: "error", line: 8 }],
+      findings: loadExpected(
+        import.meta.url,
+        "./15-multiple-anchored-tables-one-section.fail.expected.json",
+      ),
     },
   ],
 };

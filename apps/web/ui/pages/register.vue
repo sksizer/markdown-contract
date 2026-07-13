@@ -6,10 +6,10 @@
  * mutation the list re-seeds from the daemon AND the shared useVaults store
  * refreshes, so the sidebar/dashboard reflect the change immediately.
  */
-import { onMounted, ref } from "vue";
 
+import { Toolbar } from "@markdown-contract/ui";
+import { onMounted, ref } from "vue";
 import VaultForm from "~/components/VaultForm.vue";
-import Toolbar from "~/components/kit/Toolbar.vue";
 import { apiErrorMessage, useApi } from "~/composables/useApi";
 import { useVaults } from "~/composables/useVaults";
 import type { RegisterVaultRequest, VaultStatus } from "~/types";
