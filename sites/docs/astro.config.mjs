@@ -33,13 +33,72 @@ export default defineConfig({
 					// Recipes (committed, hand-authored under src/content/docs/recipes/):
 					// scenario-first, end-to-end solutions that link down into the mechanism
 					// Examples and up into the Reference. The scenario front door, so it sits
-					// between Overview and the by-mechanism Examples ladders.
+					// between Overview and the by-mechanism Examples ladders. Clustered by the
+					// job, mirroring docs/example-recipes.md (the build checklist).
 					label: 'Recipes',
 					items: [
 						{ label: 'Overview', link: '/recipes/' },
-						{ label: 'Guard a folder in CI', link: '/recipes/guard-a-folder-in-ci/' },
-						{ label: 'Several doc types in one repo', link: '/recipes/multiple-doc-types/' },
-						{ label: 'Astro content collections', link: '/recipes/astro-content-collections/' },
+						{
+							label: 'Guard folders in CI',
+							items: [
+								{ label: 'Guard a folder in CI', link: '/recipes/guard-a-folder-in-ci/' },
+								{ label: 'Infer a contract with init', link: '/recipes/infer-a-contract-with-init/' },
+								{ label: 'Several doc types in one repo', link: '/recipes/multiple-doc-types/' },
+								{ label: 'Strict published, lenient drafts', link: '/recipes/strict-published-lenient-drafts/' },
+								{ label: 'Check only changed files', link: '/recipes/check-only-changed-files/' },
+								{ label: 'Warnings as PR annotations', link: '/recipes/warnings-as-pr-annotations/' },
+								{ label: 'Pre-commit hook', link: '/recipes/pre-commit-hook/' },
+								{ label: 'Catch drift with init --check', link: '/recipes/catch-drift-with-init-check/' },
+							],
+						},
+						{
+							label: 'Site content',
+							items: [
+								{ label: 'Astro content collections', link: '/recipes/astro-content-collections/' },
+								{ label: 'Require code + checklist', link: '/recipes/require-code-and-checklist/' },
+								{ label: 'Typed table columns', link: '/recipes/typed-table-columns/' },
+								{ label: 'Summary length + anchor', link: '/recipes/summary-length-and-anchor/' },
+								{ label: 'Require / forbid phrases', link: '/recipes/require-or-forbid-phrases/' },
+							],
+						},
+						{
+							label: 'Team templates',
+							items: [
+								{ label: 'Enforce the ADR template', link: '/recipes/enforce-adr-template/' },
+								{ label: 'Runbook: owner + rollback', link: '/recipes/runbook-owner-and-rollback/' },
+								{ label: 'Postmortem: timeline + actions', link: '/recipes/postmortem-timeline-and-actions/' },
+								{ label: 'Decision must cite an alternative', link: '/recipes/decision-must-cite-alternative/' },
+							],
+						},
+						{
+							label: 'Obsidian vaults',
+							items: [
+								{ label: 'Require a ^summary anchor', link: '/recipes/require-a-summary-anchor/' },
+							],
+						},
+						{
+							label: 'Typed data',
+							items: [
+								{ label: 'Build an index from docs', link: '/recipes/build-an-index-from-frontmatter/' },
+								{ label: 'Assemble release notes', link: '/recipes/assemble-release-notes/' },
+								{ label: 'Prompt cards for agents', link: '/recipes/prompt-cards-for-agents/' },
+							],
+						},
+						{
+							label: 'Embed in your tooling',
+							items: [
+								{ label: 'Validate in your own build', link: '/recipes/validate-in-your-own-build/' },
+								{ label: 'Findings → editor diagnostics', link: '/recipes/findings-to-editor-diagnostics/' },
+								{ label: 'Baseline + diff findings', link: '/recipes/baseline-and-diff-findings/' },
+							],
+						},
+						{
+							label: 'Governance',
+							items: [
+								{ label: 'Enforce owner tree-wide', link: '/recipes/enforce-owner-across-tree/' },
+								{ label: 'Cross-document references', link: '/recipes/cross-document-references/' },
+							],
+						},
 					],
 				},
 				{
