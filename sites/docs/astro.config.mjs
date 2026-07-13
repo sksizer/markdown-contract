@@ -30,6 +30,19 @@ export default defineConfig({
 					],
 				},
 				{
+					// Recipes (committed, hand-authored under src/content/docs/recipes/):
+					// scenario-first, end-to-end solutions that link down into the mechanism
+					// Examples and up into the Reference. The scenario front door, so it sits
+					// between Overview and the by-mechanism Examples ladders.
+					label: 'Recipes',
+					items: [
+						{ label: 'Overview', link: '/recipes/' },
+						{ label: 'Guard a folder in CI', link: '/recipes/guard-a-folder-in-ci/' },
+						{ label: 'Several doc types in one repo', link: '/recipes/multiple-doc-types/' },
+						{ label: 'Astro content collections', link: '/recipes/astro-content-collections/' },
+					],
+				},
+				{
 					label: 'Examples',
 					items: [
 						// Whole-catalog browse index (generated at examples/index.md by scripts/generate.ts).
