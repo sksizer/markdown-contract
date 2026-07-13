@@ -19,6 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@markdown-contract/dashboard": "workspace:*",
     "@markdown-contract/ui": "workspace:*",
     "markdown-contract": "workspace:*",
     "nuxt": "^4.4.5",
