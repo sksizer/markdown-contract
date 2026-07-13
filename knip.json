@@ -28,6 +28,15 @@
       "entry": ["src/daemon/index.ts", "src/**/*.test.ts"],
       "project": ["src/**/*.ts", "scripts/**/*.ts", "types/**/*.ts"],
       "ignoreDependencies": ["@markdown-contract/ui", "vue", "vue-tsc"]
+    },
+    "apps/desktop": {
+      "ignore": ["app/assets/**", "app/bindings/**"],
+      "ignoreDependencies": [
+        "@markdown-contract/ui",
+        "@tauri-apps/plugin-opener",
+        "vue-router",
+        "vue-tsc"
+      ]
     }
   },
   "ignoreWorkspaces": [],
