@@ -11,6 +11,11 @@ export default defineNuxtConfig({
 
   compatibilityDate: "2025-01-01",
 
+  // SPIKE: consume the shared dashboard as a packaged Nuxt LAYER. Its pages,
+  // composables, and plugins merge into this app; we supply the transport via
+  // plugins/mc-transport.client.ts (here: a mock; real: createHttpTransport()).
+  extends: ["@markdown-contract/dashboard"],
+
   modules: [],
 
   devtools: { enabled: false },
