@@ -6,17 +6,11 @@
 # at the workspace members that define tasks, so later work is a pure *add* of a
 # project rather than a retool.
 # See docs/planning/tasks/T-WKSP-bun-workspace-split.md.
-#
-# apps/daemon-web-prototype is a workspace member but deliberately NOT a moon
-# project: it is a throwaway UI prototype with no CI-gated tasks (its review
-# gate is T-UTKU-web-ui-prototype-review).
 projects:
   core: "packages/core"
   ui: "packages/ui"
   web: "apps/web"
   desktop: "apps/desktop"
-  example-single-binary: "examples/single-binary"
-  example-single-binary-nitro: "examples/single-binary-nitro"
   docs: "sites/docs"
 
 # Version control system. The repo is git, default branch is main.
