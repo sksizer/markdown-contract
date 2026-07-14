@@ -73,7 +73,12 @@ template's `CONVENTIONS.md`.
   automatically on install (the root `prepare` script and `worktree_init` both
   run `lefthook install`). `pre-commit` runs Biome over staged files;
   `pre-push` runs the `core:build` + `core:typecheck` + `core:test` gates. Bypass an
-  individual run with `git commit --no-verify` / `git push --no-verify`.
+  individual run with `git commit --no-verify` / `git push --no-verify`. Manual-run
+  caveat: `bunx lefthook run pre-push` skips its gates (reports "no matching push
+  files") on a branch with no upstream / no unpushed commits, so demonstrating a
+  gate failure by hand needs `bunx lefthook run pre-push --all-files` (or a real
+  `git push`) — the gate fires correctly on an actual push; only the manual dry-run
+  is affected.
 
 ```sh
 bun install                                  # resolve the workspace
