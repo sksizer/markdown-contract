@@ -54,3 +54,24 @@ tasks:
       - 'package.json'
     options:
       cache: true
+
+  # `biome ci .` (via the check:ci script) — the format + lint + import-organization
+  # gate (mirrors core:lint), scoped to apps/web's TS/JSON sources: the daemon under
+  # src/, the Nuxt SPA under ui/, plus types/ and scripts/. Config is the shared root
+  # biome.jsonc; CI mode = no writes. BUN toolchain so `bun run` puts node_modules/.bin
+  # on PATH and the biome bin resolves. A real CI gate — rides the shared `moon run
+  # :lint` list. (biome's Vue support only ever emits non-blocking warnings on the .vue
+  # files, so the gate keys on the TS/JSON errors.) Run with `moon run web:lint`.
+  lint:
+    command: 'bun run check:ci'
+    toolchain: 'bun'
+    inputs:
+      - 'src/**/*'
+      - 'ui/**/*'
+      - 'types/**/*'
+      - 'scripts/**/*'
+      - 'package.json'
+      - 'tsconfig.json'
+      - '/biome.jsonc'
+    options:
+      cache: true

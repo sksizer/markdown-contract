@@ -16,7 +16,8 @@
     "compile": "bun build --compile src/bin.ts --outfile dist/markdown-contract",
     "build:binary": "bun run ui:generate && bun run gen:assets && bun run compile",
     "test": "bun test src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:ci": "biome ci ."
   },
   "dependencies": {
     "@markdown-contract/ui": "workspace:*",
