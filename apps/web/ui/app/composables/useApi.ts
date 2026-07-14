@@ -14,15 +14,12 @@ import type {
   InitVaultRequest,
   InitVaultResponse,
   RegisterVaultRequest,
-  RegisterVaultResponse,
-  RemoveVaultResponse,
   SaveConfigFileRequest,
   SaveConfigFileResponse,
   SaveVaultConfigResponse,
   ValidateResponse,
   VaultConfigResponse,
-  VaultDetailResponse,
-  VaultListResponse,
+  VaultStatus,
   WatchResponse,
 } from "~/types";
 
@@ -40,12 +37,16 @@ export function apiErrorMessage(err: unknown): string {
 export function useApi() {
   const base = useApiBase();
   return {
-    listVaults: () => $fetch<VaultListResponse>(`${base}/api/vaults`),
-    getVault: (id: string) => $fetch<VaultDetailResponse>(`${base}/api/vaults/${id}`),
+    // NOTE: the daemon's base `/api/vaults` routes now return the flat ontogen
+    // `Vault` shape (backend convergence); these legacy method types are the
+    // pre-convergence envelopes, inlined here — this composable is slated for
+    // migration onto the shared-dashboard transport (`useVaults` in the layer).
+    listVaults: () => $fetch<{ vaults: VaultStatus[] }>(`${base}/api/vaults`),
+    getVault: (id: string) => $fetch<{ vault: VaultStatus }>(`${base}/api/vaults/${id}`),
     registerVault: (body: RegisterVaultRequest) =>
-      $fetch<RegisterVaultResponse>(`${base}/api/vaults`, { method: "POST", body }),
+      $fetch<{ vault: VaultStatus }>(`${base}/api/vaults`, { method: "POST", body }),
     removeVault: (id: string) =>
-      $fetch<RemoveVaultResponse>(`${base}/api/vaults/${id}`, { method: "DELETE" }),
+      $fetch<{ ok: true; id: string }>(`${base}/api/vaults/${id}`, { method: "DELETE" }),
     validateVault: (id: string) =>
       $fetch<ValidateResponse>(`${base}/api/vaults/${id}/validate`, { method: "POST" }),
     checkVault: (id: string) => $fetch<CheckResponse>(`${base}/api/vaults/${id}/check`),

@@ -26,13 +26,28 @@ describe("Registry", () => {
     const { registryPath, vaultDir } = scratch();
     const registry = new Registry(registryPath);
     const entry = registry.add({ name: "My Docs", path: vaultDir });
-    expect(entry).toEqual({
+    expect(entry).toMatchObject({
       id: "vault-my-docs",
       name: "My Docs",
       path: vaultDir,
       configPath: join(vaultDir, "markdown-contract.yaml"),
       watch: true,
+      schedule: null,
     });
+    // ontogen `Vault` needs created_at/updated_at — stamped as ISO strings on add.
+    expect(entry.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(entry.updatedAt).toBe(entry.createdAt);
+  });
+
+  it("updates mutable intent (name/watch/schedule) and bumps updatedAt", () => {
+    const { registryPath, vaultDir } = scratch();
+    const registry = new Registry(registryPath);
+    const { id } = registry.add({ name: "Docs", path: vaultDir });
+    const updated = registry.update(id, { name: "Renamed", watch: false, schedule: "@daily" });
+    expect(updated).toMatchObject({ name: "Renamed", watch: false, schedule: "@daily" });
+    // survives a reload (durable intent)
+    expect(new Registry(registryPath).get(id)).toMatchObject({ name: "Renamed", watch: false });
+    expect(registry.update("nope", { name: "x" })).toBeUndefined();
   });
 
   it("persists as a versioned file a fresh Registry loads back", () => {
