@@ -13,6 +13,7 @@ pub mod persistence;
 pub mod scans;
 pub mod scheduler;
 pub mod schema;
+pub mod status;
 pub mod store;
 pub mod tray;
 pub mod watcher;

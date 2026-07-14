@@ -7,11 +7,13 @@ use std::sync::Arc;
 
 use tauri::State;
 
-use crate::api::v1::{echo, finding_record, opener_preference, openers, scan, scan_run, vault};
+use crate::api::v1::{
+    echo, finding_record, opener_preference, openers, scan, scan_run, vault, vault_status,
+};
 use crate::schema::{
     CreateFindingRecordInput, CreateOpenerPreferenceInput, CreateScanRunInput, CreateVaultInput,
     FindingRecord, OpenPreview, OpenerInfo, OpenerPreference, ScanRun, UpdateFindingRecordInput,
-    UpdateOpenerPreferenceInput, UpdateScanRunInput, UpdateVaultInput, Vault,
+    UpdateOpenerPreferenceInput, UpdateScanRunInput, UpdateVaultInput, Vault, VaultStatus,
 };
 use crate::store::Store;
 use crate::AppState;
@@ -275,6 +277,25 @@ pub async fn scan_now(
         .map_err(|e| e.to_string())
 }
 
+// ── Vault_status IPC Commands ──
+
+#[tauri::command]
+pub async fn vault_statuses(state: State<'_, Arc<AppState>>) -> Result<Vec<VaultStatus>, String> {
+    vault_status::vault_statuses(&state)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn vault_status(
+    vault_id: String,
+    state: State<'_, Arc<AppState>>,
+) -> Result<VaultStatus, String> {
+    vault_status::vault_status_by_id(&state, vault_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Generated IPC handler. Wire this into `tauri::Builder::invoke_handler()`.
 pub fn ipc_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
@@ -303,5 +324,7 @@ pub fn ipc_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'sta
         open_path,
         preview_open,
         scan_now,
+        vault_statuses,
+        vault_status,
     ]
 }

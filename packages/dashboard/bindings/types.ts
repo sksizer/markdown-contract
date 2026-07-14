@@ -137,3 +137,45 @@ export type OpenerInfo = {
   accepts_markdown: boolean;
   sort_order: number;
 };
+
+export type ScanRunInfo = {
+  id: string;
+  vault_id: string;
+  started_at: string;
+  finished_at: string | null;
+  trigger: string;
+  status: string;
+  error_count: number;
+  warn_count: number;
+  report_count: number;
+  error_message: string | null;
+};
+
+export type StatusFinding = {
+  id: string;
+  scan_run_id: string;
+  finding_id: string;
+  level: string;
+  file_path: string;
+  line: number | null;
+  col: number | null;
+  message: string;
+};
+
+export type VaultInfo = {
+  id: string;
+  name: string;
+  path: string;
+  config_path: string;
+  watch_enabled: boolean;
+  schedule: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type VaultStatus = {
+  vault: VaultInfo;
+  state: string;
+  latest_run: ScanRunInfo | null;
+  findings: StatusFinding[];
+};
