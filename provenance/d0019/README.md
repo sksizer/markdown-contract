@@ -194,6 +194,49 @@ If the de-risk says **go**, A and B are authored once in Rust. If it says **not 
 Option 1 for A and the read-op half of B (cheap, high-value), and keep Option 2 as the tracked
 target.
 
+## Workstream-C de-risk findings (2026-07-14)
+
+A static investigation of whether the generated Rust HTTP server can replace the Bun daemon.
+**Verdict: GO on Option 2.**
+
+1. **The full ontogen contract is already generated as HTTP routes.** `entity_routes()`
+   (`apps/desktop/src-tauri/src/api/transport/http/generated.rs`) mounts vaults / scan-runs /
+   finding-records / opener-preferences CRUD **plus** the `scans/now`, `echo`, and `openers/*`
+   actions — i.e. exactly the Bun daemon's ontogen surface, generated rather than hand-written.
+2. **A loopback HTTP host already exists.** `apps/desktop/src-tauri/src/daemon.rs` (`serve()`)
+   mounts those routes on an Axum `TcpListener` "the way the Bun daemon serves its JSON API" — but
+   it sits behind the **`daemon` Cargo feature (off by default)** and is **wired to nothing**:
+   `main.rs` only launches Tauri, and `daemon::serve` has no caller. Standing it up = enable the
+   feature + add an entry point (a CLI subcommand or a second bin) that constructs `AppState`
+   (DB, engine, registry) outside Tauri and calls `serve`. Bounded, modest work — the routes,
+   the hard part, are generated.
+3. **Engine/findings parity is designed-in, not hoped-for.** The Rust engine
+   (`src/engine/native.rs`) wraps `crates/markdown-contract-engine` (a path dep) — the same engine
+   pinned to the shared corpus goldens with `packages/core`. `scan_now` runs it and records a
+   `ScanRun` + `FindingRecord`s. Finding parity is a tested invariant.
+4. **The domain-op cost is the same either way (and cheaper here).** The editor's ops
+   (`validate`/`check`/`init`/`config`/`config-files`/`watch` — Gap B) exist on **neither** surface
+   as ontogen operations today. Converging on Rust means authoring them **once** as
+   `#[ontogen] fn`s (Option 1 authors them twice).
+5. **Divergences to accept + document:**
+   - **JS/MJS programmatic configs.** The Bun daemon's `resolveConfig` (`apps/web/src/daemon/routes.ts`)
+     dynamic-imports `.js`/`.mjs` config modules; a Rust server can't. YAML-only in Rust —
+     acceptable for the dashboard (vaults use `markdown-contract.yaml`), but a real CLI power-feature
+     that would not carry over.
+   - **Single-binary packaging** shifts from `bun build --compile` to a Rust `cargo build
+     --features daemon` + serve entry. Arguably more robust (the bun-compile path hit environment
+     signing/exec issues), but a distribution change to plan for.
+
+**Empirical check:** `cargo check -p markdown-contract-desktop --features daemon` → **clean
+(exit 0)**. The feature-gated `serve()` + generated Axum router + `AppState` compile today; the
+serve path is buildable code, not just latent scaffolding — only an entry point that calls it is
+missing.
+
+**Net:** the plumbing (complete generated router + existing `serve()`), the parity (golden-tested
+engine), and the extension mechanism (`#[ontogen]` fns) all exist. Option 2's remaining work is a
+modest serve entry point plus authoring Gap-B once in Rust — strictly less than Option 1's
+double-authoring. **Recommendation confirmed.**
+
 ## Sequencing
 
 1. **De-risk C** — Rust-HTTP-vs-Bun-daemon parity for a fixture vault. *(immediate next step)*
