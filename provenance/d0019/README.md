@@ -237,12 +237,74 @@ engine), and the extension mechanism (`#[ontogen]` fns) all exist. Option 2's re
 modest serve entry point plus authoring Gap-B once in Rust — strictly less than Option 1's
 double-authoring. **Recommendation confirmed.**
 
+## Implementation (2026-07-14)
+
+The plan was executed as a stack of PRs. What landed, and the empirical findings
+that reshaped the plan:
+
+1. **Stand up the standalone Rust daemon (#253).** Added the `mc-daemon` bin
+   (behind the `daemon` feature) + a Tauri-free `daemon::boot`, and ran it. The
+   de-risk's `cargo check` had missed a runtime bug: the generated router emits
+   **axum-0.7-style `:id`** captures but Cargo pinned axum 0.8, which panics on
+   `serve`. Pinned axum to 0.7. Divergence recorded: vault `DELETE` is
+   FK-guarded by scan history (204 with no runs, 500 with — the persistence
+   layer's referential integrity vs the Bun registry's in-memory drop).
+
+2. **Workstream A — `vault_status` projection (#254).** `vaultStatuses()` +
+   `vaultStatus(id)` join Vault + latest ScanRun + findings. Two ontogen edges
+   surfaced: (a) a **route collision** — a fn named for its module collapses to
+   the empty action, so a naïve `vault_status`/`vault_statuses` pair both routed
+   to `/api/vault-statuses` (axum panics on duplicate routes); fixed by naming +
+   `#[ontogen(rename)]`. (b) **ontogen-ts duplicates an entity used as a DTO
+   *field*** (a returned entity is deduped against the pool; a nested one is
+   not) → duplicate `export type`; fixed by nesting hand-owned mirror types with
+   `From` impls.
+
+3. **Workstream B — feasible domain ops (#255).** `check` (drift) + `config`
+   read/write + `config-files` read/write, authored once in Rust. Ported
+   faithfully from the Bun daemon (the drift heuristic byte-identical; the
+   config-files path jail peer-tested). **`init` deferred** — it needs the
+   ~990-LOC `inferConfig` scaffolding the Rust engine crate has no port of.
+   **`watch` deferred** — already expressible via `vaultUpdate(watch_enabled)`.
+
+4. **The C-decision, revisited by reality (#258, #259).** Standing A/B up
+   revealed that `apps/web` runs the **Bun daemon**, not the Rust server, and
+   that two live features have **no Rust home**: live-status SSE (`/api/events`)
+   and `init`. A full Option-2 cutover *now* would regress both. So the editor
+   migration took the **transitional path**: the Bun daemon serves the ontogen
+   `check`/`config` action routes as thin aliases over its existing handlers
+   (#258), and the editor's `useApi` now speaks the generated `Transport` for
+   those ops + vault mutations (#259) — decoupling the editor from the concrete
+   backend via the `Transport` interface, so a later Bun→Rust swap is
+   transparent to the UI. This accepts **temporary double-authoring** (the Bun
+   aliases mirror the Rust-generated routes) as the price of not regressing SSE
+   and `init`.
+
+   A second finding gated the read model: the Bun daemon has **two parallel
+   status models** — the editor `StatusStore` (populated by `validate`) and the
+   ontogen scan-runs/finding-records stores (populated only by `scans/now`). So
+   the reads (`listVaults`/`getVault`) stay on `/api/vault-status`; routing them
+   through the ontogen `vaultStatuses` would be a lossy round-trip.
+
+**Net:** the Rust surface (surface ③) is now the single generated source of the
+whole feasible contract, and the web editor speaks that contract's `Transport`.
+The remaining distance to the full Option-2 end state (retire the Bun daemon) is
+gated on the open questions below — SSE, `init`/inference, and web persistence.
+
 ## Sequencing
 
-1. **De-risk C** — Rust-HTTP-vs-Bun-daemon parity for a fixture vault. *(immediate next step)*
-2. **A** — the `vault_status` projection (retires the #251 stopgap).
-3. **B**, incrementally — `validate` / `check` → `config` / `config-files` → `watch`.
-4. **Migrate the editor** onto the transport, deleting the bespoke `apps/web/ui/app/composables/useApi.ts`.
+1. ~~**De-risk C** — Rust-HTTP-vs-Bun-daemon parity for a fixture vault.~~ ✅ GO.
+2. ~~**A** — the `vault_status` projection (retires the #251 stopgap).~~ ✅ #254.
+3. ~~**B** — `check` / `config` / `config-files` authored once in Rust.~~ ✅ #255
+   (`init`/`watch` deferred — see Implementation §3).
+4. ~~**Migrate the editor** onto the transport.~~ ✅ transitionally (#258 + #259):
+   the editor's `useApi` speaks the `Transport`; the Bun daemon serves the
+   action routes. `useApi` is not yet deleted — `validate`/`init`/`watch`/SSE +
+   the vault-status read stay bespoke.
+5. **(remaining)** Retire the Bun daemon — the true Option-2 end state. Gated on
+   the open questions: a Rust SSE surface (or a `Transport` streaming channel),
+   the `init`/`inferConfig` port, web-side persistence, and single-binary
+   packaging (bun-compile → `cargo build --features daemon` + static serving).
 
 ## Open questions
 
