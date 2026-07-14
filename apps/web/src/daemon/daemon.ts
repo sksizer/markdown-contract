@@ -14,9 +14,12 @@
 import { VERSION } from "markdown-contract";
 
 import type { RunResult, VaultRegistryEntry } from "../../types/api";
+import type { OpenerPreference, ScanRun } from "../../types/ontogen";
 import { buildRoutes, corsHeaders } from "./api";
+import { MemStore } from "./memstore";
 import { Registry } from "./registry";
 import { validateVault } from "./runs";
+import { ScanStore } from "./scans";
 import { SseHub } from "./sse";
 import { hasUi, serveStatic } from "./static";
 import { StatusStore } from "./status";
@@ -41,9 +44,21 @@ export interface DaemonContext {
   store: StatusStore;
   hub: SseHub;
   watcher: VaultWatcher;
+  /** ontogen scan-run + finding-record history (the transport's scan-runs/finding-records) */
+  scans: ScanStore;
+  /** ontogen opener-preferences collection (desktop preference rows, editable over HTTP) */
+  openerPrefs: MemStore<OpenerPreference>;
   version: string;
   /** run a vault now, updating the store and pushing SSE along the way */
   revalidate(entry: VaultRegistryEntry): Promise<RunResult>;
+  /**
+   * Scan a vault now and RECORD the outcome as an ontogen `ScanRun` (+ its
+   * finding records), returning the finalized run. Also refreshes the live
+   * status + SSE from the same run, so the legacy dashboard stays fresh. A run
+   * that fails (e.g. no config) is recorded as an `error` ScanRun rather than
+   * thrown — the transport's `scanNow` always resolves to a run.
+   */
+  scanNow(entry: VaultRegistryEntry, trigger: string): ScanRun;
   /** start (or restart) the vault's file watch, honoring the master switch */
   armWatch(entry: VaultRegistryEntry): void;
   disarmWatch(id: string): void;
@@ -83,6 +98,8 @@ export function startDaemon(opts: DaemonOptions = {}) {
   const store = new StatusStore();
   const hub = new SseHub();
   const watcher = new VaultWatcher();
+  const scans = new ScanStore();
+  const openerPrefs = new MemStore<OpenerPreference>();
   const watchEnabled = opts.watch !== false;
 
   async function revalidate(entry: VaultRegistryEntry): Promise<RunResult> {
@@ -103,13 +120,40 @@ export function startDaemon(opts: DaemonOptions = {}) {
     }
   }
 
+  /**
+   * One corpus run feeding both worlds: it refreshes the live status + SSE and
+   * records an ontogen `ScanRun` (+ finding records) from the SAME run. A run
+   * that throws is recorded as an `error` ScanRun instead of propagating, so the
+   * transport's `scanNow` always resolves to a run.
+   */
+  function scanNow(entry: VaultRegistryEntry, trigger: string): ScanRun {
+    store.markRunning(entry);
+    hub.emit({ type: "status", vaultId: entry.id, state: "running" });
+    try {
+      const result = validateVault(entry);
+      const status = store.markValidated(entry, result);
+      hub.emit({ type: "validated", vaultId: entry.id, result });
+      hub.emit({ type: "status", vaultId: entry.id, state: status.state });
+      return scans.ingest(entry.id, trigger, result.findings);
+    } catch (err) {
+      const message = (err as Error).message;
+      store.markError(entry, message);
+      hub.emit({ type: "error", vaultId: entry.id, message });
+      hub.emit({ type: "status", vaultId: entry.id, state: "error" });
+      return scans.ingest(entry.id, trigger, [], message);
+    }
+  }
+
   const ctx: DaemonContext = {
     registry,
     store,
     hub,
     watcher,
+    scans,
+    openerPrefs,
     version: VERSION,
     revalidate,
+    scanNow,
     armWatch(entry) {
       if (!watchEnabled || entry.watch === false) return;
       watcher.start(entry.id, entry.path, () => void revalidate(entry).catch(() => {}));

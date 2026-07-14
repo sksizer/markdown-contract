@@ -13,12 +13,9 @@
  * an explicit, hand-owned artifact (the API can hold stable while the engine
  * moves underneath it).
  *
- * Route map (D-0012 §D3, lightly expanded):
+ * Route map (kept legacy sub-routes; the base `/api/vaults` CRUD now serves the
+ * flat ontogen `Vault` shape — see `types/ontogen.ts`):
  *   GET    /api/health              → HealthResponse       (prototype addition)
- *   GET    /api/vaults              → VaultListResponse    (registry + last status)
- *   GET    /api/vaults/:id          → VaultDetailResponse  (single vault detail)
- *   POST   /api/vaults              → RegisterVaultResponse (register a path+config)
- *   DELETE /api/vaults/:id          → RemoveVaultResponse  (prototype addition)
  *   POST   /api/vaults/:id/validate → ValidateResponse     (run → findings)
  *   GET    /api/vaults/:id/check    → CheckResponse        (drift, via init --check)
  *   POST   /api/vaults/:id/init     → InitVaultResponse    (prototype addition: scaffold contracts)
@@ -134,6 +131,12 @@ export interface VaultRegistryEntry {
   configPath: string;
   /** whether the daemon file-watches this vault (prototype addition; default true) */
   watch?: boolean;
+  /** cron-ish schedule string for periodic scans (ontogen `Vault.schedule`); null/absent = none */
+  schedule?: string | null;
+  /** ISO 8601 registration time (ontogen `Vault.created_at`); stamped on `add` */
+  createdAt?: string;
+  /** ISO 8601 last-mutation time (ontogen `Vault.updated_at`); bumped on `add`/`update` */
+  updatedAt?: string;
 }
 
 /**
@@ -158,28 +161,18 @@ export interface VaultStatus extends VaultRegistryEntry {
 }
 
 // ── (d) Route request/response envelopes ────────────────────────────────────────
+//
+// The base `/api/vaults` list/detail/register/remove response envelopes were
+// retired when the daemon converged those routes onto the flat ontogen `Vault`
+// shape (`types/ontogen.ts`). The registration REQUEST and the kept vault
+// SUB-route envelopes below remain.
 
-/** GET /api/vaults — the registry plus each vault's last status. */
-export interface VaultListResponse {
-  vaults: VaultStatus[];
-}
-
-/** GET /api/vaults/:id — a single vault's detail. */
-export interface VaultDetailResponse {
-  vault: VaultStatus;
-}
-
-/** POST /api/vaults — register a path + config. */
+/** POST /api/vaults — the registry's create input (name + path + optional config). */
 export interface RegisterVaultRequest {
   name: string;
   path: string;
   /** defaults to `<path>/markdown-contract.yaml` when omitted */
   configPath?: string;
-}
-
-/** POST /api/vaults — the freshly registered vault and its initial status. */
-export interface RegisterVaultResponse {
-  vault: VaultStatus;
 }
 
 /** POST /api/vaults/:id/validate — run the corpus → findings. */
@@ -229,12 +222,6 @@ export interface HealthResponse {
   pid: number;
   /** the registry file this daemon reads/writes */
   registryPath: string;
-}
-
-/** DELETE /api/vaults/:id — unregister a vault (files on disk are untouched). */
-export interface RemoveVaultResponse {
-  ok: true;
-  id: string;
 }
 
 /** POST /api/vaults/:id/init — scaffold contracts for a vault via `init`. */

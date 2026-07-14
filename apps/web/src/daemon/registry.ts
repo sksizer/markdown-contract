@@ -124,6 +124,7 @@ export class Registry {
     const stem = slugId(req.name);
     let id = stem;
     for (let n = 2; this.vaults.some((v) => v.id === id); n += 1) id = `${stem}-${n}`;
+    const now = new Date().toISOString();
     const entry: VaultRegistryEntry = {
       id,
       name: req.name.trim(),
@@ -132,8 +133,39 @@ export class Registry {
         ? resolve(expandTilde(req.configPath.trim()))
         : join(path, "markdown-contract.yaml"),
       watch: true,
+      schedule: null,
+      createdAt: now,
+      updatedAt: now,
     };
     this.vaults.push(entry);
+    this.save();
+    return entry;
+  }
+
+  /**
+   * Patch a vault's durable intent (the ontogen `PUT /api/vaults/:id` update).
+   * Only `name`, `configPath`, `watch`, and `schedule` are mutable here; the
+   * vault `path` is its identity and is never repointed. Every applied patch
+   * bumps `updatedAt`. Returns the updated entry, or undefined when unknown.
+   */
+  update(
+    id: string,
+    patch: Partial<Pick<VaultRegistryEntry, "name" | "configPath" | "watch" | "schedule">>,
+  ): VaultRegistryEntry | undefined {
+    const entry = this.vaults.find((v) => v.id === id);
+    if (!entry) return undefined;
+    if (patch.name !== undefined) {
+      if (typeof patch.name !== "string" || patch.name.trim() === "") {
+        throw new RegistryError("a vault needs a non-empty name");
+      }
+      entry.name = patch.name.trim();
+    }
+    if (patch.configPath !== undefined) {
+      entry.configPath = resolve(expandTilde(patch.configPath.trim()));
+    }
+    if (patch.watch !== undefined) entry.watch = patch.watch;
+    if (patch.schedule !== undefined) entry.schedule = patch.schedule;
+    entry.updatedAt = new Date().toISOString();
     this.save();
     return entry;
   }
