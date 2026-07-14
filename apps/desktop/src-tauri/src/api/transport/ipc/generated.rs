@@ -8,15 +8,74 @@ use std::sync::Arc;
 use tauri::State;
 
 use crate::api::v1::{
-    echo, finding_record, opener_preference, openers, scan, scan_run, vault, vault_status,
+    check, config, echo, finding_record, opener_preference, openers, scan, scan_run, vault,
+    vault_status,
 };
 use crate::schema::{
-    CreateFindingRecordInput, CreateOpenerPreferenceInput, CreateScanRunInput, CreateVaultInput,
-    FindingRecord, OpenPreview, OpenerInfo, OpenerPreference, ScanRun, UpdateFindingRecordInput,
-    UpdateOpenerPreferenceInput, UpdateScanRunInput, UpdateVaultInput, Vault, VaultStatus,
+    ConfigFiles, CreateFindingRecordInput, CreateOpenerPreferenceInput, CreateScanRunInput,
+    CreateVaultInput, DriftResult, FindingRecord, OpenPreview, OpenerInfo, OpenerPreference,
+    ScanRun, UpdateFindingRecordInput, UpdateOpenerPreferenceInput, UpdateScanRunInput,
+    UpdateVaultInput, Vault, VaultConfig, VaultStatus,
 };
 use crate::store::Store;
 use crate::AppState;
+
+// ── Check IPC Commands ──
+
+#[tauri::command]
+pub async fn check(
+    vault_id: String,
+    state: State<'_, Arc<AppState>>,
+) -> Result<DriftResult, String> {
+    check::check(&state, vault_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+// ── Config IPC Commands ──
+
+#[tauri::command]
+pub async fn read_config(
+    vault_id: String,
+    state: State<'_, Arc<AppState>>,
+) -> Result<VaultConfig, String> {
+    config::read_config(&state, vault_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn save_config(
+    vault_id: String,
+    raw: String,
+    state: State<'_, Arc<AppState>>,
+) -> Result<(), String> {
+    config::save_config(&state, vault_id, raw)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn list_config_files(
+    vault_id: String,
+    state: State<'_, Arc<AppState>>,
+) -> Result<ConfigFiles, String> {
+    config::config_files(&state, vault_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn save_config_file(
+    vault_id: String,
+    rel_path: String,
+    raw: String,
+    state: State<'_, Arc<AppState>>,
+) -> Result<(), String> {
+    config::save_config_file(&state, vault_id, rel_path, raw)
+        .await
+        .map_err(|e| e.to_string())
+}
 
 // ── Echo IPC Commands ──
 
@@ -299,6 +358,11 @@ pub async fn vault_status(
 /// Generated IPC handler. Wire this into `tauri::Builder::invoke_handler()`.
 pub fn ipc_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
+        check,
+        read_config,
+        save_config,
+        list_config_files,
+        save_config_file,
         echo,
         finding_record_list,
         finding_record_get_by_id,

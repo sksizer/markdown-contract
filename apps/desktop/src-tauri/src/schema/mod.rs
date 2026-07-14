@@ -3,6 +3,8 @@
 //! and TS bindings. This module also owns the error/event vocabulary the
 //! generated code links against (AppError, ChangeOp, EntityKind).
 
+mod config_edit;
+mod drift;
 mod finding_record;
 mod opener_preference;
 mod openers;
@@ -12,6 +14,8 @@ mod vault_status;
 
 pub mod dto;
 
+pub use config_edit::{ConfigFileEntry, ConfigFiles, VaultConfig};
+pub use drift::{DriftEntry, DriftResult};
 pub use finding_record::FindingRecord;
 pub use opener_preference::OpenerPreference;
 pub use openers::{OpenPreview, OpenerInfo};

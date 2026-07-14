@@ -16,12 +16,14 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 use crate::api::v1::{
-    echo, finding_record, opener_preference, openers, scan, scan_run, vault, vault_status,
+    check, config, echo, finding_record, opener_preference, openers, scan, scan_run, vault,
+    vault_status,
 };
 use crate::schema::{
-    CreateFindingRecordInput, CreateOpenerPreferenceInput, CreateScanRunInput, CreateVaultInput,
-    FindingRecord, OpenPreview, OpenerInfo, OpenerPreference, ScanRun, UpdateFindingRecordInput,
-    UpdateOpenerPreferenceInput, UpdateScanRunInput, UpdateVaultInput, Vault, VaultStatus,
+    ConfigFiles, CreateFindingRecordInput, CreateOpenerPreferenceInput, CreateScanRunInput,
+    CreateVaultInput, DriftResult, FindingRecord, OpenPreview, OpenerInfo, OpenerPreference,
+    ScanRun, UpdateFindingRecordInput, UpdateOpenerPreferenceInput, UpdateScanRunInput,
+    UpdateVaultInput, Vault, VaultConfig, VaultStatus,
 };
 use crate::store::Store;
 use crate::AppState;
@@ -38,6 +40,88 @@ fn err(msg: String) -> ApiError {
         StatusCode::INTERNAL_SERVER_ERROR,
         Json(ErrorResponse { error: msg }),
     )
+}
+
+// ── Check Handlers ──
+
+#[derive(Deserialize)]
+struct CheckCheckBody {
+    vault_id: String,
+}
+
+async fn check(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<CheckCheckBody>,
+) -> Result<Json<DriftResult>, ApiError> {
+    check::check(&state, body.vault_id)
+        .await
+        .map(Json)
+        .map_err(|e| err(e.to_string()))
+}
+
+// ── Config Handlers ──
+
+#[derive(Deserialize)]
+struct ConfigReadConfigBody {
+    vault_id: String,
+}
+
+async fn read_config(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<ConfigReadConfigBody>,
+) -> Result<Json<VaultConfig>, ApiError> {
+    config::read_config(&state, body.vault_id)
+        .await
+        .map(Json)
+        .map_err(|e| err(e.to_string()))
+}
+
+#[derive(Deserialize)]
+struct ConfigSaveConfigBody {
+    vault_id: String,
+    raw: String,
+}
+
+async fn save_config(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<ConfigSaveConfigBody>,
+) -> Result<StatusCode, ApiError> {
+    config::save_config(&state, body.vault_id, body.raw)
+        .await
+        .map(|_| StatusCode::NO_CONTENT)
+        .map_err(|e| err(e.to_string()))
+}
+
+#[derive(Deserialize)]
+struct ConfigConfigFilesBody {
+    vault_id: String,
+}
+
+async fn list_config_files(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<ConfigConfigFilesBody>,
+) -> Result<Json<ConfigFiles>, ApiError> {
+    config::config_files(&state, body.vault_id)
+        .await
+        .map(Json)
+        .map_err(|e| err(e.to_string()))
+}
+
+#[derive(Deserialize)]
+struct ConfigSaveConfigFileBody {
+    vault_id: String,
+    rel_path: String,
+    raw: String,
+}
+
+async fn save_config_file(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<ConfigSaveConfigFileBody>,
+) -> Result<StatusCode, ApiError> {
+    config::save_config_file(&state, body.vault_id, body.rel_path, body.raw)
+        .await
+        .map(|_| StatusCode::NO_CONTENT)
+        .map_err(|e| err(e.to_string()))
 }
 
 // ── Echo Handlers ──
@@ -366,6 +450,11 @@ async fn vault_status(
 /// Generated routes. Call this from your main router.
 pub fn entity_routes() -> Router<Arc<AppState>> {
     Router::new()
+        .route("/api/checks", post(check))
+        .route("/api/configs/read", post(read_config))
+        .route("/api/configs/save", post(save_config))
+        .route("/api/configs/files", post(list_config_files))
+        .route("/api/configs/save-config-file", post(save_config_file))
         .route("/api/echos", post(echo))
         .route(
             "/api/finding-records",

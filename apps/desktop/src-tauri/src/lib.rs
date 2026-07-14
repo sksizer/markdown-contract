@@ -6,6 +6,8 @@
 //! notifications), kept thin here.
 
 pub mod api;
+pub mod config_edit;
+pub mod drift;
 pub mod engine;
 pub mod notifications;
 pub mod openers;

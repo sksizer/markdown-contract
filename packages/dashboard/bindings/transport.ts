@@ -4,10 +4,12 @@
 // module bundles with no Tauri SDK. Transport interface + createHttpTransport verbatim.
 
 import type {
+  ConfigFiles,
   CreateFindingRecordInput,
   CreateOpenerPreferenceInput,
   CreateScanRunInput,
   CreateVaultInput,
+  DriftResult,
   FindingRecord,
   OpenerInfo,
   OpenerPreference,
@@ -18,12 +20,18 @@ import type {
   UpdateScanRunInput,
   UpdateVaultInput,
   Vault,
+  VaultConfig,
   VaultStatus,
 } from "./types";
 
 // ── Transport Interface ──
 
 export interface Transport {
+  check(vaultId: string): Promise<DriftResult>;
+  readConfig(vaultId: string): Promise<VaultConfig>;
+  saveConfig(vaultId: string, raw: string): Promise<null>;
+  listConfigFiles(vaultId: string): Promise<ConfigFiles>;
+  saveConfigFile(vaultId: string, relPath: string, raw: string): Promise<null>;
   echo(message: string): Promise<string>;
   findingRecordList(): Promise<FindingRecord[]>;
   findingRecordGetById(id: string): Promise<FindingRecord>;
@@ -105,6 +113,27 @@ async function httpDelete(path: string): Promise<void> {
 
 export function createHttpTransport(): Transport {
   return {
+    async check(vaultId: string): Promise<DriftResult> {
+      return httpPost<DriftResult>("/checks", { vault_id: vaultId });
+    },
+    async readConfig(vaultId: string): Promise<VaultConfig> {
+      return httpPost<VaultConfig>("/configs/read", { vault_id: vaultId });
+    },
+    async saveConfig(vaultId: string, raw: string): Promise<null> {
+      await httpPost("/configs/save", { vault_id: vaultId, raw });
+      return null;
+    },
+    async listConfigFiles(vaultId: string): Promise<ConfigFiles> {
+      return httpPost<ConfigFiles>("/configs/files", { vault_id: vaultId });
+    },
+    async saveConfigFile(vaultId: string, relPath: string, raw: string): Promise<null> {
+      await httpPost("/configs/save-config-file", {
+        vault_id: vaultId,
+        rel_path: relPath,
+        raw,
+      });
+      return null;
+    },
     async echo(message: string): Promise<string> {
       return httpPost<string>("/echos", { message });
     },

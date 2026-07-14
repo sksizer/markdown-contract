@@ -124,6 +124,26 @@ export type UpdateVaultInput = {
 };
 
 // Long-tail types (emitted via ontogen-ts AST walker).
+export type ConfigFileEntry = {
+  rel_path: string;
+  kind: string;
+  exists: boolean;
+  raw: string;
+  parse_error: string | null;
+};
+
+export type VaultConfig = {
+  exists: boolean;
+  raw: string;
+  parse_error: string | null;
+};
+
+export type DriftEntry = {
+  kind: string;
+  target: string;
+  detail: string;
+};
+
 export type OpenPreview = {
   program: string;
   args: string[];
@@ -171,6 +191,16 @@ export type VaultInfo = {
   schedule: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type ConfigFiles = {
+  files: ConfigFileEntry[];
+};
+
+export type DriftResult = {
+  drifted: boolean;
+  entries: DriftEntry[];
+  warnings: string[];
 };
 
 export type VaultStatus = {
