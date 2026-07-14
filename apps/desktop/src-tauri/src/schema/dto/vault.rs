@@ -6,6 +6,7 @@ use serde::Deserialize;
 /// Input for creating a new Vault.
 #[derive(Debug, Clone, Deserialize, JsonSchema, specta::Type)]
 pub struct CreateVaultInput {
+    #[serde(default)]
     pub id: String,
     pub name: String,
     pub path: String,

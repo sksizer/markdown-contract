@@ -6,6 +6,7 @@ use serde::Deserialize;
 /// Input for creating a new ScanRun.
 #[derive(Debug, Clone, Deserialize, JsonSchema, specta::Type)]
 pub struct CreateScanRunInput {
+    #[serde(default)]
     pub id: String,
     pub vault_id: String,
     pub started_at: String,

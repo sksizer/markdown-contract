@@ -6,6 +6,7 @@ use serde::Deserialize;
 /// Input for creating a new FindingRecord.
 #[derive(Debug, Clone, Deserialize, JsonSchema, specta::Type)]
 pub struct CreateFindingRecordInput {
+    #[serde(default)]
     pub id: String,
     pub scan_run_id: String,
     pub finding_id: String,
