@@ -75,7 +75,19 @@ time = { version = "0.3", features = ["formatting"] }
 # annotations the pipeline parses, plus the #[stateless] / #[ontogen(rename)]
 # passthrough attrs on custom API fns.
 ontogen-macros = { git = "https://github.com/sksizer/rust-ontogen", rev = "81af0e941d2ab2cc80ee1170838b3172a70dc3fa" }
-axum = { version = "0.8", optional = true }
+# 0.7, not 0.8: the ontogen-generated router (api/transport/http/generated.rs,
+# rev-pinned + DO-NOT-EDIT) emits axum-0.7-style `:id` path captures, which 0.8
+# rejects at router-build time (panics on `serve`). The generator targets 0.7,
+# so the dep tracks it until the pinned ontogen rev emits `{id}` captures.
+axum = { version = "0.7", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt"] }
+
+# The standalone HTTP host for the generated ontogen contract (D-0019 Option 2).
+# Gated on `daemon` so the default (Tauri-only) build never pulls in the Axum
+# server; `required-features` makes `cargo build` skip it unless asked.
+[[bin]]
+name = "mc-daemon"
+path = "src/bin/daemon.rs"
+required-features = ["daemon"]
