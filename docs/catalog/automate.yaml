@@ -1,0 +1,122 @@
+category: automate
+title: "Automate and embed"
+examples:
+  - id: automate-01
+    name: "Embed the corpus runner"
+    demonstrates: "Everything the CLI does is one library call: `runCorpus` routes a tree of files to contracts and returns findings, stats, and an exit code."
+    rank: 1
+    builds_on: null
+    artifact_kind: code
+    artifact: |
+      import { defineConfig, runCorpus, countByLevel } from "markdown-contract";
+
+      const config = defineConfig({
+        rules: [
+          { include: ["decisions/**/*.md"], contract: decision, name: "decision" },
+          { include: ["**/*.md"], contract: notes, name: "notes" }, // catch-all last: first match wins
+        ],
+      });
+
+      const { findings, exitCode, stats } = runCorpus(config, { cwd: repoRoot });
+
+      stats.filesScanned;       // every file the walk saw
+      stats.matchedByRule;      // per-rule match counts, parallel to config.rules
+      countByLevel(findings);   // { error, warn, report }
+      process.exit(exitCode);   // 0 clean, 1 error-level findings — same verdict as the CLI
+    surfaces:
+      - "defineConfig / runCorpus"
+      - "first-match glob routing"
+      - "RunStats and countByLevel"
+      - "library exit codes"
+
+  - id: automate-02
+    name: "A CI gate in GitHub Actions"
+    demonstrates: "Two workflow steps make the contract a merge gate: validate with SARIF output, then upload the findings to code scanning."
+    rank: 2
+    builds_on: automate-01
+    artifact_kind: yaml
+    artifact: |
+      - name: Validate docs
+        run: markdown-contract validate docs --format sarif > results.sarif
+
+      - name: Upload findings to code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+    surfaces:
+      - "CI wiring (GitHub Actions)"
+      - "--format sarif"
+      - "exit code 1 fails the job"
+
+  - id: automate-03
+    name: "Custom rules for cross-cutting policy"
+    demonstrates: "When neither plane covers a policy, a named `docRule` sees the whole typed document — so a frontmatter field can gate a body section."
+    rank: 3
+    builds_on: automate-01
+    artifact_kind: code
+    artifact: |
+      import { contract, sections, section, docRule } from "markdown-contract";
+      import { z } from "zod";
+
+      // Policy: once a decision is accepted, it must record its outcome.
+      const acceptedNeedsOutcome = docRule("policy/accepted-needs-outcome", (doc, ctx) => {
+        if (doc.frontmatter.status === "accepted" && !doc.body.section("Outcome")) {
+          return [
+            ctx.finding({
+              id: "policy/accepted-needs-outcome",
+              message: "an accepted decision must record an Outcome section",
+            }),
+          ];
+        }
+        return [];
+      });
+
+      const decision = contract({
+        frontmatter: z.object({ status: z.enum(["proposed", "accepted"]) }),
+        body: sections({ order: "none", allowUnknown: true }, [section("Summary")]),
+        rules: [acceptedNeedsOutcome],
+      });
+    surfaces:
+      - "docRule (cross-plane rules)"
+      - "ctx.finding() minting"
+      - "frontmatter gating body structure"
+
+  - id: automate-04
+    name: "This repo validates its own planning docs"
+    demonstrates: "The dogfood proof: this repository's config maps its planning corpus to six contracts, and CI validates the corpus on every push."
+    rank: 4
+    builds_on: automate-02
+    artifact_kind: mixed
+    artifact: |
+      # markdown-contract.yaml (excerpt) — the config at this repository's root
+      mcVersion: 1
+      kind: config
+      contracts:
+        decision:  ./contracts/decision.contract.yaml
+        task:      ./contracts/task.contract.yaml
+        milestone: ./contracts/milestone.contract.yaml
+      rules:
+        - include: ['**/D-*.md']
+          contract: decision
+        - include: ['**/T-*.md']
+          contract: task
+        - include: ['**/M-*.md']
+          contract: milestone
+
+      # the gate, run from the repo root:
+      $ markdown-contract validate docs/planning
+      Scanned 189 files; 165 matched across 6 contracts, 24 unmatched
+        capability: 10
+        driver: 5
+        decision: 15
+        milestone: 11
+        product: 2
+        task: 122
+
+      No findings.
+      # exit status: 0 — the planning corpus conforms to its contracts
+    surfaces:
+      - "real-world corpus config"
+      - "filename-prefix glob routing"
+      - "self-hosted dogfooding"

@@ -2,7 +2,7 @@
 title: Getting started
 description: Install markdown-contract, validate a folder from the terminal, and author your first contract in YAML or TypeScript.
 sidebar:
-  order: 4
+  order: 5
 ---
 
 markdown-contract is a Node ESM package (Node ≥ 20) with a library API and a
@@ -35,8 +35,9 @@ markdown-contract validate ./docs --format sarif > results.sarif        # or --f
 Findings print as `path:line level id — message`. Exit codes are CI-ready:
 **0** clean, **1** error-level findings, **2** usage or config error.
 
-The [CLI reference](/reference/cli/) lists every command, flag, and exit code, and
-the [findings reference](/reference/findings/) specifies the printed line format.
+The [CLI reference](/reference/cli/) lists every command, flag, and exit code,
+and the [validate examples](/appendix/examples/validate/) walk each step with
+real transcripts.
 
 ## Or let `init` write the config for you
 
@@ -53,7 +54,8 @@ markdown-contract init ./docs --check      # CI drift guard: fail if docs outgre
 
 Simple contracts need no TypeScript. A contract document declares frontmatter
 fields and body sections — the [YAML reference](/reference/yaml/) is the full
-field catalog:
+field catalog, and the [authoring examples](/appendix/examples/author/) cover
+tables, text constraints, and repeatable sections:
 
 ```yaml
 # decision.contract.yaml
@@ -86,8 +88,8 @@ rules:
 ## Or author it in TypeScript
 
 The code API (full surface in the [API reference](/reference/api/)) adds what
-YAML can't express: arbitrary Zod schemas, nested
-grammars, and custom rules — and it types the document for reading:
+YAML can't express: arbitrary Zod schemas, nested grammars, and custom rules —
+and it types the document for reading:
 
 ```ts
 import { contract, sections, section, optional, maxWords } from "markdown-contract";
@@ -111,32 +113,12 @@ const result = decision.validate(src, { path: "decisions/D-0001.md" });
 // Read: the same contract returns the typed model (or throws ContractError).
 const doc = decision.read(src, { path: "decisions/D-0001.md" });
 doc.frontmatter.status;   // "proposed" | "accepted" | "superseded"
-doc.body.summary.text();  // the Summary section's prose
+doc.body.Summary.text();  // the Summary section's prose, keyed by its heading
 ```
 
-## Repeatable sections
-
-Sometimes a heading is *meant* to recur — a per-entry `## Entry`, a changelog's
-`## Release`. Declare the slot **repeatable** and its peers validate instead of
-tripping the duplicate-section rule, and surface as a positional array on the
-model. In YAML the keys ride on the section node:
-
-```yaml
-body:
-  sections:
-    - section: Entry
-      repeatable: true          # may recur as peers
-    - section: Release
-      repeatable: true
-      min: 1                    # optional occurrence bounds -> structure/repeat-count
-      max: 12
-```
-
-The same in code is `section("Entry", { repeatable: true })`. Reading back,
-`doc.body.entry` is a `SectionView[]` in document order (a `TableView<Row>[]`
-when the section's sole content is a `table(...)`), while
-`doc.body.section("Entry")` still returns the first occurrence. See
-[How it works](/how-it-works/#repeatable-sections) for the full model.
+The typed model goes much further — iterable typed table rows, anchor lookups,
+nested section navigation. The [model reference](/reference/model/) is the full
+surface; the [read examples](/appendix/examples/read/) show it in use.
 
 ## Embed it
 
@@ -155,9 +137,12 @@ const { findings, exitCode, stats } = runCorpus(config, { cwd: repoRoot });
 
 ## Where next
 
-The [examples](/examples/cli/) are the fastest way to learn the rest: eight
-short ladders of small, verified examples, each rung building on the last —
-from first CLI run to cross-document governance rules.
+The [appendix examples](/appendix/examples/) are the fastest way to learn the
+rest: four small groups of worked, verified examples — [validate from the
+terminal](/appendix/examples/validate/), [author contracts in
+YAML](/appendix/examples/author/), [read markdown as typed
+data](/appendix/examples/read/), and [automate and
+embed](/appendix/examples/automate/).
 
 When you need exhaustive detail, the **reference** section is the spec:
 [CLI](/reference/cli/), [YAML config & contracts](/reference/yaml/),

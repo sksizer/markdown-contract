@@ -75,7 +75,7 @@ if (doc) {
 }
 ```
 
-The two doors correspond to the two [validation planes](/examples/validation-planes/) usage patterns: collect findings as data (`validate`) or fail-fast with typed access (`read`).
+The two doors correspond to the two usage patterns in the [read examples](/appendix/examples/read/): collect findings as data (`validate`) or fail-fast with typed access (`read`).
 
 ### ContractError
 
@@ -205,8 +205,8 @@ section("Summary", {
 });
 ```
 
-:::caution[Planned]
-The **declarative-YAML** `requires:` / `forbids:` keys that compile to these builders (C-0009 / D-0011) are not yet wired through the YAML front-end. The library builders above ship and work today; the YAML surface that would author them is covered on the [YAML reference](/reference/yaml/).
+:::note
+The declarative-YAML `requires:` / `forbids:` keys compile to exactly these builders — see the [YAML reference](/reference/yaml/) for the data-authoring surface.
 :::
 
 ## Presets
@@ -251,7 +251,7 @@ const { findings, exitCode, stats } = runCorpus(config, { cwd: "docs" });
 process.exit(exitCode);
 ```
 
-See [embed & CI](/examples/embed-and-ci/) for wiring `runCorpus` into a pipeline.
+See the [automate examples](/appendix/examples/automate/) for wiring `runCorpus` into a pipeline.
 
 ## Finding helpers
 

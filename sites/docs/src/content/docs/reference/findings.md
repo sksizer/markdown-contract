@@ -112,7 +112,7 @@ them. Unless noted, the default level is `error`; the one exception is `structur
 ### Structure plane
 
 Presence, order, kind, and anchors of sections and blocks (the tree grammar). See
-[Validation planes](/examples/validation-planes/).
+the [contract-authoring examples](/appendix/examples/author/).
 
 | id | Default level | Fires when |
 | --- | --- | --- |
@@ -227,4 +227,4 @@ does **not** call them — it composes its own `path:line level id — message` 
 
 - [Model reference](/reference/model/) — the typed data a clean document projects to.
 - [CLI reference](/reference/cli/) — flags, formats, and exit codes.
-- [Validation planes](/examples/validation-planes/) and [CLI examples](/examples/cli/).
+- [Author](/appendix/examples/author/) and [validate](/appendix/examples/validate/) example groups.

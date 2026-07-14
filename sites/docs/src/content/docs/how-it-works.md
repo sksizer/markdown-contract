@@ -13,7 +13,8 @@ single parse.
 
 Each document is parsed with [remark/mdast](https://github.com/syntax-tree/mdast)
 (GitHub-flavored markdown plus YAML frontmatter), extended with an in-house
-[dialect](/reference/dialect/) for the Obsidian conventions many docs corpora already use:
+[dialect](/reference/dialect/) for two Obsidian conventions many docs corpora
+already use:
 
 - line-terminal `^block-id` **anchors**, which make sections, tables, and
   blocks addressable,
@@ -26,8 +27,8 @@ every finding land as `path:line` instead of an opaque JSON pointer.
 
 ## Three cooperating planes
 
-A contract declares three kinds of expectations, each handled by the mechanism
-that is actually good at it:
+A contract declares three kinds of expectations, and each is handled by the
+mechanism that is actually good at it:
 
 - **Structure** — a small tree grammar over sections and block kinds:
   `sections`, `section`, `optional`, `oneOf`, and `gap`, nested to any depth,
@@ -35,18 +36,20 @@ that is actually good at it:
   schema language cannot express: *these sections, in this order, with room
   for extras*.
 - **Content** — [Zod](https://zod.dev) at every leaf. The frontmatter is a
-  plain Zod schema; inside sections, a finite leaf vocabulary (`table`,
-  `list`, `code`, `maxWords`) compiles to Zod checks over the projected
-  nodes, with raw Zod as the escape hatch for anything richer.
-- **Rules** — named functions for what neither plane covers: `rule` attaches
-  to a section, `docRule` sees the whole document (so a frontmatter field can
-  gate a body section), and `textRule`/`requires`/`forbids` declare text
-  constraints without writing a function at all.
+  plain Zod schema; inside sections, a small leaf vocabulary (`table`, `list`,
+  `code`, `maxWords`) compiles to Zod checks over the projected blocks, with
+  raw Zod as the escape hatch for anything richer.
+- **Rules** — named checks for what neither plane covers: `rule` attaches to a
+  section, `docRule` sees the whole document (so a frontmatter field can gate
+  a body section), and `requires` / `forbids` declare text constraints without
+  writing a function at all.
 
-The split is deliberate: schema languages and tree grammars are formally
-incomparable, so markdown-contract never forces one to fake the other. It is
-the same "grammar + datatype library + rules" shape the XML structured-authoring
-world (RELAX NG, Schematron) ran on for decades — applied to markdown.
+The split is deliberate. Schema languages and tree grammars can each express
+things the other cannot, so markdown-contract never forces one to fake the
+other — the same "grammar + datatype library + rules" shape the XML
+structured-authoring world (RELAX NG, Schematron) ran on for decades, applied
+to markdown. The working doctrine: **kind and presence are structure; data
+shape is content.**
 
 ## One finding shape
 
@@ -57,11 +60,13 @@ Every mechanism reports the same record:
   pos: { line: 8, col: 1 }, message: "required section 'Decision' is missing" }
 ```
 
-Rule ids are namespaced, severity (`error` / `warn` / `report`) is contract
-data, and the CLI renders findings as human text, raw JSON, or SARIF 2.1.0 for
-code scanning.
+Rule ids are namespaced by plane, severity (`error` / `warn` / `report`) is
+contract data, and the CLI renders findings as human text, raw JSON, or SARIF
+2.1.0 for code scanning. Findings sort deterministically — by line, then
+column, then plane — so two runs over the same input always report the same
+thing in the same order.
 
-The finding record and its namespaced rule ids are catalogued in the [findings
+The finding record and its rule ids are catalogued in the [findings
 reference](/reference/findings/); the output formats and flags are in the [CLI
 reference](/reference/cli/).
 
@@ -74,59 +79,32 @@ A compiled contract has two doors (both in the [API reference](/reference/api/))
 - `contract.read(src, { path })` returns the typed `Doc` or throws a
   `ContractError` carrying the findings — the shape a consumer wants.
 
-The `Doc` is a navigable typed view of the document (its full surface is the [model reference](/reference/model/)): `doc.frontmatter` is
-typed by the frontmatter schema; `doc.body` reaches sections by camelCase key
-(`doc.body.summary`) or exact heading (`doc.body.section("Summary")`); tables
-are iterable typed-row collections; anchors resolve with `doc.byAnchor(id)`.
-Because the model is derived from the contract, checking and consuming can
-never drift apart.
+The `Doc` is a navigable typed view of the document (its full surface is the
+[model reference](/reference/model/)): `doc.frontmatter` is typed by the
+frontmatter schema; `doc.body` reaches each declared section by its heading
+(`doc.body.Summary`, or `doc.body.section("Summary")` for dynamic names);
+tables read back as iterable typed-row collections; anchors resolve with
+`doc.byAnchor(id)`. Because the model is derived from the contract, checking
+and consuming can never drift apart.
 
-## Repeatable sections
+Two smaller conveniences fall out of the same design:
 
-The structure plane enforces per-level heading uniqueness — two sibling
-sections with the same heading are a `structure/duplicate-section` error. But
-some documents legitimately repeat a heading as peers: a per-entry `## Entry`, a
-changelog's `## Release`, a per-day `## Schedule`. Declaring a slot
-**repeatable** waives that rule for its own peers, and only its peers:
+- **Repeatable sections.** A heading that legitimately recurs — a changelog's
+  `## Release`, a log's `## Entry` — is declared `repeatable` (with optional
+  `min` / `max` bounds) and reads back as a positional array, while an
+  *undeclared* duplicate heading is still an error.
+- **No contract required to navigate.** `parse()` alone yields the positioned
+  tree, with helpers for finding sections, filtering blocks, and recovering
+  verbatim table cells — see the [read examples](/appendix/examples/read/).
 
-```ts
-section("Entry", { repeatable: true })                     // may recur as peers
-section("Release", { repeatable: true, min: 1, max: 12 })  // bounded count
-```
+## From one document to a corpus
 
-The declarative DSL takes the same keys on a section node — `repeatable: true`
-plus optional numeric `min` / `max`. Every occurrence fills the one slot, so N
-repeats validate (and consecutive repeats never misfire the order check);
-`min` / `max` bound the count, and a present slot outside them is a
-`structure/repeat-count` finding. A heading that recurs *without* being declared
-repeatable still errors — the default is unchanged.
+Everything above is one document against one contract. The **corpus runner**
+scales it to a tree: a config maps include/exclude globs to contracts
+(first match wins), the runner walks the files, validates each against its
+contract, and aggregates the findings into one report with an exit code. The
+CLI is a thin shell over exactly this call — anything it does, your own code
+can do in-process with [`runCorpus`](/reference/api/).
 
-In the typed model the slot's dual-key key binds a **positional array** in
-document order — `doc.body.entry` is a `SectionView[]`, or a `TableView<Row>[]`
-when the section's sole content is a `table(...)`, each element the same value a
-single section would bind:
-
-```ts
-doc.body.entry.length         // how many occurrences
-doc.body.entry[0].text()      // positionally indexed, typed by the inner shape
-doc.body.section("Entry")     // still the first occurrence's SectionView
-```
-
-Because the shape is a first-class, validated one, `init` can emit it: a heading
-it sees repeated as exact-duplicate peers becomes a repeatable slot, so the
-inferred contract accepts the folder it was read from.
-
-## Architecture
-
-The package is three layers, and imports flow one way:
-
-| Layer | Role |
-|---|---|
-| `core` | one document × one contract → findings + tree + doc. Pure — no file system, no `process`. |
-| `runner` | a corpus config (globs → contracts) → aggregated findings across a tree of files, with first-match routing. |
-| `cli` | the `markdown-contract` bin: argv → runner → format → exit code. A thin shell over the library. |
-
-The engine carries no knowledge of any particular repository — corpora are
-described declaratively (see [Getting started](/getting-started/) and the
-[config reference](/reference/yaml/)) — and the
-validator is strictly **read-only**: it never rewrites a document.
+For where each of these pieces lives in the codebase — and how the CLI,
+runner, and engine relate — see [Architecture](/architecture/).

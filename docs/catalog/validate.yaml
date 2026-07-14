@@ -1,0 +1,115 @@
+category: validate
+title: "Validate from the terminal"
+examples:
+  - id: validate-01
+    name: "Check a folder of docs"
+    demonstrates: "Point `validate` at a folder and get a verdict: a run summary, findings if any, and a CI-ready exit code."
+    rank: 1
+    builds_on: null
+    artifact_kind: cli
+    artifact: |
+      # a folder of decision records; markdown-contract.yaml is auto-discovered from the cwd
+      markdown-contract validate ./decisions
+      Scanned 4 files; 4 matched across 1 contract, 0 unmatched
+        decision: 4
+
+      No findings.
+      # exit status: 0 (clean)
+    surfaces:
+      - "validate subcommand"
+      - "config auto-discovery (markdown-contract.yaml)"
+      - "human run summary"
+      - "exit code 0 (clean)"
+
+  - id: validate-02
+    name: "Read a finding, fix the doc"
+    demonstrates: "A document that breaks its contract produces a finding pinned to a source line — open the file at that line and fix it."
+    rank: 2
+    builds_on: validate-01
+    artifact_kind: cli
+    artifact: |
+      # one record dropped its required 'Decision' section
+      markdown-contract validate ./decisions
+      Scanned 4 files; 4 matched across 1 contract, 0 unmatched
+        decision: 4
+
+      D-0007.md:12 error structure/section-missing — required section ‘Decision’ is missing
+
+      1 finding(s): 1 error, 0 warn, 0 report
+      # exit status: 1 (error-level findings)
+    surfaces:
+      - "finding line format (path:line level id — message)"
+      - "structure/section-missing"
+      - "exit code 1 (error-level findings)"
+
+  - id: validate-03
+    name: "Findings as JSON or SARIF"
+    demonstrates: "The same run renders for machines: `--format json` emits the raw findings array, `--format sarif` feeds code-scanning uploads."
+    rank: 3
+    builds_on: validate-02
+    artifact_kind: cli
+    artifact: |
+      # the raw Finding[] for your own tooling
+      markdown-contract validate ./decisions --format json
+      [
+        {
+          "id": "structure/section-missing",
+          "level": "error",
+          "path": "D-0007.md",
+          "message": "required section ‘Decision’ is missing",
+          "pos": {
+            "line": 12,
+            "col": 1
+          }
+        }
+      ]
+
+      # SARIF 2.1.0 for code scanning
+      markdown-contract validate ./decisions --format sarif > results.sarif
+      # exit status: 1 either way — the format changes the report, never the verdict
+    surfaces:
+      - "--format json (raw Finding[])"
+      - "--format sarif (SARIF 2.1.0)"
+      - "format-independent exit codes"
+
+  - id: validate-04
+    name: "Bind a contract directly, scope the run"
+    demonstrates: "No config file needed: `--contract` binds one contract to a folder, and `--include` / `--exclude` narrow any run without touching config."
+    rank: 4
+    builds_on: validate-01
+    artifact_kind: cli
+    artifact: |
+      # bind one contract straight to a folder — no markdown-contract.yaml required
+      markdown-contract validate ./decisions --contract decision.contract.yaml
+
+      # narrow a run with globs (relative to the validated path)
+      markdown-contract validate ./decisions --include "2026-*/**" --exclude "**/drafts/**"
+
+      # different trees, different contracts, one run: pair each --contract with a --path
+      markdown-contract validate --contract decision.contract.yaml --path decisions --contract runbook.contract.yaml --path runbooks
+    surfaces:
+      - "--contract (inline binding)"
+      - "--include / --exclude globs"
+      - "--contract/--path pairing"
+
+  - id: validate-05
+    name: "Scaffold the config with init"
+    demonstrates: "`init` reads the markdown you already have, infers the tightest config that accepts it, and doubles as a CI drift guard with `--check`."
+    rank: 5
+    builds_on: validate-01
+    artifact_kind: cli
+    artifact: |
+      # preview what would be inferred from the folder
+      markdown-contract init ./decisions --dry-run
+
+      # write markdown-contract.yaml (init re-validates the folder against what it wrote)
+      markdown-contract init ./decisions
+
+      # in CI: fail when the documents outgrow the config
+      markdown-contract init ./decisions --check
+      # exit status: 0 in sync / 1 drift found / 2 nothing to check
+    surfaces:
+      - "init subcommand (inference)"
+      - "--dry-run"
+      - "--check drift guard"
+      - "self-check on write"

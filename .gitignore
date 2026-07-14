@@ -38,7 +38,7 @@ sites/docs/.astro/
 # by sites/docs/scripts/generate.ts. The YAML is the single source of truth; the
 # emitted pages (including the landing) are build artifacts, never hand-edited.
 sites/docs/src/content/docs/index.md
-sites/docs/src/content/docs/examples/
+sites/docs/src/content/docs/appendix/
 # scratch dir of the artifact regression check (sites/docs/scripts/check-artifacts.ts)
 sites/docs/.artifact-check/
 

@@ -1,134 +1,115 @@
-# markdown-contract (Bun workspace)
+# markdown-contract
 
 [![CI](https://github.com/sksizer/markdown-contract/actions/workflows/ci.yml/badge.svg)](https://github.com/sksizer/markdown-contract/actions/workflows/ci.yml)
 
-Bun workspace for **markdown-contract**. The publishable library + CLI lives in
-[`packages/core`](packages/core/); the shared Vue UI kit in
-[`packages/ui`](packages/ui/) and the matched Rust engine in [`crates/`](crates/);
-runtime apps (the single-binary CLI + web-daemon vault dashboard, the desktop app)
-live under `apps/`; websites — including the documentation site — live under `sites/`.
+Declare a **contract** per markdown document type — its frontmatter fields, its
+section structure, the shape of its tables — and get two things back from one
+parse:
+
+- **Validation**: findings pinned to `path:line`, as human text, JSON, or
+  SARIF, with CI-ready exit codes.
+- **A typed model**: the same contract that *checks* a document also *types*
+  it, so a section's prose, a table's rows, and a frontmatter field are
+  ordinary typed reads.
 
 **Documentation:** <https://markdown-contract-docs.pages.dev/> — the
 [`sites/docs`](sites/docs/) Starlight site, auto-deployed to Cloudflare Pages on
 push to `main` (build settings: [`sites/docs/README.md`](sites/docs/README.md)).
 
-## Layout
+## The problem
+
+Teams keep their durable knowledge in markdown — decision records, runbooks,
+planning docs, changelogs — because it is the cheapest format people actually
+keep writing. But markdown has no schema. The rules a corpus depends on
+(required sections in order, typed frontmatter, tables with known columns) are
+enforced, if at all, by ad-hoc regex and bespoke per-repo scripts that drift
+apart silently. And every consumer that *reads* the documents — dashboards,
+report generators, migrations — re-parses them from scratch.
+
+The existing tools don't cover this: frontmatter validators stop at the YAML,
+markdown linters check style rather than structure, and a CMS solves the
+problem only by taking the documents away from plain markdown.
+
+## The solution
+
+One declaration per document type, two doors onto it:
+
+```ts
+import { contract, sections, section } from "markdown-contract";
+import { z } from "zod";
+
+const decision = contract({
+  frontmatter: z.object({ status: z.enum(["proposed", "accepted"]) }),
+  body: sections({ allowUnknown: true }, [section("Summary"), section("Decision")]),
+});
+
+decision.validate(src, { path: "D-0001.md" }); // findings with path:line positions
+decision.read(src, { path: "D-0001.md" });     // the typed model, or a thrown ContractError
+```
+
+Contracts can also be pure YAML — no code — and a config file maps directories
+and globs to contracts, so validating a whole tree is configuration:
+
+```sh
+markdown-contract validate ./docs                  # 0 clean, 1 findings, 2 usage error
+markdown-contract init ./docs                      # infer a config from existing docs
+markdown-contract validate ./docs --format sarif   # feed code scanning
+```
+
+This repository dogfoods it: the planning corpus under `docs/planning/` (~190
+documents across six contracts) is validated by the tool itself.
+
+## Architecture
+
+One parse per document: the source is projected into a position-carrying
+section tree, then three planes run over it — a small tree **grammar** for
+structure, **Zod** for content, and named **rules** for anything cross-cutting.
+Every plane emits one finding shape; a clean document additionally yields the
+typed model. The engine is read-only, deterministic, and pure (no file system,
+no `process`).
+
+The published package is three layers with one-way imports —
+**`cli → runner → core`** — so everything the CLI does is one library call
+away. The wider workspace builds around that engine:
 
 | Path | Role |
 |---|---|
-| `packages/core` | The `markdown-contract` npm library + CLI. Runtime-neutral; the canonical published artifact. See [`packages/core/README.md`](packages/core/README.md). |
-| `packages/ui` | `@markdown-contract/ui` — the shared Vue component kit + design tokens (D-0018), consumed by both `apps/web/ui` and `apps/desktop`. Source-shipped, never published. |
-| `crates/markdown-contract-engine` | The matched Rust engine (D-0018): the declarative validation plane with finding parity to `packages/core`, held to the same fixture corpus goldens. fs-free core, wasm-ready. |
-| `apps/web` | The single binary (D-0012 "one binary, two faces"): CLI when run bare, plus a `daemon` face — a loopback `Bun.serve` hosting the vault dashboard SPA + JSON API over the engine. See [`apps/web/README.md`](apps/web/README.md). |
-| `apps/desktop` | The desktop app (D-0018): Tauri v2 + Nuxt 4, native scans via the Rust engine, multi-vault tracking with watch/schedules/notifications/tray/open-in. See [`apps/desktop/README.md`](apps/desktop/README.md). |
-| `sites/docs` | Astro + Starlight documentation site (M-0006), published to Cloudflare Pages; never published to npm. See [`sites/docs/README.md`](sites/docs/README.md). |
-| `docs/`, `contracts/` | Project planning docs and their contracts. |
-| `provenance/d0014/` | The originating ADR: proposed shape + decision log. |
+| `packages/core` | The `markdown-contract` npm library + CLI — the canonical published artifact. See [`packages/core/README.md`](packages/core/README.md). |
+| `crates/markdown-contract-engine` | A matched Rust engine for the declarative validation plane, held to finding parity with `packages/core` by a shared fixture corpus. fs-free, wasm-ready. |
+| `apps/web` | One binary, two faces: the CLI when run bare, plus a `daemon` mode hosting a local vault dashboard (SPA + JSON API) over the engine. See [`apps/web/README.md`](apps/web/README.md). |
+| `apps/desktop` | The desktop app (Tauri + Nuxt): native scans via the Rust engine, multi-vault tracking with watch/schedules/notifications. See [`apps/desktop/README.md`](apps/desktop/README.md). |
+| `packages/ui` | `@markdown-contract/ui` — the shared Vue component kit + design tokens consumed by the web and desktop apps. Source-shipped, never published. |
+| `sites/docs` | The Astro + Starlight documentation site. Example pages are generated from `docs/catalog/*.yaml`, and every example artifact is regression-checked against the real CLI and library. |
+| `docs/`, `contracts/` | The self-hosted planning corpus and the contracts that validate it. |
+| `provenance/d0014/` | The originating design record: proposed shape + decision log. |
+
+The library, CLI, declarative YAML surface, text constraints, and repeatable
+sections are shipped and stable. The single binary, vault dashboard, desktop
+app, and Rust engine are working but younger — direction of travel rather than
+settled surface. The full design rationale lives in
+[`docs/planning/`](docs/planning/vision.md) (vision, drivers, decisions).
+
+## Quickstart (from source)
+
+The package is not yet on npm. Build it from a checkout:
+
+```sh
+git clone https://github.com/sksizer/markdown-contract
+cd markdown-contract
+bun install                    # resolve the workspace
+bunx moon run core:build       # tsc → packages/core/dist (library + CLI bin)
+node packages/core/dist/cli/index.js validate docs/planning   # try it on this repo
+```
+
+The [Getting started](https://markdown-contract-docs.pages.dev/getting-started/)
+page walks the first contract in YAML and TypeScript.
+
+## Contributing
 
 The Rust side is a root Cargo workspace (`crates/*` + `apps/desktop/src-tauri`);
 `cargo test -p markdown-contract-engine` runs the engine's unit suite plus the
 shared-corpus harness over `packages/core/tests/fixtures/validation` goldens.
 
-## Library health baseline
-
-This repo tracks [sksizer/node-template](https://github.com/sksizer/node-template)
-as the reference for single-package Node/TypeScript **library health**. The
-template defines the canonical layer stack — scaffold, Biome format/lint, Vitest
-test + coverage floor, the CI gate, dependency hygiene (Dependabot + audit),
-publish hygiene (`publint` + `are-the-types-wrong`), dead-code detection (knip),
-code metrics (scc), module/test conventions, and supply-chain hardening
-(Dependabot cooldown windows + exact devDependency pins). This workspace carries
-the full stack adapted from the template's npm single-package shape to the Bun +
-moon workspace (gates wrapped as `core:*` moon tasks plus dedicated side-gate
-workflows) — including the supply-chain-hardening layer: Dependabot cooldown
-windows (7 days for minor/patch, 30 for majors) on both ecosystems, and exact
-devDependency pins across every workspace manifest. The published
-`packages/core` runtime `dependencies` deliberately keep their `^` ranges, since
-consumers need range flexibility.
-
-Layers here that go beyond the template: lefthook pre-commit/pre-push hooks +
-`.editorconfig`, knip promoted to a **blocking** gate (the template ships it
-report-only), and the planning-docs contract gate (`core:lint-docs`). When the
-template grows or changes a layer, mirror the delta here — and when a quality
-practice proves out here first, upstream it to the template.
-
-The module/test conventions layer is captured in
-[`CONVENTIONS.md`](CONVENTIONS.md) — the human-facing counterpart of the
-template's `CONVENTIONS.md`.
-
-## Toolchain
-
-- **Bun** is the canonical dev package manager and the fast task runner: one
-  `bun.lock` at the root, `bun install` resolves the whole workspace, and the
-  `build` + `typecheck` moon tasks run on the Bun toolchain.
-- **Node** is the compatibility gate and the runtime the published library
-  targets: the `test` / `coverage` moon tasks run vitest under the pinned Node
-  toolchain, exercising the runtime-neutral library under real Node before it
-  ships.
-- **moon** is the task runner; tasks are defined in `packages/core/moon.yml`.
-  The toolchain version pins (Bun, Node) live in `.moon/toolchains.yml`.
-- The published artifact still ships via `npm publish` from `packages/core`
-  (`dist/` + the CLI bin), unchanged from before the split.
-- **Git hooks** are managed by [lefthook](https://lefthook.dev) and arm
-  automatically on install (the root `prepare` script and `worktree_init` both
-  run `lefthook install`). `pre-commit` runs Biome over staged files;
-  `pre-push` runs the `core:build` + `core:typecheck` + `core:test` gates. Bypass an
-  individual run with `git commit --no-verify` / `git push --no-verify`.
-
-```sh
-bun install                                  # resolve the workspace
-bunx moon run core:build                     # tsc → packages/core/dist
-bunx moon run core:test                      # vitest under Node
-bunx moon run :build :typecheck :coverage    # what CI runs
-```
-
-### Authoring moon tasks
-
-moon v2's runtime-only toolchains do **not** put `node_modules/.bin` on PATH, so
-a moon task must invoke its runner explicitly — never a bare `tsc` / `vitest` /
-`biome`:
-
-- On the **`bun`** toolchain (`build`, `typecheck`, `package-check`, `lint`), use
-  `bun run <script>`. `bun run` puts `node_modules/.bin` on PATH, so the tool bin
-  (`tsc`, `publint`, `biome`) resolves.
-- On the **`node`** toolchain (`test`, `coverage`, `lint-deps`), use
-  `npm run <script>` — **not** `bun run`. npm ships with Node, puts `.bin` on
-  PATH, *and* runs the script under the real **Node** runtime.
-
-Keep `test` / `coverage` pinned to `toolchain: node` on purpose: that run is the
-Node-compatibility gate for the runtime-neutral published library, so `vitest`
-must execute under Node. Moving those tasks onto Bun would run vitest under Bun
-and defeat the gate.
-
-**`runInCI: false` suppresses explicit `moon run` under CI.** A task marked
-`runInCI: false` (in `packages/core/moon.yml`, that's `core:lint-deps` and
-`core:lint-docs`) is not merely dropped from the shared `moon ci` list — moon
-also **skips it for an explicit `moon run <task>`** once it detects a CI
-environment. moon (version-pinned at `@moonrepo/cli` 2.3.5) keys that detection
-on a **non-empty `CI` env var**.
-
-- To run such a task from a **dedicated side-gate workflow**, clear `CI` for
-  that step (`env: CI: ''`) so moon stops treating the run as CI and actually
-  executes the task. `.github/workflows/knip.yml` is the canonical worked
-  example.
-- Prefer a dedicated side-gate workflow over adding the task to the shared
-  `moon run` CI list for **report-only gates that must not fail the shared build
-  gate** — `runInCI: false` keeps the task out of `moon ci`, and its own
-  workflow decides whether a finding reddens the PR.
-
-## Code metrics
-
-`bun run metrics` (equivalently `npm run metrics`) runs
-[scc](https://github.com/boyter/scc) over `packages/core/src` to report
-lines-of-code, comments, blanks, and code per language/file, plus a
-cyclomatic-complexity aggregate and a COCOMO cost estimate. It is
-**report-only** — it never gates the build.
-
-scc is a single Go binary, not an npm package, so it is **not** a devDependency:
-it must be installed on your `PATH` first, e.g. `brew install scc` or
-`go install github.com/boyter/scc/v3@v3.5.0`.
-
-CI runs scc too, pinned via the `SCC_VERSION` env in
-[`.github/workflows/metrics.yml`](.github/workflows/metrics.yml) — that pinned
-version is the reproducible source of truth. Local numbers may differ if your
-installed scc version drifts from the pin.
+Toolchain (Bun + moon + Node), the quality-gate stack, moon task authoring
+rules, and code metrics are documented in [`DEVELOPMENT.md`](DEVELOPMENT.md).
+Module and test conventions live in [`CONVENTIONS.md`](CONVENTIONS.md).

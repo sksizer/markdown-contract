@@ -1,0 +1,145 @@
+category: author
+title: "Author contracts in YAML"
+examples:
+  - id: author-01
+    name: "Frontmatter and required sections"
+    demonstrates: "A complete contract, no code: typed frontmatter fields plus the sections every decision record must carry."
+    rank: 1
+    builds_on: null
+    artifact_kind: yaml
+    artifact: |
+      # decision.contract.yaml
+      mcVersion: 1
+      kind: contract
+      frontmatter:
+        fields:
+          id:      { type: string, pattern: '^D-\d{4}$' }
+          status:  { enum: [proposed, accepted, superseded] }
+          created: { type: string, format: date }
+          owner:   { type: string, format: email, optional: true }
+      body:
+        order: recognized-relative
+        allowUnknown: true
+        sections:
+          - section: Summary
+          - section: Decision
+          - section: Consequences
+            optional: true
+    surfaces:
+      - "kind: contract envelope"
+      - "field vocabulary (type / enum / pattern / format / optional)"
+      - "section grammar (order, allowUnknown, optional)"
+
+  - id: author-02
+    name: "Typed tables and checklists"
+    demonstrates: "Content leaves put shape requirements inside a section: a table with named, schema-checked columns and a checklist with a minimum length."
+    rank: 2
+    builds_on: author-01
+    artifact_kind: yaml
+    artifact: |
+      # runbook.contract.yaml
+      mcVersion: 1
+      kind: contract
+      body:
+        sections:
+          - section: Overview
+            content: { maxWords: 200 }
+          - section: Ports
+            content:
+              table:
+                columns: [Name, Port, Protocol]
+                minRows: 1
+                cells:
+                  Port:     { type: number, int: true, min: 1, max: 65535 }
+                  Protocol: { enum: [tcp, udp] }
+          - section: Checklist
+            content:
+              list: { everyItem: checkbox, minItems: 3 }
+    surfaces:
+      - "content leaves (table / list / maxWords)"
+      - "per-column cell schemas"
+      - "checkbox lists with minItems"
+
+  - id: author-03
+    name: "House rules as text constraints"
+    demonstrates: "`requires` / `forbids` assert that phrases appear (or never appear) — per section or across the whole document — without writing a rule function."
+    rank: 3
+    builds_on: author-01
+    artifact_kind: yaml
+    artifact: |
+      # postmortem.contract.yaml
+      mcVersion: 1
+      kind: contract
+      body:
+        # on the body root: one document-scoped rule
+        forbids:
+          - pattern: "TBD"
+            level: warn
+        sections:
+          - section: Impact
+            requires:
+              - regex: "\\d+ (users|requests|minutes)"
+                note: "quantify the impact"
+          - section: Action items
+            forbids:
+              - pattern: "someone should"
+                ignoreCase: true
+    surfaces:
+      - "requires / forbids on section nodes"
+      - "document-scoped forbids on the body root"
+      - "regex and literal match specs, levels and notes"
+
+  - id: author-04
+    name: "Headings that repeat: changelogs"
+    demonstrates: "A `repeatable` slot lets one heading legitimately recur as peers — with optional occurrence bounds — instead of tripping the duplicate-section rule."
+    rank: 4
+    builds_on: author-01
+    artifact_kind: yaml
+    artifact: |
+      # changelog.contract.yaml
+      mcVersion: 1
+      kind: contract
+      body:
+        sections:
+          - section: Release
+            repeatable: true
+            min: 1          # at least one release entry
+            children:
+              sections:
+                - section: Added
+                  optional: true
+                - section: Fixed
+                  optional: true
+    surfaces:
+      - "repeatable sections"
+      - "occurrence bounds (min / max)"
+      - "nested children grammars"
+
+  - id: author-05
+    name: "Route a whole tree with one config"
+    demonstrates: "A `kind: config` document maps globs to contracts — by name, by path, or inline — so validating an entire docs tree is configuration."
+    rank: 5
+    builds_on: author-01
+    artifact_kind: yaml
+    artifact: |
+      # markdown-contract.yaml
+      mcVersion: 1
+      kind: config
+      contracts:
+        decision: ./decision.contract.yaml
+        runbook:  ./runbook.contract.yaml
+      rules:
+        - include: ["decisions/**/*.md"]
+          contract: decision                      # by name
+        - include: ["runbooks/**/*.md"]
+          exclude: ["runbooks/_archive/**"]
+          contract: runbook
+        - include: ["**/*.md"]                    # catch-all last: first match wins
+          contract:                               # inline contract, no separate file
+            frontmatter:
+              fields:
+                title: { type: string, min: 1 }
+    surfaces:
+      - "kind: config envelope"
+      - "glob routing with first-match precedence"
+      - "named, path, and inline contract refs"

@@ -11,7 +11,7 @@ references**, which are recognized so they survive a parse intact.
 
 Both are on by default — there is no flag to turn them on. See
 [How it works](/how-it-works/) for where the dialect sits in the pipeline, and
-[Dialect examples](/examples/dialect/) for worked documents.
+the [anchor example](/appendix/examples/read/read-03/) for a worked document.
 
 :::note
 The low-level parse helpers in `dialect/*.ts` are **internal**. This page documents
@@ -180,5 +180,5 @@ and the `structure/anchor-missing` rule are the supported ways anchors surface. 
 - [Model reference](/reference/model/) — `anchors`, `byAnchor`, and the `BlockView` an
   anchor resolves to.
 - [Findings reference](/reference/findings/) — `structure/anchor-missing`.
-- [Dialect examples](/examples/dialect/) — worked documents that use anchors and links.
+- [Anchors make blocks addressable](/appendix/examples/read/read-03/) — a worked document that uses anchors.
 - [Glossary](/reference/glossary/) — anchor, wikilink, transclusion.
