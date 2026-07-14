@@ -78,6 +78,29 @@ tasks:
     options:
       cache: true
 
+  # `biome ci .` (via the check:ci script) — the format + lint + import-organization
+  # gate (mirrors core:lint), scoped to apps/desktop's TS/JSON sources: the Nuxt app
+  # under app/ plus the tracked src-tauri config JSON (tauri.conf.json, capabilities/).
+  # The ontogen-generated app/bindings are excluded by the shared root biome.jsonc
+  # (files.includes), and src-tauri/gen is gitignored — so neither is linted. CI mode =
+  # no writes. BUN toolchain so `bun run` puts node_modules/.bin on PATH and the biome
+  # bin resolves. A real CI gate — rides the shared `moon run :lint` list. (biome's Vue
+  # support only ever emits non-blocking warnings on the .vue files.) Run with `moon run
+  # desktop:lint`.
+  lint:
+    command: 'bun run check:ci'
+    toolchain: 'bun'
+    inputs:
+      - 'app/**/*'
+      - 'nuxt.config.ts'
+      - 'package.json'
+      - 'tsconfig.json'
+      - 'src-tauri/tauri.conf.json'
+      - 'src-tauri/capabilities/**/*'
+      - '/biome.jsonc'
+    options:
+      cache: true
+
   # `cargo check -p markdown-contract-desktop` — type/borrow-check the Tauri
   # shell crate. `system` toolchain: cargo comes from the machine, and moon runs
   # the command from the workspace root (where /Cargo.toml lives) via

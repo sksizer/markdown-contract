@@ -5,7 +5,7 @@
  * fed by a live `GET /api/events` stream. Components (WatchIndicator, pages)
  * bind the same refs and never learn the events stopped being replayed.
  */
-import { getCurrentScope, onScopeDispose, ref, type Ref } from "vue";
+import { getCurrentScope, onScopeDispose, type Ref, ref } from "vue";
 
 import type { SseEvent, VaultStatusState } from "~/types";
 

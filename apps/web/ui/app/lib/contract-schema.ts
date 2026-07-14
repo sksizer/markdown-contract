@@ -108,11 +108,14 @@ export function classifySchema(node: unknown): SchemaClassification {
   return { ...inner, summary: summarizeSchema(node) };
 }
 
-function classifyAt(node: unknown): {
+/** The inner verdict `classifyAt` returns; `classifySchema` adds the `summary` on top. */
+type NodeVerdict = {
   kind: FieldKind | null;
   representable: boolean;
   reason: string;
-} {
+};
+
+function classifyAt(node: unknown): NodeVerdict {
   if (!isRecord(node)) {
     return { kind: null, representable: false, reason: "not a schema mapping" };
   }
@@ -135,31 +138,39 @@ function classifyAt(node: unknown): {
       const ok = t === "string" || t === "number" || t === "boolean";
       return { kind, representable: ok, reason: ok ? "" : "non-scalar const value" };
     }
-    case "array": {
-      if (!("of" in node)) {
-        return { kind, representable: false, reason: "array without an 'of' schema" };
-      }
-      const sub = classifyAt(node.of);
-      if (!sub.representable) {
-        return { kind, representable: false, reason: `array of: ${sub.reason}` };
-      }
-      return { kind, representable: true, reason: "" };
-    }
-    case "object": {
-      const fields = node.fields ?? {};
-      if (!isRecord(fields)) return { kind, representable: false, reason: "malformed fields map" };
-      for (const [key, value] of Object.entries(fields)) {
-        const sub = classifyAt(value);
-        if (!sub.representable) {
-          return { kind, representable: false, reason: `field '${key}': ${sub.reason}` };
-        }
-      }
-      return { kind, representable: true, reason: "" };
-    }
+    case "array":
+      return classifyArrayNode(node, kind);
+    case "object":
+      return classifyObjectNode(node, kind);
     default:
       // string / number / boolean — always representable
       return { kind, representable: true, reason: "" };
   }
+}
+
+/** The `array` case: representable iff it has an `of` schema that is itself representable. */
+function classifyArrayNode(node: Record<string, unknown>, kind: FieldKind): NodeVerdict {
+  if (!("of" in node)) {
+    return { kind, representable: false, reason: "array without an 'of' schema" };
+  }
+  const sub = classifyAt(node.of);
+  if (!sub.representable) {
+    return { kind, representable: false, reason: `array of: ${sub.reason}` };
+  }
+  return { kind, representable: true, reason: "" };
+}
+
+/** The `object` case: representable iff every field schema is itself representable. */
+function classifyObjectNode(node: Record<string, unknown>, kind: FieldKind): NodeVerdict {
+  const fields = node.fields ?? {};
+  if (!isRecord(fields)) return { kind, representable: false, reason: "malformed fields map" };
+  for (const [key, value] of Object.entries(fields)) {
+    const sub = classifyAt(value);
+    if (!sub.representable) {
+      return { kind, representable: false, reason: `field '${key}': ${sub.reason}` };
+    }
+  }
+  return { kind, representable: true, reason: "" };
 }
 
 /** A compact, human summary of a schema node ("string · email", "array of enum", …). */

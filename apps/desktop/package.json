@@ -8,6 +8,7 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "typecheck": "nuxt typecheck",
+    "check:ci": "biome ci .",
     "test": "bun test app",
     "tauri": "tauri"
   },
