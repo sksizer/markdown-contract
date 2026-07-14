@@ -6,6 +6,7 @@ use serde::Deserialize;
 /// Input for creating a new OpenerPreference.
 #[derive(Debug, Clone, Deserialize, JsonSchema, specta::Type)]
 pub struct CreateOpenerPreferenceInput {
+    #[serde(default)]
     pub id: String,
     pub app_id: String,
     pub enabled: bool,

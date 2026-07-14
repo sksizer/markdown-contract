@@ -49,10 +49,8 @@ impl FindingRecordUpdate {
 
 impl From<crate::schema::UpdateFindingRecordInput> for FindingRecordUpdate {
     fn from(input: crate::schema::UpdateFindingRecordInput) -> Self {
-        use crate::persistence::fs_markdown::parser::ontology::strip_wikilink;
-
         Self {
-            scan_run_id: input.scan_run_id.map(|v| strip_wikilink(&v)),
+            scan_run_id: input.scan_run_id,
             finding_id: input.finding_id,
             level: input.level,
             file_path: input.file_path,
@@ -65,11 +63,9 @@ impl From<crate::schema::UpdateFindingRecordInput> for FindingRecordUpdate {
 
 impl From<crate::schema::CreateFindingRecordInput> for FindingRecord {
     fn from(input: crate::schema::CreateFindingRecordInput) -> Self {
-        use crate::persistence::fs_markdown::parser::ontology::strip_wikilink;
-
         Self {
             id: input.id,
-            scan_run_id: strip_wikilink(&input.scan_run_id),
+            scan_run_id: input.scan_run_id,
             finding_id: input.finding_id,
             level: input.level,
             file_path: input.file_path,

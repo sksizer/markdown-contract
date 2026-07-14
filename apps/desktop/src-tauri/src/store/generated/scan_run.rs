@@ -57,10 +57,8 @@ impl ScanRunUpdate {
 
 impl From<crate::schema::UpdateScanRunInput> for ScanRunUpdate {
     fn from(input: crate::schema::UpdateScanRunInput) -> Self {
-        use crate::persistence::fs_markdown::parser::ontology::strip_wikilink;
-
         Self {
-            vault_id: input.vault_id.map(|v| strip_wikilink(&v)),
+            vault_id: input.vault_id,
             started_at: input.started_at,
             finished_at: input.finished_at,
             trigger: input.trigger,
@@ -75,11 +73,9 @@ impl From<crate::schema::UpdateScanRunInput> for ScanRunUpdate {
 
 impl From<crate::schema::CreateScanRunInput> for ScanRun {
     fn from(input: crate::schema::CreateScanRunInput) -> Self {
-        use crate::persistence::fs_markdown::parser::ontology::strip_wikilink;
-
         Self {
             id: input.id,
-            vault_id: strip_wikilink(&input.vault_id),
+            vault_id: input.vault_id,
             started_at: input.started_at,
             finished_at: input.finished_at,
             trigger: input.trigger,

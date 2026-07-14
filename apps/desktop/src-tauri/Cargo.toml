@@ -30,7 +30,7 @@ daemon = ["dep:axum", "tokio/net"]
 # ontogen is not published on crates.io (checked 2026-07-09: the sparse index
 # 404s for ontogen/ontogen-macros/ontogen-core), so per D-0018 the dependency
 # is the git repo pinned to a rev (v0.2.2's HEAD) rather than a version req.
-ontogen = { git = "https://github.com/sksizer/rust-ontogen", rev = "81af0e941d2ab2cc80ee1170838b3172a70dc3fa" }
+ontogen = { git = "https://github.com/sksizer/rust-ontogen", rev = "71fda11eeda4e4a4b80aee6dca1d0e74eb6e0887" }
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
@@ -78,12 +78,11 @@ time = { version = "0.3", features = ["formatting"] }
 # Same pin as the build-dep: the #[derive(OntologyEntity)] / #[ontology(...)]
 # annotations the pipeline parses, plus the #[stateless] / #[ontogen(rename)]
 # passthrough attrs on custom API fns.
-ontogen-macros = { git = "https://github.com/sksizer/rust-ontogen", rev = "81af0e941d2ab2cc80ee1170838b3172a70dc3fa" }
-# 0.7, not 0.8: the ontogen-generated router (api/transport/http/generated.rs,
-# rev-pinned + DO-NOT-EDIT) emits axum-0.7-style `:id` path captures, which 0.8
-# rejects at router-build time (panics on `serve`). The generator targets 0.7,
-# so the dep tracks it until the pinned ontogen rev emits `{id}` captures.
-axum = { version = "0.7", optional = true }
+ontogen-macros = { git = "https://github.com/sksizer/rust-ontogen", rev = "71fda11eeda4e4a4b80aee6dca1d0e74eb6e0887" }
+# ontogen v0.4.0 (rev 71fda11) emits axum-0.8-style `{id}` path captures
+# (upstream 0c3a989 "feat(servers): emit axum 0.8 brace-style route params"),
+# so the generated router now builds under 0.8 — the 0.7 pin workaround is gone.
+axum = { version = "0.8", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt"] }
