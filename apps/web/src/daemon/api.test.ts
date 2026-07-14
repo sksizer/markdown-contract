@@ -16,7 +16,15 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { VaultStatus } from "../../types/api";
-import type { FindingRecord, OpenerPreference, ScanRun, Vault } from "../../types/ontogen";
+import type {
+  ConfigFiles,
+  DriftResult,
+  FindingRecord,
+  OpenerPreference,
+  ScanRun,
+  Vault,
+  VaultConfig,
+} from "../../types/ontogen";
 import { startDaemon } from "./daemon";
 
 const vaultDir = fileURLToPath(new URL("./fixtures/vault", import.meta.url));
@@ -227,5 +235,68 @@ describe("DELETE /api/vaults/:id", () => {
     });
     expect((await send(`/api/vaults/${created.id}`, "DELETE")).status).toBe(204);
     expect((await fetch(`${base}/api/vaults/${created.id}`)).status).toBe(404);
+  });
+});
+
+// ── ontogen action routes (D-0019 workstream B) — the body-addressed POST
+// actions the generated Transport calls, aliased over the daemon's runs/config
+// handlers. Read + rejection paths only, so the committed fixture stays intact.
+describe("POST /api/checks (drift, ontogen action)", () => {
+  test("returns a bare DriftResult; the fixture's error finding drifts", async () => {
+    const drift = await sendJson<DriftResult>("/api/checks", "POST", { vault_id: vaultId });
+    expect(drift.drifted).toBe(true);
+    expect(drift.entries.length).toBeGreaterThanOrEqual(1);
+    expect(drift.entries[0]).toMatchObject({
+      kind: expect.any(String),
+      target: expect.any(String),
+      detail: expect.any(String),
+    });
+    expect(Array.isArray(drift.warnings)).toBe(true);
+  });
+  test("404s an unknown vault", async () => {
+    expect((await send("/api/checks", "POST", { vault_id: "nope" })).status).toBe(404);
+  });
+  test("400s a body without vault_id", async () => {
+    expect((await send("/api/checks", "POST", {})).status).toBe(400);
+  });
+});
+
+describe("POST /api/configs/* (config editing, ontogen actions)", () => {
+  test("read returns the router config as ontogen VaultConfig (snake_case parse_error)", async () => {
+    const cfg = await sendJson<VaultConfig>("/api/configs/read", "POST", { vault_id: vaultId });
+    expect(cfg.exists).toBe(true);
+    expect(cfg.raw).toContain("mcVersion");
+    expect(cfg.parse_error).toBeNull();
+  });
+
+  test("files lists the router + referenced contract with snake_case rel_path", async () => {
+    const { files } = await sendJson<ConfigFiles>("/api/configs/files", "POST", {
+      vault_id: vaultId,
+    });
+    expect(files[0]).toMatchObject({ rel_path: "markdown-contract.yaml", kind: "config" });
+    expect(files.some((f) => f.kind === "contract" && f.rel_path.endsWith(".contract.yaml"))).toBe(
+      true,
+    );
+  });
+
+  test("save rejects an invalid config with 400 (before any write)", async () => {
+    const res = await send("/api/configs/save", "POST", {
+      vault_id: vaultId,
+      raw: "kind: nonsense\nnope: true",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  test("save-config-file rejects a vault-escaping relPath with 400", async () => {
+    const res = await send("/api/configs/save-config-file", "POST", {
+      vault_id: vaultId,
+      rel_path: "../../etc/evil.yaml",
+      raw: "x",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  test("save 400s a body missing raw", async () => {
+    expect((await send("/api/configs/save", "POST", { vault_id: vaultId })).status).toBe(400);
   });
 });
