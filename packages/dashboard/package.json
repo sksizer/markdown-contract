@@ -1,0 +1,17 @@
+{
+  "name": "@markdown-contract/dashboard",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SPIKE — the shared vault-dashboard as a Nuxt LAYER: pages + composables coded against an INJECTED transport (the ontogen Transport contract). Consumed via `extends` by apps/web (HTTP transport) and apps/desktop (IPC transport). Source-shipped, never published.",
+  "license": "MIT",
+  "author": "sksizer",
+  "main": "./nuxt.config.ts",
+  "scripts": {
+    "sync:bindings": "bun run scripts/sync-bindings.ts && biome check --write bindings"
+  },
+  "peerDependencies": {
+    "nuxt": ">=3.15.0",
+    "vue": "^3.5.0"
+  }
+}

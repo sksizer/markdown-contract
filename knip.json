@@ -27,7 +27,12 @@
     "apps/web": {
       "entry": ["src/daemon/index.ts", "src/**/*.test.ts"],
       "project": ["src/**/*.ts", "scripts/**/*.ts", "types/**/*.ts"],
-      "ignoreDependencies": ["@markdown-contract/ui", "vue", "vue-tsc"]
+      "ignoreDependencies": [
+        "@markdown-contract/dashboard",
+        "@markdown-contract/ui",
+        "vue",
+        "vue-tsc"
+      ]
     },
     "apps/desktop": {
       "ignore": ["app/assets/**", "app/bindings/**"],
@@ -37,6 +42,18 @@
         "vue-router",
         "vue-tsc"
       ]
+    },
+    "packages/dashboard": {
+      "entry": [
+        "nuxt.config.ts",
+        "pages/**/*.vue",
+        "composables/**/*.ts",
+        "transport.ts",
+        "scripts/**/*.ts"
+      ],
+      "project": ["**/*.{ts,vue}"],
+      "ignore": ["bindings/**"],
+      "ignoreDependencies": ["nuxt", "vue"]
     }
   },
   "ignoreWorkspaces": [],
