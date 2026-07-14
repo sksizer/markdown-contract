@@ -1,0 +1,6 @@
+# Build artifacts — reproduce with ./build.sh (measured sizes are in FINDINGS.md).
+/target
+/pkg-node
+/pkg-web
+/pkg-bundler
+Cargo.lock

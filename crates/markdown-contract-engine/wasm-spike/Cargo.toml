@@ -1,0 +1,53 @@
+# SPIKE — de-risking the wasm packaging of the matched engine (not a shipped crate).
+#
+# A thin wasm-bindgen surface over ONE declarative-validation entry point
+# (`load_contract` + `validate`), built for browser and Node via wasm-pack. It
+# depends on `markdown-contract-engine` with `default-features = false` so the
+# fs-free, wasm32-compatible core is what gets compiled (the `native` std::fs
+# layer stays off).
+#
+# It is DELIBERATELY its own workspace (empty `[workspace]` table below) so the
+# parent Cargo workspace, the engine crate's Cargo.toml, and
+# `cargo test -p markdown-contract-engine` are all untouched by the spike.
+[package]
+name = "markdown-contract-engine-wasm-spike"
+version = "0.0.0"
+edition = "2021"
+publish = false
+license = "MIT"
+
+[lib]
+# cdylib → the .wasm artifact; rlib → still buildable/linkable natively.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+markdown-contract-engine = { path = "..", default-features = false }
+wasm-bindgen = "0.2"
+serde_json = "1"
+
+# Standalone from the parent workspace on purpose (see header).
+[workspace]
+
+# wasm-pack drives `wasm-opt` (binaryen). rustc 1.95 emits the post-MVP wasm
+# feature set (bulk-memory, sign-ext, nontrapping-fptoint, mutable-globals,
+# multivalue) by default; because the release profile strips the target_features
+# custom section, wasm-opt can't auto-detect them and must be told explicitly, or
+# it rejects the module as MVP. `-Os` keeps the size optimization.
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = [
+  "-Os",
+  "--enable-bulk-memory",
+  "--enable-sign-ext",
+  "--enable-nontrapping-float-to-int",
+  "--enable-mutable-globals",
+  "--enable-multivalue",
+  "--enable-reference-types",
+]
+
+# Size is the thing the spike measures, so build the release wasm for size.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
