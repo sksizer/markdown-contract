@@ -1,34 +1,32 @@
 /**
- * The REAL API client — the thing the mock prototype's `mockApi` loader was
- * built to be swapped for: one method per D-0012 §D3 route, same shapes
- * (`types/api.ts`), now over `$fetch` against the live daemon.
+ * The editor's API client. Domain ops + vault mutations now speak the generated
+ * ontogen `Transport` (D-0019: `useTransport()` → `$mcTransport`, the same
+ * contract apps/desktop drives over IPC), so the routes + shapes are
+ * single-sourced from the bindings rather than hand-hardcoded here. The
+ * transport is same-origin `/api/*` — served directly by the daemon in the
+ * compiled binary, and by the `nitro.devProxy` under `nuxt dev`.
  *
- * `apiBase` is "" when the SPA is served BY the daemon (same origin, the
- * compiled-binary case). In `nuxt dev` the daemon is another origin, so set
- * `NUXT_PUBLIC_API_BASE=http://127.0.0.1:4319` (the daemon reflects localhost
- * origins for CORS).
+ * Still on bespoke `$fetch` (no `Transport` home yet): the derived vault-status
+ * READ model (`/api/vault-status` — the daemon's populated join; the ontogen
+ * `vaultStatuses` would be a lossy round-trip), and `validate` / `init` /
+ * `watch`. `apiBase` still lets those reach a cross-origin dev daemon.
  */
 import type {
-  CheckResponse,
-  ConfigFilesResponse,
   InitVaultRequest,
   InitVaultResponse,
   RegisterVaultRequest,
   SaveConfigFileRequest,
-  SaveConfigFileResponse,
-  SaveVaultConfigResponse,
   ValidateResponse,
-  VaultConfigResponse,
   VaultStatus,
   WatchResponse,
 } from "~/types";
 
-/** The daemon origin the client talks to ("" = same origin). */
+/** The daemon origin the bespoke (non-transport) calls talk to ("" = same origin). */
 export function useApiBase(): string {
   return (useRuntimeConfig().public.apiBase as string) ?? "";
 }
 
-/** Pull the daemon's error envelope (`{ error }`) out of a failed `$fetch`. */
+/** Pull the daemon's error envelope out of a failed call ($fetch `{ error }` or a thrown Error). */
 export function apiErrorMessage(err: unknown): string {
   const e = err as { data?: { error?: string }; message?: string };
   return e.data?.error ?? e.message ?? "request failed";
@@ -36,46 +34,63 @@ export function apiErrorMessage(err: unknown): string {
 
 export function useApi() {
   const base = useApiBase();
+  const transport = useTransport(); // the generated ontogen Transport (same-origin /api)
   return {
-    // The ontogen `/api/vaults` CRUD returns the identity-only `Vault`; the editor
-    // renders the DERIVED status (state + findings + drift), so list/detail read the
-    // daemon's `/api/vault-status` read model (a join of registry identity + live
-    // status). Mutations (register/remove) still go to the ontogen CRUD routes —
-    // their responses are unused here — mapping `configPath` → ontogen `config_path`.
+    // ── reads: the derived VaultStatus model stays on the daemon's read route ──
+    // (the ontogen `/api/vaults` CRUD is identity-only; the editor needs the
+    // join of identity + live status the daemon computes here).
     listVaults: () => $fetch<VaultStatus[]>(`${base}/api/vault-status`),
     getVault: (id: string) => $fetch<VaultStatus>(`${base}/api/vault-status/${id}`),
+
+    // ── mutations + domain ops: the ontogen Transport contract ──
     registerVault: (body: RegisterVaultRequest) =>
-      $fetch(`${base}/api/vaults`, {
-        method: "POST",
-        body: {
-          name: body.name,
-          path: body.path,
-          ...(body.configPath ? { config_path: body.configPath } : {}),
-        },
+      transport.vaultCreate({
+        // The daemon is authoritative over id + timestamps (a full CreateVaultInput
+        // is required; it reads only name/path/config_path/watch_enabled/schedule).
+        id: "",
+        name: body.name,
+        path: body.path,
+        config_path: body.configPath ?? "",
+        watch_enabled: true,
+        schedule: null,
+        created_at: "",
+        updated_at: "",
       }),
-    removeVault: (id: string) => $fetch(`${base}/api/vaults/${id}`, { method: "DELETE" }),
+    removeVault: (id: string) => transport.vaultDelete(id),
+    // `check` triggers the drift check; the drift surfaces via the vault-status
+    // reload (the daemon markChecked's + SSE-emits), so the result is wrapped to
+    // the editor's `{ drift }` shape but its consumers read `vault.drift`.
+    checkVault: (id: string) => transport.check(id).then((drift) => ({ drift })),
+    getConfig: (id: string) =>
+      transport.readConfig(id).then((c) => ({
+        exists: c.exists,
+        raw: c.raw,
+        parseError: c.parse_error,
+      })),
+    saveConfig: (id: string, raw: string) => transport.saveConfig(id, raw),
+    getConfigFiles: (id: string) =>
+      transport.listConfigFiles(id).then((c) => ({
+        files: c.files.map((f) => ({
+          relPath: f.rel_path,
+          kind: f.kind as "config" | "contract",
+          exists: f.exists,
+          raw: f.raw,
+          parseError: f.parse_error,
+        })),
+      })),
+    saveConfigFile: (id: string, body: SaveConfigFileRequest) =>
+      transport.saveConfigFile(id, body.relPath, body.raw),
+
+    // ── still bespoke: no Transport home yet (init needs the inference port; a
+    // validate/watch action isn't modeled) ──
     validateVault: (id: string) =>
       $fetch<ValidateResponse>(`${base}/api/vaults/${id}/validate`, { method: "POST" }),
-    checkVault: (id: string) => $fetch<CheckResponse>(`${base}/api/vaults/${id}/check`),
     initVault: (id: string, body: InitVaultRequest = {}) =>
       $fetch<InitVaultResponse>(`${base}/api/vaults/${id}/init`, { method: "POST", body }),
     setWatch: (id: string, watching: boolean) =>
       $fetch<WatchResponse>(`${base}/api/vaults/${id}/watch`, {
         method: "POST",
         body: { watching },
-      }),
-    getConfig: (id: string) => $fetch<VaultConfigResponse>(`${base}/api/vaults/${id}/config`),
-    saveConfig: (id: string, raw: string) =>
-      $fetch<SaveVaultConfigResponse>(`${base}/api/vaults/${id}/config`, {
-        method: "PUT",
-        body: { raw },
-      }),
-    getConfigFiles: (id: string) =>
-      $fetch<ConfigFilesResponse>(`${base}/api/vaults/${id}/config/files`),
-    saveConfigFile: (id: string, body: SaveConfigFileRequest) =>
-      $fetch<SaveConfigFileResponse>(`${base}/api/vaults/${id}/config/files`, {
-        method: "PUT",
-        body,
       }),
   };
 }
