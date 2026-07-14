@@ -367,7 +367,6 @@ model, same emitted findings (identical ids, levels, positions, messages). Pick
 whichever authoring surface fits: data (YAML) for contracts that ship as config,
 or code (TS) when you need the deferred escape hatches.
 
-See the [API reference](/reference/api/) for the combinator surface,
-[declarative-YAML examples](/examples/declarative-yaml/) for worked contracts,
-and [real-world schemas](/examples/real-world-schemas/) for complete corpus
+See the [API reference](/reference/api/) for the combinator surface, and the
+[authoring examples](/appendix/examples/author/) for worked contracts and corpus
 configs.

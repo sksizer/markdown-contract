@@ -1,0 +1,136 @@
+category: read
+title: "Read markdown as typed data"
+examples:
+  - id: read-01
+    name: "One contract, two doors"
+    demonstrates: "The contract that validates a document also types it: `validate()` returns findings as data, `read()` returns the typed model or throws."
+    rank: 1
+    builds_on: null
+    artifact_kind: code
+    artifact: |
+      import { contract, sections, section } from "markdown-contract";
+      import { z } from "zod";
+
+      const decision = contract({
+        frontmatter: z.object({ status: z.enum(["proposed", "accepted"]) }),
+        body: sections({ order: "strict", allowUnknown: true }, [
+          section("Summary"),
+          section("Decision"),
+        ]),
+      });
+
+      // Door 1 — validate: findings as data, never throws. The shape CI wants.
+      const result = decision.validate(src, { path: "decisions/D-0001.md" });
+      result.findings;   // Finding[] — every plane, sorted by source position
+      result.doc;        // the typed model, present iff no error-level finding
+
+      // Door 2 — read: the typed model, or a thrown ContractError. The shape a consumer wants.
+      const doc = decision.read(src, { path: "decisions/D-0001.md" });
+      doc.frontmatter.status;   // "proposed" | "accepted" — typed by the schema above
+      doc.body.Summary.text();  // the Summary section's prose, keyed by its heading
+    surfaces:
+      - "contract() with a Zod frontmatter schema"
+      - "validate() vs read()"
+      - "typed frontmatter and section text"
+
+  - id: read-02
+    name: "Tables as typed rows"
+    demonstrates: "A `table` leaf with cell schemas reads back as an iterable of typed rows — no cell parsing in the consumer."
+    rank: 2
+    builds_on: read-01
+    artifact_kind: code
+    artifact: |
+      import { contract, sections, section, table } from "markdown-contract";
+      import { z } from "zod";
+
+      const runbook = contract({
+        body: sections({ order: "none", allowUnknown: true }, [
+          section("Ports", {
+            content: table({
+              columns: ["Name", "Port"],
+              minRows: 1,
+              cells: { Port: z.coerce.number().int() },
+            }),
+          }),
+        ]),
+      });
+
+      const doc = runbook.read(src, { path: "runbooks/api.md" });
+
+      // The section's sole content is a table, so its key IS the table view.
+      const ports = doc.body.Ports;
+      for (const row of ports) {
+        row.Name;                          // string — raw cell text
+        row.Port;                          // number — the cells schema typed it
+      }
+      ports.column("Name");                // one column, across all rows
+      ports.find((r) => r.Port === 8080);  // the first matching row
+      ports.rowPos(0);                     // source position of the first data row
+    surfaces:
+      - "table leaf with cell schemas"
+      - "TableView iteration, column(), find()"
+      - "table promotion (the heading is the table)"
+      - "row positions for follow-up findings"
+
+  - id: read-03
+    name: "Anchors make blocks addressable"
+    demonstrates: "A line-terminal `^block-id` names a block; a contract can require it, and a consumer can resolve it to the block's typed view."
+    rank: 3
+    builds_on: read-01
+    artifact_kind: code
+    artifact: |
+      import { contract, sections, section } from "markdown-contract";
+
+      // The document marks its rollback command with an anchor:
+      //
+      //   ## Rollback
+      //
+      //   ~~~sh
+      //   helm rollback api 41
+      //   ~~~
+      //   ^rollback-cmd
+      //
+      const runbook = contract({
+        body: sections({ order: "none", allowUnknown: true }, [
+          section("Rollback", { anchor: "rollback-cmd" }), // absent anchor = finding
+        ]),
+      });
+
+      const doc = runbook.read(src, { path: "runbooks/api.md" });
+
+      const block = doc.byAnchor("rollback-cmd");
+      if (block?.kind === "code") {
+        block.lang;   // "sh"
+        block.value;  // the fenced command, verbatim
+      }
+    surfaces:
+      - "^block-id anchors (dialect)"
+      - "anchor requirements in a contract"
+      - "doc.byAnchor() and kind-discriminated BlockView"
+
+  - id: read-04
+    name: "Navigate without a contract"
+    demonstrates: "`parse()` alone projects a document into a positioned section tree — navigation helpers and verbatim table cells, no contract required."
+    rank: 4
+    builds_on: read-01
+    artifact_kind: code
+    artifact: |
+      import { parse, findSection, blocksOfKind, rawTableRows } from "markdown-contract";
+
+      // No contract: one parse projects the document into a positioned tree.
+      const tree = parse(src);
+
+      tree.frontmatter?.data;   // parsed YAML frontmatter (untyped)
+      tree.root.sections;       // top-level sections, each knowing its source line
+      tree.mdast;               // the raw mdast, if you need to drop a level
+
+      const ports = findSection(tree.root, "Ports");
+      const [tbl] = ports ? blocksOfKind(ports, "table") : [];
+      if (tbl) {
+        // verbatim cells re-split from source — inline markup intact
+        const { header, rows } = rawTableRows(tbl, src);
+      }
+    surfaces:
+      - "parse() → DocTree projection"
+      - "findSection / blocksOfKind navigation helpers"
+      - "rawTableRows source-faithful cells"

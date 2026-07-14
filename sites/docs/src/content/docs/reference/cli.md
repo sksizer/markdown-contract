@@ -5,7 +5,7 @@ description: Complete reference for the markdown-contract command-line interface
 
 The `markdown-contract` binary has two subcommands: [`validate`](#validate) (check a tree of markdown against a contract) and [`init`](#init) (infer a starter contract from existing markdown). Both share the same glob-scoping flags and the same three-value [exit-code](#exit-codes) convention.
 
-This page is the exhaustive flag reference. For task-shaped walkthroughs see [/examples/cli/](/examples/cli/), [/examples/inference-init/](/examples/inference-init/), and [/examples/embed-and-ci/](/examples/embed-and-ci/).
+This page is the exhaustive flag reference. For task-shaped walkthroughs see the [validate](/appendix/examples/validate/) and [automate](/appendix/examples/automate/) example groups.
 
 ## Overview
 
@@ -153,7 +153,7 @@ After writing, `init` loads each root's contracts back and runs them over that r
 - exit `1` — some document drifted from the inferred shape (an error-level finding)
 - exit `2` — no config exists to check, or a config/usage error
 
-This is the guard to wire into CI: run `init <dir> --check` and let a non-zero exit fail the build. See [/examples/embed-and-ci/](/examples/embed-and-ci/).
+This is the guard to wire into CI: run `init <dir> --check` and let a non-zero exit fail the build. See the [automate examples](/appendix/examples/automate/).
 
 ### Examples
 
@@ -194,7 +194,7 @@ docs/api.md:12 error structure/section-missing — required section "Parameters"
 
 ### json
 
-The `Finding[]` array serialized with two-space indent, exactly as the runner returns it. Stable and `JSON.parse`-round-trippable — this is the format to consume programmatically. See [/reference/model/](/reference/model/) and [/examples/consume-as-data/](/examples/consume-as-data/).
+The `Finding[]` array serialized with two-space indent, exactly as the runner returns it. Stable and `JSON.parse`-round-trippable — this is the format to consume programmatically. See [/reference/model/](/reference/model/) and the [read examples](/appendix/examples/read/).
 
 ### sarif
 
@@ -216,4 +216,4 @@ markdown-contract validate docs --format sarif > results.sarif || {
 }
 ```
 
-See [/examples/embed-and-ci/](/examples/embed-and-ci/) for a full CI recipe, and [/how-it-works/](/how-it-works/) for how the runner produces the findings this CLI reports.
+See the [automate examples](/appendix/examples/automate/) for a full CI recipe, and [/how-it-works/](/how-it-works/) for how the runner produces the findings this CLI reports.
