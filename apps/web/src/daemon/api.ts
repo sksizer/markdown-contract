@@ -215,6 +215,7 @@ type IdRequest = BunRequest<"/api/vaults/:id">;
 type ScanRunIdRequest = BunRequest<"/api/scan-runs/:id">;
 type FindingIdRequest = BunRequest<"/api/finding-records/:id">;
 type OpenerPrefIdRequest = BunRequest<"/api/opener-preferences/:id">;
+type VaultStatusIdRequest = BunRequest<"/api/vault-status/:id">;
 
 /** The full route table `Bun.serve` mounts; `fetch` handles everything not listed here. */
 export function buildRoutes(ctx: DaemonContext) {
@@ -266,6 +267,24 @@ export function buildRoutes(ctx: DaemonContext) {
         ctx.disarmWatch(id);
         ctx.store.drop(id);
         return noContent(req);
+      },
+    },
+
+    // ── editor read model: rich VaultStatus (kept — apps/web/ui dashboard) ──
+    // The ontogen `/api/vaults` routes return the identity-only `Vault`; the
+    // editor still renders derived pass/fail + findings, so it reads that here.
+    // This is a JOIN over the registry (identity) and the StatusStore (derived
+    // live status) — the shape the ontogen contract would eventually express as
+    // a `Vault` + its latest `ScanRun`. Read-only; mutations go via ontogen CRUD.
+    "/api/vault-status": {
+      GET: (req: Request) => json(req, ctx.store.snapshot(ctx.registry.list())),
+    },
+    "/api/vault-status/:id": {
+      GET: (req: VaultStatusIdRequest) => {
+        const entry = ctx.registry.get(req.params.id);
+        return entry
+          ? json(req, ctx.store.statusOf(entry))
+          : fail(req, 404, `unknown vault: ${req.params.id}`);
       },
     },
 

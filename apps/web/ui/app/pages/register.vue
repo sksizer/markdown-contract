@@ -21,7 +21,7 @@ const error = ref("");
 
 async function reload(): Promise<void> {
   try {
-    vaults.value = (await api.listVaults()).vaults;
+    vaults.value = await api.listVaults();
   } catch (err) {
     error.value = apiErrorMessage(err);
   }

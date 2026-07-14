@@ -37,16 +37,23 @@ export function apiErrorMessage(err: unknown): string {
 export function useApi() {
   const base = useApiBase();
   return {
-    // NOTE: the daemon's base `/api/vaults` routes now return the flat ontogen
-    // `Vault` shape (backend convergence); these legacy method types are the
-    // pre-convergence envelopes, inlined here — this composable is slated for
-    // migration onto the shared-dashboard transport (`useVaults` in the layer).
-    listVaults: () => $fetch<{ vaults: VaultStatus[] }>(`${base}/api/vaults`),
-    getVault: (id: string) => $fetch<{ vault: VaultStatus }>(`${base}/api/vaults/${id}`),
+    // The ontogen `/api/vaults` CRUD returns the identity-only `Vault`; the editor
+    // renders the DERIVED status (state + findings + drift), so list/detail read the
+    // daemon's `/api/vault-status` read model (a join of registry identity + live
+    // status). Mutations (register/remove) still go to the ontogen CRUD routes —
+    // their responses are unused here — mapping `configPath` → ontogen `config_path`.
+    listVaults: () => $fetch<VaultStatus[]>(`${base}/api/vault-status`),
+    getVault: (id: string) => $fetch<VaultStatus>(`${base}/api/vault-status/${id}`),
     registerVault: (body: RegisterVaultRequest) =>
-      $fetch<{ vault: VaultStatus }>(`${base}/api/vaults`, { method: "POST", body }),
-    removeVault: (id: string) =>
-      $fetch<{ ok: true; id: string }>(`${base}/api/vaults/${id}`, { method: "DELETE" }),
+      $fetch(`${base}/api/vaults`, {
+        method: "POST",
+        body: {
+          name: body.name,
+          path: body.path,
+          ...(body.configPath ? { config_path: body.configPath } : {}),
+        },
+      }),
+    removeVault: (id: string) => $fetch(`${base}/api/vaults/${id}`, { method: "DELETE" }),
     validateVault: (id: string) =>
       $fetch<ValidateResponse>(`${base}/api/vaults/${id}/validate`, { method: "POST" }),
     checkVault: (id: string) => $fetch<CheckResponse>(`${base}/api/vaults/${id}/check`),

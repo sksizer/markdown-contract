@@ -50,7 +50,7 @@ const vault = computed<VaultStatus | undefined>(() => loaded.value);
 
 async function load(): Promise<void> {
   try {
-    loaded.value = (await api.getVault(routeId)).vault;
+    loaded.value = await api.getVault(routeId);
   } catch {
     loaded.value = undefined;
   } finally {
