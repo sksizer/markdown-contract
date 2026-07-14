@@ -36,10 +36,12 @@ import type {
   WatchResponse,
 } from "../../types/api";
 import type {
+  ConfigFiles,
   CreateFindingRecordInput,
   CreateOpenerPreferenceInput,
   CreateScanRunInput,
   CreateVaultInput,
+  DriftResult,
   FindingRecord,
   OpenerPreference,
   ScanRun,
@@ -47,6 +49,7 @@ import type {
   UpdateOpenerPreferenceInput,
   UpdateScanRunInput,
   UpdateVaultInput,
+  VaultConfig,
 } from "../../types/ontogen";
 import { ConfigError, listConfigFiles, readConfig, saveConfig, saveConfigFile } from "./config";
 import type { DaemonContext } from "./daemon";
@@ -103,6 +106,44 @@ async function readJson<T>(req: Request): Promise<T | null> {
   } catch {
     return null;
   }
+}
+
+// ── ontogen custom-action aliases (D-0019 workstream B) ──
+// The generated `Transport` calls POST /api/{checks,configs/*}; these serve them
+// as thin aliases over the SAME runs/config handlers the legacy REST routes use,
+// mapping the camelCase seam (`parseError`, `relPath`) to ontogen snake_case
+// (`parse_error`, `rel_path`). Retires nothing yet — the legacy routes stay for
+// the not-yet-migrated call sites — but lets the editor speak the contract.
+
+/** legacy `VaultConfigResponse` → ontogen `VaultConfig`. */
+function toOntogenConfig(c: VaultConfigResponse): VaultConfig {
+  return { exists: c.exists, raw: c.raw, parse_error: c.parseError };
+}
+
+/** legacy `ConfigFilesResponse` → ontogen `ConfigFiles`. */
+function toOntogenConfigFiles(c: ConfigFilesResponse): ConfigFiles {
+  return {
+    files: c.files.map((f) => ({
+      rel_path: f.relPath,
+      kind: f.kind,
+      exists: f.exists,
+      raw: f.raw,
+      parse_error: f.parseError,
+    })),
+  };
+}
+
+/** Read `{ vault_id }` from a POST body and resolve the registry entry, or the
+ * error response to return. The ontogen actions are body-addressed (no `:id`). */
+async function entryFromBody(
+  req: Request,
+  ctx: DaemonContext,
+): Promise<{ entry: VaultRegistryEntry } | { error: Response }> {
+  const body = await readJson<{ vault_id?: unknown }>(req);
+  const id = body?.vault_id;
+  if (typeof id !== "string") return { error: fail(req, 400, "body must be JSON: { vault_id }") };
+  const entry = ctx.registry.get(id);
+  return entry ? { entry } : { error: fail(req, 404, `unknown vault: ${id}`) };
 }
 
 // ── generic ontogen collection handlers (scan-runs / finding-records / opener-preferences) ──
@@ -534,6 +575,91 @@ export function buildRoutes(ctx: DaemonContext) {
           id: entry.id,
           watching: ctx.watcher.watching(entry.id),
         } satisfies WatchResponse);
+      },
+    },
+
+    // ── ontogen action routes (D-0019 workstream B — the generated Transport's
+    // body-addressed POST actions, aliased over the SAME handlers the legacy
+    // /api/vaults/:id/{check,config,config/files} REST routes use) ──
+    "/api/checks": {
+      POST: async (req: Request) => {
+        const r = await entryFromBody(req, ctx);
+        if ("error" in r) return r.error;
+        try {
+          const drift = checkVault(r.entry);
+          const status = ctx.store.markChecked(r.entry, drift);
+          ctx.hub.emit({ type: "drift", vaultId: r.entry.id, drift });
+          ctx.hub.emit({ type: "status", vaultId: r.entry.id, state: status.state });
+          return json(req, drift satisfies DriftResult);
+        } catch (err) {
+          return failFrom(req, err);
+        }
+      },
+    },
+
+    "/api/configs/read": {
+      POST: async (req: Request) => {
+        const r = await entryFromBody(req, ctx);
+        if ("error" in r) return r.error;
+        try {
+          return json(req, toOntogenConfig(readConfig(r.entry)));
+        } catch (err) {
+          return failFrom(req, err);
+        }
+      },
+    },
+
+    "/api/configs/save": {
+      POST: async (req: Request) => {
+        const body = await readJson<{ vault_id?: unknown; raw?: unknown }>(req);
+        if (typeof body?.vault_id !== "string" || typeof body?.raw !== "string") {
+          return fail(req, 400, "body must be JSON: { vault_id, raw }");
+        }
+        const entry = ctx.registry.get(body.vault_id);
+        if (!entry) return fail(req, 404, `unknown vault: ${body.vault_id}`);
+        try {
+          saveConfig(entry, body.raw);
+          ctx.store.markRunning(entry);
+          queueMicrotask(() => void ctx.revalidate(entry).catch(() => {}));
+          return noContent(req);
+        } catch (err) {
+          return failFrom(req, err);
+        }
+      },
+    },
+
+    "/api/configs/files": {
+      POST: async (req: Request) => {
+        const r = await entryFromBody(req, ctx);
+        if ("error" in r) return r.error;
+        try {
+          return json(req, toOntogenConfigFiles(listConfigFiles(r.entry)));
+        } catch (err) {
+          return failFrom(req, err);
+        }
+      },
+    },
+
+    "/api/configs/save-config-file": {
+      POST: async (req: Request) => {
+        const body = await readJson<{ vault_id?: unknown; rel_path?: unknown; raw?: unknown }>(req);
+        if (
+          typeof body?.vault_id !== "string" ||
+          typeof body?.rel_path !== "string" ||
+          typeof body?.raw !== "string"
+        ) {
+          return fail(req, 400, "body must be JSON: { vault_id, rel_path, raw }");
+        }
+        const entry = ctx.registry.get(body.vault_id);
+        if (!entry) return fail(req, 404, `unknown vault: ${body.vault_id}`);
+        try {
+          saveConfigFile(entry, body.rel_path, body.raw);
+          ctx.store.markRunning(entry);
+          queueMicrotask(() => void ctx.revalidate(entry).catch(() => {}));
+          return noContent(req);
+        } catch (err) {
+          return failFrom(req, err);
+        }
       },
     },
   };

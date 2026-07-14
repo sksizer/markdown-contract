@@ -174,3 +174,46 @@ export type OpenerInfo = {
   accepts_markdown: boolean;
   sort_order: number;
 };
+
+// ── ontogen custom-action DTOs (D-0019 workstream B) ──────────────────────────
+// The action routes the generated `Transport` calls, which this daemon serves as
+// thin aliases over its existing runs/config handlers (mapping the legacy
+// camelCase seam to these snake_case ontogen shapes):
+//   POST /api/checks                    { vault_id }            → DriftResult
+//   POST /api/configs/read              { vault_id }            → VaultConfig
+//   POST /api/configs/save             { vault_id, raw }       → 204
+//   POST /api/configs/files             { vault_id }            → ConfigFiles
+//   POST /api/configs/save-config-file { vault_id, rel_path, raw } → 204
+
+/** Drift check result — structurally identical to the legacy `DriftResult`
+ * (`kind` widened to string, the ontogen DTO shape). */
+export type DriftEntry = {
+  kind: string;
+  target: string;
+  detail: string;
+};
+
+export type DriftResult = {
+  drifted: boolean;
+  entries: DriftEntry[];
+  warnings: string[];
+};
+
+/** A vault's router config file, read verbatim (snake_case `parse_error`). */
+export type VaultConfig = {
+  exists: boolean;
+  raw: string;
+  parse_error: string | null;
+};
+
+export type ConfigFileEntry = {
+  rel_path: string;
+  kind: string;
+  exists: boolean;
+  raw: string;
+  parse_error: string | null;
+};
+
+export type ConfigFiles = {
+  files: ConfigFileEntry[];
+};
