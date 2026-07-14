@@ -47,17 +47,42 @@ decision.validate(src, { path: "D-0001.md" }); // findings with path:line positi
 decision.read(src, { path: "D-0001.md" });     // the typed model, or a thrown ContractError
 ```
 
-Contracts can also be pure YAML — no code — and a config file maps directories
-and globs to contracts, so validating a whole tree is configuration:
+## The layers
 
-```sh
-markdown-contract validate ./docs                  # 0 clean, 1 findings, 2 usage error
-markdown-contract init ./docs                      # infer a config from existing docs
-markdown-contract validate ./docs --format sarif   # feed code scanning
-```
+Everything rides on one contract engine, and the surface stacks in layers —
+adopt the bottom one in minutes with zero code, and climb as your needs grow:
 
-This repository dogfoods it: the planning corpus under `docs/planning/` (~190
-documents across six contracts) is validated by the tool itself.
+1. **Declarative validation from the CLI.** Contracts and corpus config in
+   pure YAML — no code — and one command:
+
+   ```sh
+   markdown-contract validate ./docs                  # 0 clean, 1 findings, 2 usage error
+   markdown-contract validate ./docs --format sarif   # feed code scanning
+   ```
+
+2. **TypeScript contracts with runtime rule injection.** The code API adds
+   what data can't express: arbitrary Zod schemas, nested grammars, and named
+   rules (`rule`, `docRule`, `requires`/`forbids`) injected at runtime for
+   cross-cutting policy — a frontmatter field gating a body section, a phrase
+   that must never appear.
+3. **An inferred typed model.** The contract *types* what it checks: `read()`
+   returns a typed `Doc` — frontmatter, section prose, iterable table rows —
+   with no re-parsing and no second definition to drift.
+4. **Template generation** *(in progress)*. A contract already declares a
+   document's full shape — frontmatter fields, section order, table columns —
+   so the same declaration can emit a valid, empty skeleton for new documents:
+   the authoring dual of validation.
+5. **Contract inference.** `markdown-contract init` reads an existing corpus
+   and writes the tightest config that accepts it; `--check` turns the same
+   inference into a CI drift guard.
+6. **A UI over the engine.** The `daemon` vault dashboard and the desktop app
+   watch folders and show live validation status, for the people on a team who
+   never open a terminal.
+
+This repository dogfoods layer 1: the planning corpus under `docs/planning/`
+(~190 documents across six contracts) is validated by the tool itself. The
+[documentation site](https://markdown-contract-docs.pages.dev/) walks every
+layer — guides, a full reference, and an appendix of verified examples.
 
 ## Architecture
 
