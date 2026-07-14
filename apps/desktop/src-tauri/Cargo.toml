@@ -46,6 +46,10 @@ tauri-plugin-opener = "2"
 tauri-plugin-notification = "2"
 serde = { workspace = true }
 serde_json = { workspace = true }
+# Tolerant YAML parse for the config-files editor: enumerating a router's
+# referenced `*.contract.yaml` files must work even over a doc the engine's
+# strict loader would reject (mirrors the Bun daemon's plain-`yaml` discovery).
+serde_yaml = { workspace = true }
 # Generated persistence: SeaORM over SQLite (scan history — the layer D-0012 deferred).
 sea-orm = { version = "1", features = ["sqlx-sqlite", "runtime-tokio-rustls"] }
 # `time` for the watcher debounce + scheduler sleeps; `rt` for spawn_blocking

@@ -2,6 +2,8 @@
 //! entity, in generated/) plus the hand-written custom endpoints beside them.
 //! ontogen scans this directory and emits a handler per transport for every
 //! function here — hand-written logic is never duplicated per transport.
+pub mod check;
+pub mod config;
 pub mod echo;
 pub mod generated;
 pub mod openers;
