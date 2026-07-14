@@ -18,6 +18,7 @@ import type {
   UpdateScanRunInput,
   UpdateVaultInput,
   Vault,
+  VaultStatus,
 } from "./types";
 
 // ── Transport Interface ──
@@ -48,6 +49,8 @@ export interface Transport {
   openPath(path: string, appId: string): Promise<null>;
   previewOpen(path: string, appId: string): Promise<OpenPreview>;
   scanNow(vaultId: string): Promise<ScanRun>;
+  vaultStatuses(): Promise<VaultStatus[]>;
+  vaultStatus(vaultId: string): Promise<VaultStatus>;
 }
 
 // ── HTTP Helpers ──
@@ -180,10 +183,21 @@ export function createHttpTransport(): Transport {
       return null;
     },
     async previewOpen(path: string, appId: string): Promise<OpenPreview> {
-      return httpPost<OpenPreview>("/openers/preview-open", { path, app_id: appId });
+      return httpPost<OpenPreview>("/openers/preview-open", {
+        path,
+        app_id: appId,
+      });
     },
     async scanNow(vaultId: string): Promise<ScanRun> {
       return httpPost<ScanRun>("/scans/now", { vault_id: vaultId });
+    },
+    async vaultStatuses(): Promise<VaultStatus[]> {
+      return httpPost<VaultStatus[]>("/vault-statuses");
+    },
+    async vaultStatus(vaultId: string): Promise<VaultStatus> {
+      return httpPost<VaultStatus>("/vault-statuses/by-id", {
+        vault_id: vaultId,
+      });
     },
   };
 }

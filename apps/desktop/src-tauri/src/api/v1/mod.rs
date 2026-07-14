@@ -6,4 +6,5 @@ pub mod echo;
 pub mod generated;
 pub mod openers;
 pub mod scan;
+pub mod vault_status;
 pub use generated::*;

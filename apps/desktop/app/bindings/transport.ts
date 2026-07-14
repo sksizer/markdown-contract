@@ -16,6 +16,7 @@ import type {
   UpdateScanRunInput,
   UpdateVaultInput,
   Vault,
+  VaultStatus,
 } from "./types";
 
 import { invoke } from "@tauri-apps/api/core";
@@ -56,6 +57,8 @@ export interface Transport {
   openPath(path: string, appId: string): Promise<null>;
   previewOpen(path: string, appId: string): Promise<OpenPreview>;
   scanNow(vaultId: string): Promise<ScanRun>;
+  vaultStatuses(): Promise<VaultStatus[]>;
+  vaultStatus(vaultId: string): Promise<VaultStatus>;
 }
 
 // ── HTTP Helpers ──
@@ -231,6 +234,14 @@ export function createHttpTransport(): Transport {
     async scanNow(vaultId: string): Promise<ScanRun> {
       return httpPost<ScanRun>("/scans/now", { vault_id: vaultId });
     },
+    async vaultStatuses(): Promise<VaultStatus[]> {
+      return httpPost<VaultStatus[]>("/vault-statuses");
+    },
+    async vaultStatus(vaultId: string): Promise<VaultStatus> {
+      return httpPost<VaultStatus>("/vault-statuses/by-id", {
+        vault_id: vaultId,
+      });
+    },
   };
 }
 
@@ -330,6 +341,12 @@ export function createIpcTransport(): Transport {
     },
     async scanNow(vaultId: string): Promise<ScanRun> {
       return invoke("scan_now", { vaultId });
+    },
+    async vaultStatuses(): Promise<VaultStatus[]> {
+      return invoke("vault_statuses");
+    },
+    async vaultStatus(vaultId: string): Promise<VaultStatus> {
+      return invoke("vault_status", { vaultId });
     },
   };
 }

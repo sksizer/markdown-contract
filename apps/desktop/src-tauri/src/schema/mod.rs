@@ -8,6 +8,7 @@ mod opener_preference;
 mod openers;
 mod scan_run;
 mod vault;
+mod vault_status;
 
 pub mod dto;
 
@@ -16,6 +17,7 @@ pub use opener_preference::OpenerPreference;
 pub use openers::{OpenPreview, OpenerInfo};
 pub use scan_run::ScanRun;
 pub use vault::Vault;
+pub use vault_status::{ScanRunInfo, StatusFinding, VaultInfo, VaultStatus};
 
 // Re-export DTOs at the schema level (generated code imports from crate::schema::).
 pub use dto::finding_record::{CreateFindingRecordInput, UpdateFindingRecordInput};

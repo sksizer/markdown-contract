@@ -15,11 +15,13 @@ use axum::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::api::v1::{echo, finding_record, opener_preference, openers, scan, scan_run, vault};
+use crate::api::v1::{
+    echo, finding_record, opener_preference, openers, scan, scan_run, vault, vault_status,
+};
 use crate::schema::{
     CreateFindingRecordInput, CreateOpenerPreferenceInput, CreateScanRunInput, CreateVaultInput,
     FindingRecord, OpenPreview, OpenerInfo, OpenerPreference, ScanRun, UpdateFindingRecordInput,
-    UpdateOpenerPreferenceInput, UpdateScanRunInput, UpdateVaultInput, Vault,
+    UpdateOpenerPreferenceInput, UpdateScanRunInput, UpdateVaultInput, Vault, VaultStatus,
 };
 use crate::store::Store;
 use crate::AppState;
@@ -335,6 +337,32 @@ async fn scan_now(
         .map_err(|e| err(e.to_string()))
 }
 
+// ── Vault_status Handlers ──
+
+async fn vault_statuses(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<VaultStatus>>, ApiError> {
+    vault_status::vault_statuses(&state)
+        .await
+        .map(Json)
+        .map_err(|e| err(e.to_string()))
+}
+
+#[derive(Deserialize)]
+struct VaultStatusVaultStatusByIdBody {
+    vault_id: String,
+}
+
+async fn vault_status(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<VaultStatusVaultStatusByIdBody>,
+) -> Result<Json<VaultStatus>, ApiError> {
+    vault_status::vault_status_by_id(&state, body.vault_id)
+        .await
+        .map(Json)
+        .map_err(|e| err(e.to_string()))
+}
+
 /// Generated routes. Call this from your main router.
 pub fn entity_routes() -> Router<Arc<AppState>> {
     Router::new()
@@ -375,4 +403,6 @@ pub fn entity_routes() -> Router<Arc<AppState>> {
         .route("/api/openers/open-path", post(open_path))
         .route("/api/openers/preview-open", post(preview_open))
         .route("/api/scans/now", post(scan_now))
+        .route("/api/vault-statuses", post(vault_statuses))
+        .route("/api/vault-statuses/by-id", post(vault_status))
 }
