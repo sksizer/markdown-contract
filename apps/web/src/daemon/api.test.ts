@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import type { VaultStatus } from "../../types/api";
 import type { FindingRecord, OpenerPreference, ScanRun, Vault } from "../../types/ontogen";
 import { startDaemon } from "./daemon";
 
@@ -129,6 +130,32 @@ describe("scan-runs + finding-records collections", () => {
     // fetchable by id, 404 otherwise
     expect(await getJson<ScanRun>(`/api/scan-runs/${run.id}`)).toMatchObject({ id: run.id });
     expect((await fetch(`${base}/api/scan-runs/nope`)).status).toBe(404);
+  });
+});
+
+describe("GET /api/vault-status (editor read model — identity + derived status)", () => {
+  test("returns rich VaultStatus[] with live state after a scan", async () => {
+    const statuses = await getJson<VaultStatus[]>("/api/vault-status");
+    const status = statuses.find((s) => s.id === vaultId);
+    // camelCase identity (unlike the ontogen snake_case Vault) + the DERIVED status
+    // the dashboard renders — the join `/api/vaults` (identity only) can't provide.
+    expect(status).toMatchObject({
+      id: vaultId,
+      name: "Fixture",
+      path: vaultDir,
+      state: "findings", // the fixture's one error finding, surfaced by the earlier scan
+    });
+    expect(status?.result?.findings?.[0]).toMatchObject({ id: "structure/section-missing" });
+  });
+
+  test("GET /api/vault-status/:id returns one status; 404s an unknown id", async () => {
+    expect(await getJson<VaultStatus>(`/api/vault-status/${vaultId}`)).toMatchObject({
+      id: vaultId,
+      name: "Fixture",
+    });
+    const res = await fetch(`${base}/api/vault-status/nope`);
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "unknown vault: nope" });
   });
 });
 

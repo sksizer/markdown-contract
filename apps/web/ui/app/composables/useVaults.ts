@@ -71,7 +71,7 @@ export function useVaults(): VaultsStore {
 
   async function refresh(): Promise<void> {
     try {
-      vaults.value = (await api.listVaults()).vaults;
+      vaults.value = await api.listVaults();
       loadError.value = "";
     } catch (err) {
       loadError.value = apiErrorMessage(err);
