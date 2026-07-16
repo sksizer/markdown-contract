@@ -151,8 +151,11 @@ function transformObjectSchema(cx: Cx, node: YAMLMap, path: string): void {
 
   // Assemble in canonical order: type, required, additionalProperties, properties.
   const typeAt = node.items.findIndex((p) => keyOf(p) === "type");
-  let at = typeAt >= 0 ? typeAt + 1 : 0;
-  if (typeAt < 0) insertPair(cx, node, "type", "object", at - 1 >= 0 ? at - 1 : 0), at++;
+  let at = typeAt + 1;
+  if (typeAt < 0) {
+    insertPair(cx, node, "type", "object", 0);
+    at = 1;
+  }
   if (required.length > 0) {
     const p = insertPair(cx, node, "required", null, at++);
     p.value = flowSeq(cx, required);
