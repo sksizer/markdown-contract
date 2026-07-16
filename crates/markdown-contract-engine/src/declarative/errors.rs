@@ -18,7 +18,7 @@ pub enum DeclarativeError {
     InvalidDocument(String),
 
     /// an `mcVersion` outside the supported set — never best-effort parsed
-    #[error("unsupported mcVersion: {0} (this build supports 1)")]
+    #[error("unsupported mcVersion: {0} (this build supports 1, 2)")]
     UnsupportedVersion(String),
 
     /// a `kind` that is neither `contract` nor `config`
@@ -73,10 +73,10 @@ mod tests {
             e.to_string(),
             "frontmatter.id: the code escape hatch ($ref) is deferred and not supported in v1 (see D-0008 § Out of scope)"
         );
-        let e = DeclarativeError::UnsupportedVersion("2".into());
+        let e = DeclarativeError::UnsupportedVersion("3".into());
         assert_eq!(
             e.to_string(),
-            "unsupported mcVersion: 2 (this build supports 1)"
+            "unsupported mcVersion: 3 (this build supports 1, 2)"
         );
         let e = DeclarativeError::CodeContractRef {
             path: "rules[0].contract".into(),

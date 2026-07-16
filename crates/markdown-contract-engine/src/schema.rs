@@ -12,8 +12,9 @@
 //! Values are `serde_json::Value`s (the YAML → JS `toJS()` fidelity target); "undefined"
 //! — a missing key — is modelled as `None`, distinct from JSON `null`.
 //!
-//! The YAML → [`Schema`] compiler lives in [`crate::declarative::schema`]; this module
-//! is the runtime only.
+//! The YAML → [`Schema`] compilers live in [`crate::declarative::schema`] (v1) and
+//! [`crate::declarative::schema_v2`] (the D-0020 JSON Schema subset); this module is
+//! the runtime only.
 
 use regex::Regex;
 
@@ -138,8 +139,16 @@ pub enum Schema {
         max: Option<f64>,
         pattern: Option<Regex>,
     },
-    /// `type: string` + `format: <name>` — a named zod string format
-    Format(StringFormat),
+    /// `type: string` + `format: <name>` — a named zod string format. In v2 (D-0020)
+    /// the format COMPOSES with `minLength` / `maxLength` / `pattern` — the chained
+    /// `z.email().min(…).regex(…)` — so the bounds and pattern ride along; v1 compiles
+    /// the format alone (the other slots stay `None`).
+    Format {
+        format: StringFormat,
+        min: Option<f64>,
+        max: Option<f64>,
+        pattern: Option<Regex>,
+    },
     /// `type: number` (`int: true` for integers) with optional `min` / `max`
     Number {
         int: bool,
@@ -168,6 +177,12 @@ pub enum Schema {
     Default(Box<Schema>),
     /// `optional: true` — a missing value passes
     Optional(Box<Schema>),
+    /// a v2 `description:` (D-0020) — an annotation wrapper carried for `Finding.hint`;
+    /// validation delegates to the inner schema untouched
+    Described {
+        inner: Box<Schema>,
+        description: String,
+    },
 }
 
 impl Schema {
@@ -182,6 +197,56 @@ impl Schema {
             Err(issues)
         }
     }
+}
+
+// ── Description resolution (v2 `description:` → `Finding.hint`, D-0020) ─────────────
+
+/// Unwrap the annotation / value wrappers down to the structural node, recording the
+/// deepest `description` passed on the way into `best`.
+fn unwrap_describing<'a>(mut schema: &'a Schema, best: &mut Option<&'a str>) -> &'a Schema {
+    loop {
+        match schema {
+            Schema::Described { inner, description } => {
+                *best = Some(description);
+                schema = inner;
+            }
+            Schema::Optional(inner) | Schema::Default(inner) | Schema::Nullable(inner) => {
+                schema = inner;
+            }
+            other => return other,
+        }
+    }
+}
+
+/// The schema node's own `description`, if any (wrappers unwrapped) — the leaf-level
+/// hint source for table cells and list items.
+pub fn schema_root_description(schema: &Schema) -> Option<&str> {
+    let mut best = None;
+    unwrap_describing(schema, &mut best);
+    best
+}
+
+/// The nearest enclosing `description` for an issue at `path`: walk the compiled schema
+/// from the root along the path, and return the DEEPEST description seen (the failing
+/// field's own, else its closest ancestor's). A path segment that does not resolve (an
+/// unknown key on a strict object) stops the walk and keeps what was collected.
+pub fn description_along_path<'a>(schema: &'a Schema, path: &[PathSeg]) -> Option<&'a str> {
+    let mut best = None;
+    let mut node = unwrap_describing(schema, &mut best);
+    for seg in path {
+        let next = match (node, seg) {
+            (Schema::Object { fields, .. }, PathSeg::Key(k)) => {
+                match fields.iter().find(|(key, _)| key == k) {
+                    Some((_, field)) => field,
+                    None => return best,
+                }
+            }
+            (Schema::Array { of, .. }, PathSeg::Index(_)) => of,
+            _ => return best,
+        };
+        node = unwrap_describing(next, &mut best);
+    }
+    best
 }
 
 /// The JS `typeof`-style type name of a value (distinguishing null and array from
@@ -231,10 +296,16 @@ fn check(
             }
             check(inner, value, path, issues);
         }
+        Schema::Described { inner, .. } => check(inner, value, path, issues),
         Schema::String { min, max, pattern } => {
             check_string(value, *min, *max, pattern.as_ref(), path, issues)
         }
-        Schema::Format(format) => check_format(value, format, path, issues),
+        Schema::Format {
+            format,
+            min,
+            max,
+            pattern,
+        } => check_format(value, format, *min, *max, pattern.as_ref(), path, issues),
         Schema::Number { int, min, max } => check_number(value, *int, *min, *max, path, issues),
         Schema::Boolean => {
             if !matches!(value, Some(serde_json::Value::Bool(_))) {
@@ -312,9 +383,15 @@ fn check_string(
     }
 }
 
+/// The named-format string check, with the v2 composed constraints chained after it in
+/// zod's registration order (the format is the constructor's own check, then `.min()` /
+/// `.max()` / `.regex()`): each violated constraint reports its own issue.
 fn check_format(
     value: Option<&serde_json::Value>,
     format: &StringFormat,
+    min: Option<f64>,
+    max: Option<f64>,
+    pattern: Option<&Regex>,
     path: &[PathSeg],
     issues: &mut Vec<Issue>,
 ) {
@@ -328,6 +405,28 @@ fn check_format(
             path,
             IssueKind::InvalidFormat {
                 format: format.name().into(),
+            },
+        );
+    }
+    let len = utf16_len(s) as f64;
+    if let Some(min) = min
+        && len < min
+    {
+        issue(issues, path, IssueKind::TooSmall);
+    }
+    if let Some(max) = max
+        && len > max
+    {
+        issue(issues, path, IssueKind::TooBig);
+    }
+    if let Some(re) = pattern
+        && !re.is_match(s)
+    {
+        issue(
+            issues,
+            path,
+            IssueKind::InvalidFormat {
+                format: "regex".into(),
             },
         );
     }
@@ -863,6 +962,96 @@ mod tests {
         assert!(!StringFormat::E164.is_match("+04155550132"));
         assert!(StringFormat::Emoji.is_match("🎉"));
         assert!(!StringFormat::Emoji.is_match("x"));
+    }
+
+    // v2 composition (D-0020): one string schema carries a named format AND bounds AND
+    // a pattern; every violated constraint reports its own issue, in zod's chained order.
+    #[test]
+    fn format_composes_with_bounds_and_pattern() {
+        let s = Schema::Format {
+            format: StringFormat::Email,
+            min: Some(30.0),
+            max: None,
+            pattern: Some(Regex::new("^ops-").unwrap()),
+        };
+        assert!(
+            s.safe_parse(Some(&json!("ops-team+alerts@example-corp.com")))
+                .is_ok()
+        );
+        let issues = kinds(&s, &json!("not an email"));
+        assert_eq!(
+            issues.iter().map(|i| i.kind.clone()).collect::<Vec<_>>(),
+            vec![
+                IssueKind::InvalidFormat {
+                    format: "email".into()
+                },
+                IssueKind::TooSmall,
+                IssueKind::InvalidFormat {
+                    format: "regex".into()
+                },
+            ]
+        );
+        // A valid email that only breaks one chained constraint reports only that one.
+        assert_eq!(
+            kinds(&s, &json!("ops-abcdefghijklmnop@example.com")),
+            vec![]
+        );
+    }
+
+    // v2 `description` (D-0020): the wrapper is validation-transparent, and the walk
+    // resolves the nearest enclosing description along an issue path.
+    #[test]
+    fn described_delegates_and_resolves_along_paths() {
+        let field = Schema::Described {
+            inner: Box::new(Schema::Boolean),
+            description: "the field".into(),
+        };
+        assert!(field.safe_parse(Some(&json!(true))).is_ok());
+        assert!(field.safe_parse(Some(&json!(1))).is_err());
+
+        let root = Schema::Described {
+            inner: Box::new(Schema::Object {
+                fields: vec![
+                    ("flag".into(), field),
+                    ("bare".into(), Schema::Boolean),
+                    (
+                        "items".into(),
+                        Schema::Array {
+                            of: Box::new(Schema::Described {
+                                inner: Box::new(Schema::Boolean),
+                                description: "each item".into(),
+                            }),
+                            min: None,
+                            max: None,
+                        },
+                    ),
+                ],
+                strict: true,
+            }),
+            description: "the root".into(),
+        };
+        let key = |k: &str| PathSeg::Key(k.to_string());
+        // Nearest wins: the field's own description beats the root's.
+        assert_eq!(
+            description_along_path(&root, &[key("flag")]),
+            Some("the field")
+        );
+        // No field description → the enclosing root's.
+        assert_eq!(
+            description_along_path(&root, &[key("bare")]),
+            Some("the root")
+        );
+        assert_eq!(
+            description_along_path(&root, &[key("items"), PathSeg::Index(0)]),
+            Some("each item")
+        );
+        // An unresolvable tail (unknown key) keeps what the walk collected.
+        assert_eq!(
+            description_along_path(&root, &[key("nope")]),
+            Some("the root")
+        );
+        assert_eq!(schema_root_description(&root), Some("the root"));
+        assert_eq!(schema_root_description(&Schema::Boolean), None);
     }
 
     #[test]

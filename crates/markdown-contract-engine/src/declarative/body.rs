@@ -75,13 +75,18 @@ fn compile_level(node: &Value, path: &str) -> Result<SectionSeq, DeclarativeErro
         .map(|(i, n)| compile_node(n, &format!("{path}.sections[{i}]")))
         .collect::<Result<_, _>>()?;
     assert_no_key_collision(&specs, path)?;
-    Ok(SectionSeq { opts, specs })
+    Ok(SectionSeq {
+        opts,
+        specs,
+        description: None,
+    })
 }
 
 /// The build-time key-collision guard the TS `sections()` runs: among declared
 /// section/oneOf primary names at one level, two distinct names collapsing to one
 /// camelCase key are rejected (alias spellings within one slot are one logical slot).
-fn assert_no_key_collision(specs: &[Spec], path: &str) -> Result<(), DeclarativeError> {
+/// (`pub(super)` — the v2 body compiler runs the same guard.)
+pub(super) fn assert_no_key_collision(specs: &[Spec], path: &str) -> Result<(), DeclarativeError> {
     let mut key_to_name: Vec<(String, String)> = Vec::new();
     for spec in specs {
         let inner = unwrap_inner(spec);
@@ -175,6 +180,7 @@ fn compile_gap(map: &serde_yaml::Mapping) -> Spec {
     Spec::Gap(GapSpec {
         min: min.map(|n| n as usize),
         max: max.map(|n| n as usize),
+        description: None,
     })
 }
 
@@ -293,7 +299,8 @@ fn occurrence_bound(v: &Value, key: &str, path: &str) -> Result<usize, Declarati
 }
 
 /// A YAML scalar as its string spelling (the TS `String(node.anchor)`).
-fn scalar_string(v: &Value) -> String {
+/// (`pub(super)` — the v2 body compiler reads anchors the same way.)
+pub(super) fn scalar_string(v: &Value) -> String {
     match v {
         Value::String(s) => s.clone(),
         Value::Bool(b) => b.to_string(),

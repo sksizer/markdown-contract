@@ -7,8 +7,9 @@ use serde_yaml::Value;
 
 use super::errors::DeclarativeError;
 
-/// The supported format versions of the declarative DSL — v1 only (D-0008 § versioning).
-const SUPPORTED_VERSIONS: &[i64] = &[1];
+/// The supported format versions of the declarative DSL — v1 (D-0008) and v2, the
+/// JSON-Schema-idiom respell (D-0020 § Envelope).
+const SUPPORTED_VERSIONS: &[i64] = &[1, 2];
 
 /// The document kind a declarative envelope declares.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,12 +73,17 @@ fn render(v: Option<&Value>) -> String {
 mod tests {
     use super::*;
 
-    // Contract first: a well-formed envelope parses; each gate rejects.
+    // Contract first: a well-formed envelope parses at either supported version; each
+    // gate rejects.
     #[test]
     fn valid_envelope_parses() {
         let doc =
             parse_declarative_doc("mcVersion: 1\nkind: contract\nbody:\n  sections: []\n").unwrap();
         assert_eq!(doc.mc_version, 1);
+        assert_eq!(doc.kind, DeclarativeKind::Contract);
+        let doc =
+            parse_declarative_doc("mcVersion: 2\nkind: contract\nbody:\n  sections: []\n").unwrap();
+        assert_eq!(doc.mc_version, 2);
         assert_eq!(doc.kind, DeclarativeKind::Contract);
     }
 
@@ -90,11 +96,11 @@ mod tests {
 
     #[test]
     fn unsupported_version_is_rejected_not_best_effort_parsed() {
-        let err = expect_err(parse_declarative_doc("mcVersion: 2\nkind: contract\n"));
+        let err = expect_err(parse_declarative_doc("mcVersion: 3\nkind: contract\n"));
         assert!(matches!(err, DeclarativeError::UnsupportedVersion(_)));
         assert_eq!(
             err.to_string(),
-            "unsupported mcVersion: 2 (this build supports 1)"
+            "unsupported mcVersion: 3 (this build supports 1, 2)"
         );
     }
 

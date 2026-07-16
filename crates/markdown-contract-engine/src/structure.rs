@@ -40,7 +40,7 @@ struct Slot<'a> {
     opts: Option<&'a SectionOpts>,
 }
 
-impl Slot<'_> {
+impl<'a> Slot<'a> {
     fn admits(&self, name: &str) -> bool {
         self.names.iter().any(|n| n == name)
     }
@@ -48,6 +48,25 @@ impl Slot<'_> {
     fn label(&self) -> String {
         self.names.join("’ / ‘")
     }
+
+    /// The slot's effective hint (D-0020): its node `description`, else the enclosing
+    /// level's — `None` all the way up for v1 / description-free contracts.
+    fn hint<'h>(&self, level: Option<&'h str>) -> Option<&'h str>
+    where
+        'a: 'h,
+    {
+        self.opts.and_then(|o| o.description.as_deref()).or(level)
+    }
+}
+
+/// The effective hint for a heading name at one level: the admitting slot's, else the
+/// level's inherited hint (unknown sections fall through to the level).
+fn hint_for_name<'h>(slots: &[Slot<'h>], name: &str, level: Option<&'h str>) -> Option<&'h str> {
+    slots
+        .iter()
+        .find(|s| s.admits(name))
+        .and_then(|s| s.hint(level))
+        .or(level)
 }
 
 /// Unwrap `optional(spec)` to its inner spec, tracking optionality.
@@ -117,6 +136,7 @@ struct Assigned<'a> {
 fn check_duplicate_headings(
     nodes: &[SectionNode],
     slots: &[Slot<'_>],
+    level_hint: Option<&str>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
 ) {
@@ -134,7 +154,8 @@ fn check_duplicate_headings(
                                 node.name
                             ),
                         )
-                        .pos(node.pos),
+                        .pos(node.pos)
+                        .hint_opt(hint_for_name(slots, &node.name, level_hint)),
                     ),
                 );
             }
@@ -158,7 +179,8 @@ fn check_duplicate_headings(
                             node.name, first, key
                         ),
                     )
-                    .pos(node.pos),
+                    .pos(node.pos)
+                    .hint_opt(hint_for_name(slots, &node.name, level_hint)),
                 ));
             }
             Some(_) => {}
@@ -172,6 +194,7 @@ fn check_duplicate_headings(
 fn check_repeat_bounds(
     nodes: &[SectionNode],
     slots: &[Slot<'_>],
+    level_hint: Option<&str>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
 ) {
@@ -190,7 +213,8 @@ fn check_repeat_bounds(
                     "repeatable section ‘{}’ occurs {count} times; expected at most {max}",
                     slot.label()
                 ),
-            );
+            )
+            .hint_opt(slot.hint(level_hint));
             if let Some(offender) = matches.get(max) {
                 spec = spec.pos(offender.pos); // the first occurrence past the bound
             }
@@ -207,7 +231,8 @@ fn check_repeat_bounds(
                     "repeatable section ‘{}’ occurs {count} times; expected at least {min}",
                     slot.label()
                 ),
-            );
+            )
+            .hint_opt(slot.hint(level_hint));
             if let Some(first) = matches.first() {
                 spec = spec.pos(first.pos);
             }
@@ -218,10 +243,19 @@ fn check_repeat_bounds(
 
 /// Match one level: `nodes` (the sibling sections at this depth) against the level's
 /// grammar. Emits findings, then recurses into declared sections' `children`.
-fn match_level(nodes: &[SectionNode], seq: &SectionSeq, ctx: &Ctx, out: &mut Vec<Finding>) {
+/// `inherited` is the nearest enclosing v2 `description` (D-0020) — the enclosing
+/// section's effective hint, `None` at the body root and throughout v1 contracts.
+fn match_level(
+    nodes: &[SectionNode],
+    seq: &SectionSeq,
+    inherited: Option<&str>,
+    ctx: &Ctx,
+    out: &mut Vec<Finding>,
+) {
     let slots = slots_of(&seq.specs);
+    let level_hint = seq.description.as_deref().or(inherited);
 
-    check_duplicate_headings(nodes, &slots, ctx, out);
+    check_duplicate_headings(nodes, &slots, level_hint, ctx, out);
 
     // Assign each section to its declared slot (first occurrence binds the slot).
     let assigned: Vec<Assigned<'_>> = nodes
@@ -232,11 +266,11 @@ fn match_level(nodes: &[SectionNode], seq: &SectionSeq, ctx: &Ctx, out: &mut Vec
         })
         .collect();
 
-    check_alias_ambiguity(&assigned, &slots, ctx, out);
-    check_missing_slots(&assigned, &slots, nodes, ctx, out);
-    check_repeat_bounds(nodes, &slots, ctx, out);
-    check_order_and_unknowns(seq, nodes, &slots, &assigned, ctx, out);
-    run_present_slot_checks(&assigned, &slots, ctx, out);
+    check_alias_ambiguity(&assigned, &slots, level_hint, ctx, out);
+    check_missing_slots(&assigned, &slots, nodes, level_hint, ctx, out);
+    check_repeat_bounds(nodes, &slots, level_hint, ctx, out);
+    check_order_and_unknowns(seq, nodes, &slots, &assigned, level_hint, ctx, out);
+    run_present_slot_checks(&assigned, &slots, level_hint, ctx, out);
 }
 
 /// oneOf / alias ambiguity: a second distinct spelling filling an already-filled
@@ -244,6 +278,7 @@ fn match_level(nodes: &[SectionNode], seq: &SectionSeq, ctx: &Ctx, out: &mut Vec
 fn check_alias_ambiguity(
     assigned: &[Assigned<'_>],
     slots: &[Slot<'_>],
+    level_hint: Option<&str>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
 ) {
@@ -267,7 +302,8 @@ fn check_alias_ambiguity(
                             a.node.name
                         ),
                     )
-                    .pos(a.node.pos),
+                    .pos(a.node.pos)
+                    .hint_opt(slot.hint(level_hint)),
                 ));
             }
             Some(_) => {}
@@ -281,6 +317,7 @@ fn check_missing_slots(
     assigned: &[Assigned<'_>],
     slots: &[Slot<'_>],
     nodes: &[SectionNode],
+    level_hint: Option<&str>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
 ) {
@@ -292,7 +329,8 @@ fn check_missing_slots(
         let mut spec = FindingSpec::new(
             "structure/section-missing",
             format!("required section ‘{}’ is missing", slot.label()),
-        );
+        )
+        .hint_opt(slot.hint(level_hint));
         // Absence localizes to the document: pin pos to the first body heading when one
         // exists, else omit (an empty body has no line to point at).
         if let Some(first) = nodes.first() {
@@ -308,6 +346,7 @@ fn check_order_and_unknowns(
     nodes: &[SectionNode],
     slots: &[Slot<'_>],
     assigned: &[Assigned<'_>],
+    level_hint: Option<&str>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
 ) {
@@ -315,8 +354,18 @@ fn check_order_and_unknowns(
     let allow_unknown = seq.opts.allow_unknown;
 
     match order {
-        Order::RecognizedRelative => check_recognized_relative(assigned, ctx, out),
-        Order::Strict => check_strict(nodes, &seq.specs, slots, allow_unknown, ctx, out),
+        Order::RecognizedRelative => {
+            check_recognized_relative(assigned, slots, level_hint, ctx, out)
+        }
+        Order::Strict => check_strict(
+            nodes,
+            &seq.specs,
+            slots,
+            allow_unknown,
+            level_hint,
+            ctx,
+            out,
+        ),
         Order::None => {}
     }
 
@@ -330,15 +379,20 @@ fn check_order_and_unknowns(
         .iter()
         .any(|s| matches!(unwrap(s).0, Spec::Gap(_)));
     if !has_gap {
-        emit_stray_unknowns(assigned, ctx, out);
+        emit_stray_unknowns(assigned, level_hint, ctx, out);
     } else {
         // A gap exists but the level is unordered — count all unknowns against the gap.
-        check_unordered_gap(assigned, &seq.specs, ctx, out);
+        check_unordered_gap(assigned, &seq.specs, level_hint, ctx, out);
     }
 }
 
 /// One `structure/section-order` per unknown section on a gap-less, unknown-forbidding level.
-fn emit_stray_unknowns(assigned: &[Assigned<'_>], ctx: &Ctx, out: &mut Vec<Finding>) {
+fn emit_stray_unknowns(
+    assigned: &[Assigned<'_>],
+    level_hint: Option<&str>,
+    ctx: &Ctx,
+    out: &mut Vec<Finding>,
+) {
     for a in assigned {
         if a.slot_idx.is_none() {
             out.push(ctx.finding(
@@ -349,7 +403,8 @@ fn emit_stray_unknowns(assigned: &[Assigned<'_>], ctx: &Ctx, out: &mut Vec<Findi
                         a.node.name
                     ),
                 )
-                .pos(a.node.pos),
+                .pos(a.node.pos)
+                .hint_opt(level_hint),
             ));
         }
     }
@@ -359,13 +414,15 @@ fn emit_stray_unknowns(assigned: &[Assigned<'_>], ctx: &Ctx, out: &mut Vec<Findi
 fn run_present_slot_checks(
     assigned: &[Assigned<'_>],
     slots: &[Slot<'_>],
+    level_hint: Option<&str>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
 ) {
     for a in assigned {
         let Some(slot_idx) = a.slot_idx else { continue };
-        if let Some(opts) = slots[slot_idx].opts {
-            run_section_checks(a.node, opts, ctx, out);
+        let slot = &slots[slot_idx];
+        if let Some(opts) = slot.opts {
+            run_section_checks(a.node, opts, slot.hint(level_hint), ctx, out);
         }
     }
 }
@@ -373,7 +430,13 @@ fn run_present_slot_checks(
 /// recognized-relative: recognized sections must keep declared relative order; unknowns
 /// interleave freely. A section whose declared index is *less* than the largest index
 /// already seen is the out-of-place one.
-fn check_recognized_relative(assigned: &[Assigned<'_>], ctx: &Ctx, out: &mut Vec<Finding>) {
+fn check_recognized_relative(
+    assigned: &[Assigned<'_>],
+    slots: &[Slot<'_>],
+    level_hint: Option<&str>,
+    ctx: &Ctx,
+    out: &mut Vec<Finding>,
+) {
     let mut max_slot: Option<usize> = None;
     for a in assigned {
         let Some(slot_idx) = a.slot_idx else { continue };
@@ -386,7 +449,8 @@ fn check_recognized_relative(assigned: &[Assigned<'_>], ctx: &Ctx, out: &mut Vec
                         a.node.name
                     ),
                 )
-                .pos(a.node.pos),
+                .pos(a.node.pos)
+                .hint_opt(slots[slot_idx].hint(level_hint)),
             ));
         } else {
             max_slot = Some(slot_idx);
@@ -410,6 +474,7 @@ fn check_strict(
     specs: &[Spec],
     slots: &[Slot<'_>],
     allow_unknown: bool,
+    level_hint: Option<&str>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
 ) {
@@ -434,7 +499,16 @@ fn check_strict(
         if spec_idx >= specs.len() {
             // Past the declared sequence — a trailing gap absorbs extras, else an unknown
             // is out of place.
-            admit_past_sequence(node, specs, slots, allow_unknown, &mut gap_count, ctx, out);
+            admit_past_sequence(
+                node,
+                specs,
+                slots,
+                allow_unknown,
+                level_hint,
+                &mut gap_count,
+                ctx,
+                out,
+            );
             doc_idx += 1;
             continue;
         }
@@ -483,7 +557,8 @@ fn check_strict(
                             slot.label()
                         ),
                     )
-                    .pos(node.pos),
+                    .pos(node.pos)
+                    .hint_opt(slot.hint(level_hint)),
                 ));
             }
             // Advance the cursor to the later slot and consume the section there.
@@ -509,7 +584,8 @@ fn check_strict(
                             node.name
                         ),
                     )
-                    .pos(node.pos),
+                    .pos(node.pos)
+                    .hint_opt(level_hint),
                 ));
             }
             doc_idx += 1;
@@ -520,16 +596,18 @@ fn check_strict(
         spec_idx += 1;
     }
 
-    emit_gap_counts(&gap_count, specs, slots, nodes, ctx, out);
+    emit_gap_counts(&gap_count, specs, slots, nodes, level_hint, ctx, out);
 }
 
 /// A doc section encountered past the declared spec sequence: a trailing gap absorbs it;
 /// otherwise an unknown is out of place under `allowUnknown: false`.
+#[allow(clippy::too_many_arguments)]
 fn admit_past_sequence(
     node: &SectionNode,
     specs: &[Spec],
     slots: &[Slot<'_>],
     allow_unknown: bool,
+    level_hint: Option<&str>,
     gap_count: &mut BTreeMap<usize, usize>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
@@ -548,7 +626,8 @@ fn admit_past_sequence(
                         node.name
                     ),
                 )
-                .pos(node.pos),
+                .pos(node.pos)
+                .hint_opt(level_hint),
             ),
         );
     } else if !known && last_was_gap {
@@ -562,6 +641,7 @@ fn emit_gap_counts(
     specs: &[Spec],
     slots: &[Slot<'_>],
     nodes: &[SectionNode],
+    level_hint: Option<&str>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
 ) {
@@ -570,7 +650,8 @@ fn emit_gap_counts(
             continue;
         };
         if let Some(message) = gap_bound_message(gap, count) {
-            let mut spec = FindingSpec::new("structure/gap-count", message);
+            let mut spec = FindingSpec::new("structure/gap-count", message)
+                .hint_opt(gap.description.as_deref().or(level_hint));
             if let Some(pos) = gap_anchor_pos(slots, nodes, gap_spec_idx) {
                 spec = spec.pos(pos);
             }
@@ -602,6 +683,7 @@ fn gap_bound_message(gap: &GapSpec, count: usize) -> Option<String> {
 fn check_unordered_gap(
     assigned: &[Assigned<'_>],
     specs: &[Spec],
+    level_hint: Option<&str>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
 ) {
@@ -613,7 +695,12 @@ fn check_unordered_gap(
     };
     let count = assigned.iter().filter(|a| a.slot_idx.is_none()).count();
     if let Some(message) = gap_bound_message(gap, count) {
-        out.push(ctx.finding(FindingSpec::new("structure/gap-count", message)));
+        out.push(
+            ctx.finding(
+                FindingSpec::new("structure/gap-count", message)
+                    .hint_opt(gap.description.as_deref().or(level_hint)),
+            ),
+        );
     }
 }
 
@@ -630,7 +717,13 @@ fn gap_anchor_pos(
 
 // ── Per-section checks: kind-gate, anchors, node-local rules, recursion ──────────────
 
-fn run_section_checks(node: &SectionNode, opts: &SectionOpts, ctx: &Ctx, out: &mut Vec<Finding>) {
+fn run_section_checks(
+    node: &SectionNode,
+    opts: &SectionOpts,
+    section_hint: Option<&str>,
+    ctx: &Ctx,
+    out: &mut Vec<Finding>,
+) {
     // Anchor presence — a declared `^anchor` must resolve to a block or section anchor.
     if let Some(anchor) = &opts.anchor
         && !anchor_resolves(node, anchor)
@@ -644,30 +737,37 @@ fn run_section_checks(node: &SectionNode, opts: &SectionOpts, ctx: &Ctx, out: &m
                         node.name
                     ),
                 )
-                .pos(node.pos),
+                .pos(node.pos)
+                .hint_opt(section_hint),
             ),
         );
     }
 
     // The content kind-gate — a single leaf, or named leaves bound by `^anchor`.
     match &opts.content {
-        Some(SectionContent::Single(leaf)) => kind_gate(node, leaf, None, ctx, out),
+        Some(SectionContent::Single(leaf)) => kind_gate(node, leaf, None, section_hint, ctx, out),
         Some(SectionContent::Anchored(entries)) => {
             for (anchor, leaf) in entries {
-                kind_gate(node, leaf, Some(anchor), ctx, out);
+                kind_gate(node, leaf, Some(anchor), section_hint, ctx, out);
             }
         }
         None => {}
     }
 
-    // Node-local rules.
+    // Node-local rules (including section-scoped text constraints) — findings that carry
+    // no nearer hint inherit the bound section's effective hint (D-0020).
     for r in &opts.rules {
-        out.extend(r.run(node, ctx));
+        for mut finding in r.run(node, ctx) {
+            if finding.hint.is_none() {
+                finding.hint = section_hint.map(str::to_string);
+            }
+            out.push(finding);
+        }
     }
 
     // Recurse into declared children.
     if let Some(children) = &opts.children {
-        match_level(&node.sections, children, ctx, out);
+        match_level(&node.sections, children, section_hint, ctx, out);
     }
 }
 
@@ -682,10 +782,12 @@ fn kind_gate(
     node: &SectionNode,
     leaf: &LeafSpec,
     anchor: Option<&str>,
+    section_hint: Option<&str>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
 ) {
     let expected = leaf.kind;
+    let leaf_hint = leaf.description.as_deref().or(section_hint);
     let Some(candidate) = pick_block(node, anchor) else {
         let message = match anchor {
             Some(a) => format!(
@@ -694,7 +796,13 @@ fn kind_gate(
             ),
             None => format!("section ‘{}’ is missing a {expected} block", node.name),
         };
-        out.push(ctx.finding(FindingSpec::new("structure/block-missing", message).pos(node.pos)));
+        out.push(
+            ctx.finding(
+                FindingSpec::new("structure/block-missing", message)
+                    .pos(node.pos)
+                    .hint_opt(leaf_hint),
+            ),
+        );
         return;
     };
     if candidate.kind() != expected {
@@ -708,7 +816,8 @@ fn kind_gate(
                         candidate.kind()
                     ),
                 )
-                .pos(candidate.pos()),
+                .pos(candidate.pos())
+                .hint_opt(leaf_hint),
             ),
         );
     }
@@ -729,7 +838,7 @@ fn pick_block<'a>(node: &'a SectionNode, anchor: Option<&str>) -> Option<&'a Blo
 /// `structure/*` finding in emission order; `validate` applies the deterministic sort.
 pub fn match_structure(root: &SectionNode, body: &SectionSeq, ctx: &Ctx) -> Vec<Finding> {
     let mut out = Vec::new();
-    match_level(&root.sections, body, ctx, &mut out);
+    match_level(&root.sections, body, None, ctx, &mut out);
     out
 }
 

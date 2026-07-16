@@ -43,11 +43,12 @@ pub fn load_config(
             "expected a config document (kind: config), got kind: contract".into(),
         ));
     }
-    compile_config(&doc.raw, resolver)
+    compile_config(&doc.raw, doc.mc_version, resolver)
 }
 
 fn compile_config(
     raw: &serde_yaml::Mapping,
+    mc_version: i64,
     resolver: &mut ContractResolver<'_>,
 ) -> Result<CorpusConfig, DeclarativeError> {
     let contracts = match get(raw, "contracts") {
@@ -62,7 +63,7 @@ fn compile_config(
     let rules = rules
         .iter()
         .enumerate()
-        .map(|(i, r)| compile_rule(r, &format!("rules[{i}]"), &contracts, resolver))
+        .map(|(i, r)| compile_rule(r, &format!("rules[{i}]"), &contracts, mc_version, resolver))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(CorpusConfig { rules })
 }
@@ -77,6 +78,7 @@ fn compile_rule(
     rule: &Value,
     path: &str,
     contracts: &serde_yaml::Mapping,
+    mc_version: i64,
     resolver: &mut ContractResolver<'_>,
 ) -> Result<CorpusRule, DeclarativeError> {
     let Value::Mapping(map) = rule else {
@@ -101,6 +103,7 @@ fn compile_rule(
         contract_ref,
         &format!("{path}.contract"),
         contracts,
+        mc_version,
         resolver,
     )?;
     // A string contract ref IS the human contract name — carried as the rule's label.
@@ -117,6 +120,7 @@ fn resolve_contract(
     reference: Option<&Value>,
     path: &str,
     contracts: &serde_yaml::Mapping,
+    mc_version: i64,
     resolver: &mut ContractResolver<'_>,
 ) -> Result<Contract, DeclarativeError> {
     let Some(reference) = reference else {
@@ -125,8 +129,9 @@ fn resolve_contract(
         )));
     };
     if let Value::Mapping(inline) = reference {
-        // An inline contract object (frontmatter? / body?) — no envelope needed here.
-        return compile_contract_object(inline);
+        // An inline contract object (frontmatter? / body?) — no envelope needed here;
+        // it compiles with the config document's mcVersion (D-0020 § Envelope).
+        return compile_contract_object(inline, mc_version);
     }
     let Some(name) = reference.as_str() else {
         return Err(err(format!(
@@ -202,6 +207,36 @@ mod tests {
         assert_eq!(cfg.rules[0].include, vec!["**/*.md"]);
         assert_eq!(cfg.rules[0].name, None); // inline contracts carry no name
         assert!(cfg.rules[0].contract.body.is_some());
+    }
+
+    // The envelope version threads through to inline contracts (D-0020): a v2 config's
+    // inline contract compiles through the v2 compilers, so v2 spellings bind and v1
+    // spellings are migration-hint errors.
+    #[test]
+    fn a_v2_config_compiles_inline_contracts_as_v2() {
+        let cfg = load_config(
+            "mcVersion: 2\nkind: config\nrules:\n  - include: ['**/*.md']\n    contract:\n      body:\n        additionalSections: false\n        sections:\n          - section: Overview\n",
+            &mut no_files,
+        )
+        .unwrap();
+        assert!(
+            !cfg.rules[0]
+                .contract
+                .body
+                .as_ref()
+                .unwrap()
+                .opts
+                .allow_unknown
+        );
+
+        // A v1 spelling inside a v2 config's inline contract gets the migration hint.
+        let Err(e) = load_config(
+            "mcVersion: 2\nkind: config\nrules:\n  - include: ['**/*.md']\n    contract:\n      body:\n        allowUnknown: false\n        sections:\n          - section: Overview\n",
+            &mut no_files,
+        ) else {
+            panic!("expected a DeclarativeError")
+        };
+        assert!(e.to_string().contains("'allowUnknown' is the v1 spelling"));
     }
 
     #[test]

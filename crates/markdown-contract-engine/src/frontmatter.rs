@@ -17,7 +17,9 @@
 
 use crate::finding::{Finding, SourcePos};
 use crate::registry::{Ctx, FindingSpec};
-use crate::schema::{Issue, IssueKind, PathSeg, Schema, format_key_path, type_name};
+use crate::schema::{
+    Issue, IssueKind, PathSeg, Schema, description_along_path, format_key_path, type_name,
+};
 use crate::tree::DocTree;
 
 // ── YAML → the TS `toJS()` value shape ────────────────────────────────────────────────
@@ -360,7 +362,8 @@ pub fn match_frontmatter(tree: &DocTree, schema: &Schema, ctx: &Ctx, out: &mut V
                 let mut spec = FindingSpec::new(
                     "frontmatter/unknown-key",
                     format!("unknown frontmatter key ‘{key}’"),
-                );
+                )
+                .hint_opt(description_along_path(schema, &path));
                 if let Some(pos) = line_for(&path) {
                     spec = spec.pos(pos);
                 }
@@ -377,7 +380,10 @@ pub fn match_frontmatter(tree: &DocTree, schema: &Schema, ctx: &Ctx, out: &mut V
         } else {
             frontmatter_id_for(&issue.kind)
         };
-        let mut spec = FindingSpec::new(id, frontmatter_message(issue, id, data));
+        // The failing field's stored description (nearest along the issue path) is the
+        // finding's hint (D-0020); the contract-root fallback is `validate`'s.
+        let mut spec = FindingSpec::new(id, frontmatter_message(issue, id, data))
+            .hint_opt(description_along_path(schema, &issue.path));
         if let Some(pos) = line_for(&issue.path) {
             spec = spec.pos(pos);
         }

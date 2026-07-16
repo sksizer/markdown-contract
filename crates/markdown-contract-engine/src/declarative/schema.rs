@@ -171,7 +171,12 @@ fn string_schema(n: &serde_yaml::Mapping, path: &str) -> Result<Schema, Declarat
                     .join(", ")
             )));
         };
-        return Ok(Schema::Format(f));
+        return Ok(Schema::Format {
+            format: f,
+            min: None,
+            max: None,
+            pattern: None,
+        });
     }
     let pattern = match get(n, "pattern").and_then(Value::as_str) {
         Some(src) => Some(Regex::new(src).map_err(|e| {

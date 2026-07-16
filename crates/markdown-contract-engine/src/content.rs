@@ -62,15 +62,24 @@ fn find_section<'a>(nodes: &'a [SectionNode], names: &[String]) -> Option<&'a Se
 }
 
 /// Walk one level: pair each content slot with the doc section filling it, validate that
-/// section's content leaf(s), then recurse into declared children.
-fn match_level(nodes: &[SectionNode], seq: &SectionSeq, ctx: &Ctx, out: &mut Vec<Finding>) {
+/// section's content leaf(s), then recurse into declared children. `inherited` is the
+/// nearest enclosing v2 `description` (D-0020) — `None` throughout v1 contracts.
+fn match_level(
+    nodes: &[SectionNode],
+    seq: &SectionSeq,
+    inherited: Option<&str>,
+    ctx: &Ctx,
+    out: &mut Vec<Finding>,
+) {
+    let level_hint = seq.description.as_deref().or(inherited);
     for (names, opts) in content_slots(&seq.specs) {
         let Some(node) = find_section(nodes, names) else {
             continue; // absence is structure's concern (structure/section-missing)
         };
-        validate_section_content(node, opts, ctx, out);
+        let section_hint = opts.description.as_deref().or(level_hint);
+        validate_section_content(node, opts, section_hint, ctx, out);
         if let Some(children) = &opts.children {
-            match_level(&node.sections, children, ctx, out);
+            match_level(&node.sections, children, section_hint, ctx, out);
         }
     }
 }
@@ -79,15 +88,18 @@ fn match_level(nodes: &[SectionNode], seq: &SectionSeq, ctx: &Ctx, out: &mut Vec
 fn validate_section_content(
     node: &SectionNode,
     opts: &SectionOpts,
+    section_hint: Option<&str>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
 ) {
     match &opts.content {
         None => {}
-        Some(SectionContent::Single(leaf)) => validate_leaf(node, leaf, None, ctx, out),
+        Some(SectionContent::Single(leaf)) => {
+            validate_leaf(node, leaf, None, section_hint, ctx, out)
+        }
         Some(SectionContent::Anchored(entries)) => {
             for (anchor, leaf) in entries {
-                validate_leaf(node, leaf, Some(anchor.as_str()), ctx, out);
+                validate_leaf(node, leaf, Some(anchor.as_str()), section_hint, ctx, out);
             }
         }
     }
@@ -109,6 +121,7 @@ fn validate_leaf(
     node: &SectionNode,
     leaf: &LeafSpec,
     anchor: Option<&str>,
+    section_hint: Option<&str>,
     ctx: &Ctx,
     out: &mut Vec<Finding>,
 ) {
@@ -118,18 +131,19 @@ fn validate_leaf(
     if block.kind() != leaf.kind {
         return; // structure/block-kind (AC-4)
     }
+    let leaf_hint = leaf.description.as_deref().or(section_hint);
     match (&leaf.config, block) {
         (Some(LeafConfig::Table(cfg)), BlockNode::Table { .. }) => {
-            validate_table(block, cfg, ctx, out)
+            validate_table(block, cfg, leaf_hint, ctx, out)
         }
         (Some(LeafConfig::List(cfg)), BlockNode::List { .. }) => {
-            validate_list(block, cfg, ctx, out)
+            validate_list(block, cfg, leaf_hint, ctx, out)
         }
         (Some(LeafConfig::Code(cfg)), BlockNode::Code { .. }) => {
-            validate_code(block, cfg, ctx, out)
+            validate_code(block, cfg, leaf_hint, ctx, out)
         }
         (Some(LeafConfig::MaxWords(max)), BlockNode::Paragraph { .. }) => {
-            validate_paragraph(block, *max, ctx, out)
+            validate_paragraph(block, *max, leaf_hint, ctx, out)
         }
         _ => {} // no config → kind-gate only
     }
@@ -143,7 +157,13 @@ fn validate_leaf(
 ///   - `minRows`                                            → `content/table/min-rows`
 ///   - typed `cells` over each row's value, localized to    → `content/table/cell`
 ///     the offending row via `row_pos` (AC-5)
-fn validate_table(block: &BlockNode, cfg: &TableConfig, ctx: &Ctx, out: &mut Vec<Finding>) {
+fn validate_table(
+    block: &BlockNode,
+    cfg: &TableConfig,
+    leaf_hint: Option<&str>,
+    ctx: &Ctx,
+    out: &mut Vec<Finding>,
+) {
     let BlockNode::Table {
         columns,
         rows,
@@ -164,7 +184,8 @@ fn validate_table(block: &BlockNode, cfg: &TableConfig, ctx: &Ctx, out: &mut Vec
                         "content/table/column-missing",
                         format!("table is missing declared column ‘{col}’"),
                     )
-                    .pos(*pos),
+                    .pos(*pos)
+                    .hint_opt(leaf_hint),
                 ),
             );
         }
@@ -180,7 +201,8 @@ fn validate_table(block: &BlockNode, cfg: &TableConfig, ctx: &Ctx, out: &mut Vec
                             "content/table/column-extra",
                             format!("table carries undeclared column ‘{col}’"),
                         )
-                        .pos(*pos),
+                        .pos(*pos)
+                        .hint_opt(leaf_hint),
                     ),
                 );
             }
@@ -201,7 +223,8 @@ fn validate_table(block: &BlockNode, cfg: &TableConfig, ctx: &Ctx, out: &mut Vec
                         min_rows
                     ),
                 )
-                .pos(*pos),
+                .pos(*pos)
+                .hint_opt(leaf_hint),
             ),
         );
     }
@@ -211,6 +234,7 @@ fn validate_table(block: &BlockNode, cfg: &TableConfig, ctx: &Ctx, out: &mut Vec
         let Some(col_idx) = columns.iter().position(|c| c == col) else {
             continue; // a declared cell on a missing column → column-missing covers it
         };
+        let cell_hint = crate::schema::schema_root_description(schema).or(leaf_hint);
         for (i, row) in rows.iter().enumerate() {
             let value = row.get(col_idx).cloned().unwrap_or_default();
             let json = serde_json::Value::String(value.clone());
@@ -218,7 +242,8 @@ fn validate_table(block: &BlockNode, cfg: &TableConfig, ctx: &Ctx, out: &mut Vec
                 let mut spec = FindingSpec::new(
                     "content/table/cell",
                     format!("cell ‘{value}’ in column ‘{col}’ is invalid"),
-                );
+                )
+                .hint_opt(cell_hint);
                 if let Some(pos) = row_pos.get(i) {
                     spec = spec.pos(*pos); // AC-5 — localize to the offending row
                 }
@@ -235,7 +260,13 @@ fn validate_table(block: &BlockNode, cfg: &TableConfig, ctx: &Ctx, out: &mut Vec
 ///     per offending item (pinned to the item's source line)
 ///   - `everyItem: <schema>` → the schema over each item's text → `content/list/item-kind`
 ///   - `minItems`            → item-count floor → `content/list/min-items`
-fn validate_list(block: &BlockNode, cfg: &ListConfig, ctx: &Ctx, out: &mut Vec<Finding>) {
+fn validate_list(
+    block: &BlockNode,
+    cfg: &ListConfig,
+    leaf_hint: Option<&str>,
+    ctx: &Ctx,
+    out: &mut Vec<Finding>,
+) {
     let BlockNode::List { items, pos, .. } = block else {
         return;
     };
@@ -250,13 +281,15 @@ fn validate_list(block: &BlockNode, cfg: &ListConfig, ctx: &Ctx, out: &mut Vec<F
                                 "content/list/item-kind",
                                 "list item is not a checkbox (‘- [ ]’ / ‘- [x]’)",
                             )
-                            .pos(item.pos),
+                            .pos(item.pos)
+                            .hint_opt(leaf_hint),
                         ),
                     );
                 }
             }
         }
         Some(EveryItem::Schema(schema)) => {
+            let item_hint = crate::schema::schema_root_description(schema).or(leaf_hint);
             for item in items {
                 let json = serde_json::Value::String(item.text.clone());
                 if schema.safe_parse(Some(&json)).is_err() {
@@ -266,7 +299,8 @@ fn validate_list(block: &BlockNode, cfg: &ListConfig, ctx: &Ctx, out: &mut Vec<F
                                 "content/list/item-kind",
                                 format!("list item ‘{}’ is invalid", item.text),
                             )
-                            .pos(item.pos),
+                            .pos(item.pos)
+                            .hint_opt(item_hint),
                         ),
                     );
                 }
@@ -288,7 +322,8 @@ fn validate_list(block: &BlockNode, cfg: &ListConfig, ctx: &Ctx, out: &mut Vec<F
                         min_items
                     ),
                 )
-                .pos(*pos),
+                .pos(*pos)
+                .hint_opt(leaf_hint),
             ),
         );
     }
@@ -297,7 +332,13 @@ fn validate_list(block: &BlockNode, cfg: &ListConfig, ctx: &Ctx, out: &mut Vec<F
 // ── Code ──────────────────────────────────────────────────────────────────────────────
 
 /// Validate a `code` block's language matches the declared `lang` → `content/code/lang`.
-fn validate_code(block: &BlockNode, cfg: &CodeConfig, ctx: &Ctx, out: &mut Vec<Finding>) {
+fn validate_code(
+    block: &BlockNode,
+    cfg: &CodeConfig,
+    leaf_hint: Option<&str>,
+    ctx: &Ctx,
+    out: &mut Vec<Finding>,
+) {
     let BlockNode::Code { lang, pos, .. } = block else {
         return;
     };
@@ -314,7 +355,8 @@ fn validate_code(block: &BlockNode, cfg: &CodeConfig, ctx: &Ctx, out: &mut Vec<F
                         lang.as_deref().unwrap_or("(none)")
                     ),
                 )
-                .pos(*pos),
+                .pos(*pos)
+                .hint_opt(leaf_hint),
             ),
         );
     }
@@ -323,7 +365,13 @@ fn validate_code(block: &BlockNode, cfg: &CodeConfig, ctx: &Ctx, out: &mut Vec<F
 // ── Paragraph (maxWords) ──────────────────────────────────────────────────────────────
 
 /// Validate a `paragraph` block's word count ≤ `maxWords` → `content/max-words`.
-fn validate_paragraph(block: &BlockNode, max_words: f64, ctx: &Ctx, out: &mut Vec<Finding>) {
+fn validate_paragraph(
+    block: &BlockNode,
+    max_words: f64,
+    leaf_hint: Option<&str>,
+    ctx: &Ctx,
+    out: &mut Vec<Finding>,
+) {
     let BlockNode::Paragraph { text, pos, .. } = block else {
         return;
     };
@@ -335,7 +383,8 @@ fn validate_paragraph(block: &BlockNode, max_words: f64, ctx: &Ctx, out: &mut Ve
                     "content/max-words",
                     format!("paragraph runs to {words} words; expected at most {max_words}"),
                 )
-                .pos(*pos),
+                .pos(*pos)
+                .hint_opt(leaf_hint),
             ),
         );
     }
@@ -352,7 +401,7 @@ pub fn match_content(tree: &DocTree, contract: &Contract, ctx: &Ctx) -> Vec<Find
         match_frontmatter(tree, &fm.schema, ctx, &mut out);
     }
     if let Some(body) = &contract.body {
-        match_level(&tree.root.sections, body, ctx, &mut out);
+        match_level(&tree.root.sections, body, None, ctx, &mut out);
     }
     out
 }
