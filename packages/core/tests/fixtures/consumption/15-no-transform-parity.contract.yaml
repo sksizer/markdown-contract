@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: c15 — No-transform contract reads back byte-identical rows  (provenance: 15-no-transform-parity.ts)
 
 body:
   order: none
-  allowUnknown: false
+  additionalSections: false
   sections:
     - section: Files
       content:
@@ -15,7 +15,7 @@ body:
             - Change
           cells:
             Kind:
-              enum: [modify, delete]
+              enum: [ modify, delete ]
             Location:
               type: string
               pattern: '^[A-Za-z0-9._/-]+$'

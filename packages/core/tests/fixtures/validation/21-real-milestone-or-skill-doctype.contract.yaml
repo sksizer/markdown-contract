@@ -1,10 +1,12 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v21 — Real Milestone / SKILL.md doc-type  (provenance: 21-real-milestone-or-skill-doctype.ts)
 
 frontmatter:
-  strict: true
-  fields:
+  type: object
+  required: [ id, status, title, related ]
+  additionalProperties: false
+  properties:
     id:
       type: string
       pattern: '^M-[0-9A-Z]{4}$'
@@ -16,28 +18,29 @@ frontmatter:
         - closed/abandoned
     title:
       type: string
-      min: 1
+      minLength: 1
     related:
       type: array
-      of:
+      items:
         type: string
       default: []
 
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Goal
     - section: Success criteria
     - oneOf:
         - Deliverables
         - Tasks
-      children:
-        order: none
-        allowUnknown: true
-        sections:
-          - gap: {}
+      order: none
+      additionalSections: true
+      sections:
+        - gap: {}
     - section: Out of scope
-      optional: true
+      minContains: 0
+      maxContains: 1
     - section: Risks / open questions
-      optional: true
+      minContains: 0
+      maxContains: 1

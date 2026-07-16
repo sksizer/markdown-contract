@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v06a — No alias spelling present  (provenance: 06a-oneof-none-present.ts)
 
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - oneOf:
         - Goal

@@ -605,7 +605,7 @@ function mergeFiles(results: InferResult[], opts: InferOptions): InferredFile[] 
   const registry: Record<string, string> = {};
   for (const c of contracts) registry[c.name] = `./${c.name}.contract.yaml`;
   const router = {
-    mcVersion: 1,
+    mcVersion: 2,
     kind: "config",
     contracts: registry,
     rules: contracts.map((c) => ({ include: c.include, contract: c.name })),
@@ -634,7 +634,8 @@ function selfCheck(
     let compileFailed = false;
     for (const c of r.contracts) {
       try {
-        rules.push({ include: c.include, contract: compileContractObject(c.def) });
+        // Inferred defs are authored in the v2 vocabulary (D-0020), so compile them as v2.
+        rules.push({ include: c.include, contract: compileContractObject(c.def, 2) });
       } catch (err) {
         errors.push(
           `${root}: contract '${c.name}' (${c.include.join(", ")}) failed to compile — ${(err as Error).message}`,

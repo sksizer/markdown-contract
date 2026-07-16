@@ -48,12 +48,14 @@ export function loadSource(metaUrl: string, rel: string): string {
   return readFileSync(new URL(rel, metaUrl), "utf8");
 }
 
-/** An expected finding — `id` is required; `level`/`line` are asserted only when given. */
+/** An expected finding — `id` is required; `level`/`line`/`hint` are asserted only when given. */
 export interface ExpectedFinding {
   id: string;
   level?: Finding["level"];
   /** `pos.line`; omit while a position is still being pinned down. */
   line?: number;
+  /** the v2 `description:`-derived hint (D-0020); asserted only when the golden pins it. */
+  hint?: string;
 }
 
 /**
@@ -124,8 +126,13 @@ export interface ConsumptionFixture {
   note?: string;
 }
 
-function shape(f: Finding): { id: string; level: Finding["level"]; line: number | undefined } {
-  return { id: f.id, level: f.level, line: f.pos?.line };
+function shape(f: Finding): {
+  id: string;
+  level: Finding["level"];
+  line: number | undefined;
+  hint: string | undefined;
+} {
+  return { id: f.id, level: f.level, line: f.pos?.line, hint: f.hint };
 }
 
 function assertFindings(actual: Finding[], expected: ExpectedFinding[]): void {
@@ -136,6 +143,7 @@ function assertFindings(actual: Finding[], expected: ExpectedFinding[]): void {
     expect(a?.id, `finding[${i}].id`).toBe(e.id);
     if (e.level !== undefined) expect(a?.level, `finding[${i}].level`).toBe(e.level);
     if (e.line !== undefined) expect(a?.line, `finding[${i}].line`).toBe(e.line);
+    if (e.hint !== undefined) expect(a?.hint, `finding[${i}].hint`).toBe(e.hint);
   });
 }
 
@@ -223,7 +231,8 @@ export function runInferenceFixtures(label: string, fixtures: InferenceFixture[]
         const cfg: CorpusConfig = {
           rules: r.contracts.map((c) => ({
             include: c.include,
-            contract: compileContractObject(c.def),
+            // Inferred defs are authored in the v2 vocabulary (D-0020) — compile as v2.
+            contract: compileContractObject(c.def, 2),
           })),
         };
         const { findings } = runCorpus(cfg, { cwd: fx.dir });

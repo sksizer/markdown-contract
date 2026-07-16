@@ -1,10 +1,12 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v07a — Frontmatter enum violation + extra key  (provenance: 07a-frontmatter-enum-and-unknown-key.ts)
 
 frontmatter:
-  strict: true
-  fields:
+  type: object
+  required: [ id, status, title ]
+  additionalProperties: false
+  properties:
     id:
       type: string
       pattern: '^D-[0-9A-Z]{4}$'
@@ -15,4 +17,4 @@ frontmatter:
         - closed/superseded
     title:
       type: string
-      min: 1
+      minLength: 1

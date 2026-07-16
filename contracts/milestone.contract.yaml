@@ -1,19 +1,21 @@
 # Contract for SDLC milestone docs (docs/planning/milestones/M-*.md).
 # Milestone bodies vary by lifecycle stage (planned vs done), so the body is
 # intentionally loose: require only the section common to all of them.
-mcVersion: 1
+mcVersion: 2
 kind: contract
 
 frontmatter:
-  fields:
+  type: object
+  required: [ type, id, title, status, created ]
+  properties:
     type: { const: milestone }
     id: { type: string, pattern: '^M-\d{4}$' }
-    title: { type: string, min: 1 }
+    title: { type: string, minLength: 1 }
     status: { type: string, pattern: '^[a-z-]+/[a-z-]+$' }
     created: { type: string, format: date }
 
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Success criteria

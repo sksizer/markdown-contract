@@ -1,24 +1,26 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: c03 — Dual-key section access  (provenance: 03-dual-key-section-access.ts)
 
 frontmatter:
-  strict: true
-  fields:
+  type: object
+  required: [ id, status ]
+  additionalProperties: false
+  properties:
     id:
       type: string
       pattern: '^T-[0-9A-Z]{4}$'
     status:
-      enum: ["open/ready", "in-progress/active", "closed/done"]
+      enum: [ "open/ready", "in-progress/active", "closed/done" ]
 
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Files to touch
       content:
         table:
-          columns: [Location, Kind, Change]
+          columns: [ Location, Kind, Change ]
           cells:
             Kind:
-              enum: [new, modify, delete]
+              enum: [ new, modify, delete ]

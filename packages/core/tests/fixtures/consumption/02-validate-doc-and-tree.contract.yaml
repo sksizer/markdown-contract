@@ -1,10 +1,12 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: c02 — validate() → findings + doc + tree  (provenance: 02-validate-doc-and-tree.ts)
 
 frontmatter:
-  strict: true
-  fields:
+  type: object
+  required: [ id, status, title ]
+  additionalProperties: false
+  properties:
     id:
       type: string
       pattern: '^D-[0-9A-Z]{4}$'
@@ -15,11 +17,11 @@ frontmatter:
         - closed/superseded
     title:
       type: string
-      min: 1
+      minLength: 1
 
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Summary
     - section: Context

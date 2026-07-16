@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v02 — Multiple required sections  (provenance: 02-multiple-required-sequence.ts)
 
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Title
     - section: Overview

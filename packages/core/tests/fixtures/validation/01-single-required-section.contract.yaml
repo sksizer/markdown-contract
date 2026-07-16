@@ -1,9 +1,9 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v01 — Single required section  (provenance: 01-single-required-section.ts)
 
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Overview

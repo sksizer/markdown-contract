@@ -1,11 +1,12 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v03a — Duplicate section heading  (provenance: 03a-duplicate-section.ts)
 
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Title
     - section: Overview
-      optional: true
+      minContains: 0
+      maxContains: 1

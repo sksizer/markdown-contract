@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v04 — Ordering: recognized-relative  (provenance: 04-recognized-relative-order.ts)
 
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Title
     - section: Overview

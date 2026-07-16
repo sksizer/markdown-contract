@@ -1,9 +1,9 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: c01 — The read() door  (provenance: 01-read-the-model-door.ts)
 
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Overview

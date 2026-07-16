@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v21b — Code fence containing a ## line  (provenance: 21b-fence-contains-heading-line.ts)
 
 body:
   order: strict
-  allowUnknown: false
+  additionalSections: false
   sections:
     - section: Capability
     - section: Sample document

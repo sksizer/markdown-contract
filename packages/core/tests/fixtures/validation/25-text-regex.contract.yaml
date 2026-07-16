@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v25 — Section-scoped requires via a regex alternation  (provenance: 25-text-regex.ts)
 
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Failure modes
       requires:

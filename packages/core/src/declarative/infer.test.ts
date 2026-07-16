@@ -2,7 +2,8 @@
  * Peer unit tests for `inferConfig` single-contract core (D-0009 Phase 2). The gating truth is
  * `tests/fixtures/infer` (accept-by-construction + deterministic over real vaults); these add
  * direct, fast assertions over the model an in-memory vault produces — base-type frontmatter,
- * required/optional split, order detection, the strict flag, naming, and the emitted YAML.
+ * the required list, order detection, additionalProperties, naming, and the emitted YAML.
+ * The emitted vocabulary is mcVersion 2 (D-0020).
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -24,17 +25,22 @@ function file(rel: string, body: string): void {
   writeFileSync(abs, body, "utf8");
 }
 
-/** The single contract's `def`, typed loosely for direct property reads. */
+/** The single contract's `def` (the v2 vocabulary), typed loosely for direct property reads. */
 function def(c: InferredContract): {
-  frontmatter?: { strict?: boolean; fields?: Record<string, Record<string, unknown>> };
+  frontmatter?: {
+    type?: string;
+    required?: string[];
+    additionalProperties?: boolean;
+    properties?: Record<string, Record<string, unknown>>;
+  };
   body?: {
     order?: string;
-    allowUnknown?: boolean;
+    additionalSections?: boolean;
     sections?: Array<{
       section: string;
       aliases?: string[];
-      optional?: boolean;
-      repeatable?: boolean;
+      minContains?: number;
+      maxContains?: number;
     }>;
   };
 } {
@@ -69,14 +75,14 @@ describe("inferConfig — single-contract mode shape", () => {
   });
 });
 
-describe("inferConfig — sections: universal required, the rest optional", () => {
+describe("inferConfig — sections: universal required, the rest counted optional", () => {
   it("splits universal vs partial sections and closes the unknown door", () => {
     file("one.md", "## Summary\n\nx\n\n## Context\n\nx\n");
     file("two.md", "## Summary\n\nx\n");
     const body = def(inferConfig(root).contracts[0]!).body!;
-    expect(body.allowUnknown).toBe(false);
+    expect(body.additionalSections).toBe(false);
     expect(body.sections).toContainEqual({ section: "Summary" });
-    expect(body.sections).toContainEqual({ section: "Context", optional: true });
+    expect(body.sections).toContainEqual({ section: "Context", minContains: 0, maxContains: 1 });
   });
 });
 
@@ -106,44 +112,48 @@ describe("inferConfig — order detection (D-0009 § Step 3 — order)", () => {
   });
 });
 
-describe("inferConfig — frontmatter required/optional + strict", () => {
-  it("required = present in every file; partial keys → optional", () => {
+describe("inferConfig — frontmatter required list + additionalProperties", () => {
+  it("required = present in every file; partial keys stay off the required list", () => {
     file("one.md", "---\ntitle: A\nstatus: open\n---\n\n## S\n\nx\n");
     file("two.md", "---\ntitle: B\n---\n\n## S\n\nx\n");
     const fm = def(inferConfig(root).contracts[0]!).frontmatter!;
-    expect(fm.strict).toBe(true);
-    expect(fm.fields!.title).toEqual({ type: "string" });
-    // `status` is present in only one file → optional; one example is below the default
-    // min-const-examples floor (3), so it is NOT pinned as a const — it falls to a plain string.
-    expect(fm.fields!.status).toEqual({ type: "string", optional: true });
+    expect(fm.type).toBe("object");
+    expect(fm.additionalProperties).toBe(false);
+    expect(fm.required).toEqual(["title"]);
+    expect(fm.properties!.title).toEqual({ type: "string" });
+    // `status` is present in only one file → optional (off the required list); one example is
+    // below the default min-const-examples floor (3), so it is NOT pinned as a const — it
+    // falls to a plain string.
+    expect(fm.properties!.status).toEqual({ type: "string" });
   });
 
   it("--min-const-examples 1 restores pinning a single-example uniform field as const", () => {
     file("one.md", "---\ntitle: A\nstatus: open\n---\n\n## S\n\nx\n");
     file("two.md", "---\ntitle: B\n---\n\n## S\n\nx\n");
     const fm = def(inferConfig(root, { minConstExamples: 1 }).contracts[0]!).frontmatter!;
-    expect(fm.fields!.status).toEqual({ const: "open", optional: true });
+    expect(fm.properties!.status).toEqual({ const: "open" });
+    expect(fm.required).toEqual(["title"]); // status stays optional-by-absence
   });
 
   it("picks the tightest type that admits every observed value (the value ladder)", () => {
     file("one.md", "---\nn: 1\nb: true\narr: [x, y]\ns: hello\n---\n\n## S\n\nx\n");
     file("two.md", "---\nn: 2\nb: false\narr: [z]\ns: 2026-01-01\n---\n\n## S\n\nx\n");
-    const fields = def(inferConfig(root).contracts[0]!).frontmatter!.fields!;
-    // All-integer numbers → number(int); booleans → boolean; arrays → array of loose element.
-    expect(fields.n).toEqual({ type: "number", int: true });
-    expect(fields.b).toEqual({ type: "boolean" });
-    expect(fields.arr).toEqual({ type: "array", of: { type: "string" } });
+    const properties = def(inferConfig(root).contracts[0]!).frontmatter!.properties!;
+    // All-integer numbers → integer; booleans → boolean; arrays → array of loose element.
+    expect(properties.n).toEqual({ type: "integer" });
+    expect(properties.b).toEqual({ type: "boolean" });
+    expect(properties.arr).toEqual({ type: "array", items: { type: "string" } });
     // `hello` matches no format and the set is too small to enum (2 distinct ≥ half of 2) → string.
-    expect(fields.s).toEqual({ type: "string" });
+    expect(properties.s).toEqual({ type: "string" });
   });
 
-  it("--relax drops strict and opens the body floor", () => {
+  it("--relax opens the frontmatter object and the body floor", () => {
     file("one.md", "---\ntitle: A\n---\n\n## A\n\nx\n\n## B\n\nx\n");
     file("two.md", "---\ntitle: B\n---\n\n## A\n\nx\n\n## B\n\nx\n");
     const c = inferConfig(root, { relax: true }).contracts[0]!;
-    expect(def(c).frontmatter!.strict).toBeUndefined();
+    expect(def(c).frontmatter!.additionalProperties).toBeUndefined();
     expect(def(c).body!.order).toBe("none");
-    expect(def(c).body!.allowUnknown).toBe(true);
+    expect(def(c).body!.additionalSections).toBe(true);
   });
 });
 
@@ -160,31 +170,32 @@ describe("inferConfig — value-type ladder (D-0009 § Step 4)", () => {
     }
   }
 
-  it("walks const → number(int) → boolean → format → enum → string", () => {
+  it("walks const → integer → boolean → format → enum → string", () => {
     ladderVault();
-    const fields = def(inferConfig(root).contracts[0]!).frontmatter!.fields!;
-    expect(fields.kind).toEqual({ const: "policy" }); // rung 1 — uniform
-    expect(fields.version).toEqual({ type: "number", int: true }); // rung 2 — all integers
-    expect(fields.active).toEqual({ type: "boolean" }); // rung 3
-    expect(fields.created).toEqual({ type: "string", format: "date" }); // rung 5 — ISO dates
-    expect(fields.severity).toEqual({ enum: ["low", "high"] }); // rung 6 — small closed set
-    expect(fields.title).toEqual({ type: "string" }); // rung 7 — all-distinct free-form
+    const properties = def(inferConfig(root).contracts[0]!).frontmatter!.properties!;
+    expect(properties.kind).toEqual({ const: "policy" }); // rung 1 — uniform
+    expect(properties.version).toEqual({ type: "integer" }); // rung 2 — all integers
+    expect(properties.active).toEqual({ type: "boolean" }); // rung 3
+    expect(properties.created).toEqual({ type: "string", format: "date" }); // rung 5 — ISO dates
+    expect(properties.severity).toEqual({ enum: ["low", "high"] }); // rung 6 — small closed set
+    expect(properties.title).toEqual({ type: "string" }); // rung 7 — all-distinct free-form
   });
 
   it("--relax drops rung 6: a categorical field stays a plain string", () => {
     ladderVault();
-    const fields = def(inferConfig(root, { relax: true }).contracts[0]!).frontmatter!.fields!;
-    expect(fields.severity).toEqual({ type: "string" });
+    const properties = def(inferConfig(root, { relax: true }).contracts[0]!).frontmatter!
+      .properties!;
+    expect(properties.severity).toEqual({ type: "string" });
     // The tighter, non-categorical rungs still fire under --relax.
-    expect(fields.kind).toEqual({ const: "policy" });
-    expect(fields.created).toEqual({ type: "string", format: "date" });
+    expect(properties.kind).toEqual({ const: "policy" });
+    expect(properties.created).toEqual({ type: "string", format: "date" });
   });
 
-  it("non-integer numbers → number (no int)", () => {
+  it("non-integer numbers → number (not integer)", () => {
     file("a.md", "---\nratio: 1.5\n---\n\n## S\n\nx\n");
     file("b.md", "---\nratio: 2\n---\n\n## S\n\nx\n");
-    const fields = def(inferConfig(root).contracts[0]!).frontmatter!.fields!;
-    expect(fields.ratio).toEqual({ type: "number" });
+    const properties = def(inferConfig(root).contracts[0]!).frontmatter!.properties!;
+    expect(properties.ratio).toEqual({ type: "number" });
   });
 });
 
@@ -196,14 +207,14 @@ describe("inferConfig — const string-length cap (T-2CSL)", () => {
 
   it("pins a uniform short string as const", () => {
     repeat(3, "label", "draft"); // 5 chars, uniform across 3 docs (clears the floor) → const
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.label).toEqual({
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.properties!.label).toEqual({
       const: "draft",
     });
   });
 
   it("a uniform string longer than the cap falls through to a plain string", () => {
     repeat(3, "note", `"${"x".repeat(65)}"`); // 65 > default cap 64
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.note).toEqual({
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.properties!.note).toEqual({
       type: "string",
     });
   });
@@ -211,15 +222,17 @@ describe("inferConfig — const string-length cap (T-2CSL)", () => {
   it("the cap is inclusive: a string of exactly the cap length is still const", () => {
     const atCap = "a".repeat(64);
     repeat(3, "k", `"${atCap}"`);
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.k).toEqual({ const: atCap });
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.properties!.k).toEqual({
+      const: atCap,
+    });
   });
 
   it("--max-const-len 0 disables string const; numeric const is untouched", () => {
     for (let i = 0; i < 3; i++) file(`f${i}.md`, "---\ns: hi\nn: 5\n---\n\n## S\n\nx\n");
-    const fields = def(inferConfig(root, { maxConstStringLength: 0 }).contracts[0]!).frontmatter!
-      .fields!;
-    expect(fields.s).toEqual({ type: "string" }); // every non-empty string is over a 0 cap
-    expect(fields.n).toEqual({ const: 5 }); // the cap is string-only
+    const properties = def(inferConfig(root, { maxConstStringLength: 0 }).contracts[0]!)
+      .frontmatter!.properties!;
+    expect(properties.s).toEqual({ type: "string" }); // every non-empty string is over a 0 cap
+    expect(properties.n).toEqual({ const: 5 }); // the cap is string-only
   });
 
   it("excludes a field from enum when any observed value is over the cap", () => {
@@ -228,7 +241,7 @@ describe("inferConfig — const string-length cap (T-2CSL)", () => {
       const v = i % 2 === 0 ? "short" : `"${"y".repeat(70)}"`;
       file(`g${i}.md`, `---\ntag: ${v}\n---\n\n## S\n\nx\n`);
     }
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.tag).toEqual({
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.properties!.tag).toEqual({
       type: "string",
     });
   });
@@ -241,21 +254,21 @@ describe("inferConfig — min-const-examples floor (T-3MCE)", () => {
 
   it("does not pin a uniform field seen in fewer than 3 docs (default floor)", () => {
     repeat(2, "kind", "policy"); // uniform, but only 2 examples < 3
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.kind).toEqual({
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.properties!.kind).toEqual({
       type: "string",
     });
   });
 
   it("pins a uniform field once seen in exactly 3 docs (the boundary)", () => {
     repeat(3, "kind", "policy");
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.kind).toEqual({
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.properties!.kind).toEqual({
       const: "policy",
     });
   });
 
   it("a uniform date below the floor falls to format, not const", () => {
     repeat(2, "created", "2026-06-21");
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.created).toEqual({
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.properties!.created).toEqual({
       type: "string",
       format: "date",
     });
@@ -264,7 +277,7 @@ describe("inferConfig — min-const-examples floor (T-3MCE)", () => {
   it("--min-const-examples 1 pins on a single example", () => {
     repeat(1, "kind", "policy");
     expect(
-      def(inferConfig(root, { minConstExamples: 1 }).contracts[0]!).frontmatter!.fields!.kind,
+      def(inferConfig(root, { minConstExamples: 1 }).contracts[0]!).frontmatter!.properties!.kind,
     ).toEqual({ const: "policy" });
   });
 });
@@ -273,20 +286,28 @@ describe("inferConfig — nullable fields (accept-by-construction)", () => {
   it("an all-null field infers a nullable string placeholder (not a bare string that rejects null)", () => {
     file("a.md", "---\nparent: null\n---\n\n## S\n\nx\n");
     file("b.md", "---\nparent: null\n---\n\n## S\n\nx\n");
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.parent).toEqual({
-      type: "string",
-      nullable: true,
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.properties!.parent).toEqual({
+      type: ["string", "null"],
     });
   });
 
-  it("a field mixing null and non-null infers the non-null type, marked nullable", () => {
+  it("a field mixing null and non-null infers the non-null type, paired with null", () => {
     file("a.md", "---\nn: 1\n---\n\n## S\n\nx\n");
     file("b.md", "---\nn: null\n---\n\n## S\n\nx\n");
-    // 'n' is present in both files (one null) → required; the non-null value is a number.
-    expect(def(inferConfig(root).contracts[0]!).frontmatter!.fields!.n).toEqual({
-      type: "number",
-      int: true,
-      nullable: true,
+    // 'n' is present in both files (one null) → required; the non-null value is an integer.
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.properties!.n).toEqual({
+      type: ["integer", "null"],
+    });
+  });
+
+  it("a nullable field never pins const/enum (no v2 spelling) — it loosens to the base type", () => {
+    // Uniform "policy" across 3 docs would pin const, but the 4th doc's null forces the
+    // type-union spelling — and v2 cannot pair a const/enum base with "null".
+    for (const [i, v] of ["policy", "policy", "policy", "null"].entries()) {
+      file(`f${i}.md`, `---\nkind: ${v}\n---\n\n## S\n\nx\n`);
+    }
+    expect(def(inferConfig(root).contracts[0]!).frontmatter!.properties!.kind).toEqual({
+      type: ["string", "null"],
     });
   });
 });
@@ -391,7 +412,7 @@ describe("inferConfig — heading key-collision handling (T-KCOL)", () => {
   it("the merged contract accepts both spellings (no error findings)", () => {
     file("mon.md", "## Schedule For today\n\nx\n");
     file("tue.md", "## Schedule For Today\n\nx\n");
-    const contract = compileContractObject(inferConfig(root).contracts[0]!.def);
+    const contract = compileContractObject(inferConfig(root).contracts[0]!.def, 2);
     const a = contract.validate("## Schedule For today\n\nx\n", { path: "a.md" });
     const b = contract.validate("## Schedule For Today\n\nx\n", { path: "b.md" });
     expect(a.findings.filter((f) => f.level === "error")).toEqual([]);
@@ -418,10 +439,10 @@ describe("inferConfig — heading key-collision handling (T-KCOL)", () => {
 });
 
 describe("inferConfig — repeatable-slot inference (T-1TA2, AC-4)", () => {
-  it("infers repeatable: true for a heading repeated as peers within one doc", () => {
+  it("infers minContains: 1 (repeatable, no upper bound) for a heading repeated as peers within one doc", () => {
     file("a.md", "## Entry\n\nx\n\n## Entry\n\ny\n");
     const r = inferConfig(root);
-    expect(def(r.contracts[0]!).body!.sections).toEqual([{ section: "Entry", repeatable: true }]);
+    expect(def(r.contracts[0]!).body!.sections).toEqual([{ section: "Entry", minContains: 1 }]);
     // Not a spurious variant-merge: a single spelling emits no alias and no warning.
     expect(r.warnings).toEqual([]);
   });
@@ -429,7 +450,7 @@ describe("inferConfig — repeatable-slot inference (T-1TA2, AC-4)", () => {
   it("the inferred contract accepts its own repeated-peer corpus (accept-by-construction)", () => {
     const src = "## Entry\n\nx\n\n## Entry\n\ny\n";
     file("a.md", src);
-    const contract = compileContractObject(inferConfig(root).contracts[0]!.def);
+    const contract = compileContractObject(inferConfig(root).contracts[0]!.def, 2);
     const res = contract.validate(src, { path: "a.md" });
     expect(res.findings.filter((f) => f.level === "error")).toEqual([]);
   });
@@ -438,13 +459,22 @@ describe("inferConfig — repeatable-slot inference (T-1TA2, AC-4)", () => {
     file("a.md", "## Release\n\nx\n\n## Release\n\ny\n");
     file("b.md", "## Release\n\nz\n");
     const sections = def(inferConfig(root).contracts[0]!).body!.sections!;
-    expect(sections).toEqual([{ section: "Release", repeatable: true }]);
+    expect(sections).toEqual([{ section: "Release", minContains: 1 }]);
   });
 
   it("a non-repeated heading stays a plain (non-repeatable) slot", () => {
     file("a.md", "## Summary\n\nx\n");
     file("b.md", "## Summary\n\ny\n");
     expect(def(inferConfig(root).contracts[0]!).body!.sections).toEqual([{ section: "Summary" }]);
+  });
+
+  it("optional + repeatable → minContains: 0 with no upper bound", () => {
+    // `Note` repeats as peers in one doc but is absent from the other: absent-or-many.
+    file("a.md", "## Note\n\nx\n\n## Note\n\ny\n\n## S\n\nx\n");
+    file("b.md", "## S\n\nx\n");
+    const sections = def(inferConfig(root).contracts[0]!).body!.sections!;
+    expect(sections).toContainEqual({ section: "Note", minContains: 0 });
+    expect(sections).toContainEqual({ section: "S" });
   });
 });
 
@@ -458,9 +488,9 @@ describe("inferConfig — emission + determinism", () => {
     expect(b.files).toEqual(a.files);
 
     const yaml = parse(a.files[0]!.content) as Record<string, unknown>;
-    expect(yaml.mcVersion).toBe(1);
+    expect(yaml.mcVersion).toBe(2);
     expect(yaml.kind).toBe("contract");
-    // The emitted def round-trips through the loader the self-check uses.
-    expect(() => compileContractObject(a.contracts[0]!.def)).not.toThrow();
+    // The emitted def round-trips through the loader the self-check uses (the v2 compilers).
+    expect(() => compileContractObject(a.contracts[0]!.def, 2)).not.toThrow();
   });
 });

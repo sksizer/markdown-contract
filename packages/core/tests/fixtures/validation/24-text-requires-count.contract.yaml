@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v24 — Section-scoped requires with a min count  (provenance: 24-text-requires-count.ts)
 
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Checklist
       requires:

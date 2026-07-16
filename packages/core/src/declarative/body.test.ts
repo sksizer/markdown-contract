@@ -39,6 +39,9 @@ function expectParity(fx: ValidationFixture, stem: string): void {
   }
 }
 
+// NOTE: the fixture `.contract.yaml` twins migrated to mcVersion 2 (D-0020), so this parity
+// sample now drives the v2 compilers; the v1 dialect keeps its own direct coverage below
+// (it stays supported until the v1 retirement PR).
 describe("body + leaf compiler — parity with the TS fixtures (sample)", () => {
   it("v01 — single required section", () => expectParity(v01, "01-single-required-section"));
   it("v05 — strict order + gap window", () => expectParity(v05, "05-strict-prefix-gap-tail"));
@@ -96,5 +99,220 @@ describe("body compiler — repeatable slot (T-1TA2, AC-4)", () => {
     const c = loadContract(yaml);
     const src = ["## Entry", "", "a", "", "## Entry", "", "b", ""].join("\n");
     expect(c.validate(src, ctx).findings).toEqual([]);
+  });
+});
+
+// Direct v1-dialect coverage (D-0008). The fixture corpus twins now compile through the v2
+// vocabulary, so the v1 body/leaf spellings — `allowUnknown`, `optional`, `children`,
+// `everyItem`, and the leaf configs — are exercised here against the compiler they target.
+describe("body compiler — the v1 dialect, given this input you get exactly this", () => {
+  const ctx = { path: "fixture.md" };
+  const compile = (body: Record<string, unknown>) => compileContractObject({ body });
+  const ids = (c: ReturnType<typeof compile>, src: string): string[] =>
+    c.validate(src, ctx).findings.map((f) => f.id);
+
+  it("order: strict + a gap window + an optional tail — the v05 shape, hand-built", () => {
+    const c = compile({
+      order: "strict",
+      allowUnknown: false,
+      sections: [
+        { section: "Title" },
+        { section: "Overview" },
+        { gap: {} },
+        { section: "Appendix", optional: true },
+      ],
+    });
+    const pass = "## Title\n\nt\n\n## Overview\n\no\n\n## Risks\n\nr\n\n## Appendix\n\na\n";
+    expect(ids(c, pass)).toEqual([]);
+  });
+
+  it("gap bounds ({ min, max }) compile and enforce structure/gap-count", () => {
+    const c = compile({
+      order: "strict",
+      allowUnknown: false,
+      sections: [{ section: "A" }, { gap: { min: 1, max: 1 } }, { section: "B" }],
+    });
+    expect(ids(c, "## A\n\nx\n\n## X\n\nx\n\n## B\n\nx\n")).toEqual([]);
+    expect(ids(c, "## A\n\nx\n\n## B\n\nx\n")).toEqual(["structure/gap-count"]);
+  });
+
+  it("oneOf admits any listed spelling; aliases admit alternate spellings of one slot", () => {
+    const c = compile({
+      order: "none",
+      allowUnknown: true,
+      sections: [
+        { oneOf: ["Goal", "Goal / Problem statement"] },
+        { section: "Summary", aliases: ["TL;DR"], optional: true },
+      ],
+    });
+    expect(ids(c, "## Goal / Problem statement\n\ng\n\n## TL;DR\n\ns\n")).toEqual([]);
+    expect(ids(c, "## Goal\n\ng\n")).toEqual([]);
+  });
+
+  it("anchor requires the section's ^block-id (structure/anchor-missing when absent)", () => {
+    const c = compile({
+      order: "none",
+      allowUnknown: false,
+      sections: [{ section: "Summary", anchor: "summary", content: { maxWords: 120 } }],
+    });
+    expect(ids(c, "## Summary\n\nShort enough.\n^summary\n")).toEqual([]);
+    expect(ids(c, "## Summary\n\nShort enough.\n")).toEqual(["structure/anchor-missing"]);
+  });
+
+  it("children recurse into a nested level with its own order/allowUnknown", () => {
+    const c = compile({
+      order: "none",
+      allowUnknown: true,
+      sections: [
+        {
+          section: "Decision",
+          children: {
+            order: "strict",
+            allowUnknown: false,
+            sections: [{ section: "Components" }, { section: "Resolution" }],
+          },
+        },
+      ],
+    });
+    expect(ids(c, "## Decision\n\n### Components\n\nc\n\n### Resolution\n\nr\n")).toEqual([]);
+    // Missing the first strict child both misses the slot and breaks the strict order.
+    expect(ids(c, "## Decision\n\n### Resolution\n\nr\n")).toEqual([
+      "structure/section-missing",
+      "structure/section-order",
+    ]);
+  });
+
+  it("content leaves: code lang, table (minRows/cells/extraColumns), list (everyItem schema)", () => {
+    const c = compile({
+      order: "none",
+      allowUnknown: false,
+      sections: [
+        { section: "Snippet", content: { code: { lang: "ts" } } },
+        {
+          section: "Ports",
+          content: {
+            table: {
+              columns: ["Name", "Port"],
+              minRows: 1,
+              extraColumns: "ignore",
+              cells: { Port: { type: "string", pattern: "^\\d+$" } },
+            },
+          },
+        },
+        {
+          section: "Steps",
+          content: { list: { ordered: false, minItems: 2, everyItem: { type: "string" } } },
+        },
+      ],
+    });
+    const pass = [
+      "## Snippet",
+      "",
+      "```ts",
+      "const x = 1;",
+      "```",
+      "",
+      "## Ports",
+      "",
+      "| Name | Port | Notes |",
+      "| ---- | ---- | ----- |",
+      "| api  | 8080 | main  |",
+      "",
+      "## Steps",
+      "",
+      "- first",
+      "- second",
+      "",
+    ].join("\n");
+    expect(ids(c, pass)).toEqual([]);
+  });
+
+  it("a named-leaf record binds multiple anchored tables in one section", () => {
+    const c = compile({
+      order: "none",
+      allowUnknown: false,
+      sections: [
+        {
+          section: "Decision",
+          content: {
+            components: { table: { columns: ["Component"], anchor: "components" } },
+            risks: { table: { columns: ["Risk"], anchor: "risks" } },
+          },
+        },
+      ],
+    });
+    const pass = [
+      "## Decision",
+      "",
+      "| Component |",
+      "| --------- |",
+      "| grammar   |",
+      "^components",
+      "",
+      "| Risk |",
+      "| ---- |",
+      "| none |",
+      "^risks",
+      "",
+    ].join("\n");
+    expect(ids(c, pass)).toEqual([]);
+  });
+
+  it("list everyItem: checkbox and bare code/maxWords leaves compile", () => {
+    const c = compile({
+      order: "none",
+      allowUnknown: false,
+      sections: [
+        { section: "ACs", content: { list: { everyItem: "checkbox", minItems: 1 } } },
+        { section: "Notes", content: { maxWords: 5 } },
+        { section: "Dump", content: { code: {} } },
+      ],
+    });
+    const pass = [
+      "## ACs",
+      "",
+      "- [ ] one",
+      "",
+      "## Notes",
+      "",
+      "Short.",
+      "",
+      "## Dump",
+      "",
+      "```",
+      "raw",
+      "```",
+      "",
+    ].join("\n");
+    expect(ids(c, pass)).toEqual([]);
+  });
+
+  it("rejects malformed bodies with a DeclarativeError naming the path", () => {
+    expect(() => compile({ order: "alphabetical", sections: [] })).toThrow(DeclarativeError);
+    expect(() => compile({ allowUnknown: "yes", sections: [] })).toThrow(DeclarativeError);
+    expect(() => compile({ sections: "not-a-list" })).toThrow(DeclarativeError);
+    expect(() => compile({ sections: ["not-a-map"] })).toThrow(DeclarativeError);
+    expect(() => compile({ sections: [{ note: "no selector" }] })).toThrow(DeclarativeError);
+    expect(() => compile({ sections: [{ oneOf: [] }] })).toThrow(DeclarativeError);
+    expect(() => compile({ sections: [{ section: 7 }] })).toThrow(DeclarativeError);
+    expect(() => compile({ sections: [{ section: "S", aliases: [1] }] })).toThrow(DeclarativeError);
+    expect(() => compile({ sections: [{ section: "S", content: "words" }] })).toThrow(
+      DeclarativeError,
+    );
+    expect(() => compile({ sections: [{ section: "S", content: { maxWords: "many" } }] })).toThrow(
+      DeclarativeError,
+    );
+    expect(() => compile({ sections: [{ section: "S", content: { table: [] } }] })).toThrow(
+      DeclarativeError,
+    );
+    expect(() =>
+      compile({ sections: [{ section: "S", content: { table: { columns: [1] } } }] }),
+    ).toThrow(DeclarativeError);
+    expect(() =>
+      compile({ sections: [{ section: "S", content: { table: { columns: ["A"], cells: 4 } } }] }),
+    ).toThrow(DeclarativeError);
+    expect(() => compile({ sections: [{ section: "S", content: { list: true } }] })).toThrow(
+      DeclarativeError,
+    );
   });
 });

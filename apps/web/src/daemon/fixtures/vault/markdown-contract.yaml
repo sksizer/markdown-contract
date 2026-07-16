@@ -1,12 +1,12 @@
 # Fixture vault config for the daemon peer test (T-DAEM). Auto-discovered as a default
 # config name, so `POST /api/validate { path: <this vault> }` — and the equivalent
 # `cd <vault> && markdown-contract validate` — both route every `*.md` through note.contract.yaml.
-mcVersion: 1
+mcVersion: 2
 kind: config
 
 contracts:
   note: ./note.contract.yaml
 
 rules:
-  - include: ['**/*.md']
+  - include: [ '**/*.md' ]
     contract: note

@@ -1,58 +1,62 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: c11 — Real Task consumed end-to-end  (provenance: 11-real-task-consumed.ts)
 
 frontmatter:
-  strict: true
-  fields:
+  type: object
+  required: [ id, type, status, title, tags, impact, complexity ]
+  additionalProperties: false
+  properties:
     id:
       type: string
       pattern: '^T-[0-9A-Z]{4}$'
     type:
       const: task
     status:
-      enum: [open/ready, in-progress/active, closed/done]
+      enum: [ open/ready, in-progress/active, closed/done ]
     title:
       type: string
-      min: 1
+      minLength: 1
     tags:
       type: array
-      of:
+      items:
         type: string
       default: []
     impact:
-      enum: [low, medium, high]
+      enum: [ low, medium, high ]
     complexity:
-      enum: [small, medium, large]
+      enum: [ small, medium, large ]
 
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
-    - oneOf: [Goal, Goal / Problem statement]
+    - oneOf: [ Goal, Goal / Problem statement ]
     - section: Today
-      optional: true
+      minContains: 0
+      maxContains: 1
     - section: Files to touch
-      optional: true
+      minContains: 0
+      maxContains: 1
       content:
         table:
-          columns: [Location, Kind, Change]
+          columns: [ Location, Kind, Change ]
           cells:
             Kind:
-              enum: [new, modify, delete]
+              enum: [ new, modify, delete ]
     - section: Acceptance criteria
       content:
         list:
-          everyItem: checkbox
+          items: checkbox
           minItems: 1
     - section: Post-mortem
-      optional: true
-      children:
-        order: strict
-        allowUnknown: false
-        sections:
-          - section: Acceptance criteria coverage
-          - section: What worked
-          - section: Friction and automation gaps
+      minContains: 0
+      maxContains: 1
+      order: strict
+      additionalSections: false
+      sections:
+        - section: Acceptance criteria coverage
+        - section: What worked
+        - section: Friction and automation gaps
 
 # GAP: docRule("task/post-mortem-when-worked") — cross-plane doc rule (custom function) is not expressible in v1; rule() and docRule() are deferred
