@@ -1,14 +1,15 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: c09 — Unknown sections  (provenance: 09-unknown-sections.ts)
 
 body:
   order: strict
-  allowUnknown: false
+  additionalSections: false
   sections:
     - section: Title
     - section: Overview
     - section: Status
     - gap: {}
     - section: Appendix
-      optional: true
+      minContains: 0
+      maxContains: 1

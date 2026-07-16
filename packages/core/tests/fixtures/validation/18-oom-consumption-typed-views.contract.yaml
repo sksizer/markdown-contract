@@ -1,10 +1,12 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v18 — OOM consumption: typed rows, byAnchor, dual-key  (provenance: 18-oom-consumption-typed-views.ts)
 
 frontmatter:
-  strict: true
-  fields:
+  type: object
+  required: [ id, status ]
+  additionalProperties: false
+  properties:
     id:
       type: string
       pattern: '^T-[0-9A-Z]{4}$'
@@ -16,7 +18,7 @@ frontmatter:
 
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Files to touch
       content:

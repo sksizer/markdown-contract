@@ -10,7 +10,7 @@ const dir = fileURLToPath(new URL("./vault", import.meta.url));
 /**
  * 01 · flat-uniform (infer-core). Three flat files with identical sections
  * (Summary/Context/Decision/Notes) and identical frontmatter keys (title/status).
- * The tightest accepting contract: every section required, `allowUnknown: false`,
+ * The tightest accepting contract: every section required, `additionalSections: false`,
  * and both frontmatter keys required (D-0009 § Step 3).
  */
 const fixture: InferenceFixture = {
@@ -30,11 +30,12 @@ const fixture: InferenceFixture = {
     }
 
     // Nothing unlisted ever appeared → the unknown door is closed.
-    expect(asDef(def).body?.allowUnknown).toBe(false);
+    expect(asDef(def).body?.additionalSections).toBe(false);
 
     // Both frontmatter keys appear in every file → both required.
-    const fields = asDef(def).frontmatter?.fields ?? {};
-    expect(Object.keys(fields).sort()).toEqual(["status", "title"]);
+    const properties = asDef(def).frontmatter?.properties ?? {};
+    expect(Object.keys(properties).sort()).toEqual(["status", "title"]);
+    expect((asDef(def).frontmatter?.required ?? []).sort()).toEqual(["status", "title"]);
   },
 };
 

@@ -22,24 +22,26 @@
  *    plus an optional root contract for files directly in the run root. Contracts are
  *    uniform-depth and never nested, so globs never overlap (D-0009 § Step 2). Files stranded
  *    between the root and a depth ≥ 2 cut are *warned*, never wrapped in a nested contract.
- *  - **Sections** (D-0009 § Step 3): required = present in EVERY file; the rest emitted
- *    `optional: true`; `allowUnknown: false` when no unlisted section appeared; `order` is the
- *    strongest consistent with every file — `strict` only if every file is identical+gap-free,
- *    `recognized-relative` if files agree on relative order, else `none`.
- *  - **Frontmatter** (D-0009 § Step 3): required keys = present in every file; `strict: true`
- *    only when the key set is closed; field value types from the value ladder.
+ *  - **Sections** (D-0009 § Step 3): required = present in EVERY file; the rest emitted as
+ *    counted slots (`minContains: 0` + `maxContains: 1`, D-0020); `additionalSections: false`
+ *    when no unlisted section appeared; `order` is the strongest consistent with every file —
+ *    `strict` only if every file is identical+gap-free, `recognized-relative` if files agree
+ *    on relative order, else `none`.
+ *  - **Frontmatter** (D-0009 § Step 3): a v2 object schema node — `required` lists the keys
+ *    present in every file; `additionalProperties: false` only when the key set is closed;
+ *    field value types from the value ladder.
  *  - **Value ladder** (D-0009 § Step 4): const (uniform) → number → boolean → array →
  *    format (date/datetime/email/url/uuid/…) → enum (distinct ≤ 12 AND < half the files) →
  *    else string. Every rung admits every observed value.
  *  - **`--relax`** (D-0009 § Step 3/4): loosen to a permissive floor — `order: none`,
- *    `allowUnknown: true`, non-strict frontmatter, everything-non-universal optional, no enums,
- *    loosest value types.
+ *    `additionalSections: true`, an open frontmatter object, everything-non-universal optional,
+ *    no enums, loosest value types.
  *  - **Naming** (D-0009 § Open questions): a contract is named after its directory's full
  *    relative-path slug (`api`, `api-v1`, `web-v1`) — inherently unique, no de-collision step.
  *
- * v1 is a producer of the C-0006 / C-0007 declarative-YAML formats and a consumer of its own
- * output (the self-check loads the scaffold back and runs it); it adds no format and no engine
- * surface (D-0009 § Consequences).
+ * The inferer is a producer of the declarative-YAML formats (C-0006 / C-0007) — emitting the
+ * mcVersion 2 vocabulary (D-0020) — and a consumer of its own output (the self-check loads the
+ * scaffold back and runs it); it adds no format and no engine surface (D-0009 § Consequences).
  *
  * This module implements the **single-contract core** (Phase 2) plus the full **value-type
  * ladder** (Phase 3) plus **meta-config mode** (Phase 4): discovery, the body grammar
@@ -104,10 +106,11 @@ interface InferSink {
 
 /**
  * One inferred contract for a directory group, in declarative-YAML OBJECT form.
- * `def` is exactly a `compileContractObject` input:
- *   { frontmatter?: { strict?: boolean; fields?: Record<string, unknown> },
- *     body?: { order?: "none"|"recognized-relative"|"strict"; allowUnknown?: boolean;
- *              sections?: Array<{ section: string; optional?: boolean }> } }
+ * `def` is exactly a `compileContractObject(def, 2)` input — the v2 vocabulary (D-0020):
+ *   { frontmatter?: { type: "object"; required?: string[]; additionalProperties?: boolean;
+ *                     properties?: Record<string, unknown> },
+ *     body?: { order?: "none"|"recognized-relative"|"strict"; additionalSections?: boolean;
+ *              sections?: Array<{ section: string; minContains?: number; maxContains?: number }> } }
  */
 export interface InferredContract {
   name: string; // directory full-relative-path slug
@@ -405,9 +408,9 @@ function isScalar(v: unknown): v is string | number | boolean {
  *
  *  1. all values **identical** (a scalar), seen in **≥ `opts.minConstExamples`** docs, and — for
  *     strings — **≤ `opts.maxConstStringLength`** long → `{ const: <value> }`;
- *  2. else all **numbers** → `{ type: number }` (`int: true` if all integers);
+ *  2. else all **numbers** → `{ type: number }` (`type: integer` if all integers);
  *  3. else all **booleans** → `{ type: boolean }`;
- *  4. else all **arrays** → `{ type: array, of: <recursively inferred LOOSE element schema> }`;
+ *  4. else all **arrays** → `{ type: array, items: <recursively inferred LOOSE element schema> }`;
  *  5. else all **strings matching one `format`** (most specific; `date` before `datetime`) →
  *     `{ type: string, format: <name> }`;
  *  6. else a **small closed categorical set** — ≤ 12 distinct values, fewer than half the files,
@@ -431,23 +434,31 @@ function inferFieldSchema(
   // Null — handled before the rungs. No base rung admits `null` (string/number/boolean/array and
   // enum/const all reject it), so a field with a `null` observation would otherwise infer a schema
   // that rejects its own corpus (breaking accept-by-construction, D-0009 § Self-check). Infer over
-  // the non-null values and mark the result `nullable`; an all-null field becomes a nullable string
-  // placeholder (the author can tighten the base type by hand).
+  // the non-null values and pair the base type with "null" in a v2 type union (D-0020). The v2
+  // subset has no nullable spelling for an enum/const base, so those rungs are disabled here —
+  // strictly looser, so accept-by-construction still holds. An all-null field becomes a nullable
+  // string placeholder (the author can tighten the base type by hand).
   if (values.some((v) => v === null)) {
     const nonNull = values.filter((v) => v !== null);
+    const typedOpts: FieldInferOptions = {
+      ...opts,
+      relax: true, // rung 6 (enum) has no nullable v2 spelling
+      minConstExamples: Number.MAX_SAFE_INTEGER, // rung 1 (const) has none either
+    };
     const baseSchema =
-      nonNull.length > 0 ? inferFieldSchema(nonNull, fileCount, opts) : { type: "string" };
-    return { ...baseSchema, nullable: true };
+      nonNull.length > 0 ? inferFieldSchema(nonNull, fileCount, typedOpts) : { type: "string" };
+    const { type, ...rest } = baseSchema as { type: string } & Record<string, unknown>;
+    return { type: [type, "null"], ...rest };
   }
 
   // Rung 1 — all identical (scalar) → const (with the length / min-examples guards).
   const constSchema = constRung(values, opts);
   if (constSchema) return constSchema;
 
-  // Rung 2 — all numbers → number (int when every value is an integer).
+  // Rung 2 — all numbers → number (`type: integer` when every value is an integer).
   if (values.every((v) => typeof v === "number")) {
     return (values as number[]).every((n) => Number.isInteger(n))
-      ? { type: "number", int: true }
+      ? { type: "integer" }
       : { type: "number" };
   }
 
@@ -461,7 +472,10 @@ function inferFieldSchema(
   // so it admits each item the corpus actually carries.
   if (values.every((v) => Array.isArray(v))) {
     const items = (values as unknown[][]).flat();
-    return { type: "array", of: inferFieldSchema(items, items.length, { ...opts, relax: true }) };
+    return {
+      type: "array",
+      items: inferFieldSchema(items, items.length, { ...opts, relax: true }),
+    };
   }
 
   // Rung 5 (format) + Rung 6 (enum) — all strings.
@@ -527,17 +541,18 @@ function enumRung(
 }
 
 /**
- * Generalize the frontmatter plane (D-0009 § Step 3 — frontmatter). Keys in first-appearance
- * order (deterministic); required = present in EVERY doc, the rest `optional: true`. Field
- * value types come from the value-type ladder (`inferFieldSchema`), the *tightest* schema that
- * still admits every observed value. `strict: true` is always safe here: every key any doc
- * carried is listed, so the key set is closed by construction; `--relax` drops it to non-strict
- * and (via the ladder) drops categorical enums.
+ * Generalize the frontmatter plane (D-0009 § Step 3 — frontmatter), emitted as a v2 OBJECT
+ * schema node (D-0020): keys in first-appearance order (deterministic); `required` lists the
+ * keys present in EVERY doc (v2 is optional-by-default, so the rest simply stay off the list).
+ * Field value types come from the value-type ladder (`inferFieldSchema`), the *tightest* schema
+ * that still admits every observed value. `additionalProperties: false` is always safe here:
+ * every key any doc carried is listed, so the key set is closed by construction; `--relax`
+ * drops it (open object) and (via the ladder) drops categorical enums.
  */
 function inferFrontmatter(
   docs: ParsedDoc[],
   opts: FieldInferOptions,
-): { strict?: boolean; fields: Record<string, unknown> } | undefined {
+): Record<string, unknown> | undefined {
   const keys: string[] = [];
   const seen = new Set<string>();
   const values = new Map<string, unknown[]>();
@@ -556,17 +571,22 @@ function inferFrontmatter(
   // The rung-6 ratio gates `enum` against the group's file count, not a field's present-count,
   // so a half-optional field doesn't enum on coincidence (D-0009 § Step 4, rung 6).
   const fileCount = docs.length;
-  const fields: Record<string, unknown> = {};
+  const properties: Record<string, unknown> = {};
+  const required: string[] = [];
   for (const key of keys) {
     const present = docs.filter((d) => key in d.frontmatter).length;
-    const optional = present < docs.length;
-    const schema = inferFieldSchema(values.get(key)!, fileCount, opts);
-    fields[key] = optional ? { ...schema, optional: true } : schema;
+    if (present === docs.length) required.push(key);
+    properties[key] = inferFieldSchema(values.get(key)!, fileCount, opts);
   }
 
-  // The key set is closed by construction (every observed key is listed), so strict is safe;
-  // `--relax` loosens to non-strict (D-0009 § Step 3 — frontmatter; § --relax).
-  return opts.relax ? { fields } : { strict: true, fields };
+  // Canonical v2 node order (as the codemod emits): type, required, additionalProperties,
+  // properties. The key set is closed by construction (every observed key is listed), so
+  // `additionalProperties: false` is safe; `--relax` loosens to an open object (D-0009 § --relax).
+  const node: Record<string, unknown> = { type: "object" };
+  if (required.length > 0) node.required = required;
+  if (!opts.relax) node.additionalProperties = false;
+  node.properties = properties;
+  return node;
 }
 
 // ── Body (D-0009 § Step 3 — sections / order / unknown) ────────────────────────────
@@ -591,9 +611,10 @@ function dedupePreservingOrder(names: string[]): string[] {
 }
 
 /**
- * Generalize the body plane (D-0009 § Step 3 — sections + order + unknown admission). Lists
- * the group's complete observed section vocabulary in the detected order; required = universal,
- * the rest `optional: true`; `allowUnknown: false` (every observed section is listed, so the
+ * Generalize the body plane (D-0009 § Step 3 — sections + order + unknown admission), emitted
+ * in the v2 vocabulary (D-0020). Lists the group's complete observed section vocabulary in the
+ * detected order; required = universal (a plain slot), the rest counted `minContains: 0` +
+ * `maxContains: 1`; `additionalSections: false` (every observed section is listed, so the
  * unknown door is safe to close) — `--relax` opens it and drops order to `none`.
  *
  * Sections are keyed by their generated camelCase key (`core/camel.ts`), and two DISTINCT
@@ -613,12 +634,12 @@ function inferBody(
 ):
   | {
       order: Order;
-      allowUnknown: boolean;
+      additionalSections: boolean;
       sections: Array<{
         section: string;
         aliases?: string[];
-        optional?: boolean;
-        repeatable?: boolean;
+        minContains?: number;
+        maxContains?: number;
       }>;
     }
   | undefined {
@@ -645,8 +666,8 @@ function inferBody(
   const entries: Array<{
     section: string;
     aliases?: string[];
-    optional?: boolean;
-    repeatable?: boolean;
+    minContains?: number;
+    maxContains?: number;
   }> = [];
   const emitted = new Set<string>(); // primary spellings already emitted
   for (const name of sections) {
@@ -654,8 +675,8 @@ function inferBody(
   }
 
   return relax
-    ? { order: "none", allowUnknown: true, sections: entries }
-    : { order, allowUnknown: false, sections: entries };
+    ? { order: "none", additionalSections: true, sections: entries }
+    : { order, additionalSections: false, sections: entries };
 }
 
 /** Group observed section spellings by their generated camelCase key, in first-appearance order. */
@@ -674,8 +695,13 @@ function groupSpellingsByKey(sections: string[]): Map<string, string[]> {
 
 /**
  * Emit the section entry for `name` — but only once per merged slot, at its primary spelling. An
- * alias spelling (or an already-emitted primary) is skipped; the primary carries any `aliases` and
- * an `optional` flag (unless every doc has one of the merged spellings), and records the merge.
+ * alias spelling (or an already-emitted primary) is skipped; the primary carries any `aliases`
+ * and its v2 occurrence bounds (D-0020 § Occurrence), and records the merge. The occurrence
+ * matrix mirrors the v1→v2 codemod exactly:
+ *   - required, non-repeating   → a plain slot (no occurrence keys);
+ *   - optional, non-repeating   → `minContains: 0` + `maxContains: 1`;
+ *   - required, repeating       → `minContains: 1` (no upper bound);
+ *   - optional, repeating       → `minContains: 0` (no upper bound).
  */
 function emitSectionEntry(
   name: string,
@@ -684,7 +710,12 @@ function emitSectionEntry(
   repeatedSpellings: Set<string>,
   docs: ParsedDoc[],
   sink: InferSink,
-  entries: Array<{ section: string; aliases?: string[]; optional?: boolean; repeatable?: boolean }>,
+  entries: Array<{
+    section: string;
+    aliases?: string[];
+    minContains?: number;
+    maxContains?: number;
+  }>,
 ): void {
   const key = toCamelKey(name);
   const spellings = key === "" ? [name] : byKey.get(key)!;
@@ -696,13 +727,21 @@ function emitSectionEntry(
   const aliases = spellings.slice(1);
   // Required iff every doc carries at least ONE of the (merged) spellings.
   const required = docs.every((d) => spellings.some((s) => d.sections.includes(s)));
-  const entry: { section: string; aliases?: string[]; optional?: boolean; repeatable?: boolean } = {
-    section: primary,
-  };
-  if (aliases.length > 0) entry.aliases = aliases;
-  if (!required) entry.optional = true;
   // Repeatable when any of the slot's spellings recurs as peers within one doc (T-1TA2).
-  if (spellings.some((s) => repeatedSpellings.has(s))) entry.repeatable = true;
+  const repeatable = spellings.some((s) => repeatedSpellings.has(s));
+  const entry: {
+    section: string;
+    aliases?: string[];
+    minContains?: number;
+    maxContains?: number;
+  } = { section: primary };
+  if (aliases.length > 0) entry.aliases = aliases;
+  if (repeatable) {
+    entry.minContains = required ? 1 : 0; // repeatable — no upper bound
+  } else if (!required) {
+    entry.minContains = 0;
+    entry.maxContains = 1;
+  }
   entries.push(entry);
 
   if (aliases.length > 0) recordAliasMerge(spellings, key, primary, docs, sink);
@@ -902,7 +941,7 @@ function inferMeta(
 function emitMetaFiles(contracts: InferredContract[], inline: boolean): InferredFile[] {
   if (inline) {
     const config = {
-      mcVersion: 1,
+      mcVersion: 2,
       kind: "config",
       rules: contracts.map((c) => ({ include: c.include, contract: c.def })),
     };
@@ -912,7 +951,7 @@ function emitMetaFiles(contracts: InferredContract[], inline: boolean): Inferred
   const registry: Record<string, string> = {};
   for (const c of contracts) registry[c.name] = `./contracts/${c.name}.contract.yaml`;
   const config = {
-    mcVersion: 1,
+    mcVersion: 2,
     kind: "config",
     contracts: registry,
     rules: contracts.map((c) => ({ include: c.include, contract: c.name })),
@@ -924,7 +963,7 @@ function emitMetaFiles(contracts: InferredContract[], inline: boolean): Inferred
   for (const c of contracts) {
     files.push({
       path: `contracts/${c.name}.contract.yaml`,
-      content: stringifyYaml({ mcVersion: 1, kind: "contract", ...c.def }),
+      content: stringifyYaml({ mcVersion: 2, kind: "contract", ...c.def }),
     });
   }
   return files;
@@ -968,7 +1007,7 @@ export function inferConfig(root: string, opts?: InferOptions): InferResult {
     const def = generalize(docs, fieldOpts, sink);
     const name = slugify(basename(absRoot));
     const contract: InferredContract = { name, include: ["**/*.md"], def };
-    const content = stringifyYaml({ mcVersion: 1, kind: "contract", ...def });
+    const content = stringifyYaml({ mcVersion: 2, kind: "contract", ...def });
     result = {
       mode: "single",
       contracts: [contract],

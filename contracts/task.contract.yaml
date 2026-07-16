@@ -1,9 +1,11 @@
 # Contract for SDLC task docs (docs/planning/tasks/T-*.md).
-mcVersion: 1
+mcVersion: 2
 kind: contract
 
 frontmatter:
-  fields:
+  type: object
+  required: [ type, id, status, created ]
+  properties:
     type: { const: task }
     id: { type: string, pattern: '^T-[0-9A-Z]{4}$' }
     # Canonical task lifecycle, mirrored from the SDLC plugin schema
@@ -31,7 +33,7 @@ frontmatter:
 
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Goal
     - section: Today

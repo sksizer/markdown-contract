@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v09a — maxWords exceeded  (provenance: 09a-maxwords-exceeded.ts)
 
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Summary
       anchor: summary

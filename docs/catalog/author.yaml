@@ -9,26 +9,29 @@ examples:
     artifact_kind: yaml
     artifact: |
       # decision.contract.yaml
-      mcVersion: 1
+      mcVersion: 2
       kind: contract
       frontmatter:
-        fields:
+        type: object
+        required: [id, status, created]
+        properties:
           id:      { type: string, pattern: '^D-\d{4}$' }
           status:  { enum: [proposed, accepted, superseded] }
           created: { type: string, format: date }
-          owner:   { type: string, format: email, optional: true }
+          owner:   { type: string, format: email }
       body:
         order: recognized-relative
-        allowUnknown: true
+        additionalSections: true
         sections:
           - section: Summary
           - section: Decision
           - section: Consequences
-            optional: true
+            minContains: 0
+            maxContains: 1
     surfaces:
       - "kind: contract envelope"
-      - "field vocabulary (type / enum / pattern / format / optional)"
-      - "section grammar (order, allowUnknown, optional)"
+      - "field vocabulary (type / enum / pattern / format / required)"
+      - "section grammar (order, additionalSections, minContains)"
 
   - id: author-02
     name: "Typed tables and checklists"
@@ -38,7 +41,7 @@ examples:
     artifact_kind: yaml
     artifact: |
       # runbook.contract.yaml
-      mcVersion: 1
+      mcVersion: 2
       kind: contract
       body:
         sections:
@@ -50,11 +53,11 @@ examples:
                 columns: [Name, Port, Protocol]
                 minRows: 1
                 cells:
-                  Port:     { type: number, int: true, min: 1, max: 65535 }
+                  Port:     { type: integer, minimum: 1, maximum: 65535 }
                   Protocol: { enum: [tcp, udp] }
           - section: Checklist
             content:
-              list: { everyItem: checkbox, minItems: 3 }
+              list: { items: checkbox, minItems: 3 }
     surfaces:
       - "content leaves (table / list / maxWords)"
       - "per-column cell schemas"
@@ -68,7 +71,7 @@ examples:
     artifact_kind: yaml
     artifact: |
       # postmortem.contract.yaml
-      mcVersion: 1
+      mcVersion: 2
       kind: contract
       body:
         # on the body root: one document-scoped rule
@@ -91,29 +94,29 @@ examples:
 
   - id: author-04
     name: "Headings that repeat: changelogs"
-    demonstrates: "A `repeatable` slot lets one heading legitimately recur as peers — with optional occurrence bounds — instead of tripping the duplicate-section rule."
+    demonstrates: "A counted slot lets one heading legitimately recur as peers — with `minContains` / `maxContains` occurrence bounds — instead of tripping the duplicate-section rule."
     rank: 4
     builds_on: author-01
     artifact_kind: yaml
     artifact: |
       # changelog.contract.yaml
-      mcVersion: 1
+      mcVersion: 2
       kind: contract
       body:
         sections:
           - section: Release
-            repeatable: true
-            min: 1          # at least one release entry
-            children:
-              sections:
-                - section: Added
-                  optional: true
-                - section: Fixed
-                  optional: true
+            minContains: 1  # at least one release entry, repeatable
+            sections:
+              - section: Added
+                minContains: 0
+                maxContains: 1
+              - section: Fixed
+                minContains: 0
+                maxContains: 1
     surfaces:
       - "repeatable sections"
-      - "occurrence bounds (min / max)"
-      - "nested children grammars"
+      - "occurrence bounds (minContains / maxContains)"
+      - "nested section grammars (hoisted onto the node)"
 
   - id: author-05
     name: "Route a whole tree with one config"
@@ -123,7 +126,7 @@ examples:
     artifact_kind: yaml
     artifact: |
       # markdown-contract.yaml
-      mcVersion: 1
+      mcVersion: 2
       kind: config
       contracts:
         decision: ./decision.contract.yaml
@@ -137,8 +140,10 @@ examples:
         - include: ["**/*.md"]                    # catch-all last: first match wins
           contract:                               # inline contract, no separate file
             frontmatter:
-              fields:
-                title: { type: string, min: 1 }
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, minLength: 1 }
     surfaces:
       - "kind: config envelope"
       - "glob routing with first-match precedence"

@@ -1,20 +1,22 @@
 # Contract for SDLC capability docs (docs/planning/capabilities/C-*.md).
-mcVersion: 1
+mcVersion: 2
 kind: contract
 
 frontmatter:
   # Non-strict: declare the fields we care about; the rich SDLC frontmatter
   # (schema_version, kind, parent_key, contains, related, tags, …) is allowed through.
-  fields:
+  type: object
+  required: [ type, id, title, status, created ]
+  properties:
     type: { const: capability }
     id: { type: string, pattern: '^C-\d{4}$' }
-    title: { type: string, min: 1 }
+    title: { type: string, minLength: 1 }
     status: { type: string, pattern: '^[a-z-]+/[a-z-]+$' }
     created: { type: string, format: date }
 
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Summary
     - section: Statement

@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v21a — Table inside a blockquote / list item  (provenance: 21a-table-inside-blockquote-or-list.ts)
 
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Deliverables
       content:

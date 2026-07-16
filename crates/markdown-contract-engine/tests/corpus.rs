@@ -29,12 +29,14 @@ struct ManifestCase {
     expected: String,
 }
 
-/// An expected finding — `id` required; `level` / `line` asserted only when pinned.
+/// An expected finding — `id` required; `level` / `line` / `hint` asserted only when pinned.
 #[derive(serde::Deserialize)]
 struct ExpectedFinding {
     id: String,
     level: Option<FindingLevel>,
     line: Option<u32>,
+    /// The v2 `description:`-derived hint (D-0020); asserted only when the golden pins it.
+    hint: Option<String>,
 }
 
 fn fixtures_dir() -> PathBuf {
@@ -81,6 +83,13 @@ fn assert_findings(actual: &[Finding], expected: &[ExpectedFinding], label: &str
                 Some(line),
                 "{label}: finding[{i}].line — actual: [{}]",
                 brief(actual)
+            );
+        }
+        if let Some(hint) = &e.hint {
+            assert_eq!(
+                a.hint.as_deref(),
+                Some(hint.as_str()),
+                "{label}: finding[{i}].hint"
             );
         }
     }
@@ -141,6 +150,6 @@ fn shared_corpus_fixtures_match_the_goldens() {
     println!(
         "corpus: {shared} shared fixtures ({cases_run} cases) green, {skipped} ts-only skipped"
     );
-    assert_eq!(shared, 51, "the shared corpus is pinned at 51 fixtures");
+    assert_eq!(shared, 53, "the shared corpus is pinned at 53 fixtures");
     assert_eq!(skipped, 8, "the ts-only set is pinned at 8 fixtures");
 }

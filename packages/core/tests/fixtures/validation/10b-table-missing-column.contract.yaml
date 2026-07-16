@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v10b — Table missing a declared column  (provenance: 10b-table-missing-column.ts)
 
 body:
   order: none
-  allowUnknown: false
+  additionalSections: false
   sections:
     - section: Files
       content:

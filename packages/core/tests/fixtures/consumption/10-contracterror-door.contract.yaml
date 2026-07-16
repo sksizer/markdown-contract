@@ -1,27 +1,29 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: c10 — The ContractError door  (provenance: 10-contracterror-door.ts)
 
 frontmatter:
-  strict: true
-  fields:
+  type: object
+  required: [ id, status, title, related ]
+  additionalProperties: false
+  properties:
     id:
       type: string
       pattern: '^D-[0-9A-Z]{4}$'
     status:
-      enum: ["open/proposed", "open/accepted", "closed/superseded"]
+      enum: [ "open/proposed", "open/accepted", "closed/superseded" ]
     title:
       type: string
-      min: 1
+      minLength: 1
     related:
       type: array
-      of:
+      items:
         type: string
       default: []
 
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Summary
       anchor: summary
@@ -30,4 +32,5 @@ body:
     - section: Context
     - section: Decision
     - section: Notes
-      optional: true
+      minContains: 0
+      maxContains: 1

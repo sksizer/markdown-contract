@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v10a — Empty table / below minRows  (provenance: 10a-table-empty-and-minrows.ts)
 
 body:
   order: none
-  allowUnknown: false
+  additionalSections: false
   sections:
     - section: Files
       content:

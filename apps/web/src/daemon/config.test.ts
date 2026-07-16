@@ -7,7 +7,7 @@ import type { VaultRegistryEntry } from "../../types/api";
 import { ConfigError, listConfigFiles, readConfig, saveConfig, saveConfigFile } from "./config";
 
 /** A config the engine compiles (inline contract, so no contract-file refs needed). */
-const VALID = `mcVersion: 1
+const VALID = `mcVersion: 2
 kind: config
 rules:
   - include: ['*.md']
@@ -15,7 +15,7 @@ rules:
 `;
 
 /** A config the engine rejects (rules must be a list). */
-const INVALID = `mcVersion: 1
+const INVALID = `mcVersion: 2
 kind: config
 rules: not-a-list
 `;
@@ -76,7 +76,7 @@ describe("saveConfig", () => {
 
   it("rejects a contract document handed in as a config, with the engine's message", () => {
     const entry = vault();
-    expect(() => saveConfig(entry, "mcVersion: 1\nkind: contract\n")).toThrow(
+    expect(() => saveConfig(entry, "mcVersion: 2\nkind: contract\n")).toThrow(
       /expected a config document/,
     );
   });
@@ -91,7 +91,7 @@ describe("saveConfig", () => {
 // ── the /config/files pair: the router + the contract files it references ──────
 
 /** A router config: one contracts-map ref + one direct rule ref + one named ref. */
-const ROUTER = `mcVersion: 1
+const ROUTER = `mcVersion: 2
 kind: config
 contracts:
   task: contracts/task.contract.yaml
@@ -103,7 +103,7 @@ rules:
 `;
 
 /** A standalone contract document the engine compiles. */
-const CONTRACT = `mcVersion: 1
+const CONTRACT = `mcVersion: 2
 kind: contract
 body:
   order: none
@@ -144,7 +144,7 @@ describe("listConfigFiles", () => {
   it("a referenced contract that doesn't compile carries the engine's message", () => {
     const entry = vault();
     writeFileSync(entry.configPath, ROUTER, "utf8");
-    seed(entry, "contracts/task.contract.yaml", "mcVersion: 1\nkind: config\n");
+    seed(entry, "contracts/task.contract.yaml", "mcVersion: 2\nkind: config\n");
 
     const { files } = listConfigFiles(entry);
     const task = files.find((f) => f.relPath === "contracts/task.contract.yaml");
@@ -172,7 +172,7 @@ describe("listConfigFiles", () => {
     const entry = vault();
     writeFileSync(
       entry.configPath,
-      "mcVersion: 1\nkind: config\ncontracts:\n  evil: ../outside.contract.yaml\n",
+      "mcVersion: 2\nkind: config\ncontracts:\n  evil: ../outside.contract.yaml\n",
       "utf8",
     );
 
@@ -230,7 +230,7 @@ describe("saveConfigFile", () => {
   it("rejects contract YAML the engine rejects, with the parser's message — nothing written", () => {
     const entry = vault();
     const relPath = "contracts/task.contract.yaml";
-    expect(() => saveConfigFile(entry, relPath, "mcVersion: 1\nkind: config\n")).toThrow(
+    expect(() => saveConfigFile(entry, relPath, "mcVersion: 2\nkind: config\n")).toThrow(
       /expected a contract document/,
     );
     expect(existsSync(join(dirname(entry.configPath), relPath))).toBe(false);

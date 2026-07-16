@@ -90,7 +90,7 @@ examples:
     artifact_kind: mixed
     artifact: |
       # markdown-contract.yaml (excerpt) — the config at this repository's root
-      mcVersion: 1
+      mcVersion: 2
       kind: config
       contracts:
         decision:  ./contracts/decision.contract.yaml

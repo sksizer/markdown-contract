@@ -1,10 +1,12 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v19 — Real Decision contract end-to-end  (provenance: 19-real-decision-contract-end-to-end.ts)
 
 frontmatter:
-  strict: true
-  fields:
+  type: object
+  required: [ id, status, title, related ]
+  additionalProperties: false
+  properties:
     id:
       type: string
       pattern: '^D-[0-9A-Z]{4}$'
@@ -16,16 +18,16 @@ frontmatter:
         - closed/deprecated
     title:
       type: string
-      min: 1
+      minLength: 1
     related:
       type: array
-      of:
+      items:
         type: string
       default: []
 
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Summary
       anchor: summary
@@ -33,30 +35,33 @@ body:
         maxWords: 120
     - section: Context
     - section: Decision
-      children:
-        order: strict
-        allowUnknown: true
-        sections:
-          - section: Components
-            content:
-              table:
-                columns:
-                  - '#'
-                  - Component
-                  - Resolution
-                minRows: 1
+      order: strict
+      additionalSections: true
+      sections:
+        - section: Components
+          content:
+            table:
+              columns:
+                - '#'
+                - Component
+                - Resolution
+              minRows: 1
     - section: Why
-      optional: true
+      minContains: 0
+      maxContains: 1
     - section: Options considered
-      optional: true
-      children:
-        order: none
-        allowUnknown: true
-        sections:
-          - gap: {}
+      minContains: 0
+      maxContains: 1
+      order: none
+      additionalSections: true
+      sections:
+        - gap: {}
     - section: Consequences
-      optional: true
+      minContains: 0
+      maxContains: 1
     - section: Out of scope
-      optional: true
+      minContains: 0
+      maxContains: 1
     - section: Notes
-      optional: true
+      minContains: 0
+      maxContains: 1

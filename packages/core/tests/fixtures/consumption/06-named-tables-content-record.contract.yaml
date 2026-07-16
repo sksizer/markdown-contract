@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: c06 — Named tables via the content record  (provenance: 06-named-tables-content-record.ts)
 
 body:
   order: none
-  allowUnknown: false
+  additionalSections: false
   sections:
     - section: Decision
       content:

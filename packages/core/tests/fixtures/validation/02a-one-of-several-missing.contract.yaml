@@ -1,10 +1,10 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v02a — One of several required missing  (provenance: 02a-one-of-several-missing.ts)
 
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Title
     - section: Overview

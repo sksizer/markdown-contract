@@ -29,8 +29,8 @@ const fixture: InferenceFixture = {
     // Rung 1 — uniform → const.
     expect(field(def, "kind")).toEqual({ const: "policy" });
 
-    // Rung 2 — all integers → number (int).
-    expect(field(def, "version")).toMatchObject({ type: "number", int: true });
+    // Rung 2 — all integers → integer.
+    expect(field(def, "version")).toMatchObject({ type: "integer" });
 
     // Rung 3 — all booleans → boolean.
     expect(field(def, "active")).toMatchObject({ type: "boolean" });

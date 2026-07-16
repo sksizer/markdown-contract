@@ -1,14 +1,14 @@
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # fixture: v12b — List below minItems  (provenance: 12b-list-below-minitems.ts)
 
 body:
   order: none
-  allowUnknown: false
+  additionalSections: false
   sections:
     - section: Acceptance criteria
       content:
         list:
           ordered: false
-          everyItem: checkbox
+          items: checkbox
           minItems: 2
