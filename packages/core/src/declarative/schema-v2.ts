@@ -22,7 +22,39 @@
 import { z } from "zod";
 
 import { DeclarativeError } from "./errors.js";
-import { STRING_FORMATS } from "./schema.js";
+
+/**
+ * The closed `format` vocabulary (D-0008 § Schema vocabulary / D-0020): the string formats Zod
+ * and JSON Schema both expose out of the box, each mapped to its Zod constructor. Deliberately
+ * broad so common shapes never fall back to a hand-written `pattern`; anything outside the set
+ * is a `pattern`. In v2 a format COMPOSES with the length/pattern constraints.
+ */
+const STRING_FORMATS: Record<string, () => z.ZodType> = {
+  // web / identity
+  email: () => z.email(),
+  url: () => z.url(),
+  uuid: () => z.uuid(),
+  hostname: () => z.hostname(),
+  // ISO-8601 temporals
+  datetime: () => z.iso.datetime(),
+  date: () => z.iso.date(),
+  time: () => z.iso.time(),
+  duration: () => z.iso.duration(),
+  // network
+  ipv4: () => z.ipv4(),
+  ipv6: () => z.ipv6(),
+  cidrv4: () => z.cidrv4(),
+  cidrv6: () => z.cidrv6(),
+  // id forms
+  nanoid: () => z.nanoid(),
+  cuid: () => z.cuid(),
+  cuid2: () => z.cuid2(),
+  ulid: () => z.ulid(),
+  // misc
+  base64: () => z.base64(),
+  emoji: () => z.emoji(),
+  e164: () => z.e164(),
+};
 
 const describeValue = (v: unknown): string =>
   v === null ? "null" : Array.isArray(v) ? "a list" : typeof v;
@@ -296,7 +328,7 @@ function typedSchema(n: Record<string, unknown>, base: string, path: string): z.
 }
 
 /**
- * `type: string` — a named `format` (the same closed constructor map as v1) or a plain string,
+ * `type: string` — a named `format` (the closed constructor map above) or a plain string,
  * COMPOSED with `minLength` / `maxLength` / `pattern`. In v1 a `format` was exclusive; in v2
  * the constraints chain onto the format constructor (verified on zod 4.4.3).
  */

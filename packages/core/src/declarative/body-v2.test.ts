@@ -8,7 +8,7 @@ import { compileContractObject } from "./load.js";
 const ctx = { path: "fixture.md" };
 
 /** Compile a v2 body into a contract (the mcVersion: 2 path of `compileContractObject`). */
-const build = (body: Record<string, unknown>) => compileContractObject({ body }, 2);
+const build = (body: Record<string, unknown>) => compileContractObject({ body });
 
 /** One 'Entry' section per repetition, plus a trailing 'Tail' anchor section. */
 const entries = (n: number): string =>

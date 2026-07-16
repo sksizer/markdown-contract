@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 /// The router config: one rule over `**/*.md` (minus `drafts/**`) bound to the
 /// `note` contract by name through the `contracts:` map.
-pub const MINI_CONFIG_YAML: &str = "mcVersion: 1
+pub const MINI_CONFIG_YAML: &str = "mcVersion: 2
 kind: config
 contracts:
   note: ./note.contract.yaml
@@ -18,11 +18,11 @@ rules:
 ";
 
 /// The referenced contract: one required `Overview` section.
-pub const MINI_CONTRACT_YAML: &str = "mcVersion: 1
+pub const MINI_CONTRACT_YAML: &str = "mcVersion: 2
 kind: contract
 body:
   order: none
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Overview
 ";
@@ -89,7 +89,7 @@ impl Drop for TempVault {
 pub fn write_code_ref_config(vault: &TempVault) {
     std::fs::write(
         vault.config_path(),
-        "mcVersion: 1\nkind: config\nrules:\n  - include: ['**/*.md']\n    contract: ./note.contract.ts\n",
+        "mcVersion: 2\nkind: config\nrules:\n  - include: ['**/*.md']\n    contract: ./note.contract.ts\n",
     )
     .unwrap();
 }

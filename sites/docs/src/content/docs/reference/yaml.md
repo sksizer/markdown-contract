@@ -1,6 +1,6 @@
 ---
 title: Declarative YAML reference
-description: Author contracts and corpus config as data — the closed mcVersion 1 YAML vocabulary that compiles to the same Contract, and the same findings, as the combinators.
+description: Author contracts and corpus config as data — the closed mcVersion 2 YAML vocabulary that compiles to the same Contract, and the same findings, as the combinators.
 ---
 
 The `markdown-contract/declarative` entry point compiles YAML documents into the
@@ -9,7 +9,7 @@ indistinguishable downstream: the [same typed model](/reference/model/) and the
 [same findings](/reference/findings/) as the equivalent
 [TypeScript contract](/reference/api/).
 
-This page is the complete authoring vocabulary for `mcVersion: 1`. The
+This page is the complete authoring vocabulary for `mcVersion: 2`. The
 vocabulary is deliberately **closed** — every key documented here is compiled;
 anything outside it is a `DeclarativeError` at load time, not a silently ignored
 field.
@@ -33,35 +33,63 @@ They are validated once, before any kind-specific compilation.
 
 | Key | Type | Meaning |
 | --- | --- | --- |
-| `mcVersion` | number | Format version. **`1` is the only supported value** in this build; any other value (or a non-number) throws. |
+| `mcVersion` | number | Format version. **`2` is the only supported value** in this build; any other value (or a non-number) throws. |
 | `kind` | `contract` \| `config` | Which compiler the rest of the document is handed to. |
 
 ```yaml
-mcVersion: 1
+mcVersion: 2
 kind: contract
 # … contract body …
 ```
 
-:::note
-`mcVersion` is the single version gate. A future `mcVersion: 2` would dispatch
-here without touching the compilers. Invalid YAML, a non-mapping document, an
-unsupported `mcVersion`, or a `kind` that is neither `contract` nor `config` is a
-`DeclarativeError` — the format is never best-effort parsed.
+:::note[mcVersion 1 is retired]
+The original `mcVersion: 1` house dialect (D-0008) is retired (D-0020). A v1
+document gets a dedicated error naming the codemod:
+
+> mcVersion 1 is retired; run `bun packages/core/scripts/migrate-v1-to-v2.ts --write <file>` to migrate (D-0020)
+
+The codemod is mechanical, preserves comments and key order, and warns on the
+one behavioral hazard (v1 `format` short-circuited its sibling constraints; v2
+composes them — see [strings](#per-type-constraints) below).
+
+Invalid YAML, a non-mapping document, an unsupported `mcVersion`, or a `kind`
+that is neither `contract` nor `config` is a `DeclarativeError` — the format is
+never best-effort parsed.
 :::
+
+## Editor completion — `$schema`
+
+The v2 vocabulary is published as a JSON Schema 2020-12 meta-schema at
+[`/schema/mcv2.json`](/schema/mcv2.json). Point `yaml-language-server` (VS Code's
+YAML extension, and most other editors) at it with a modeline for completion and
+inline validation while authoring:
+
+```yaml
+# yaml-language-server: $schema=https://markdown-contract-docs.pages.dev/schema/mcv2.json
+mcVersion: 2
+kind: contract
+```
+
+The meta-schema is a faithful mirror of the compiler's closed vocabulary; the
+compiler remains the source of truth (its errors carry migration hints and
+did-you-mean suggestions the editor cannot).
 
 ## Contract document
 
-A `kind: contract` document has two optional planes: `frontmatter` (the YAML
-frontmatter schema) and `body` (the section/structure grammar). Either or both
-may be present.
+A `kind: contract` document has two optional planes — `frontmatter` (the YAML
+frontmatter schema) and `body` (the section/structure grammar) — plus an optional
+root `description`. The contract root is **closed**: any key beyond the envelope
+and these three is rejected.
 
 ```yaml
-mcVersion: 1
+mcVersion: 2
 kind: contract
+description: a work-item note            # the outermost hint fallback
 frontmatter:
-  strict: true
-  fields:
-    title: { type: string, min: 1 }
+  type: object
+  required: [title]
+  properties:
+    title: { type: string, minLength: 1 }
     status: { enum: [draft, active, done] }
 body:
   order: recognized-relative
@@ -70,56 +98,78 @@ body:
     - section: Details
 ```
 
+`description` is accepted at (almost) every level of a contract — the contract
+root, the body root, section/oneOf nodes, content leaves, and schema nodes. It
+becomes the `hint` a finding carries: the nearest enclosing description in scope
+at the mint site wins (see [findings](/reference/findings/#finding-shape)).
+
 ### Frontmatter
 
-`frontmatter` is a mapping with an optional `strict` flag and a `fields` map.
+`frontmatter` is itself a **schema node** with an explicit `type: object` — the
+same node vocabulary as any nested object (below). v2 frontmatter is JSON Schema
+spelling: `properties` / `required` / `additionalProperties`, not v1's `strict` /
+`fields`.
 
-| Key | Type | Meaning |
-| --- | --- | --- |
-| `fields` | map of `key → schema` | Each key's schema, from the closed field vocabulary below. Compiles to a Zod object. |
-| `strict` | boolean (default `false`) | When `true`, unknown frontmatter keys are rejected (`frontmatter/unknown-key`). Compiles to `z.strictObject`; otherwise `z.object`. |
+```yaml
+frontmatter:
+  type: object
+  additionalProperties: false     # reject undeclared keys (frontmatter/unknown-key)
+  required: [id, status]          # everything NOT listed here is optional
+  properties:
+    id: { type: string, pattern: '^D-[0-9A-Z]{4}$' }
+    status: { enum: [open, closed] }
+    reviewer: { type: string, format: email }
+```
 
 Schema violations surface as `frontmatter/*` findings — see
 [findings](/reference/findings/).
 
-#### Field schema vocabulary
+#### Schema nodes — the JSON Schema 2020-12 subset
 
-Each entry under `fields` (and each nested table cell, list item, array element,
-or object field) is a **schema node**: a mapping with exactly one **base**
-(`type`, `enum`, or `const`) plus optional constraints and wrappers.
+Each schema node (a frontmatter field, a nested object property, an array
+`items`, a table cell, a list item schema) is a mapping with **exactly one
+base selector** — `type`, `enum`, or `const` — plus that shape's constraint
+keys. Every node also admits `default` and `description`.
 
 **Base — pick exactly one:**
 
 | Key | Value | Compiles to |
 | --- | --- | --- |
-| `type` | `string` \| `number` \| `boolean` \| `array` \| `object` | The typed schema (see per-type constraints below). |
+| `type` | `string` \| `number` \| `integer` \| `boolean` \| `array` \| `object`, or the null union `[T, "null"]` | The typed schema (per-type constraints below). |
 | `enum` | non-empty list of **strings** | `z.enum([...])` over the listed strings. |
-| `const` | string \| number \| boolean | `z.literal(value)`. |
+| `const` | string \| number \| boolean (validated) | `z.literal(value)`. |
 
-A node with none of these — or with the deferred `$ref` code escape hatch — is a
-`DeclarativeError`.
+Nullability is the two-element type union — `type: [string, "null"]` (either
+order) — not v1's `nullable: true`. Any other union form is outside the subset.
 
-:::note
-The same node vocabulary is reused across planes, so the emitted finding depends
-on where the schema is bound: an `enum` mismatch on a frontmatter field is
-`frontmatter/enum`, while the same node used as a table cell surfaces on the
-content plane.
+:::caution[Optional by default]
+**Properties are OPTIONAL unless listed in `required`.** This is JSON Schema's
+model and the **inversion of v1**, where every field was required unless flagged
+`optional: true`. When migrating by hand, an empty or missing `required` list
+means *nothing* is required. Each entry in `required` must name a declared
+property — a stray name is a compile error, not a silent no-op.
 :::
 
 **Per-type constraints:**
 
 | `type` | Extra keys | Compiles to |
 | --- | --- | --- |
-| `string` | `format` (named format) **or** `min` / `max` / `pattern` | `z.string()` with `.min()` / `.max()` / `.regex(new RegExp(pattern))`, or the named format constructor. |
-| `number` | `int` (boolean), `min`, `max` | `z.int()` when `int: true`, else `z.number()`, with `.min()` / `.max()`. |
+| `string` | `minLength` / `maxLength` / `pattern` / `format` | `z.string()` (or the named format constructor) with `.min()` / `.max()` / `.regex(new RegExp(pattern))` chained on. |
+| `number` | `minimum` / `maximum` | `z.number()` with `.min()` / `.max()`. |
+| `integer` | `minimum` / `maximum` | `z.int()` with `.min()` / `.max()` (v1's `int: true`). |
 | `boolean` | — | `z.boolean()`. |
-| `array` | `of` (element schema, **required**), `min`, `max` | `z.array(<of>)` with `.min()` / `.max()` length bounds. |
-| `object` | `fields` (map), `strict` (boolean) | A nested object schema — the same shape as the frontmatter `fields` map. |
+| `array` | `items` (element schema, **required**), `minItems` / `maxItems` | `z.array(<items>)` with `.min()` / `.max()` length bounds. |
+| `object` | `properties` (map, **required**), `required` (list of declared names), `additionalProperties` (boolean) | A nested object schema — `additionalProperties: false` compiles to `z.strictObject`, otherwise `z.object`. |
 
-:::caution
-For `type: string`, a named `format` short-circuits: when `format` is present,
-`min` / `max` / `pattern` on the same node are **not** applied. Use `pattern`
-(with `min` / `max`) for constraints outside the named-format set.
+`additionalProperties` accepts only a **boolean** in the subset — the JSON
+Schema "schema form" (`additionalProperties: { type: … }`) is rejected.
+
+:::note[format composes]
+In v2 a named `format` **composes** with `minLength` / `maxLength` / `pattern`
+on the same node — the constraints chain onto the format constructor. (v1's
+short-circuit, where a `format` silently disabled its sibling constraints, is
+gone; the codemod drops such inert siblings with a warning so findings stay
+identical.)
 :::
 
 **Named string formats** (`type: string`, `format: <name>`) — the closed set:
@@ -134,41 +184,94 @@ For `type: string`, a named `format` short-circuits: when `format` is present,
 
 An unrecognized `format` is a `DeclarativeError` listing the allowed set.
 
-**Wrappers** — applied on top of any base, so a field can combine them:
+**`default` — a documented divergence.** A `default` **actively fills** the
+value when the key is absent: the compiled Zod schema substitutes it, so the
+[typed model](/reference/model/) reads the default back. This is the
+`ajv useDefaults: true` stance, not vanilla JSON Schema's annotation-only
+`default`. A defaulted property never needs to be in `required`.
 
-| Key | Value | Effect |
-| --- | --- | --- |
-| `nullable` | `true` | `.nullable()` — allows `null`. |
-| `default` | any | `.default(value)`. |
-| `optional` | `true` | `.optional()` — key may be absent. |
+**`description`** on a schema node is stored via `.describe()` and becomes the
+`hint` on findings that fail that node (e.g. a missing required field carries
+its own description; see [findings](/reference/findings/#finding-shape)).
 
 ```yaml
-fields:
-  title:   { type: string, min: 1 }
+properties:
+  title:   { type: string, minLength: 1 }
   owner:   { type: string, format: email }
   version: { type: string, pattern: "^\\d+\\.\\d+\\.\\d+$" }
-  weight:  { type: number, int: true, min: 0, max: 100, optional: true }
-  tags:    { type: array, of: { type: string }, min: 1 }
+  weight:  { type: integer, minimum: 0, maximum: 100 }
+  due:     { type: [string, "null"], format: date }
+  tags:    { type: array, items: { type: string }, minItems: 1 }
   status:  { enum: [draft, active, done], default: draft }
   meta:
     type: object
-    strict: true
-    fields:
-      created: { type: string, format: date }
+    additionalProperties: false
+    properties:
+      created: { type: string, format: date, description: creation date, ISO }
 ```
+
+#### What a schema node rejects
+
+The vocabulary is closed **per node shape** (v1 silently ignored unknown schema
+keys; v2 does not). After the base is picked, every present key must be in that
+shape's allowed set. Rejections speak three distinct dialects:
+
+1. **A v1 spelling** gets a migration hint naming the v2 form:
+
+   ```text
+   frontmatter.tags: 'of' is the v1 spelling — v2 uses 'items' (see the v1→v2 codemod)
+   ```
+
+2. **Recognized JSON Schema outside the subset** is named as such:
+
+   ```text
+   frontmatter.id: 'oneOf' is JSON Schema outside the supported v2 subset
+   ```
+
+3. **Anything else** is an unknown key, with a did-you-mean suggestion when a
+   supported key is within edit distance 1–2:
+
+   ```text
+   frontmatter.title: unknown key 'minLenght' (did you mean 'minLength'?)
+   ```
+
+**What's outside the subset** — recognized JSON Schema 2020-12 keywords that are
+deliberately rejected by name (class 2 above): composition (`oneOf`, `anyOf`,
+`allOf`, `not`, `if` / `then` / `else`), references (`$ref`, `$defs`, `$id`,
+`$schema`, `$comment`), tuple/array extras (`prefixItems`, `contains`,
+`minContains`, `maxContains`, `uniqueItems` — note `minContains` / `maxContains`
+ARE the [body grammar's](#occurrence--mincontains--maxcontains) occurrence keys,
+just not schema-node keys), object extras (`patternProperties`, `propertyNames`,
+`minProperties`, `maxProperties`, `dependentRequired`, `dependentSchemas`,
+`unevaluatedProperties`), numeric extras (`multipleOf`, `exclusiveMinimum`,
+`exclusiveMaximum`), content/annotation (`unevaluatedItems`, `contentEncoding`,
+`contentMediaType`, `title`, `examples`, `deprecated`, `readOnly`, `writeOnly`).
+
+:::note[Fidelity: JSON-Schema-compatible spelling, Zod-defined semantics]
+v2 borrows JSON Schema's **spelling**, but the semantics are defined by what the
+node compiles to in Zod (and its matched Rust runtime) — not by a JSON Schema
+validator. Where the two could differ, the compiled behavior wins: `default`
+actively fills (above), `enum` is strings-only, `const` is scalar-only,
+`additionalProperties` is boolean-only, and everything outside the subset is
+rejected by name rather than ignored. A v2 document is *readable* as JSON
+Schema; it is *executed* as the engine's schema runtime.
+:::
 
 ### Body
 
 `body` is a mapping describing the document's section structure. It compiles to
 the `sections(opts, specs)` grammar.
 
-**Level options** (on `body` and on any nested `children`):
+**Level options** (on `body` and on any [hoisted nested level](#nested-sections--hoisted)):
 
 | Key | Value | Meaning |
 | --- | --- | --- |
 | `order` | `none` \| `recognized-relative` \| `strict` | How strictly section order is enforced (`structure/section-order`). |
-| `allowUnknown` | boolean | Whether headings not named by the grammar are tolerated. |
+| `additionalSections` | boolean | Whether headings not named by the grammar are tolerated (v1's `allowUnknown`). |
 | `sections` | list of **nodes** (required) | The ordered section grammar (below). |
+| `description` | string | The level's hint — carried by findings minted at this level with no nearer description. |
+
+The **body root** additionally admits [`requires` / `forbids`](#section-text-constraints--requires--forbids).
 
 **Section-node grammar** — each entry in `sections` is a mapping with exactly
 one of `section`, `oneOf`, or `gap`:
@@ -177,25 +280,54 @@ one of `section`, `oneOf`, or `gap`:
 | --- | --- | --- |
 | `section` | heading name (string) | `section(name, opts)`. |
 | `oneOf` | non-empty list of section names | `oneOf(names, opts)` — one of several allowed headings. |
-| `gap` | `{ min?, max? }` | `gap(...)` — an unconstrained run of intervening content. |
-
-Any node may carry `optional: true`, which wraps it in `optional(...)`.
+| `gap` | empty, or `{ min?, max? }` | `gap(...)` — an unconstrained run of intervening content. A `gap` node admits **only** the `gap` key. |
 
 **Options on a `section` / `oneOf` node:**
 
 | Key | Value | Meaning |
 | --- | --- | --- |
-| `aliases` | list of strings (`section` only) | Alternate spellings accepted for the heading. |
+| `aliases` | list of strings (`section` only) | Alternate spellings accepted for the heading. (A `oneOf` IS an alias set, so it takes none.) |
 | `anchor` | string | Require a `^anchor` on the section heading (`structure/anchor-missing`). |
-| `repeatable` | boolean | The slot may appear more than once (`structure/repeat-count`). |
-| `min` / `max` | number | Repeat-count bounds. Valid only on a repeatable slot; `min ≤ max` — otherwise a build-time `ContractBuildError` raised by `section()` / `oneOf()`. |
+| `minContains` / `maxContains` | non-negative integers | The occurrence window (below). |
 | `content` | leaf or named-leaf map | Content requirements for the section body (below). |
-| `children` | a nested body level | Sub-sections — recurses with its own `order` / `allowUnknown` / `sections`. |
+| `sections` (+ `order`, `additionalSections`) | a hoisted nested level | Sub-sections, directly on the node (below). |
+| `requires` / `forbids` | match-spec lists | Node-local [text constraints](#section-text-constraints--requires--forbids). |
+| `description` | string | The section's hint. |
 
-:::note
-`min` / `max` **on a section node** are repeat-count bounds. The `min` / `max`
-**inside a `gap:` mapping** bound the size of the gap — a different axis.
-:::
+#### Occurrence — `minContains` / `maxContains`
+
+v2 spells occurrence with JSON Schema's counting names, replacing v1's
+`optional` / `repeatable` / `min` / `max`:
+
+| Declared | Window | Meaning |
+| --- | --- | --- |
+| *(both absent)* | exactly once | A plain slot — the section must appear exactly one time. |
+| `minContains: 0`, `maxContains: 1` | 0–1 | **Optional**, at most once. |
+| `minContains: 0` | 0–∞ | Optional and repeatable. |
+| `maxContains: 5` | 1–5 | Required, up to five occurrences. |
+| `minContains: 2` | 2–∞ | At least twice, unbounded. |
+| `minContains: 3`, `maxContains: 3` | exactly 3 | A fixed count. |
+
+The defaults once **either** key appears: `minContains` defaults to **1**,
+`maxContains` defaults to **unbounded**. Bounds must be non-negative integers
+with `maxContains ≥ 1` (to forbid a section, leave it undeclared) and
+`maxContains ≥ minContains`. Repeat-count violations surface as
+`structure/repeat-count`.
+
+#### Nested sections — hoisted
+
+A nested level sits **directly on the section node**: `sections` (plus optional
+`order` / `additionalSections`) — v1's `children:` wrapper is gone. Declaring
+`order` or `additionalSections` on a node **without** a `sections` list is a
+compile error (level knobs with no level to govern).
+
+```yaml
+- section: Example
+  order: none
+  sections:
+    - section: Input
+    - section: Output
+```
 
 #### Content leaves
 
@@ -205,7 +337,7 @@ A section's `content` is either a **single leaf** (a one-key mapping) or a
 | Leaf | Value | Compiles to |
 | --- | --- | --- |
 | `maxWords` | number | `maxWords(n)` — word budget for the section (`content/max-words`). |
-| `code` | `{ lang? }` (string) | `code({ lang })` — require a fenced code block, optionally of a given language. |
+| `code` | empty, or `{ lang?, description? }` | `code({ lang })` — require a fenced code block, optionally of a given language. |
 | `table` | see below | `table(...)` — a table with named columns. |
 | `list` | see below | `list(...)` — a list with item constraints. |
 
@@ -214,30 +346,34 @@ A section's `content` is either a **single leaf** (a one-key mapping) or a
 | Key | Value | Meaning |
 | --- | --- | --- |
 | `columns` | list of strings (**required**) | Expected column headers. |
-| `cells` | map `column → schema` | Per-column cell schema (the closed field vocabulary). |
+| `cells` | map `column → schema node` | Per-column cell schema (the v2 [schema subset](#schema-nodes--the-json-schema-2020-12-subset)). |
 | `minRows` | number | Minimum data-row count. |
 | `anchor` | string | Require a `^anchor` on the table. |
 | `extraColumns` | `ignore` \| `error` | How to treat columns beyond `columns`. |
+| `description` | string | The leaf's hint. |
 
 **`list` config:**
 
 | Key | Value | Meaning |
 | --- | --- | --- |
-| `everyItem` | `checkbox` \| a schema | Constrain every item — a task-list checkbox, or a schema each item's text must satisfy. |
+| `items` | `checkbox` \| a schema node | Constrain every item — a task-list checkbox, or a v2 schema each item's text must satisfy (v1's `everyItem`). |
 | `minItems` | number | Minimum item count. |
 | `ordered` | boolean | Require an ordered (`true`) or unordered (`false`) list. |
+| `description` | string | The leaf's hint. |
 
 ```yaml
 body:
   order: strict
-  allowUnknown: false
+  additionalSections: false
   sections:
     - section: Overview
+      description: what and why, briefly
       content: { maxWords: 200 }
     - section: Tasks
-      optional: true
+      minContains: 0
+      maxContains: 1
       content:
-        list: { everyItem: checkbox, minItems: 1 }
+        list: { items: checkbox, minItems: 1 }
     - section: Fields
       content:
         table:
@@ -246,11 +382,10 @@ body:
           cells:
             required: { enum: ["yes", "no"] }
     - section: Example
-      children:
-        order: none
-        sections:
-          - section: Input
-          - section: Output
+      order: none
+      sections:
+        - section: Input
+        - section: Output
 ```
 
 ## Config document
@@ -274,8 +409,8 @@ rules mapping globs to contracts.
 
 **Contract references resolve three ways:**
 
-- An **inline mapping** (`{ frontmatter?, body? }`) — compiled directly via
-  `compileContractObject`, no envelope needed.
+- An **inline mapping** (`{ description?, frontmatter?, body? }`) — compiled
+  directly via `compileContractObject` with the v2 compilers, no envelope needed.
 - A **name** — looked up in the `contracts` map; the mapped value is a path. Any
   string contract ref (a name or a path) also becomes the rule's label in the
   CLI run summary.
@@ -284,10 +419,10 @@ rules mapping globs to contracts.
 Relative paths resolve **relative to the config file's directory** (via
 `loadConfigFile`); absolute paths are used as-is. A ref that is not a `.yaml` /
 `.yml` file — e.g. a code-authored `.js` / `.ts` contract module — is rejected;
-that is the deferred code escape hatch, out of scope in v1.
+that is the deferred code escape hatch, out of scope in the declarative format.
 
 ```yaml
-mcVersion: 1
+mcVersion: 2
 kind: config
 contracts:
   capability: ./contracts/capability.contract.yaml
@@ -300,8 +435,9 @@ rules:
   - include: ["notes/**/*.md"]
     contract:                     # inline
       frontmatter:
-        fields:
-          title: { type: string, min: 1 }
+        type: object
+        properties:
+          title: { type: string, minLength: 1 }
 ```
 
 :::note
@@ -312,10 +448,11 @@ findings, `2` usage/config error).
 
 ## Section text constraints — `requires` / `forbids`
 
-A `section` node, and the `body` root, may carry `requires:` / `forbids:` lists
-that constrain the section's (or the whole document's) text. Each is a list of
-**match specs** compiled onto the `requires(...)` / `forbids(...)` / `textRule`
-builders — the data-authoring twin of the TS text predicates (D-0011 / C-0009).
+A `section` / `oneOf` node, and the `body` root, may carry `requires:` /
+`forbids:` lists that constrain the section's (or the whole document's) text.
+Each is a list of **match specs** compiled onto the `requires(...)` /
+`forbids(...)` / `textRule` builders — the data-authoring twin of the TS text
+predicates (D-0011 / C-0009). The vocabulary is unchanged from v1.
 
 - On a **section node**, they compile to node-local rules over that section's
   subtree.
@@ -363,9 +500,11 @@ Contradiction and duplicate detection over `regex` needles is byte-identity only
 
 The declarative front end is a pure front end. A `Contract` from `loadContract`
 is the same object `contract(...)` builds from the combinators — same typed
-model, same emitted findings (identical ids, levels, positions, messages). Pick
-whichever authoring surface fits: data (YAML) for contracts that ship as config,
-or code (TS) when you need the deferred escape hatches.
+model, same emitted findings (identical ids, levels, positions, messages). A
+contract that authors no `description` produces findings byte-identical to its
+combinator twin (no `hint` key at all). Pick whichever authoring surface fits:
+data (YAML) for contracts that ship as config, or code (TS) when you need the
+deferred escape hatches.
 
 See the [API reference](/reference/api/) for the combinator surface, and the
 [authoring examples](/appendix/examples/author/) for worked contracts and corpus

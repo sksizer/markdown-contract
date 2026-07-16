@@ -21,11 +21,11 @@ describe("declarative requires / forbids — worked examples", () => {
   it("a section `requires` a phrase: present passes, absent fires at the heading", () => {
     // The Summary section must mention the decision `outcome`.
     const yaml = `
-mcVersion: 1
+mcVersion: 2
 kind: contract
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Summary
       requires:
@@ -45,11 +45,11 @@ body:
   it("a section `forbids` a phrase: absent passes, each hit fires at its line", () => {
     // The Notes section must not contain a leftover `TODO`.
     const yaml = `
-mcVersion: 1
+mcVersion: 2
 kind: contract
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Notes
       forbids:
@@ -71,11 +71,11 @@ body:
 
 /** Wrap a list of match specs as a one-section contract, for the rejection cases. */
 const sectionWith = (key: "requires" | "forbids", body: string): string => `
-mcVersion: 1
+mcVersion: 2
 kind: contract
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Summary
       ${key}:
@@ -108,11 +108,11 @@ describe("declarative requires / forbids — rejected at compile time", () => {
 
   it("rejects the same literal pattern both required and forbidden at one scope (contradiction)", () => {
     const yaml = `
-mcVersion: 1
+mcVersion: 2
 kind: contract
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Summary
       requires:
@@ -139,11 +139,11 @@ body:
 
   it("rejects a non-list requires value", () => {
     const yaml = `
-mcVersion: 1
+mcVersion: 2
 kind: contract
 body:
   order: recognized-relative
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Summary
       requires:

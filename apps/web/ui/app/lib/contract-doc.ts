@@ -56,12 +56,12 @@ export function rootOf(doc: Document): Record<string, unknown> {
 }
 
 /**
- * Ensure the immutable envelope exists (`mcVersion: 1` + the file's `kind`) —
+ * Ensure the immutable envelope exists (`mcVersion: 2` + the file's `kind`) —
  * run before form mutations so a freshly created file carries it first. Never
  * overwrites an existing value; the form never edits the envelope.
  */
 export function ensureEnvelope(doc: Document, kind: "config" | "contract"): void {
-  if (doc.getIn(["mcVersion"]) === undefined) doc.setIn(["mcVersion"], 1);
+  if (doc.getIn(["mcVersion"]) === undefined) doc.setIn(["mcVersion"], 2);
   if (doc.getIn(["kind"]) === undefined) doc.setIn(["kind"], kind);
 }
 
@@ -545,7 +545,7 @@ export function ensureChildren(doc: Document, nodePath: DocPath): void {
  * carries comments — they must survive form edits (the round-trip guarantee).
  */
 export const STARTER_CONFIG_YAML = `# markdown-contract router — maps files to contracts (kind: config).
-mcVersion: 1
+mcVersion: 2
 kind: config
 
 # Named contracts (name → *.contract.yaml path). Fill this in as rules grow
@@ -558,6 +558,7 @@ rules:
   - include: ["**/*.md"]
     contract:
       frontmatter:
-        fields:
+        type: object
+        properties:
           title: { type: string }
 `;

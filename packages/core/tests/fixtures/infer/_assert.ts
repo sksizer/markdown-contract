@@ -1,7 +1,7 @@
 /**
  * Shared assertion accessors for the inference fixtures. These read the declarative-YAML
  * OBJECT form an `InferredContract.def` carries — the mcVersion 2 vocabulary (D-0020), a
- * `compileContractObject(def, 2)` input:
+ * `compileContractObject(def)` input:
  *   { frontmatter?: { type: "object"; required?: string[]; additionalProperties?: boolean;
  *                     properties?: Record<string, unknown> },
  *     body?: { order?: "none"|"recognized-relative"|"strict"; additionalSections?: boolean;

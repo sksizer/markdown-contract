@@ -1,17 +1,17 @@
 /**
  * Parse a declarative YAML document and validate its envelope — the `mcVersion` version
  * gate and the `kind` discriminant (D-0008). This is the single entry where the format
- * version is checked: `mcVersion: 1` routes to the v1 compilers unchanged and
- * `mcVersion: 2` routes to the v2 declarative compilers (D-0020). The body of the
- * document (`frontmatter` / `body` for a contract, `rules` / `contracts` for a config)
- * is handed off to the kind- and version-specific compiler.
+ * version is checked: `mcVersion: 2` routes to the v2 declarative compilers (D-0020).
+ * `mcVersion: 1` is retired — it gets a dedicated error naming the v1→v2 codemod. The
+ * body of the document (`frontmatter` / `body` for a contract, `rules` / `contracts` for
+ * a config) is handed off to the kind-specific compiler.
  */
 import { parse as parseYaml } from "yaml";
 
 import { DeclarativeError } from "./errors.js";
 
-/** The supported format versions of the declarative DSL: v1 (D-0008) and v2 (D-0020). */
-const SUPPORTED_VERSIONS = new Set([1, 2]);
+/** The supported format versions of the declarative DSL: v2 (D-0020). v1 is retired. */
+const SUPPORTED_VERSIONS = new Set([2]);
 
 export interface DeclarativeDoc {
   mcVersion: number;
@@ -23,7 +23,8 @@ export interface DeclarativeDoc {
 /**
  * Parse YAML text into a validated declarative envelope. Throws `DeclarativeError` on invalid
  * YAML, a non-mapping document, an unsupported `mcVersion`, or a `kind` that is neither
- * `contract` nor `config`. Never best-effort parses an unknown version.
+ * `contract` nor `config`. `mcVersion: 1` gets its dedicated retirement error (D-0020); an
+ * unknown version is never best-effort parsed.
  */
 export function parseDeclarativeDoc(yamlText: string): DeclarativeDoc {
   let raw: unknown;
@@ -40,6 +41,11 @@ export function parseDeclarativeDoc(yamlText: string): DeclarativeDoc {
   const obj = raw as Record<string, unknown>;
 
   const version = obj.mcVersion;
+  if (version === 1) {
+    throw new DeclarativeError(
+      "mcVersion 1 is retired; run `bun packages/core/scripts/migrate-v1-to-v2.ts --write <file>` to migrate (D-0020)",
+    );
+  }
   if (typeof version !== "number" || !SUPPORTED_VERSIONS.has(version)) {
     throw new DeclarativeError(
       `unsupported mcVersion: ${JSON.stringify(version)} (this build supports ${[...SUPPORTED_VERSIONS].join(", ")})`,

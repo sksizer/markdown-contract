@@ -634,8 +634,8 @@ function selfCheck(
     let compileFailed = false;
     for (const c of r.contracts) {
       try {
-        // Inferred defs are authored in the v2 vocabulary (D-0020), so compile them as v2.
-        rules.push({ include: c.include, contract: compileContractObject(c.def, 2) });
+        // Inferred defs are authored in the v2 vocabulary (D-0020).
+        rules.push({ include: c.include, contract: compileContractObject(c.def) });
       } catch (err) {
         errors.push(
           `${root}: contract '${c.name}' (${c.include.join(", ")}) failed to compile — ${(err as Error).message}`,

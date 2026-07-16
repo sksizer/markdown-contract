@@ -3,10 +3,10 @@
 //! `rules` list mapping `include` / `exclude` globs to a contract, plus an optional
 //! `contracts` name map.
 //!
-//! In v1 a contract ref is a `.yaml` contract file or an inline contract object.
-//! Referencing a code-authored `.js` / `.ts` contract module is the deferred code
-//! escape and is rejected with the typed [`DeclarativeError::CodeContractRef`] (the
-//! "vault needs the TS engine" hook).
+//! A contract ref is a `.yaml` contract file or an inline contract object. Referencing
+//! a code-authored `.js` / `.ts` contract module is the deferred code escape and is
+//! rejected with the typed [`DeclarativeError::CodeContractRef`] (the "vault needs the
+//! TS engine" hook).
 //!
 //! The core loader is fs-free: file-backed contract refs resolve through a caller
 //! `resolver` (`target ref → yaml text`); the native layer's [`load_config_file`]
@@ -43,12 +43,11 @@ pub fn load_config(
             "expected a config document (kind: config), got kind: contract".into(),
         ));
     }
-    compile_config(&doc.raw, doc.mc_version, resolver)
+    compile_config(&doc.raw, resolver)
 }
 
 fn compile_config(
     raw: &serde_yaml::Mapping,
-    mc_version: i64,
     resolver: &mut ContractResolver<'_>,
 ) -> Result<CorpusConfig, DeclarativeError> {
     let contracts = match get(raw, "contracts") {
@@ -63,7 +62,7 @@ fn compile_config(
     let rules = rules
         .iter()
         .enumerate()
-        .map(|(i, r)| compile_rule(r, &format!("rules[{i}]"), &contracts, mc_version, resolver))
+        .map(|(i, r)| compile_rule(r, &format!("rules[{i}]"), &contracts, resolver))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(CorpusConfig { rules })
 }
@@ -78,7 +77,6 @@ fn compile_rule(
     rule: &Value,
     path: &str,
     contracts: &serde_yaml::Mapping,
-    mc_version: i64,
     resolver: &mut ContractResolver<'_>,
 ) -> Result<CorpusRule, DeclarativeError> {
     let Value::Mapping(map) = rule else {
@@ -103,7 +101,6 @@ fn compile_rule(
         contract_ref,
         &format!("{path}.contract"),
         contracts,
-        mc_version,
         resolver,
     )?;
     // A string contract ref IS the human contract name — carried as the rule's label.
@@ -120,7 +117,6 @@ fn resolve_contract(
     reference: Option<&Value>,
     path: &str,
     contracts: &serde_yaml::Mapping,
-    mc_version: i64,
     resolver: &mut ContractResolver<'_>,
 ) -> Result<Contract, DeclarativeError> {
     let Some(reference) = reference else {
@@ -130,8 +126,8 @@ fn resolve_contract(
     };
     if let Value::Mapping(inline) = reference {
         // An inline contract object (frontmatter? / body?) — no envelope needed here;
-        // it compiles with the config document's mcVersion (D-0020 § Envelope).
-        return compile_contract_object(inline, mc_version);
+        // it compiles with the v2 compiler set like everything else (D-0020).
+        return compile_contract_object(inline);
     }
     let Some(name) = reference.as_str() else {
         return Err(err(format!(
@@ -199,7 +195,7 @@ mod tests {
     #[test]
     fn inline_contract_rules_compile() {
         let cfg = load_config(
-            "mcVersion: 1\nkind: config\nrules:\n  - include: ['**/*.md']\n    contract:\n      body:\n        sections:\n          - section: Overview\n",
+            "mcVersion: 2\nkind: config\nrules:\n  - include: ['**/*.md']\n    contract:\n      body:\n        sections:\n          - section: Overview\n",
             &mut no_files,
         )
         .unwrap();
@@ -209,11 +205,10 @@ mod tests {
         assert!(cfg.rules[0].contract.body.is_some());
     }
 
-    // The envelope version threads through to inline contracts (D-0020): a v2 config's
-    // inline contract compiles through the v2 compilers, so v2 spellings bind and v1
-    // spellings are migration-hint errors.
+    // Inline contracts compile through the v2 compilers (D-0020): v2 spellings bind
+    // and v1 spellings are migration-hint errors.
     #[test]
-    fn a_v2_config_compiles_inline_contracts_as_v2() {
+    fn inline_contracts_compile_as_v2() {
         let cfg = load_config(
             "mcVersion: 2\nkind: config\nrules:\n  - include: ['**/*.md']\n    contract:\n      body:\n        additionalSections: false\n        sections:\n          - section: Overview\n",
             &mut no_files,
@@ -243,10 +238,10 @@ mod tests {
     fn a_name_resolves_through_the_contracts_map() {
         let mut resolver = |target: &str| -> Result<String, String> {
             assert_eq!(target, "decision.contract.yaml");
-            Ok("mcVersion: 1\nkind: contract\nbody:\n  sections:\n    - section: Summary\n".into())
+            Ok("mcVersion: 2\nkind: contract\nbody:\n  sections:\n    - section: Summary\n".into())
         };
         let cfg = load_config(
-            "mcVersion: 1\nkind: config\ncontracts:\n  decision: decision.contract.yaml\nrules:\n  - include: ['**/D-*.md']\n    contract: decision\n",
+            "mcVersion: 2\nkind: config\ncontracts:\n  decision: decision.contract.yaml\nrules:\n  - include: ['**/D-*.md']\n    contract: decision\n",
             &mut resolver,
         )
         .unwrap();
@@ -257,29 +252,29 @@ mod tests {
     #[test]
     fn code_refs_and_shape_violations_are_rejected() {
         let Err(e) = load_config(
-            "mcVersion: 1\nkind: config\nrules:\n  - include: ['**/*.md']\n    contract: ./task.contract.ts\n",
+            "mcVersion: 2\nkind: config\nrules:\n  - include: ['**/*.md']\n    contract: ./task.contract.ts\n",
             &mut no_files,
         ) else {
             panic!("expected a DeclarativeError")
         };
         assert!(matches!(e, DeclarativeError::CodeContractRef { .. }));
 
-        assert!(load_config("mcVersion: 1\nkind: config\n", &mut no_files).is_err());
+        assert!(load_config("mcVersion: 2\nkind: config\n", &mut no_files).is_err());
         assert!(
             load_config(
-                "mcVersion: 1\nkind: config\nrules:\n  - include: []\n    contract: {}\n",
+                "mcVersion: 2\nkind: config\nrules:\n  - include: []\n    contract: {}\n",
                 &mut no_files
             )
             .is_err()
         );
         assert!(
             load_config(
-                "mcVersion: 1\nkind: config\nrules:\n  - include: ['**/*.md']\n",
+                "mcVersion: 2\nkind: config\nrules:\n  - include: ['**/*.md']\n",
                 &mut no_files
             )
             .is_err()
         );
-        let Err(e) = load_config("mcVersion: 1\nkind: contract\n", &mut no_files) else {
+        let Err(e) = load_config("mcVersion: 2\nkind: contract\n", &mut no_files) else {
             panic!("expected a DeclarativeError")
         };
         assert!(e.to_string().contains("expected a config document"));

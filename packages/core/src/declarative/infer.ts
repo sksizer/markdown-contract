@@ -60,7 +60,7 @@ import { toCamelKey } from "../core/camel.js";
 import { parse } from "../core/index.js";
 import { DEFAULT_MAX_CONST_STRING_LENGTH, DEFAULT_MIN_CONST_EXAMPLES } from "./constants.js";
 import { DeclarativeError } from "./errors.js";
-import { compileSchema } from "./schema.js";
+import { compileSchemaV2 } from "./schema-v2.js";
 
 /** Options for `inferConfig` — mirrors the `init` CLI flags (D-0009 § The CLI surface). */
 export interface InferOptions {
@@ -106,7 +106,7 @@ interface InferSink {
 
 /**
  * One inferred contract for a directory group, in declarative-YAML OBJECT form.
- * `def` is exactly a `compileContractObject(def, 2)` input — the v2 vocabulary (D-0020):
+ * `def` is exactly a `compileContractObject(def)` input — the v2 vocabulary (D-0020):
  *   { frontmatter?: { type: "object"; required?: string[]; additionalProperties?: boolean;
  *                     properties?: Record<string, unknown> },
  *     body?: { order?: "none"|"recognized-relative"|"strict"; additionalSections?: boolean;
@@ -353,7 +353,7 @@ function topoSort(union: string[], edges: Map<string, Set<string>>): string[] {
  * EXCLUDED here: an ordinary token like `policy` validates as a `hostname`/`cuid2`, which would
  * mislabel a categorical or free-form field as a format. The order is most-specific-first so
  * `date` is preferred over `datetime` when both could match (D-0009 § Step 4, rung 5); a value
- * is validated through the very `compileSchema` the self-check uses, so a detected format is
+ * is validated through the very `compileSchemaV2` the self-check uses, so a detected format is
  * accept-by-construction by definition.
  */
 const FORMAT_CANDIDATES = [
@@ -372,7 +372,7 @@ const FORMAT_CANDIDATES = [
 
 /** Whether every observed string value validates against the given `format` (via the engine's own compiler). */
 function allMatchFormat(values: string[], format: string): boolean {
-  const schema = compileSchema({ type: "string", format });
+  const schema = compileSchemaV2({ type: "string", format });
   return values.every((v) => schema.safeParse(v).success);
 }
 

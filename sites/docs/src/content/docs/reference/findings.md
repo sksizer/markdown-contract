@@ -22,6 +22,7 @@ interface Finding {
   path: string;            // the source document's file path (for "<path>:<line>")
   pos?: SourcePos;         // omitted for whole-document / absence findings
   message: string;
+  hint?: string;           // the nearest authored description in scope (D-0020)
   fix?: { description: string; edit?: TextEdit };
 }
 ```
@@ -33,6 +34,7 @@ interface Finding {
 | `path` | The document's file path, as stamped from `ctx.path`. This is a filesystem path for the `<path>:<line>` rendering, **not** a structural path into the document. |
 | `pos` | The source position when the finding is position-pinned; **omitted** for whole-document and absence findings (e.g. a missing required section that has no line to point at). |
 | `message` | A ready-to-print human sentence. |
+| `hint` | Authored guidance — see [Hints](#hints) below. **Absent** (not `undefined`) when no description is in scope, so a description-free contract's findings are byte-identical to a pre-D-0020 build's. |
 | `fix` | Optional, **provisional**. It only *describes* a remedy — the engine never edits documents. |
 
 `pos` is a `SourcePos`: a 1-based `line` and an optional 1-based `col`.
@@ -48,6 +50,24 @@ interface SourcePos {
 `fix` is forward-looking. A `Finding` may describe a repair, but this engine never applies one —
 applying edits is a separate repair pass that is not yet built. Treat `fix` as advisory metadata.
 :::
+
+## Hints
+
+A [declarative contract](/reference/yaml/) may carry a `description` at (almost) every level:
+the contract root, the body root, section/oneOf nodes, content leaves, and schema nodes. A
+finding's `hint` is the **nearest enclosing description in scope at the mint site** (D-0020),
+resolved outward:
+
+1. the failing **schema node**'s own `description` (a frontmatter field, table cell, list item);
+2. the **content leaf**'s `description` (`table` / `list` / `code`);
+3. the enclosing **section** node's `description` (then ancestor sections);
+4. the **body root** level's `description`;
+5. the **contract root**'s `description`.
+
+A finding minted where none of these is authored carries **no `hint` key at all** — a
+description-free contract's findings are unchanged. The TS combinators carry the same
+descriptions (`description` on `ContractDef`, level opts, section opts, and `.describe()` on
+Zod schemas), so YAML/TS parity holds hint-for-hint.
 
 ## Levels
 
@@ -88,9 +108,9 @@ The CLI renders the same `Finding[]` three ways. Keep these brief; the flags liv
 
 | Format | Shape |
 | --- | --- |
-| `human` | One line per finding: `path:line level id — message`, grouped by file (first-seen order), then a blank line and a summary count line. A finding with no `pos` prints as just `path`. An empty corpus prints `No findings.` |
+| `human` | One line per finding: `path:line level id — message`, grouped by file (first-seen order), then a blank line and a summary count line. A finding carrying a [`hint`](#hints) adds an indented `  hint: <text>` line beneath its own. A finding with no `pos` prints as just `path`. An empty corpus prints `No findings.` |
 | `json` | The raw `Finding[]`, serialized with two-space indent. Round-trips through `JSON.parse`. |
-| `sarif` | A valid SARIF 2.1.0 log — one run whose `tool.driver` is `markdown-contract`, `driver.rules` listing every distinct id seen, one `result` per finding, with a `region.startLine` when the finding has a `pos` (region omitted for whole-document findings). |
+| `sarif` | A valid SARIF 2.1.0 log — one run whose `tool.driver` is `markdown-contract`, `driver.rules` listing every distinct id seen, one `result` per finding, with a `region.startLine` when the finding has a `pos` (region omitted for whole-document findings). A finding's `hint` rides in the result's `properties: { hint }` bag. |
 
 SARIF maps the three levels onto SARIF's vocabulary:
 
@@ -117,7 +137,7 @@ the [contract-authoring examples](/appendix/examples/author/).
 | id | Default level | Fires when |
 | --- | --- | --- |
 | `structure/section-missing` | error | A required (non-`optional`) declared section has no matching heading at its level. |
-| `structure/section-order` | error | Sections break declared order (`recognized-relative` or `strict`), or an unknown section appears where unknowns aren't admitted (no `gap()`, `allowUnknown: false`). |
+| `structure/section-order` | error | Sections break declared order (`recognized-relative` or `strict`), or an unknown section appears where unknowns aren't admitted (no `gap()`; `allowUnknown: false` in TS, `additionalSections: false` in YAML). |
 | `structure/duplicate-section` | error | A non-repeatable heading repeats at one level, or a second spelling fills an alias / `oneOf` slot already filled. |
 | `structure/key-collision` | error | Two distinct headings at one level collapse to the same lowerCamelCase key. |
 | `structure/gap-count` | error | The count of unknown sections admitted at a `gap()` falls outside the gap's `min` / `max`. |
@@ -138,7 +158,7 @@ kind. (Presence and kind are structure's job; this plane never re-reports them.)
 | `content/table/column-extra` | error | `extraColumns: "error"` and the table carries an undeclared column. |
 | `content/table/min-rows` | error | The table has fewer rows than `minRows`. |
 | `content/table/cell` | error | A declared per-cell schema (`cells`) rejects a cell value; pinned to the offending row. |
-| `content/list/item-kind` | error | A list item fails `everyItem` — not a checkbox, or rejected by the item schema. |
+| `content/list/item-kind` | error | A list item fails the per-item check (`everyItem` in TS, `items` in YAML) — not a checkbox, or rejected by the item schema. |
 | `content/list/min-items` | error | The list has fewer items than `minItems`. |
 | `content/code/lang` | error | A code block's language does not match the declared `lang`. |
 | `content/max-words` | error | A paragraph runs longer than `maxWords`. |
@@ -185,12 +205,6 @@ the bare `text/requires` / `text/forbids` / `text/count`; a synthesized id falls
 `error` default. (`text/doc` is the whole-document `DocRule`'s own identity, not a finding id — its
 findings still surface as synthesized `text/requires` / `text/forbids` / `text/count` under the
 `doc` scope key.)
-:::
-
-:::caution[Planned]
-The **TypeScript** builders `requires` / `forbids` / `textRule` ship today. The **declarative YAML**
-`requires:` / `forbids:` keys they compile to (C-0009 / D-0011) are not yet wired — author text
-constraints through the TS API for now. See the [YAML reference](/reference/yaml/).
 :::
 
 ### Custom rule ids

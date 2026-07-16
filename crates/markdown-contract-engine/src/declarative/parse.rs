@@ -1,15 +1,17 @@
 //! Parse a declarative YAML document and validate its envelope — the `mcVersion`
 //! version gate and the `kind` discriminant (D-0008), mirroring the TS
-//! `parseDeclarativeDoc`. This is the single entry where the format version is checked;
-//! the document body is handed to the kind-specific compiler.
+//! `parseDeclarativeDoc`. This is the single entry where the format version is checked:
+//! `mcVersion: 2` is the only supported version; `mcVersion: 1` is retired and gets a
+//! dedicated error naming the v1→v2 codemod (D-0020). The document body is handed to
+//! the kind-specific compiler.
 
 use serde_yaml::Value;
 
 use super::errors::DeclarativeError;
 
-/// The supported format versions of the declarative DSL — v1 (D-0008) and v2, the
-/// JSON-Schema-idiom respell (D-0020 § Envelope).
-const SUPPORTED_VERSIONS: &[i64] = &[1, 2];
+/// The supported format versions of the declarative DSL — v2, the JSON-Schema-idiom
+/// vocabulary (D-0020 § Envelope). v1 is retired.
+const SUPPORTED_VERSIONS: &[i64] = &[2];
 
 /// The document kind a declarative envelope declares.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -28,7 +30,8 @@ pub struct DeclarativeDoc {
 
 /// Parse YAML text into a validated declarative envelope. Errors on invalid YAML, a
 /// non-mapping document, an unsupported `mcVersion`, or a `kind` that is neither
-/// `contract` nor `config`. Never best-effort parses an unknown version.
+/// `contract` nor `config`. `mcVersion: 1` gets its dedicated retirement error
+/// (D-0020); an unknown version is never best-effort parsed.
 pub fn parse_declarative_doc(yaml_text: &str) -> Result<DeclarativeDoc, DeclarativeError> {
     let raw: Value = serde_yaml::from_str(yaml_text)
         .map_err(|e| DeclarativeError::InvalidYaml(e.to_string()))?;
@@ -40,6 +43,7 @@ pub fn parse_declarative_doc(yaml_text: &str) -> Result<DeclarativeDoc, Declarat
 
     let version = map.get(Value::String("mcVersion".into()));
     let mc_version = match version.and_then(Value::as_i64) {
+        Some(1) => return Err(DeclarativeError::RetiredVersion),
         Some(v) if SUPPORTED_VERSIONS.contains(&v) => v,
         _ => {
             return Err(DeclarativeError::UnsupportedVersion(render(version)));
@@ -73,14 +77,10 @@ fn render(v: Option<&Value>) -> String {
 mod tests {
     use super::*;
 
-    // Contract first: a well-formed envelope parses at either supported version; each
+    // Contract first: a well-formed envelope parses at the supported version; each
     // gate rejects.
     #[test]
     fn valid_envelope_parses() {
-        let doc =
-            parse_declarative_doc("mcVersion: 1\nkind: contract\nbody:\n  sections: []\n").unwrap();
-        assert_eq!(doc.mc_version, 1);
-        assert_eq!(doc.kind, DeclarativeKind::Contract);
         let doc =
             parse_declarative_doc("mcVersion: 2\nkind: contract\nbody:\n  sections: []\n").unwrap();
         assert_eq!(doc.mc_version, 2);
@@ -95,12 +95,22 @@ mod tests {
     }
 
     #[test]
+    fn the_retired_mc_version_1_names_the_codemod() {
+        let err = expect_err(parse_declarative_doc("mcVersion: 1\nkind: contract\n"));
+        assert!(matches!(err, DeclarativeError::RetiredVersion));
+        assert_eq!(
+            err.to_string(),
+            "mcVersion 1 is retired; run `bun packages/core/scripts/migrate-v1-to-v2.ts --write <file>` to migrate (D-0020)"
+        );
+    }
+
+    #[test]
     fn unsupported_version_is_rejected_not_best_effort_parsed() {
         let err = expect_err(parse_declarative_doc("mcVersion: 3\nkind: contract\n"));
         assert!(matches!(err, DeclarativeError::UnsupportedVersion(_)));
         assert_eq!(
             err.to_string(),
-            "unsupported mcVersion: 3 (this build supports 1, 2)"
+            "unsupported mcVersion: 3 (this build supports 2)"
         );
     }
 
@@ -111,7 +121,7 @@ mod tests {
             DeclarativeError::UnsupportedVersion(_)
         ));
         assert!(matches!(
-            expect_err(parse_declarative_doc("mcVersion: 1\nkind: recipe\n")),
+            expect_err(parse_declarative_doc("mcVersion: 2\nkind: recipe\n")),
             DeclarativeError::InvalidKind(_)
         ));
         assert!(matches!(

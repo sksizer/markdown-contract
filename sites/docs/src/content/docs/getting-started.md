@@ -59,14 +59,16 @@ tables, text constraints, and repeatable sections:
 
 ```yaml
 # decision.contract.yaml
-mcVersion: 1
+mcVersion: 2
 kind: contract
 frontmatter:
-  fields:
+  type: object
+  required: [id, status]
+  properties:
     id: { type: string, pattern: '^D-\d{4}$' }
     status: { enum: [proposed, accepted, superseded] }
 body:
-  allowUnknown: true
+  additionalSections: true
   sections:
     - section: Summary
     - section: Decision
@@ -76,7 +78,7 @@ A config document maps globs to contracts for a whole corpus:
 
 ```yaml
 # markdown-contract.yaml
-mcVersion: 1
+mcVersion: 2
 kind: config
 contracts:
   decision: ./decision.contract.yaml
