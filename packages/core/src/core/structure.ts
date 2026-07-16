@@ -15,8 +15,14 @@
  *
  * Kind and presence are structure; data shape is content (D-0001). This plane reads
  * `LeafSpec.kind` only — it never builds or runs the content Zod schema (that is T-5LW7).
+ *
+ * Hints (D-0020): the walk threads the nearest enclosing authored `description` — each level
+ * computes its effective hint (`opts.description ?? inherited`) and passes it down; slot-bound
+ * findings prefer the slot's own description. Findings mint through a `withHint`-wrapped `Ctx`,
+ * so a description-free contract stays byte-identical (no `hint` key).
  */
 import { toCamelKey } from "./camel.js";
+import { withHint } from "./registry.js";
 import type {
   BlockKind,
   BlockNode,
@@ -165,11 +171,17 @@ function checkDuplicateHeadings(
  * occurrence; `min` bites only once the slot is present (count 0 for a required slot is
  * `structure/section-missing`, its absence — not its count).
  */
-function checkRepeatBounds(nodes: SectionNode[], slots: Slot[], ctx: Ctx, out: Finding[]): void {
+function checkRepeatBounds(
+  nodes: SectionNode[],
+  slots: Slot[],
+  ctx: Ctx,
+  out: Finding[],
+  levelHint: string | undefined,
+): void {
   for (const slot of slots) {
     if (!slot.repeatable) continue;
     if (slot.min === undefined && slot.max === undefined) continue;
-    emitRepeatBound(slot, nodes, ctx, out);
+    emitRepeatBound(slot, nodes, withHint(ctx, slot.opts?.description ?? levelHint), out);
   }
 }
 
@@ -203,14 +215,24 @@ function emitRepeatBound(slot: Slot, nodes: SectionNode[], ctx: Ctx, out: Findin
 /**
  * Match one level: `nodes` (the sibling sections at this depth) against `specs` under
  * `opts`. Emits findings into `out`, then recurses into declared sections' `children`.
+ * `inheritedHint` is the nearest enclosing description above this level (D-0020); the
+ * level's own `opts.description` (if any) supersedes it for everything minted below.
  */
-function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Finding[]): void {
+function matchLevel(
+  nodes: SectionNode[],
+  seq: SectionSeq,
+  ctx: Ctx,
+  out: Finding[],
+  inheritedHint?: string,
+): void {
   const specs = seq.specs;
   const order = seq.opts.order ?? "none";
   const allowUnknown = seq.opts.allowUnknown ?? true;
   const slots = slotsOf(specs);
+  const levelHint = seq.opts.description ?? inheritedHint;
+  const lctx = withHint(ctx, levelHint);
 
-  checkDuplicateHeadings(nodes, slots, ctx, out);
+  checkDuplicateHeadings(nodes, slots, lctx, out);
 
   // Assign each section to its declared slot (first occurrence binds the slot).
   const assigned: Assigned[] = nodes.map((node) => ({
@@ -218,11 +240,11 @@ function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Findin
     slotIdx: slotForOrNull(slots, node.name),
   }));
 
-  checkAliasAmbiguity(assigned, slots, ctx, out);
-  checkMissingSlots(assigned, slots, nodes, ctx, out);
-  checkRepeatBounds(nodes, slots, ctx, out);
-  checkOrderAndUnknowns(order, allowUnknown, nodes, specs, slots, assigned, ctx, out);
-  runPresentSlotChecks(assigned, slots, ctx, out);
+  checkAliasAmbiguity(assigned, slots, lctx, out);
+  checkMissingSlots(assigned, slots, nodes, ctx, out, levelHint);
+  checkRepeatBounds(nodes, slots, ctx, out, levelHint);
+  checkOrderAndUnknowns(order, allowUnknown, nodes, specs, slots, assigned, lctx, out);
+  runPresentSlotChecks(assigned, slots, ctx, out, levelHint);
 }
 
 /** oneOf / alias ambiguity: a second distinct spelling filling an already-filled multi-name slot. */
@@ -255,6 +277,7 @@ function checkMissingSlots(
   nodes: SectionNode[],
   ctx: Ctx,
   out: Finding[],
+  levelHint: string | undefined,
 ): void {
   const filledSlots = new Set<number>();
   for (const a of assigned) if (a.slotIdx !== null) filledSlots.add(a.slotIdx);
@@ -265,7 +288,7 @@ function checkMissingSlots(
     // else omit (an empty body has no line to point at). The fixtures pin line 1 / omit.
     const firstHeading = nodes[0];
     out.push(
-      ctx.finding({
+      withHint(ctx, slot.opts?.description ?? levelHint).finding({
         id: "structure/section-missing",
         message: `required section ‘${slot.names.join("’ / ‘")}’ is missing`,
         ...(firstHeading ? { pos: firstHeading.pos } : {}),
@@ -324,12 +347,18 @@ function emitStrayUnknowns(assigned: Assigned[], ctx: Ctx, out: Finding[]): void
 }
 
 /** The kind-gate, anchors, and node-local rules for each declared, present slot. */
-function runPresentSlotChecks(assigned: Assigned[], slots: Slot[], ctx: Ctx, out: Finding[]): void {
+function runPresentSlotChecks(
+  assigned: Assigned[],
+  slots: Slot[],
+  ctx: Ctx,
+  out: Finding[],
+  levelHint: string | undefined,
+): void {
   for (const a of assigned) {
     if (a.slotIdx === null) continue;
     const slot = slots[a.slotIdx]!;
     if (!slot.opts) continue;
-    runSectionChecks(a.node, slot.opts, ctx, out);
+    runSectionChecks(a.node, slot.opts, ctx, out, levelHint);
   }
 }
 
@@ -592,12 +621,22 @@ function gapAnchorPos(
 
 // ── Per-section checks: kind-gate, anchors, node-local rules, recursion ───────────
 
-function runSectionChecks(node: SectionNode, opts: SectionOpts, ctx: Ctx, out: Finding[]): void {
+function runSectionChecks(
+  node: SectionNode,
+  opts: SectionOpts,
+  ctx: Ctx,
+  out: Finding[],
+  levelHint?: string,
+): void {
+  // The section's effective hint — its own description, else the enclosing level's (D-0020).
+  const sectionHint = opts.description ?? levelHint;
+  const sctx = withHint(ctx, sectionHint);
+
   // Anchor presence — a declared `^anchor` must resolve to a block or section anchor.
   if (opts.anchor !== undefined) {
     if (!anchorResolves(node, opts.anchor)) {
       out.push(
-        ctx.finding({
+        sctx.finding({
           id: "structure/anchor-missing",
           message: `section ‘${node.name}’ is missing required block-id ^${opts.anchor}`,
           pos: node.pos,
@@ -606,13 +645,20 @@ function runSectionChecks(node: SectionNode, opts: SectionOpts, ctx: Ctx, out: F
     }
   }
 
-  // The content kind-gate — a single leaf, or named leaves bound by `^anchor`.
+  // The content kind-gate — a single leaf, or named leaves bound by `^anchor`. A leaf's own
+  // config description (v2) is the nearest hint for its kind-gate findings.
   if (opts.content !== undefined) {
     if (isLeafSpec(opts.content)) {
-      kindGate(node, opts.content, undefined, ctx, out);
+      kindGate(
+        node,
+        opts.content,
+        undefined,
+        withHint(ctx, leafHintOf(opts.content, sectionHint)),
+        out,
+      );
     } else {
       for (const [anchor, leaf] of Object.entries(opts.content)) {
-        kindGate(node, leaf, anchor, ctx, out);
+        kindGate(node, leaf, anchor, withHint(ctx, leafHintOf(leaf, sectionHint)), out);
       }
     }
   }
@@ -620,14 +666,20 @@ function runSectionChecks(node: SectionNode, opts: SectionOpts, ctx: Ctx, out: F
   // Node-local rules.
   if (opts.rules) {
     for (const r of opts.rules) {
-      out.push(...r.run(node, ctx));
+      out.push(...r.run(node, sctx));
     }
   }
 
   // Recurse into declared children.
   if (opts.children) {
-    matchLevel(node.sections, opts.children, ctx, out);
+    matchLevel(node.sections, opts.children, ctx, out, sectionHint);
   }
+}
+
+/** A leaf's effective hint: its config's authored `description` (v2), else the section's. */
+export function leafHintOf(leaf: LeafSpec, sectionHint: string | undefined): string | undefined {
+  const desc = (leaf.config as { description?: unknown } | undefined)?.description;
+  return typeof desc === "string" ? desc : sectionHint;
 }
 
 /** Whether an anchor id resolves to a block-bound or section-level anchor in this section. */
@@ -698,11 +750,17 @@ function pickBlock(node: SectionNode, anchor: string | undefined): BlockNode | n
 /**
  * Walk the projection's top-level sections against the body grammar, emitting every
  * `structure/*` finding. The result is returned in emission order; `validate()` applies
- * the deterministic sort (T-3NC8 finalizes the cross-plane merge).
+ * the deterministic sort (T-3NC8 finalizes the cross-plane merge). `rootHint` is the
+ * contract-root `description` (D-0020) — the outermost hint fallback for the walk.
  */
-export function matchStructure(tree: { root: SectionNode }, body: SectionSeq, ctx: Ctx): Finding[] {
+export function matchStructure(
+  tree: { root: SectionNode },
+  body: SectionSeq,
+  ctx: Ctx,
+  rootHint?: string,
+): Finding[] {
   const out: Finding[] = [];
-  matchLevel(tree.root.sections, body, ctx, out);
+  matchLevel(tree.root.sections, body, ctx, out, rootHint);
   return out;
 }
 

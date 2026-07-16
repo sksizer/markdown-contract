@@ -198,6 +198,13 @@ export interface Finding {
   /** omitted for whole-document absence findings */
   pos?: SourcePos;
   message: string;
+  /**
+   * The nearest enclosing authored `description` in scope at the mint site (D-0020): leaf config →
+   * section opts → ancestor sections → body root level → contract root. ABSENT (not `undefined`)
+   * when no description is in scope, so a description-free contract's findings are byte-identical
+   * to a build without this field.
+   */
+  hint?: string;
   /** describes only; applying is a separate repair pass */
   fix?: { description: string; edit?: TextEdit };
 }
@@ -238,6 +245,8 @@ export interface LeafSpec<Row = unknown, Item = unknown> {
 export interface LevelOpts {
   order?: "none" | "recognized-relative" | "strict";
   allowUnknown?: boolean;
+  /** Authored guidance for this level — the hint findings minted at this level carry (D-0020). */
+  description?: string;
 }
 
 export interface SectionOpts {
@@ -262,6 +271,8 @@ export interface SectionOpts {
   min?: number;
   /** Maximum occurrence count for a repeatable slot (above → `structure/repeat-count`). Requires `repeatable: true`. */
   max?: number;
+  /** Authored guidance for this section — the hint its findings carry (nearest-description, D-0020). */
+  description?: string;
 }
 
 /**
@@ -341,6 +352,11 @@ export interface ContractDef<F = unknown, B = unknown> {
   body?: SectionSeq<B>;
   /** cross-plane rules: see both frontmatter and body */
   rules?: DocRule[];
+  /**
+   * Authored guidance for the whole contract — the outermost hint fallback (D-0020). Pure
+   * passthrough on `contract()`; findings with no nearer description in scope carry it as `hint`.
+   */
+  description?: string;
 }
 
 /** The validation context — the source document's file path, used only to stamp `<path>:<line>`. */

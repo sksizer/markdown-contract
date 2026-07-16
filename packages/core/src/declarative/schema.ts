@@ -23,9 +23,10 @@ const num = (v: unknown): number | undefined => (typeof v === "number" ? v : und
  * The closed `format` vocabulary (D-0008 § Schema vocabulary): the string formats Zod and
  * JSON Schema both expose out of the box, each mapped to its Zod constructor. Deliberately
  * broad so common shapes never fall back to a hand-written `pattern`; anything outside the
- * set is a `pattern` (or the deferred `$ref`).
+ * set is a `pattern` (or the deferred `$ref`). Shared with the v2 compiler (`schema-v2.ts`,
+ * D-0020), where a format additionally COMPOSES with length/pattern constraints.
  */
-const STRING_FORMATS: Record<string, () => z.ZodType> = {
+export const STRING_FORMATS: Record<string, () => z.ZodType> = {
   // web / identity
   email: () => z.email(),
   url: () => z.url(),

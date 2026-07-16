@@ -186,3 +186,42 @@ describe("the pre-parsed DocTree overload (AC-1)", () => {
     expect(fromTree.tree).toBe(tree);
   });
 });
+
+describe("description → Finding.hint (D-0020) — the TS-API passthrough", () => {
+  test("contract() accepts a root description; findings with no nearer description carry it", () => {
+    const c = contract({
+      description: "the contract-root guidance",
+      body: sections({}, [
+        section("Summary", { description: "a one-paragraph summary" }),
+        section("Plain"),
+      ]),
+    });
+    const r = c.validate("## Other\n\nx\n", { path: PATH });
+    const missing = r.findings.filter((f) => f.id === "structure/section-missing");
+    expect(missing.find((f) => f.message.includes("Summary"))?.hint).toBe(
+      "a one-paragraph summary",
+    );
+    expect(missing.find((f) => f.message.includes("Plain"))?.hint).toBe(
+      "the contract-root guidance",
+    );
+  });
+
+  test("a level description on sections() opts supersedes the root for its findings", () => {
+    const c = contract({
+      description: "root",
+      body: sections({ description: "the level" }, [section("Summary")]),
+    });
+    const f = c
+      .validate("## Other\n\nx\n", { path: PATH })
+      .findings.find((x) => x.id === "structure/section-missing");
+    expect(f?.hint).toBe("the level");
+  });
+
+  test("without any description, findings carry no hint key at all", () => {
+    const c = contract({ body: sections({}, [section("Summary")]) });
+    const r = c.validate("## Other\n\nx\n", { path: PATH });
+    for (const f of r.findings) {
+      expect(Object.keys(f)).not.toContain("hint");
+    }
+  });
+});

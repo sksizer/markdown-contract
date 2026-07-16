@@ -1,16 +1,17 @@
 /**
  * Parse a declarative YAML document and validate its envelope — the `mcVersion` version
  * gate and the `kind` discriminant (D-0008). This is the single entry where the format
- * version is checked, so a future `mcVersion: 2` dispatches here without touching the
- * compilers. The body of the document (`frontmatter` / `body` for a contract, `rules` /
- * `contracts` for a config) is handed off to the kind-specific compiler.
+ * version is checked: `mcVersion: 1` routes to the v1 compilers unchanged and
+ * `mcVersion: 2` routes to the v2 declarative compilers (D-0020). The body of the
+ * document (`frontmatter` / `body` for a contract, `rules` / `contracts` for a config)
+ * is handed off to the kind- and version-specific compiler.
  */
 import { parse as parseYaml } from "yaml";
 
 import { DeclarativeError } from "./errors.js";
 
-/** The supported format versions of the declarative DSL. v1 only, for now (D-0008 § versioning). */
-const SUPPORTED_VERSIONS = new Set([1]);
+/** The supported format versions of the declarative DSL: v1 (D-0008) and v2 (D-0020). */
+const SUPPORTED_VERSIONS = new Set([1, 2]);
 
 export interface DeclarativeDoc {
   mcVersion: number;
