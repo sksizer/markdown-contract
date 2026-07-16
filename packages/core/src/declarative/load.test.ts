@@ -1,16 +1,19 @@
 import { describe, expect, it } from "vitest";
 
+import { contract, section, sections } from "../core/grammar.js";
 import type { Finding } from "../core/types.js";
 import { DeclarativeError, loadContract } from "./index.js";
 
-const FM = `mcVersion: 1
+const FM = `mcVersion: 2
 kind: contract
 frontmatter:
-  strict: true
-  fields:
+  type: object
+  additionalProperties: false
+  required: [id, status, title]
+  properties:
     id: { type: string, pattern: '^D-[0-9A-Z]{4}$' }
     status: { enum: [open/proposed, open/accepted] }
-    title: { type: string, min: 1 }
+    title: { type: string, minLength: 1 }
 `;
 
 const doc = (status: string, extra = ""): string =>
@@ -29,7 +32,7 @@ describe("loadContract — frontmatter plane parity with the combinators", () =>
     expect(r.findings.map((f) => f.id)).toContain("frontmatter/enum");
   });
 
-  it("an unknown key surfaces frontmatter/unknown-key under strict", () => {
+  it("an unknown key surfaces frontmatter/unknown-key under additionalProperties: false", () => {
     const c = loadContract(FM);
     const r = c.validate(doc("open/proposed", "extra: 1\n"), { path: "x.md" });
     expect(r.findings.map((f) => f.id)).toContain("frontmatter/unknown-key");
@@ -37,26 +40,34 @@ describe("loadContract — frontmatter plane parity with the combinators", () =>
 });
 
 describe("loadContract — envelope + current-build limits", () => {
-  it("rejects an unsupported mcVersion (3; this build supports 1 and 2)", () => {
+  it("rejects the retired mcVersion 1 with the codemod pointer (D-0020)", () => {
+    const yaml = "mcVersion: 1\nkind: contract\nbody:\n  sections:\n    - section: Summary\n";
+    expect(() => loadContract(yaml)).toThrow(DeclarativeError);
+    expect(() => loadContract(yaml)).toThrow(
+      "mcVersion 1 is retired; run `bun packages/core/scripts/migrate-v1-to-v2.ts --write <file>` to migrate (D-0020)",
+    );
+  });
+
+  it("rejects an unsupported mcVersion (3; this build supports 2)", () => {
     expect(() => loadContract("mcVersion: 3\nkind: contract\n")).toThrow(DeclarativeError);
-    expect(() => loadContract("mcVersion: 3\nkind: contract\n")).toThrow(/supports 1, 2/);
+    expect(() => loadContract("mcVersion: 3\nkind: contract\n")).toThrow(/supports 2/);
   });
 
   it("rejects a missing / wrong kind", () => {
-    expect(() => loadContract("mcVersion: 1\n")).toThrow(DeclarativeError);
-    expect(() => loadContract("mcVersion: 1\nkind: config\n")).toThrow(DeclarativeError);
+    expect(() => loadContract("mcVersion: 2\n")).toThrow(DeclarativeError);
+    expect(() => loadContract("mcVersion: 2\nkind: config\n")).toThrow(DeclarativeError);
   });
 
   it("compiles a body grammar (a required section that is absent → structure/section-missing)", () => {
     const c = loadContract(
-      "mcVersion: 1\nkind: contract\nbody:\n  order: none\n  sections:\n    - section: Summary\n",
+      "mcVersion: 2\nkind: contract\nbody:\n  order: none\n  sections:\n    - section: Summary\n",
     );
     const r = c.validate("## Other\n\nx\n", { path: "x.md" });
     expect(r.findings.map((f) => f.id)).toContain("structure/section-missing");
   });
 });
 
-// ── mcVersion: 2 — the v2 compiler set dispatches off the envelope (D-0020) ────────
+// ── The v2 compiler set (D-0020) ───────────────────────────────────────────────────
 
 const V2 = `mcVersion: 2
 kind: contract
@@ -73,7 +84,7 @@ body:
     - section: Summary
 `;
 
-describe("loadContract — mcVersion: 2 dispatches to the v2 compilers", () => {
+describe("loadContract — the v2 compiler set", () => {
   it("a clean v2 document yields no findings", () => {
     const c = loadContract(V2);
     const src = "---\nid: D-0001\n---\n\n## Summary\n\nx\n";
@@ -89,17 +100,10 @@ describe("loadContract — mcVersion: 2 dispatches to the v2 compilers", () => {
     expect(ids).toContain("frontmatter/unknown-key"); // additionalProperties: false
   });
 
-  it("a v1 spelling inside a v2 document is rejected with the codemod hint", () => {
+  it("a v1 spelling is rejected with the codemod hint", () => {
     const yaml =
       "mcVersion: 2\nkind: contract\nbody:\n  order: none\n  sections:\n    - section: S\n      optional: true\n";
     expect(() => loadContract(yaml)).toThrow(/'optional' is the v1 spelling/);
-  });
-
-  it("a v1 document keeps the v1 compilers (v1 spellings still load)", () => {
-    const c = loadContract(
-      "mcVersion: 1\nkind: contract\nbody:\n  order: none\n  sections:\n    - section: S\n      optional: true\n",
-    );
-    expect(c.validate("## Other\n\nx\n", { path: "x.md" }).findings).toEqual([]);
   });
 
   it("the v2 contract root is closed", () => {
@@ -187,17 +191,15 @@ describe("loadContract — findings carry the nearest enclosing description as h
     expect(hintOf(r.findings, "frontmatter/enum")).toBe("the contract-root guidance");
   });
 
-  it("a description-free v2 contract mints findings byte-identical to its v1 twin (no hint key)", () => {
-    const v2 = loadContract(
+  it("a description-free contract mints findings byte-identical to its combinator twin (no hint key)", () => {
+    const yaml = loadContract(
       "mcVersion: 2\nkind: contract\nbody:\n  order: none\n  sections:\n    - section: Summary\n",
     );
-    const v1 = loadContract(
-      "mcVersion: 1\nkind: contract\nbody:\n  order: none\n  sections:\n    - section: Summary\n",
-    );
+    const ts = contract({ body: sections({ order: "none" }, [section("Summary")]) });
     const src = "## Other\n\nx\n";
-    const v2Findings = v2.validate(src, { path: "x.md" }).findings;
-    expect(v2Findings).toEqual(v1.validate(src, { path: "x.md" }).findings);
-    for (const f of v2Findings) {
+    const yamlFindings = yaml.validate(src, { path: "x.md" }).findings;
+    expect(yamlFindings).toEqual(ts.validate(src, { path: "x.md" }).findings);
+    for (const f of yamlFindings) {
       expect(Object.keys(f)).not.toContain("hint");
     }
   });

@@ -17,10 +17,10 @@
 
 use serde_yaml::Value;
 
-use super::body::{assert_no_key_collision, scalar_string};
 use super::errors::DeclarativeError;
 use super::schema_v2::compile_schema_v2;
 use super::text::{compile_section_text_rules, has_text_keys};
+use crate::camel::to_camel_key;
 use crate::contract::{
     CodeConfig, EveryItem, ExtraColumns, GapSpec, LeafSpec, LevelOpts, ListConfig, OneOfSpec,
     Order, SectionContent, SectionOpts, SectionSeq, SectionSpec, Spec, TableConfig,
@@ -70,7 +70,7 @@ const ONE_OF_KEYS: &[&str] = &[
 ];
 
 /// The keys admitted on a `gap:` node.
-const GAP_KEYS: &[&str] = &["gap", "description"];
+const GAP_KEYS: &[&str] = &["gap"];
 
 /// The v1 body spellings and their v2 counterparts — the migration hints.
 const V1_SPELLINGS: &[(&str, &str)] = &[
@@ -179,6 +179,56 @@ fn level_opts(map: &serde_yaml::Mapping, path: &str) -> Result<LevelOpts, Declar
     Ok(opts)
 }
 
+/// The build-time key-collision guard the TS `sections()` runs: among declared
+/// section/oneOf primary names at one level, two distinct names collapsing to one
+/// camelCase key are rejected (alias spellings within one slot are one logical slot).
+fn assert_no_key_collision(specs: &[Spec], path: &str) -> Result<(), DeclarativeError> {
+    let mut key_to_name: Vec<(String, String)> = Vec::new();
+    for spec in specs {
+        let inner = unwrap_inner(spec);
+        let primary = match inner {
+            Spec::Section(s) => s.names.first(),
+            Spec::OneOf(o) => o.names.first(),
+            _ => None,
+        };
+        let Some(primary) = primary else { continue };
+        let key = to_camel_key(primary);
+        if key.is_empty() {
+            continue;
+        }
+        if let Some((_, prior)) = key_to_name.iter().find(|(k, _)| *k == key) {
+            if prior != primary {
+                return Err(err(format!(
+                    "{path}: contract/key-collision — section names \u{2018}{prior}\u{2019} and \u{2018}{primary}\u{2019} both generate the camelCase key \u{2018}{key}\u{2019}; generated OOM keys must be unique"
+                )));
+            }
+        } else {
+            key_to_name.push((key, primary.clone()));
+        }
+    }
+    Ok(())
+}
+
+fn unwrap_inner(spec: &Spec) -> &Spec {
+    match spec {
+        Spec::Optional(inner) => unwrap_inner(inner),
+        other => other,
+    }
+}
+
+/// A YAML scalar as its string spelling (the TS `String(node.anchor)`).
+fn scalar_string(v: &Value) -> String {
+    match v {
+        Value::String(s) => s.clone(),
+        Value::Bool(b) => b.to_string(),
+        Value::Number(n) => n.to_string(),
+        Value::Null => "null".into(),
+        other => serde_yaml::to_string(other)
+            .map(|s| s.trim_end().to_string())
+            .unwrap_or_default(),
+    }
+}
+
 /// Compile a `sections:` list (required) into specs, running the key-collision guard.
 fn compile_sections(map: &serde_yaml::Mapping, path: &str) -> Result<Vec<Spec>, DeclarativeError> {
     let Some(Value::Sequence(nodes)) = get(map, "sections") else {
@@ -215,8 +265,10 @@ fn compile_node(node: &Value, path: &str) -> Result<Spec, DeclarativeError> {
     }
 }
 
-/// Compile a `gap: { min?, max? }` node (unchanged from v1, plus `description`).
-fn compile_gap(map: &serde_yaml::Mapping, path: &str) -> Result<Spec, DeclarativeError> {
+/// Compile a `gap: { min?, max? }` node (unchanged from v1). A gap admits no
+/// `description` — the TS compiler rejects it, and the portable vocabulary is the
+/// intersection (the docs and meta-schema document `gap` as the node's only key).
+fn compile_gap(map: &serde_yaml::Mapping, _path: &str) -> Result<Spec, DeclarativeError> {
     let (min, max) = match get(map, "gap") {
         Some(Value::Mapping(g)) => (
             g.get(Value::String("min".into())).and_then(Value::as_u64),
@@ -227,7 +279,7 @@ fn compile_gap(map: &serde_yaml::Mapping, path: &str) -> Result<Spec, Declarativ
     Ok(Spec::Gap(GapSpec {
         min: min.map(|n| n as usize),
         max: max.map(|n| n as usize),
-        description: description_of(map, path)?,
+        description: None,
     }))
 }
 
@@ -767,7 +819,7 @@ mod tests {
     #[test]
     fn descriptions_are_stored_on_levels_nodes_and_leaves() {
         let seq = body(
-            "description: the body\nsections:\n  - section: Summary\n    description: one paragraph\n    content:\n      list:\n        minItems: 1\n        description: the checklist\n  - gap: {}\n    description: author extras\n",
+            "description: the body\nsections:\n  - section: Summary\n    description: one paragraph\n    content:\n      list:\n        minItems: 1\n        description: the checklist\n  - gap: {}\n",
         )
         .unwrap();
         assert_eq!(seq.description.as_deref(), Some("the body"));
@@ -783,7 +835,13 @@ mod tests {
         let Spec::Gap(g) = &seq.specs[1] else {
             panic!()
         };
-        assert_eq!(g.description.as_deref(), Some("author extras"));
+        assert_eq!(g.description, None);
+    }
+
+    #[test]
+    fn gap_rejects_description_like_the_ts_compiler() {
+        let err = msg(body("sections:\n  - gap: {}\n    description: extras\n"));
+        assert!(err.contains("description"), "got: {err}");
     }
 
     #[test]

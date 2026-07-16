@@ -232,7 +232,7 @@ export function runInferenceFixtures(label: string, fixtures: InferenceFixture[]
           rules: r.contracts.map((c) => ({
             include: c.include,
             // Inferred defs are authored in the v2 vocabulary (D-0020) — compile as v2.
-            contract: compileContractObject(c.def, 2),
+            contract: compileContractObject(c.def),
           })),
         };
         const { findings } = runCorpus(cfg, { cwd: fx.dir });

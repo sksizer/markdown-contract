@@ -131,7 +131,7 @@ function onAddField(): void {
       />
     </section>
 
-    <p class="ctf__envelope">mcVersion 1 · kind contract — the envelope is managed automatically.</p>
+    <p class="ctf__envelope">mcVersion 2 · kind contract — the envelope is managed automatically.</p>
   </div>
 </template>
 

@@ -128,7 +128,7 @@ function toYamlMode(): void {
 // ── the ONE mutation pipeline for form edits ─────────────────────────────────────
 
 /**
- * Reparse the buffer, ensure the envelope (new files get `mcVersion: 1` +
+ * Reparse the buffer, ensure the envelope (new files get `mcVersion: 2` +
  * the right `kind` — never edited afterwards), run the Document-API mutation,
  * serialize back. The buffer text is the truth; the form re-derives from it.
  */

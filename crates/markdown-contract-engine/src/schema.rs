@@ -12,9 +12,8 @@
 //! Values are `serde_json::Value`s (the YAML → JS `toJS()` fidelity target); "undefined"
 //! — a missing key — is modelled as `None`, distinct from JSON `null`.
 //!
-//! The YAML → [`Schema`] compilers live in [`crate::declarative::schema`] (v1) and
-//! [`crate::declarative::schema_v2`] (the D-0020 JSON Schema subset); this module is
-//! the runtime only.
+//! The YAML → [`Schema`] compiler lives in [`crate::declarative::schema_v2`] (the
+//! D-0020 JSON Schema subset); this module is the runtime only.
 
 use regex::Regex;
 

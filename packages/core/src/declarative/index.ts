@@ -6,8 +6,9 @@
  * same typed model. This is a front-end over `core`; it never modifies the engine, and the
  * one-way layering (cli → runner → core; declarative → core) is preserved.
  *
- * v1 covers the frontmatter + structure + content planes as pure declarative YAML. The code
- * escape hatch (`$ref`) and cross-cutting rules are deferred (D-0008 § Out of scope).
+ * `mcVersion: 2` (D-0020) covers the frontmatter + structure + content planes as pure
+ * declarative YAML — v1 is retired (the codemod in `scripts/migrate-v1-to-v2.ts` migrates).
+ * The code escape hatch (`$ref`) and cross-cutting rules are deferred (D-0008 § Out of scope).
  */
 
 export { loadConfig, loadConfigFile } from "./config.js";

@@ -412,7 +412,7 @@ describe("inferConfig — heading key-collision handling (T-KCOL)", () => {
   it("the merged contract accepts both spellings (no error findings)", () => {
     file("mon.md", "## Schedule For today\n\nx\n");
     file("tue.md", "## Schedule For Today\n\nx\n");
-    const contract = compileContractObject(inferConfig(root).contracts[0]!.def, 2);
+    const contract = compileContractObject(inferConfig(root).contracts[0]!.def);
     const a = contract.validate("## Schedule For today\n\nx\n", { path: "a.md" });
     const b = contract.validate("## Schedule For Today\n\nx\n", { path: "b.md" });
     expect(a.findings.filter((f) => f.level === "error")).toEqual([]);
@@ -450,7 +450,7 @@ describe("inferConfig — repeatable-slot inference (T-1TA2, AC-4)", () => {
   it("the inferred contract accepts its own repeated-peer corpus (accept-by-construction)", () => {
     const src = "## Entry\n\nx\n\n## Entry\n\ny\n";
     file("a.md", src);
-    const contract = compileContractObject(inferConfig(root).contracts[0]!.def, 2);
+    const contract = compileContractObject(inferConfig(root).contracts[0]!.def);
     const res = contract.validate(src, { path: "a.md" });
     expect(res.findings.filter((f) => f.level === "error")).toEqual([]);
   });
@@ -491,6 +491,6 @@ describe("inferConfig — emission + determinism", () => {
     expect(yaml.mcVersion).toBe(2);
     expect(yaml.kind).toBe("contract");
     // The emitted def round-trips through the loader the self-check uses (the v2 compilers).
-    expect(() => compileContractObject(a.contracts[0]!.def, 2)).not.toThrow();
+    expect(() => compileContractObject(a.contracts[0]!.def)).not.toThrow();
   });
 });

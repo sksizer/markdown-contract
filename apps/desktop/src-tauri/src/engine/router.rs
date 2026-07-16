@@ -11,7 +11,6 @@
 //! | default YAML config absent, `markdown-contract.config.js` /   |            |
 //! | `.config.mjs` present in the vault root                       | CLI (that file) |
 //! | YAML config load hits `DeclarativeError::UnsupportedVersion`  | CLI        |
-//! | … `DeclarativeError::RefEscape` (`$ref` code escape)          | CLI        |
 //! | … `DeclarativeError::CodeContractRef` (`.js`/`.ts` contract)  | CLI        |
 //! | any other load/run failure                                    | error run  |
 //! | no config anywhere                                            | error run  |
@@ -70,13 +69,13 @@ fn is_js_config(path: &str) -> bool {
 
 /// Does this load error mean "the vault needs the TypeScript engine"? — the
 /// typed detection hooks D-0018 names: an `mcVersion` this build doesn't
-/// speak, the `$ref` code escape, or a code-authored contract ref.
+/// speak, or a code-authored contract ref. The retired `mcVersion: 1`
+/// (`DeclarativeError::RetiredVersion`) is NOT a hook: both engines reject it
+/// identically (D-0020), so falling back would reproduce the same error.
 pub fn needs_ts_engine(err: &DeclarativeError) -> bool {
     matches!(
         err,
-        DeclarativeError::UnsupportedVersion(_)
-            | DeclarativeError::RefEscape { .. }
-            | DeclarativeError::CodeContractRef { .. }
+        DeclarativeError::UnsupportedVersion(_) | DeclarativeError::CodeContractRef { .. }
     )
 }
 
@@ -190,20 +189,20 @@ mod tests {
         assert_eq!(route(vault.path(), vault.config_path()), Route::Missing);
     }
 
-    // The escape-variant table: exactly the three D-0018 hooks divert to the CLI.
+    // The escape-variant table: exactly the two D-0018 hooks divert to the CLI.
     #[test]
     fn escape_detection_table() {
         assert!(needs_ts_engine(&DeclarativeError::UnsupportedVersion(
-            "2".into()
+            "3".into()
         )));
-        assert!(needs_ts_engine(&DeclarativeError::RefEscape {
-            path: "frontmatter.id".into()
-        }));
         assert!(needs_ts_engine(&DeclarativeError::CodeContractRef {
             path: "rules[0].contract".into(),
             target: "./task.contract.ts".into(),
         }));
 
+        // The retired v1 is a plain error, not a fallback — the TS engine
+        // rejects it with the same codemod pointer (D-0020).
+        assert!(!needs_ts_engine(&DeclarativeError::RetiredVersion));
         assert!(!needs_ts_engine(&DeclarativeError::InvalidYaml("x".into())));
         assert!(!needs_ts_engine(&DeclarativeError::InvalidDocument(
             "x".into()
@@ -246,17 +245,21 @@ mod tests {
         );
     }
 
+    // A retired-v1 vault is a plain error run, NOT a fallback: the TS engine
+    // rejects mcVersion 1 with the same codemod pointer (D-0020).
     #[test]
-    fn a_ref_escape_in_an_inline_contract_delegates() {
-        let vault = TempVault::mini("router-ref-escape");
+    fn a_retired_v1_config_fails_without_fallback() {
+        let vault = TempVault::mini("router-retired-v1");
         std::fs::write(
             vault.config_path(),
-            "mcVersion: 1\nkind: config\nrules:\n  - include: ['**/*.md']\n    contract:\n      frontmatter:\n        fields:\n          id:\n            $ref: ./custom.ts\n",
+            "mcVersion: 1\nkind: config\nrules: []\n",
         )
         .unwrap();
         let (router, recorder) = router_with_recorder();
-        router.scan(vault.path(), vault.config_path()).unwrap();
-        assert_eq!(recorder.calls.lock().unwrap().len(), 1);
+        let err = router.scan(vault.path(), vault.config_path()).unwrap_err();
+        assert!(err.0.contains("mcVersion 1 is retired"));
+        assert!(err.0.contains("migrate-v1-to-v2"));
+        assert!(recorder.calls.lock().unwrap().is_empty());
     }
 
     #[test]
@@ -264,7 +267,7 @@ mod tests {
         let vault = TempVault::mini("router-version");
         std::fs::write(
             vault.config_path(),
-            "mcVersion: 2\nkind: config\nrules: []\n",
+            "mcVersion: 3\nkind: config\nrules: []\n",
         )
         .unwrap();
         let (router, recorder) = router_with_recorder();
@@ -290,7 +293,7 @@ mod tests {
     #[test]
     fn an_invalid_config_fails_without_fallback() {
         let vault = TempVault::mini("router-invalid");
-        std::fs::write(vault.config_path(), "mcVersion: 1\nkind: config\n").unwrap();
+        std::fs::write(vault.config_path(), "mcVersion: 2\nkind: config\n").unwrap();
         let (router, recorder) = router_with_recorder();
         let err = router.scan(vault.path(), vault.config_path()).unwrap_err();
         assert!(err.0.contains("config.rules"));

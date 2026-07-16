@@ -306,7 +306,7 @@ function onRemoveRule(index: number): void {
       </div>
     </section>
 
-    <p class="cf__envelope">mcVersion 1 · kind config — the envelope is managed automatically.</p>
+    <p class="cf__envelope">mcVersion 2 · kind config — the envelope is managed automatically.</p>
   </div>
 </template>
 
