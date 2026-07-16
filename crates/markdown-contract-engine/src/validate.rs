@@ -79,6 +79,17 @@ pub fn validate_tree(tree: &DocTree, contract: &Contract, path: &str) -> Vec<Fin
         findings.extend(r.run(tree, &ctx));
     }
 
+    // The outermost hint fallback (D-0020): a finding with no nearer description in
+    // scope inherits the contract root's. A no-op for v1 / description-free contracts,
+    // keeping their findings byte-identical.
+    if let Some(root_hint) = &contract.description {
+        for finding in &mut findings {
+            if finding.hint.is_none() {
+                finding.hint = Some(root_hint.clone());
+            }
+        }
+    }
+
     sort_findings(findings)
 }
 
@@ -102,6 +113,7 @@ mod tests {
             path: "doc.md".into(),
             pos: line.map(|l| SourcePos { line: l, col }),
             message: String::new(),
+            hint: None,
             fix: None,
         }
     }

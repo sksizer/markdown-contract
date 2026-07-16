@@ -48,6 +48,7 @@ mod tests {
             path: "docs/guide.md".into(),
             pos,
             message: "required section ‘Overview’ is missing".into(),
+            hint: None,
             fix: None,
         }
     }

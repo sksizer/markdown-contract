@@ -146,11 +146,17 @@ pub struct LeafSpec {
     pub kind: BlockKind,
     /// the leaf's content config; `None` = kind-gate only (no data checks)
     pub config: Option<LeafConfig>,
+    /// the leaf's v2 `description:` (D-0020), carried for `Finding.hint`
+    pub description: Option<String>,
 }
 
 impl LeafSpec {
     pub fn new(kind: BlockKind) -> Self {
-        Self { kind, config: None }
+        Self {
+            kind,
+            config: None,
+            description: None,
+        }
     }
 
     /// A table leaf with no data checks (kind-gate only).
@@ -163,6 +169,7 @@ impl LeafSpec {
         Self {
             kind: BlockKind::Table,
             config: Some(LeafConfig::Table(config)),
+            description: None,
         }
     }
 
@@ -176,6 +183,7 @@ impl LeafSpec {
         Self {
             kind: BlockKind::List,
             config: Some(LeafConfig::List(config)),
+            description: None,
         }
     }
 
@@ -189,6 +197,7 @@ impl LeafSpec {
         Self {
             kind: BlockKind::Code,
             config: Some(LeafConfig::Code(config)),
+            description: None,
         }
     }
 
@@ -202,6 +211,7 @@ impl LeafSpec {
         Self {
             kind: BlockKind::Paragraph,
             config: Some(LeafConfig::MaxWords(n)),
+            description: None,
         }
     }
 }
@@ -230,6 +240,8 @@ pub struct SectionOpts {
     pub min: Option<usize>,
     /// maximum occurrence count for a repeatable slot (above → `structure/repeat-count`)
     pub max: Option<usize>,
+    /// the node's v2 `description:` (D-0020), carried for `Finding.hint`
+    pub description: Option<String>,
 }
 
 // ── The level grammar ─────────────────────────────────────────────────────────────────
@@ -271,10 +283,12 @@ pub struct OneOfSpec {
 }
 
 /// A `gap()` window admitting unknown sections, optionally bounded.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct GapSpec {
     pub min: Option<usize>,
     pub max: Option<usize>,
+    /// the gap node's v2 `description:` (D-0020), carried for `Finding.hint`
+    pub description: Option<String>,
 }
 
 /// One element of a level's ordered content model — the output of the builder functions.
@@ -290,6 +304,9 @@ pub enum Spec {
 pub struct SectionSeq {
     pub opts: LevelOpts,
     pub specs: Vec<Spec>,
+    /// the level's v2 `description:` (D-0020) — in practice the body root's, since v2
+    /// hoists nested levels onto their section node
+    pub description: Option<String>,
 }
 
 // ── Builders (mirror the TS combinators) ─────────────────────────────────────────────
@@ -346,12 +363,20 @@ pub fn gap() -> Spec {
 
 /// A bounded gap window — `gap({ min, max })`.
 pub fn gap_bounds(min: Option<usize>, max: Option<usize>) -> Spec {
-    Spec::Gap(GapSpec { min, max })
+    Spec::Gap(GapSpec {
+        min,
+        max,
+        description: None,
+    })
 }
 
 /// A level's ordered content model — `sections(opts, [ … ])`.
 pub fn sections(opts: LevelOpts, specs: Vec<Spec>) -> SectionSeq {
-    SectionSeq { opts, specs }
+    SectionSeq {
+        opts,
+        specs,
+        description: None,
+    }
 }
 
 // ── The contract ──────────────────────────────────────────────────────────────────────
@@ -372,6 +397,9 @@ pub struct Contract {
     pub body: Option<SectionSeq>,
     /// cross-plane rules over the whole projected tree
     pub rules: Vec<Box<dyn DocRule>>,
+    /// the contract root's v2 `description:` (D-0020) — the outermost `Finding.hint`
+    /// fallback when no nearer description is in scope
+    pub description: Option<String>,
 }
 
 impl Contract {

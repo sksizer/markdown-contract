@@ -87,13 +87,14 @@ impl Registry {
     }
 }
 
-/// The input to [`Ctx::finding`] — id and message required, level/pos optional.
+/// The input to [`Ctx::finding`] — id and message required, level/pos/hint optional.
 #[derive(Debug, Clone)]
 pub struct FindingSpec {
     pub id: String,
     pub message: String,
     pub level: Option<FindingLevel>,
     pub pos: Option<SourcePos>,
+    pub hint: Option<String>,
 }
 
 impl FindingSpec {
@@ -103,6 +104,7 @@ impl FindingSpec {
             message: message.into(),
             level: None,
             pos: None,
+            hint: None,
         }
     }
 
@@ -115,6 +117,13 @@ impl FindingSpec {
     /// Pin the finding to a source position (omit for whole-document absence findings).
     pub fn pos(mut self, pos: SourcePos) -> Self {
         self.pos = Some(pos);
+        self
+    }
+
+    /// Attach the nearest enclosing `description:` as the finding's hint (D-0020) —
+    /// `None` leaves the slot absent, so v1 contracts stay byte-identical.
+    pub fn hint_opt(mut self, hint: Option<&str>) -> Self {
+        self.hint = hint.map(str::to_string);
         self
     }
 }
@@ -142,6 +151,7 @@ impl<'a> Ctx<'a> {
             path: self.path.to_string(),
             pos: spec.pos,
             message: spec.message,
+            hint: spec.hint,
             fix: None,
         }
     }
