@@ -77,6 +77,10 @@ pub struct Finding {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pos: Option<SourcePos>,
     pub message: String,
+    /// the nearest enclosing `description:` of a v2 contract (D-0020) — omitted when no
+    /// description is in scope
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hint: Option<String>,
     /// describes only; applying is a separate repair pass
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fix: Option<Fix>,
@@ -96,6 +100,7 @@ mod tests {
             path: "notes/rollout.md".into(),
             pos: Some(SourcePos::at(1, 1)),
             message: "required section ‘Overview’ is missing".into(),
+            hint: None,
             fix: None,
         };
         assert_eq!(
@@ -112,11 +117,32 @@ mod tests {
             path: "doc.md".into(),
             pos: None,
             message: "m".into(),
+            hint: None,
             fix: None,
         };
         let json = serde_json::to_string(&f).unwrap();
         assert!(!json.contains("pos"));
+        assert!(!json.contains("hint"));
         assert!(!json.contains("fix"));
+    }
+
+    // The v2 `hint` slot (D-0020): present it serializes under the TS field name;
+    // absent it is omitted entirely (asserted above), keeping v1 output byte-identical.
+    #[test]
+    fn hint_serializes_when_present() {
+        let f = Finding {
+            id: "structure/section-missing".into(),
+            level: FindingLevel::Error,
+            path: "doc.md".into(),
+            pos: None,
+            message: "m".into(),
+            hint: Some("One paragraph naming the outcome.".into()),
+            fix: None,
+        };
+        assert_eq!(
+            serde_json::to_string(&f).unwrap(),
+            r#"{"id":"structure/section-missing","level":"error","path":"doc.md","message":"m","hint":"One paragraph naming the outcome."}"#
+        );
     }
 
     #[test]
