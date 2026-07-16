@@ -23,8 +23,10 @@ const SARIF_SCHEMA =
 /**
  * The human report: one `"<path>:<line> <level> <id> — <message>"` line per finding,
  * grouped by file (files in first-seen order) with each file's findings in the order
- * the runner already sorted them. A finding with no `pos` prints without a `:line`.
- * A trailing summary line counts findings by level. An empty corpus reports "No findings."
+ * the runner already sorted them. A finding with no `pos` prints without a `:line`;
+ * a finding carrying a `hint` (the nearest authored description, D-0020) adds an
+ * indented `  hint: <text>` line beneath its own. A trailing summary line counts
+ * findings by level. An empty corpus reports "No findings."
  */
 export function formatHuman(findings: Finding[]): string {
   if (findings.length === 0) return "No findings.";
@@ -42,6 +44,7 @@ export function formatHuman(findings: Finding[]): string {
     for (const f of group) {
       const loc = f.pos ? `${path}:${f.pos.line}` : path;
       lines.push(`${loc} ${f.level} ${f.id} — ${f.message}`);
+      if (f.hint !== undefined) lines.push(`  hint: ${f.hint}`);
     }
   }
 
@@ -111,7 +114,8 @@ function sarifLevel(level: FindingLevel): "error" | "warning" | "note" {
  * `driver.rules` lists every distinct finding id seen (deduped), and each finding
  * becomes one `result` with its `ruleId`, mapped `level`, `message.text`, and a
  * `physicalLocation` pointing at the file (and `region.startLine` when the finding
- * has a `pos`; the region is omitted for whole-document findings). The whole object
+ * has a `pos`; the region is omitted for whole-document findings). A finding's
+ * `hint` (D-0020) rides in the result's `properties: { hint }` bag. The whole object
  * round-trips through `JSON.parse` / `JSON.stringify`.
  */
 export function formatSarif(findings: Finding[]): string {
@@ -149,6 +153,7 @@ export function formatSarif(findings: Finding[]): string {
             level: sarifLevel(f.level),
             message: { text: f.message },
             locations: [{ physicalLocation }],
+            ...(f.hint !== undefined ? { properties: { hint: f.hint } } : {}),
           };
         }),
       },

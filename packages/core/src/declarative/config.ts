@@ -25,7 +25,7 @@ export function loadConfig(yamlText: string, baseDir: string): CorpusConfig {
   if (doc.kind !== "config") {
     throw new DeclarativeError(`expected a config document (kind: config), got kind: ${doc.kind}`);
   }
-  return compileConfig(doc.raw, baseDir);
+  return compileConfig(doc.raw, baseDir, doc.mcVersion);
 }
 
 /** Read a YAML config file and compile it; contract refs resolve relative to the file's directory. */
@@ -34,12 +34,18 @@ export function loadConfigFile(path: string): CorpusConfig {
   return loadConfig(readFileSync(abs, "utf8"), dirname(abs));
 }
 
-function compileConfig(raw: Record<string, unknown>, baseDir: string): CorpusConfig {
+function compileConfig(
+  raw: Record<string, unknown>,
+  baseDir: string,
+  mcVersion: number,
+): CorpusConfig {
   const contracts = isMap(raw.contracts) ? raw.contracts : {};
   if (!Array.isArray(raw.rules)) {
     throw new DeclarativeError("config.rules must be a list of { include, exclude?, contract }");
   }
-  const rules = raw.rules.map((r, i) => compileRule(r, `rules[${i}]`, contracts, baseDir));
+  const rules = raw.rules.map((r, i) =>
+    compileRule(r, `rules[${i}]`, contracts, baseDir, mcVersion),
+  );
   return { rules };
 }
 
@@ -48,6 +54,7 @@ function compileRule(
   path: string,
   contracts: Record<string, unknown>,
   baseDir: string,
+  mcVersion: number,
 ): { include: string[]; exclude?: string[]; contract: Contract; name?: string } {
   if (!isMap(rule)) throw new DeclarativeError(`${path}: a rule must be a mapping`);
   if (
@@ -59,7 +66,7 @@ function compileRule(
   }
   const out: { include: string[]; exclude?: string[]; contract: Contract; name?: string } = {
     include: rule.include as string[],
-    contract: resolveContract(rule.contract, `${path}.contract`, contracts, baseDir),
+    contract: resolveContract(rule.contract, `${path}.contract`, contracts, baseDir, mcVersion),
     // A string contract ref IS the human contract name (e.g. `capability`, `task`) — carry it as the
     // rule's label for the CLI run summary. Inline contract objects have no name, so leave it unset.
     name: typeof rule.contract === "string" ? rule.contract : undefined,
@@ -78,14 +85,16 @@ function resolveContract(
   path: string,
   contracts: Record<string, unknown>,
   baseDir: string,
+  mcVersion: number,
 ): Contract {
   if (ref === undefined)
     throw new DeclarativeError(
       `${path}: a rule needs a contract (a name, a .yaml path, or an inline contract)`,
     );
   if (isMap(ref)) {
-    // An inline contract object (frontmatter? / body?) — no envelope needed here.
-    return compileContractObject(ref);
+    // An inline contract object (frontmatter? / body?) — no envelope of its own, so it compiles
+    // with the CONFIG document's mcVersion (D-0020). A referenced .yaml file keeps its own envelope.
+    return compileContractObject(ref, mcVersion);
   }
   if (typeof ref !== "string") {
     throw new DeclarativeError(

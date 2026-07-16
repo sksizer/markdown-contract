@@ -105,3 +105,22 @@ export function makeCtx(path: string, registry: LevelRegistry): Ctx {
     },
   };
 }
+
+/**
+ * Decorate a `Ctx` so every finding it mints carries `hint` — the nearest enclosing authored
+ * `description` in scope at the mint site (D-0020). The engine walks compute the EFFECTIVE hint
+ * (own description ?? inherited) and wrap once per scope; a later wrap overrides an earlier one,
+ * so the innermost description wins. `hint === undefined` returns `ctx` unchanged — a
+ * description-free contract mints byte-identical findings (no `hint` key at all).
+ */
+export function withHint(ctx: Ctx, hint: string | undefined): Ctx {
+  if (hint === undefined) return ctx;
+  return {
+    path: ctx.path,
+    finding(f: { id: string; message: string; level?: FindingLevel; pos?: SourcePos }): Finding {
+      const out = ctx.finding(f);
+      out.hint = hint;
+      return out;
+    },
+  };
+}

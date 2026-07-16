@@ -38,6 +38,26 @@ describe("formatHuman", () => {
       ].join("\n"),
     );
   });
+
+  test("a finding with a hint gets an indented hint line beneath its own (D-0020)", () => {
+    const hinted: Finding[] = [
+      {
+        id: "structure/section-missing",
+        level: "error",
+        path: "docs/a.md",
+        message: "Summary is missing",
+        hint: "a one-paragraph summary of the change",
+      },
+    ];
+    expect(formatHuman(hinted)).toBe(
+      [
+        "docs/a.md error structure/section-missing — Summary is missing",
+        "  hint: a one-paragraph summary of the change",
+        "",
+        "1 finding(s): 1 error, 0 warn, 0 report",
+      ].join("\n"),
+    );
+  });
 });
 
 describe("formatRunSummary", () => {
@@ -157,5 +177,21 @@ describe("formatSarif — a SARIF 2.1.0 log", () => {
     expect(out.runs[0].tool.driver.rules).toEqual([{ id: "content/note" }]);
     // report → "note"; both findings still become their own result.
     expect(out.runs[0].results.map((r: { level: string }) => r.level)).toEqual(["note", "note"]);
+  });
+
+  test("a finding's hint rides in the result's properties bag; hint-less results carry none (D-0020)", () => {
+    const hinted: Finding[] = [
+      {
+        id: "structure/section-missing",
+        level: "error",
+        path: "docs/a.md",
+        message: "Summary is missing",
+        hint: "a one-paragraph summary",
+      },
+      { id: "content/note", level: "report", path: "docs/b.md", message: "plain" },
+    ];
+    const out = JSON.parse(formatSarif(hinted));
+    expect(out.runs[0].results[0].properties).toEqual({ hint: "a one-paragraph summary" });
+    expect(out.runs[0].results[1].properties).toBeUndefined();
   });
 });

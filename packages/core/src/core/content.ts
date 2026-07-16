@@ -16,7 +16,15 @@
  * `tree.frontmatter.lineForPath(path)` (AC-5). The leaf config is read off `LeafSpec.config`
  * (stashed inert by the `leaves.ts` builders); raw `z.*` may ride inside a leaf (e.g. a
  * table's typed `cells`).
+ *
+ * Hints (D-0020): the walk threads the nearest enclosing authored `description` (leaf config →
+ * section opts → ancestor levels → contract root) and stamps it on each finding as `hint`.
+ * Frontmatter findings resolve the failing field's `.describe()` text by walking the compiled
+ * Zod shape along the issue path, falling back to the contract-root description. A
+ * description-free contract mints byte-identical findings (no `hint` key).
  */
+import { withHint } from "./registry.js";
+import { leafHintOf } from "./structure.js";
 import type {
   BlockNode,
   ContractDef,
@@ -120,14 +128,23 @@ function findSection(nodes: SectionNode[], names: string[]): SectionNode | undef
 
 /**
  * Walk one level: pair each content slot with the doc section filling it, validate that
- * section's content leaf(s), then recurse into declared children.
+ * section's content leaf(s), then recurse into declared children. `inheritedHint` is the
+ * nearest enclosing description above this level (D-0020).
  */
-function matchLevel(nodes: SectionNode[], seq: SectionSeq, ctx: Ctx, out: Finding[]): void {
+function matchLevel(
+  nodes: SectionNode[],
+  seq: SectionSeq,
+  ctx: Ctx,
+  out: Finding[],
+  inheritedHint?: string,
+): void {
+  const levelHint = seq.opts.description ?? inheritedHint;
   for (const slot of contentSlots(seq.specs)) {
     const node = findSection(nodes, slot.names);
     if (!node) continue; // absence is structure's concern (structure/section-missing)
-    validateSectionContent(node, slot.opts, ctx, out);
-    if (slot.opts.children) matchLevel(node.sections, slot.opts.children, ctx, out);
+    const sectionHint = slot.opts.description ?? levelHint;
+    validateSectionContent(node, slot.opts, ctx, out, sectionHint);
+    if (slot.opts.children) matchLevel(node.sections, slot.opts.children, ctx, out, sectionHint);
   }
 }
 
@@ -137,13 +154,14 @@ function validateSectionContent(
   opts: SectionOpts,
   ctx: Ctx,
   out: Finding[],
+  sectionHint?: string,
 ): void {
   if (opts.content === undefined) return;
   if (isLeafSpec(opts.content)) {
-    validateLeaf(node, opts.content, undefined, ctx, out);
+    validateLeaf(node, opts.content, undefined, ctx, out, sectionHint);
   } else {
     for (const [anchor, leaf] of Object.entries(opts.content)) {
-      validateLeaf(node, leaf, anchor, ctx, out);
+      validateLeaf(node, leaf, anchor, ctx, out, sectionHint);
     }
   }
 }
@@ -172,12 +190,16 @@ function validateLeaf(
   node: SectionNode,
   leaf: LeafSpec,
   anchor: string | undefined,
-  ctx: Ctx,
+  baseCtx: Ctx,
   out: Finding[],
+  sectionHint?: string,
 ): void {
   const block = pickBlock(node, anchor);
   if (!block) return; // structure/block-missing
   if (block.kind !== leaf.kind) return; // structure/block-kind (AC-4)
+
+  // The leaf's effective hint: its config's authored description, else the section's (D-0020).
+  const ctx = withHint(baseCtx, leafHintOf(leaf, sectionHint));
 
   switch (leaf.kind) {
     case "table":
@@ -551,15 +573,87 @@ function unhandledMessage(at: string, field: string, issue: ZodIssue): string {
 }
 
 /**
+ * The (tiny) introspection face of a compiled zod v4 schema — just enough to walk an object
+ * shape along a Zod issue path and read the `.describe()` text at each node. `description`
+ * reads through zod's registry; `_zod.def` carries the wrapper (`innerType`), object (`shape`),
+ * and array (`element`) structure.
+ */
+interface ZodIntrospect {
+  description?: string;
+  _zod?: {
+    def?: {
+      innerType?: unknown;
+      shape?: Record<string, unknown>;
+      element?: unknown;
+    };
+  };
+}
+
+/**
+ * Unwrap a schema's optional/nullable/default wrapper chain, returning the innermost schema
+ * and the outermost `.describe()` description seen anywhere on the chain (one logical node).
+ */
+function unwrapDescribed(start: unknown): { node: unknown; description?: string } {
+  let node = start;
+  let description: string | undefined;
+  while (node !== null && typeof node === "object") {
+    const z = node as ZodIntrospect;
+    if (description === undefined && typeof z.description === "string") {
+      description = z.description;
+    }
+    const inner = z._zod?.def?.innerType;
+    if (inner === undefined) break;
+    node = inner;
+  }
+  return { node, description };
+}
+
+/** Descend one issue-path segment: object `shape` by key, array `element` by numeric index. */
+function descend(node: unknown, seg: string | number): unknown {
+  if (node === null || typeof node !== "object") return undefined;
+  const def = (node as ZodIntrospect)._zod?.def;
+  return typeof seg === "number" ? def?.element : def?.shape?.[seg];
+}
+
+/**
+ * The nearest `.describe()` description along a Zod issue path (D-0020): walk the compiled
+ * shape from the root, descending by each path segment and unwrapping wrappers as they
+ * appear; the DEEPEST description reachable wins (nearest-enclosing). Returns `undefined`
+ * when no node on the path carries one — the caller falls back to the contract-root
+ * description.
+ */
+function zodHintAt(schema: ZodType, path: (string | number)[]): string | undefined {
+  let hint: string | undefined;
+  let node: unknown = schema;
+  for (let i = 0; ; i++) {
+    const unwrapped = unwrapDescribed(node);
+    node = unwrapped.node;
+    if (unwrapped.description !== undefined) hint = unwrapped.description;
+    const seg = path[i];
+    if (seg === undefined) break;
+    node = descend(node, seg);
+    if (node === undefined) break;
+  }
+  return hint;
+}
+
+/**
  * Validate the document frontmatter against a declared Zod schema, remapping each Zod issue
  * to its key's source line via `tree.frontmatter.lineForPath(issue.path)` (AC-5). When the
  * schema rejects an unrecognized key (a strict object), Zod reports one issue whose `keys`
  * list the offending keys; each is emitted as a `frontmatter/unknown-key` localized to that
  * key's line. A missing-required key surfaces as `frontmatter/required` (an `invalid_type`
  * whose received value is undefined). When no frontmatter block is present, the schema runs
- * over `{}` so required-key findings still fire.
+ * over `{}` so required-key findings still fire. Each finding's `hint` is the failing field's
+ * `.describe()` text (nearest along the issue path), else `rootHint` (D-0020).
  */
-function matchFrontmatter(tree: DocTree, schema: ZodType, ctx: Ctx, out: Finding[]): void {
+function matchFrontmatter(
+  tree: DocTree,
+  schema: ZodType,
+  ctx: Ctx,
+  out: Finding[],
+  rootHint?: string,
+): void {
   const data: unknown = tree.frontmatter ? tree.frontmatter.data : {};
   const res = asZod(schema).safeParse(data);
   if (res.success || !res.error) return;
@@ -568,14 +662,16 @@ function matchFrontmatter(tree: DocTree, schema: ZodType, ctx: Ctx, out: Finding
     const line = tree.frontmatter?.lineForPath(path);
     return line !== undefined ? { line } : undefined;
   };
+  const ctxFor = (path: (string | number)[]): Ctx =>
+    withHint(ctx, zodHintAt(schema, path) ?? rootHint);
 
   for (const issue of res.error.issues) {
     // A strict-object rejection lists every offending key under `issue.keys`; each becomes its
     // own unknown-key finding. Anything else is a generic field issue.
     if (issue.code === "unrecognized_keys" && Array.isArray(issue.keys)) {
-      emitUnknownKeys(issue, lineFor, ctx, out);
+      emitUnknownKeys(issue, lineFor, ctxFor(issue.path), out);
     } else {
-      emitFrontmatterIssue(issue, data, lineFor, ctx, out);
+      emitFrontmatterIssue(issue, data, lineFor, ctxFor(issue.path), out);
     }
   }
 }
@@ -635,10 +731,10 @@ function isMissingRequired(data: unknown, path: (string | number)[]): boolean {
 export function matchContent(tree: DocTree, def: ContractDef, ctx: Ctx): Finding[] {
   const out: Finding[] = [];
   if (def.frontmatter !== undefined) {
-    matchFrontmatter(tree, def.frontmatter, ctx, out);
+    matchFrontmatter(tree, def.frontmatter, ctx, out, def.description);
   }
   if (def.body !== undefined) {
-    matchLevel(tree.root.sections, def.body, ctx, out);
+    matchLevel(tree.root.sections, def.body, ctx, out, def.description);
   }
   return out;
 }

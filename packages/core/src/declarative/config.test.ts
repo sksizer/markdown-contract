@@ -68,6 +68,22 @@ rules:
     expect(r.exitCode).toBe(0);
   });
 
+  it("an inline contract inside an mcVersion: 2 config compiles with the v2 compilers (D-0020)", () => {
+    const v2 = (body: string) => `mcVersion: 2
+kind: config
+rules:
+  - include: ['*.md']
+    contract: { body: { order: none, sections: [ ${body} ] } }
+`;
+    // v2 vocabulary works inline: minContains: 0 is an optional slot.
+    const ok = loadConfig(v2("{ section: Summary, minContains: 0 }"), dir);
+    expect(runCorpus(ok, { cwd: join(dir, "clean") }).exitCode).toBe(0);
+    // ...and a v1 spelling inside the same inline contract gets the codemod hint.
+    expect(() => loadConfig(v2("{ section: Summary, optional: true }"), dir)).toThrow(
+      /'optional' is the v1 spelling/,
+    );
+  });
+
   it("rejects a code-authored contract ref (the deferred code escape)", () => {
     const yaml = `mcVersion: 1
 kind: config

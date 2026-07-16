@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { defaultRegistry, makeCtx, STRUCTURE_LEVELS } from "./registry.js";
+import { defaultRegistry, makeCtx, STRUCTURE_LEVELS, withHint } from "./registry.js";
 
 // registry.ts holds the finding-id → default-level table and the Ctx factory whose
 // finding() stamps the document path and fills the default level. Each case is the contract.
@@ -46,5 +46,31 @@ describe("makeCtx — the rule-author finding factory", () => {
     expect(
       ctx.finding({ id: "structure/anchor-missing", message: "m", pos: { line: 3, col: 1 } }).pos,
     ).toEqual({ line: 3, col: 1 });
+  });
+});
+
+describe("withHint — the hint-scoped Ctx decorator (D-0020)", () => {
+  const ctx = makeCtx("docs/x.md", defaultRegistry());
+
+  test("stamps the hint on every minted finding", () => {
+    const hctx = withHint(ctx, "a one-paragraph summary");
+    expect(hctx.finding({ id: "structure/section-missing", message: "m" }).hint).toBe(
+      "a one-paragraph summary",
+    );
+  });
+
+  test("an inner (nearer) wrap overrides an outer one", () => {
+    const inner = withHint(withHint(ctx, "outer"), "inner");
+    expect(inner.finding({ id: "structure/section-missing", message: "m" }).hint).toBe("inner");
+  });
+
+  test("undefined hint returns the SAME ctx — findings stay byte-identical (no hint key)", () => {
+    expect(withHint(ctx, undefined)).toBe(ctx);
+    expect(Object.keys(ctx.finding({ id: "structure/section-missing", message: "m" }))).toEqual([
+      "id",
+      "level",
+      "path",
+      "message",
+    ]);
   });
 });

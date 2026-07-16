@@ -20,7 +20,7 @@ import { matchContent } from "./content.js";
 import { ContractError } from "./finding.js";
 import { buildModel } from "./model.js";
 import { parse } from "./projection.js";
-import { defaultRegistry, makeCtx } from "./registry.js";
+import { defaultRegistry, makeCtx, withHint } from "./registry.js";
 import { matchStructure, scanHeadingDepthJumps } from "./structure.js";
 import type {
   ContractDef,
@@ -97,8 +97,11 @@ function sortFindings(findings: Finding[]): Finding[] {
 function runDocRules<F, B>(def: ContractDef<F, B>, tree: DocTree, ctx: Ctx, out: Finding[]): void {
   if (!def.rules || def.rules.length === 0) return;
   const doc = buildModel(tree, def, { path: ctx.path });
+  // Document-scoped rules (incl. the body-root `textRule`) have no nearer description than the
+  // contract root, so their findings carry it as `hint` when one is authored (D-0020).
+  const rctx = withHint(ctx, def.description);
   for (const r of def.rules) {
-    out.push(...r.run(doc as Doc, ctx, tree));
+    out.push(...r.run(doc as Doc, rctx, tree));
   }
 }
 
@@ -120,12 +123,13 @@ export function validate<F, B>(
 
   const findings: Finding[] = [];
   // Contract-independent outline check: a sub-heading that skips a level (H2→H4) warns,
-  // whether or not the grammar declares those sections (D-0002 D3 / D-0003).
-  findings.push(...scanHeadingDepthJumps(tree.root, fctx));
+  // whether or not the grammar declares those sections (D-0002 D3 / D-0003). Its nearest
+  // enclosing description is the contract root's, when one is authored (D-0020).
+  findings.push(...scanHeadingDepthJumps(tree.root, withHint(fctx, def.description)));
   // Structure plane — its kind-gate gates the content leaf (a non-table never reaches
   // table-column validation), so it must run before content (D-0001).
   if (def.body) {
-    findings.push(...matchStructure(tree, def.body, fctx));
+    findings.push(...matchStructure(tree, def.body, fctx, def.description));
   }
   // Content plane: frontmatter Zod + each section's content leaf over a present, correct-kind
   // block. Guarded inside `matchContent` so it never re-reports the structure kind-gate.
