@@ -1,0 +1,39 @@
+<!doctype html>
+<!--
+  SPIKE browser harness — documents the browser init story for the web-target pkg.
+
+  Serve the crate dir over HTTP (module fetch + streaming instantiate need a real
+  server, not file://) and open this page:
+
+      wasm-pack build . --release --target web --out-dir pkg-web
+      python3 -m http.server 8080     # from the wasm-spike/ crate dir
+      # then open http://localhost:8080/harness/
+
+  The web target differs from Node in exactly one way: you must AWAIT the default
+  init export once before calling the engine. After that the API is identical.
+-->
+<meta charset="utf-8" />
+<title>markdown-contract wasm spike — browser harness</title>
+<pre id="out">running…</pre>
+<script type="module">
+  // Async, streaming instantiate: init() fetches + compiles the .wasm.
+  import init, {
+    validate_document,
+    engine_info,
+  } from "../pkg-web/markdown_contract_engine_wasm_spike.js";
+
+  const contract = `mcVersion: 1
+kind: contract
+body:
+  sections:
+    - section: Summary
+    - section: Context
+`;
+  const doc = `## Summary\n\ns\n`; // missing "Context"
+
+  const out = document.getElementById("out");
+  await init(); // <-- the one browser-only step (async). Node needs no equivalent.
+  const findings = JSON.parse(validate_document(doc, contract, "doc.md"));
+  out.textContent =
+    engine_info() + "\n\n" + JSON.stringify(findings, null, 2);
+</script>
