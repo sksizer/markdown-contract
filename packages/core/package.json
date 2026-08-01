@@ -66,7 +66,7 @@
     "@vitest/coverage-v8": "4.1.9",
     "publint": "0.3.21",
     "remark-stringify": "11.0.0",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "vite": "8.1.2",
     "vitest": "4.1.9"
   },
