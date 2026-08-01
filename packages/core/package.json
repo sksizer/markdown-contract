@@ -59,16 +59,16 @@
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "0.18.4",
+    "@arethetypeswrong/cli": "0.18.5",
     "@types/mdast": "4.0.4",
     "@types/node": "20.19.43",
     "@types/picomatch": "4.0.3",
-    "@vitest/coverage-v8": "4.1.9",
-    "publint": "0.3.21",
+    "@vitest/coverage-v8": "4.1.10",
+    "publint": "0.3.22",
     "remark-stringify": "11.0.0",
     "typescript": "5.9.3",
-    "vite": "8.1.2",
-    "vitest": "4.1.9"
+    "vite": "8.1.5",
+    "vitest": "4.1.10"
   },
   "dependencies": {
     "picomatch": "^4.0.4",
