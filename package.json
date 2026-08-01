@@ -23,7 +23,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.1",
     "@moonrepo/cli": "2.3.5",
-    "knip": "5.88.1",
+    "knip": "6.29.0",
     "lefthook": "2.1.9"
   }
 }
