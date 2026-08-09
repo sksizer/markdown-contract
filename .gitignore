@@ -1,6 +1,14 @@
 node_modules/
 dist/
 coverage/
+
+# packages/core/dist IS committed: the package is consumed as a private git
+# dependency (no npm publish), a git install never receives devDependencies
+# (so it cannot build itself), and pnpm/bun block lifecycle scripts of git
+# deps by default — the committed dist/ is what consumers resolve against.
+# Rebuild it (bun run build in packages/core) whenever src/ changes.
+!packages/core/dist/
+!packages/core/dist/**
 .sdlc/
 *.log
 .DS_Store

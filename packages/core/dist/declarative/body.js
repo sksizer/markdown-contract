@@ -1,0 +1,233 @@
+/**
+ * The body-grammar + content-leaf compiler — the v1 YAML body DSL → the engine combinators
+ * (D-0008 § Body grammar / § Content leaves).
+ *
+ * A `body:` mapping becomes `sections(opts, specs)`; each node becomes `section` / `oneOf` /
+ * `gap` (wrapped in `optional()` when flagged), with nested `children` recursing and a
+ * `content` leaf (or a named-leaf record) compiled to `table` / `list` / `code` / `maxWords`.
+ * Table `cells` and list `everyItem` schemas reuse the closed-vocabulary compiler. Cross-cutting
+ * `rule` / `docRule`s are not expressible in v1 (deferred, D-0008 § Out of scope).
+ */
+import { gap, oneOf, optional, section, sections } from "../core/grammar.js";
+import { code, list, maxWords, table } from "../core/leaves.js";
+import { DeclarativeError } from "./errors.js";
+import { compileSchema } from "./schema.js";
+import { compileSectionTextRules, hasTextKeys } from "./text.js";
+const LEAF_KEYS = new Set(["table", "list", "code", "maxWords"]);
+const isMap = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+const num = (v) => (typeof v === "number" ? v : undefined);
+/** Compile a `body:` mapping into a `sections(opts, specs)` body grammar. */
+export function compileBody(node, path = "body") {
+    return compileLevel(node, path);
+}
+function compileLevel(node, path) {
+    if (!isMap(node)) {
+        throw new DeclarativeError(`${path}: must be a mapping with a 'sections' list`);
+    }
+    const opts = {};
+    if ("order" in node) {
+        if (node.order !== "none" && node.order !== "recognized-relative" && node.order !== "strict") {
+            throw new DeclarativeError(`${path}.order must be none | recognized-relative | strict (got ${JSON.stringify(node.order)})`);
+        }
+        opts.order = node.order;
+    }
+    if ("allowUnknown" in node) {
+        if (typeof node.allowUnknown !== "boolean") {
+            throw new DeclarativeError(`${path}.allowUnknown must be a boolean`);
+        }
+        opts.allowUnknown = node.allowUnknown;
+    }
+    if (!Array.isArray(node.sections)) {
+        throw new DeclarativeError(`${path}.sections must be a list of nodes`);
+    }
+    const specs = node.sections.map((n, i) => compileNode(n, `${path}.sections[${i}]`));
+    return sections(opts, specs);
+}
+function compileNode(node, path) {
+    if (!isMap(node)) {
+        throw new DeclarativeError(`${path}: a body node must be a mapping (section / oneOf / gap)`);
+    }
+    const isOptional = node.optional === true;
+    let spec;
+    if ("oneOf" in node) {
+        spec = compileOneOf(node, path);
+    }
+    else if ("gap" in node) {
+        spec = compileGap(node);
+    }
+    else if ("section" in node) {
+        spec = compileSectionNode(node, path);
+    }
+    else {
+        throw new DeclarativeError(`${path}: a body node needs one of section / oneOf / gap`);
+    }
+    return isOptional ? optional(spec) : spec;
+}
+/** Compile a `oneOf: [...]` node into a `oneOf(names, opts)` spec. */
+function compileOneOf(node, path) {
+    const names = node.oneOf;
+    if (!Array.isArray(names) || names.length === 0 || !names.every((s) => typeof s === "string")) {
+        throw new DeclarativeError(`${path}.oneOf must be a non-empty list of section names`);
+    }
+    return oneOf(names, sectionOpts(node, path));
+}
+/** Compile a `gap: { min?, max? }` node into a `gap(...)` spec. */
+function compileGap(node) {
+    const g = node.gap;
+    return gap(isMap(g) ? { min: num(g.min), max: num(g.max) } : {});
+}
+/** Compile a `section: <name>` node (with optional `aliases`) into a `section(...)` spec. */
+function compileSectionNode(node, path) {
+    const name = node.section;
+    if (typeof name !== "string") {
+        throw new DeclarativeError(`${path}.section must be a heading name (string)`);
+    }
+    const aliases = node.aliases;
+    if (aliases !== undefined &&
+        (!Array.isArray(aliases) || !aliases.every((s) => typeof s === "string"))) {
+        throw new DeclarativeError(`${path}.aliases must be a list of alias spellings`);
+    }
+    const names = Array.isArray(aliases) ? [name, ...aliases] : name;
+    return section(names, sectionOpts(node, path));
+}
+function sectionOpts(node, path) {
+    const opts = {};
+    let any = false;
+    if ("anchor" in node) {
+        opts.anchor = String(node.anchor);
+        any = true;
+    }
+    if (applyRepeatOpts(node, path, opts))
+        any = true;
+    if ("content" in node) {
+        opts.content = compileContent(node.content, `${path}.content`);
+        any = true;
+    }
+    if ("children" in node) {
+        opts.children = compileLevel(node.children, `${path}.children`);
+        any = true;
+    }
+    // `requires:` / `forbids:` on a section node → node-local rules over that section's subtree
+    // (D-0011 § Match scope). Compiled (and consistency-checked) even when a list is empty.
+    if (hasTextKeys(node)) {
+        const label = typeof node.section === "string" ? node.section : path;
+        const rules = compileSectionTextRules(node, path, label);
+        if (rules.length > 0) {
+            opts.rules = rules;
+            any = true;
+        }
+    }
+    return any ? opts : undefined;
+}
+/**
+ * Parse the repeatable-slot options (`repeatable` / `min` / `max`) into `opts`, returning whether
+ * any were present (T-1TA2). The semantic bound checks (min/max only on a repeatable slot, min ≤
+ * max) run in `section()` / `oneOf()` (a `ContractBuildError`); here we only enforce the DSL value
+ * types.
+ */
+function applyRepeatOpts(node, path, opts) {
+    let any = false;
+    if ("repeatable" in node) {
+        if (typeof node.repeatable !== "boolean") {
+            throw new DeclarativeError(`${path}.repeatable must be a boolean`);
+        }
+        opts.repeatable = node.repeatable;
+        any = true;
+    }
+    if ("min" in node) {
+        if (typeof node.min !== "number")
+            throw new DeclarativeError(`${path}.min must be a number`);
+        opts.min = node.min;
+        any = true;
+    }
+    if ("max" in node) {
+        if (typeof node.max !== "number")
+            throw new DeclarativeError(`${path}.max must be a number`);
+        opts.max = node.max;
+        any = true;
+    }
+    return any;
+}
+function isLeafMap(v) {
+    return isMap(v) && Object.keys(v).length === 1 && LEAF_KEYS.has(Object.keys(v)[0]);
+}
+function compileContent(content, path) {
+    if (!isMap(content)) {
+        throw new DeclarativeError(`${path}: must be a leaf (table/list/code/maxWords) or a named-leaf map`);
+    }
+    if (isLeafMap(content))
+        return compileLeaf(content, path);
+    // A record of `^anchor`-named leaves.
+    const rec = {};
+    for (const [name, leaf] of Object.entries(content)) {
+        rec[name] = compileLeaf(leaf, `${path}.${name}`);
+    }
+    return rec;
+}
+function compileLeaf(node, path) {
+    if (!isMap(node) || Object.keys(node).length !== 1) {
+        throw new DeclarativeError(`${path}: a leaf must be a single-key mapping (table | list | code | maxWords)`);
+    }
+    const key = Object.keys(node)[0];
+    const cfg = node[key];
+    switch (key) {
+        case "maxWords": {
+            if (typeof cfg !== "number")
+                throw new DeclarativeError(`${path}.maxWords must be a number`);
+            return maxWords(cfg);
+        }
+        case "code": {
+            const lang = isMap(cfg) && typeof cfg.lang === "string" ? cfg.lang : undefined;
+            return code(lang !== undefined ? { lang } : {});
+        }
+        case "table":
+            return table(tableConfig(cfg, path));
+        case "list":
+            return list(listConfig(cfg, path));
+        default:
+            throw new DeclarativeError(`${path}: unknown leaf '${key}'`);
+    }
+}
+function tableConfig(cfg, path) {
+    if (!isMap(cfg))
+        throw new DeclarativeError(`${path}.table must be a mapping`);
+    if (!Array.isArray(cfg.columns) || !cfg.columns.every((c) => typeof c === "string")) {
+        throw new DeclarativeError(`${path}.table.columns must be a list of column names`);
+    }
+    const out = {
+        columns: cfg.columns,
+    };
+    if ("anchor" in cfg)
+        out.anchor = String(cfg.anchor);
+    if (typeof cfg.minRows === "number")
+        out.minRows = cfg.minRows;
+    if (cfg.extraColumns === "ignore" || cfg.extraColumns === "error")
+        out.extraColumns = cfg.extraColumns;
+    if ("cells" in cfg) {
+        if (!isMap(cfg.cells))
+            throw new DeclarativeError(`${path}.table.cells must be a mapping of column → schema`);
+        const cells = {};
+        for (const [col, schema] of Object.entries(cfg.cells)) {
+            cells[col] = compileSchema(schema, `${path}.table.cells.${col}`);
+        }
+        out.cells = cells;
+    }
+    return out;
+}
+function listConfig(cfg, path) {
+    if (!isMap(cfg))
+        throw new DeclarativeError(`${path}.list must be a mapping`);
+    const out = {};
+    if (typeof cfg.ordered === "boolean")
+        out.ordered = cfg.ordered;
+    if (typeof cfg.minItems === "number")
+        out.minItems = cfg.minItems;
+    if ("everyItem" in cfg) {
+        out.everyItem =
+            cfg.everyItem === "checkbox"
+                ? "checkbox"
+                : compileSchema(cfg.everyItem, `${path}.list.everyItem`);
+    }
+    return out;
+}
+//# sourceMappingURL=body.js.map
