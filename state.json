@@ -1,12 +1,79 @@
 {
   "schema": 1,
   "pr": 271,
-  "head": null,
-  "base": null,
-  "round": 0,
+  "head": "976459a91bf1e1514762f1553f22c1ce4b7b829c",
+  "base": "cb16c7868981c6806755a4a8e907ac0d097b5f4a",
+  "round": 1,
   "claim": {
     "owner": "Mac.local:claude-r7p2kq",
     "at": "2026-10-19T13:32:00.612Z"
   },
-  "findings": []
+  "findings": [
+    {
+      "id": "r1-1",
+      "round": 1,
+      "path": ".github/workflows/rust.yml",
+      "line": 17,
+      "title": "Pin check verifies self-consistency, not equality with the osdlc tag",
+      "comment": null,
+      "status": "open",
+      "reason": null,
+      "fixedIn": null
+    },
+    {
+      "id": "r1-2",
+      "round": 1,
+      "path": "crates/markdown-contract-engine/tests/corpus.rs",
+      "line": 4,
+      "title": "Rust and packages/core TS harnesses no longer share one corpus; D-0018 D3 not updated",
+      "comment": null,
+      "status": "open",
+      "reason": null,
+      "fixedIn": null
+    },
+    {
+      "id": "r1-3",
+      "round": 1,
+      "path": "crates/markdown-contract-engine/Cargo.toml",
+      "line": 10,
+      "title": "Crate version 0.3.0 tied to the corpus tag implicitly",
+      "comment": null,
+      "status": "open",
+      "reason": null,
+      "fixedIn": null
+    },
+    {
+      "id": "r1-4",
+      "round": 1,
+      "path": null,
+      "line": null,
+      "title": "Stale comment README.md:134-135 names the old corpus path",
+      "comment": null,
+      "status": "open",
+      "reason": null,
+      "fixedIn": null
+    },
+    {
+      "id": "r1-5",
+      "round": 1,
+      "path": null,
+      "line": null,
+      "title": "Stale doc comment src/lib.rs:3-4 names the old corpus path",
+      "comment": null,
+      "status": "open",
+      "reason": null,
+      "fixedIn": null
+    },
+    {
+      "id": "r1-6",
+      "round": 1,
+      "path": null,
+      "line": null,
+      "title": "Stale doc comment packages/core/tests/corpus-manifest.test.ts:10-14 says the Rust harness walks this manifest",
+      "comment": null,
+      "status": "open",
+      "reason": null,
+      "fixedIn": null
+    }
+  ]
 }
