@@ -1,0 +1,23 @@
+name: Rust
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # The pinned corpus must equal the one published in @osdlc/markdown-contract.
+      - name: Check the corpus pin
+        run: scripts/check-corpus-pin.sh
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Test the engine
+        run: cargo test -p markdown-contract-engine

@@ -1,6 +1,7 @@
 //! The shared corpus harness (D-0018 §D3) — the cross-language parity gate.
 //!
-//! Reads `packages/core/tests/fixtures/validation/corpus-manifest.json` and, for every
+//! Reads `tests/corpus/corpus-manifest.json` (a copy pinned to a published
+//! `@osdlc/markdown-contract` tag; see `tests/CORPUS-SOURCE`) and, for every
 //! entry marked `"shared": true`, loads the `.contract.yaml` through the declarative
 //! loader, runs each case's `.md` (bytes verbatim), and asserts the language-neutral
 //! `.expected.json` golden exactly as the TS harness's `assertFindings` does: the
@@ -40,7 +41,7 @@ struct ExpectedFinding {
 }
 
 fn fixtures_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../packages/core/tests/fixtures/validation")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/corpus")
 }
 
 fn brief(findings: &[Finding]) -> String {
