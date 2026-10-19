@@ -1,9 +1,11 @@
 # The shared validation corpus in ./corpus is a verbatim copy of the corpus
-# published with @osdlc/markdown-contract. Do not edit it here. To update, copy
-# the corpus from the new tag, change the fields below, and run
-# scripts/check-corpus-pin.sh --update.
+# published with @osdlc/markdown-contract. Do not edit it here. CI checks it
+# against the tag below (scripts/check-corpus-pin.sh).
+#
+# To update: copy packages/ts/markdown-contract/corpus from the new tag over
+# ./corpus, set tag= and commit= below, and set the crate version in
+# ../Cargo.toml to the tag's version.
 repo=https://github.com/osdlc/osdlc
 tag=@osdlc/markdown-contract@0.3.0
 commit=6adfa400a8dfda570d61c121e76d29bce58fa788
 path=packages/ts/markdown-contract/corpus
-sha256=2097809fcfc0a0b671113b60b503a89a1bc7c7e29a775049a3682ae8087afc01

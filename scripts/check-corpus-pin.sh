@@ -1,27 +1,34 @@
 #!/usr/bin/env bash
-# Checks that the pinned corpus copy matches CORPUS-SOURCE, or rewrites the
-# checksum with --update. The checksum covers every file path and content in the
-# corpus folder, so any edit, addition or removal changes it.
+# Checks that the pinned corpus copy equals the corpus at the tag recorded in
+# crates/markdown-contract-engine/tests/CORPUS-SOURCE. Sparse-clones the public
+# source repo, checks that the tag points at the recorded commit, and diffs the
+# two folders. Needs network access and git.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-dir="$root/crates/markdown-contract-engine/tests/corpus"
 source_file="$root/crates/markdown-contract-engine/tests/CORPUS-SOURCE"
+pinned="$root/crates/markdown-contract-engine/tests/corpus"
 
-actual="$(cd "$dir" && LC_ALL=C find . -type f | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256 | cut -d' ' -f1)"
+field() { sed -n "s/^$1=//p" "$source_file"; }
+repo="$(field repo)"
+tag="$(field tag)"
+commit="$(field commit)"
+path="$(field path)"
 
-if [ "${1:-}" = "--update" ]; then
-  sed -i.bak "s/^sha256=.*/sha256=$actual/" "$source_file" && rm "$source_file.bak"
-  echo "sha256=$actual"
-  exit 0
-fi
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
 
-expected="$(sed -n 's/^sha256=//p' "$source_file")"
-if [ "$actual" != "$expected" ]; then
-  echo "Corpus pin mismatch." >&2
-  echo "  recorded: $expected" >&2
-  echo "  actual:   $actual" >&2
-  echo "The pinned corpus must equal $(sed -n 's/^tag=//p' "$source_file") in osdlc/osdlc." >&2
+git -c advice.detachedHead=false clone --quiet --depth 1 --filter=blob:none --sparse --branch "$tag" "$repo" "$work/src"
+git -C "$work/src" sparse-checkout set "$path"
+
+actual="$(git -C "$work/src" rev-parse HEAD)"
+if [ "$actual" != "$commit" ]; then
+  echo "Tag $tag points at $actual, but CORPUS-SOURCE records $commit." >&2
   exit 1
 fi
-echo "Corpus pin OK ($expected)"
+
+if ! diff -r "$work/src/$path" "$pinned"; then
+  echo "The pinned corpus differs from $path at $tag (see the diff above)." >&2
+  exit 1
+fi
+echo "Corpus pin OK ($tag, $commit)"

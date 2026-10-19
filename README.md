@@ -133,7 +133,8 @@ page walks the first contract in YAML and TypeScript.
 
 The Rust side is a root Cargo workspace (`crates/*` + `apps/desktop/src-tauri`);
 `cargo test -p markdown-contract-engine` runs the engine's unit suite plus the
-shared-corpus harness over `packages/core/tests/fixtures/validation` goldens.
+shared-corpus harness over the corpus pinned in
+`crates/markdown-contract-engine/tests/corpus` (see `tests/CORPUS-SOURCE`).
 
 Toolchain (Bun + moon + Node), the quality-gate stack, moon task authoring
 rules, and code metrics are documented in [`DEVELOPMENT.md`](DEVELOPMENT.md).

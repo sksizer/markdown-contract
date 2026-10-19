@@ -12,7 +12,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      # The pinned corpus must equal the one published in @osdlc/markdown-contract.
+      # The pinned corpus must equal the corpus at the osdlc tag in tests/CORPUS-SOURCE.
       - name: Check the corpus pin
         run: scripts/check-corpus-pin.sh
 
