@@ -71,13 +71,16 @@ Two sibling modules sit beside the layers:
 
 ## The workspace around the engine
 
-The repository is a monorepo; the npm package above is its original product, now
-superseded as the canonical engine by `@osdlc/markdown-contract`, and everything else is built over it:
+The repository is a monorepo. The package above is its original product, the
+unpublished `markdown-contract` 0.1.0 package. It is superseded as the
+canonical engine by `@osdlc/markdown-contract`, and stays here until it is
+retired. Everything else here is built over `packages/core` today, except the
+Rust engine, which has its own implementation:
 
 | Path | What it is |
 |---|---|
-| `packages/core` | The `markdown-contract` library + CLI described above — the published artifact. |
-| `crates/markdown-contract-engine` | A matched **Rust engine** for the declarative validation plane, held to finding-for-finding parity with the TypeScript engine by a shared fixture corpus (the same golden `*.expected.json` files check both). |
+| `packages/core` | The `markdown-contract` library + CLI described above, the unpublished 0.1.0 package. Superseded by `@osdlc/markdown-contract` as the canonical engine; kept until retired. |
+| `crates/markdown-contract-engine` | A matched **Rust engine** for the declarative validation plane, held to finding-for-finding parity with `@osdlc/markdown-contract` by a copy of its fixture corpus pinned to a published tag (the golden `*.expected.json` files check both). |
 | `apps/web` | One binary, two faces: the CLI when run bare, and a `daemon` mode serving a local vault dashboard (a web UI showing live validation status for tracked folders). |
 | `apps/desktop` | A desktop app (Tauri + Nuxt) over the Rust engine: multi-vault tracking with watching, schedules, and notifications. |
 | `packages/ui` | The shared Vue component kit the web and desktop apps draw from. |

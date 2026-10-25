@@ -69,7 +69,7 @@ What exists today:
 - `apps/web` — the loopback Bun daemon: flat-file vault registry, in-memory
   status + SSE, per-vault recursive file-watch, and a JSON API over `runCorpus`;
   `apps/web/ui` is the productionized Nuxt SPA embedded into the binary.
-- `packages/core` — the engine. Its declarative v1 vocabulary (structure plane,
+- `packages/core` — the engine at the time (now superseded by `@osdlc/markdown-contract`). Its declarative v1 vocabulary (structure plane,
   content leaves, closed schema set, text constraints) covers ~88% of the
   65-fixture corpus; the remainder needs programmatic `rule`/`docRule` or Zod
   escapes. Findings are a stable, JSON-serializable shape with a severity
@@ -153,7 +153,7 @@ Expected findings are extracted from the TS fixture modules into
 **`<fixture>.expected.json` peers** (one per case, `{id, level?, line?}` entries
 in engine order). The canonical corpus is `packages/ts/markdown-contract/corpus`
 in osdlc/osdlc, published with `@osdlc/markdown-contract`, which supersedes
-`packages/core` (npm `markdown-contract` 0.1.0) as the TypeScript engine. The
+`packages/core` (the unpublished `markdown-contract` 0.1.0 package) as the TypeScript engine. The
 Rust corpus harness reads a copy pinned in
 `crates/markdown-contract-engine/tests/corpus`, runs each `.contract.yaml`
 against each `.md`, and asserts the goldens. CI checks the copy against the
@@ -210,7 +210,7 @@ provenance artifact.
   the template is proven, maintained by the same owner, and mobile-capable
   later. Adapting to Bun + moon keeps one workspace discipline
   ([[D-0010-monorepo-tooling]]) instead of importing pnpm/make/mise.
-- **Matched engine over rewrite**: the TS engine is canonical, mature, and its
+- **Matched engine over rewrite**: the TS engine (then `packages/core`, now `@osdlc/markdown-contract`) is canonical, mature, and its
   typed consumption model is not portable; rewriting it wholesale behind wasm
   in one pass risks the npm artifact for a desktop feature. A declarative-plane
   Rust engine held to the corpus gets the desktop native today and, because the

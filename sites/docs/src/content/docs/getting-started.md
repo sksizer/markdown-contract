@@ -5,10 +5,23 @@ sidebar:
   order: 5
 ---
 
-markdown-contract is a Node ESM package (Node ≥ 20) with a library API and a
-`markdown-contract` CLI. It is **not yet published to npm** — for now, build it
-from a checkout of the
-[source repository](https://github.com/sksizer/markdown-contract):
+`@osdlc/markdown-contract` is a Node ESM package (Node 22 or later) with a
+library API and a `markdown-contract` CLI. It is the canonical engine.
+
+```sh
+npm install @osdlc/markdown-contract zod
+npx markdown-contract validate ./docs
+```
+
+Import the library from `@osdlc/markdown-contract`:
+
+```ts
+import { contract, section, sections } from '@osdlc/markdown-contract'
+```
+
+The repository's `packages/core` is the unpublished `markdown-contract` 0.1.0
+package, superseded by `@osdlc/markdown-contract`. Build it from a checkout only
+to work on the desktop app or the web binary:
 
 ```sh
 git clone https://github.com/sksizer/markdown-contract
@@ -16,10 +29,6 @@ cd markdown-contract
 bun install                    # resolve the workspace
 bunx moon run core:build       # tsc → packages/core/dist (library + CLI bin)
 ```
-
-The publishable package lives in `packages/core`; link it into your project
-with `npm link` / `bun link` from there, or run the CLI directly via
-`packages/core/dist/cli/index.js`.
 
 ## Validate from the terminal
 
