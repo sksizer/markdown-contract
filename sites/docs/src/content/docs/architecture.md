@@ -71,8 +71,8 @@ Two sibling modules sit beside the layers:
 
 ## The workspace around the engine
 
-The repository is a monorepo; the npm package above is its canonical product,
-and everything else is built over it:
+The repository is a monorepo; the npm package above is its original product, now
+superseded as the canonical engine by `@osdlc/markdown-contract`, and everything else is built over it:
 
 | Path | What it is |
 |---|---|

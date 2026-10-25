@@ -101,7 +101,7 @@ Two needs drive the shape:
 ### The shape
 
 ```text
-packages/core        — TS engine (canonical npm artifact), unchanged surface
+packages/core        — TS engine, superseded by @osdlc/markdown-contract; kept until retired
 packages/ui          — NEW: shared Vue component kit + design tokens
 crates/markdown-contract-engine
                      — NEW: Rust engine, declarative plane, wasm-ready core

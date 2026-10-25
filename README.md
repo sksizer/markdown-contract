@@ -99,7 +99,7 @@ away. The wider workspace builds around that engine:
 
 | Path | Role |
 |---|---|
-| `packages/core` | The `markdown-contract` npm library + CLI — the canonical published artifact. See [`packages/core/README.md`](packages/core/README.md). |
+| `packages/core` | The `markdown-contract` npm library + CLI — superseded by `@osdlc/markdown-contract` as the canonical engine; kept until retired. See [`packages/core/README.md`](packages/core/README.md). |
 | `crates/markdown-contract-engine` | A matched Rust engine for the declarative validation plane, held to finding parity with `packages/core` by a shared fixture corpus. fs-free, wasm-ready. |
 | `apps/web` | One binary, two faces: the CLI when run bare, plus a `daemon` mode hosting a local vault dashboard (SPA + JSON API) over the engine. See [`apps/web/README.md`](apps/web/README.md). |
 | `apps/desktop` | The desktop app (Tauri + Nuxt): native scans via the Rust engine, multi-vault tracking with watch/schedules/notifications. See [`apps/desktop/README.md`](apps/desktop/README.md). |
