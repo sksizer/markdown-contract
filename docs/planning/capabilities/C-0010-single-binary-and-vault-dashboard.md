@@ -33,7 +33,7 @@ need_human_review: true
 
 - Ship the tool as **one self-contained, cross-platform executable** that is *both* the `markdown-contract` CLI and — in `daemon` mode — a **local web UI**, with the Nuxt SPA compiled into the same binary. No Node toolchain, no separate UI download. ^summary
 - The UI is a **managed-vault dashboard**: register several markdown vaults and see each one's live validation status (green / findings / drift) in one place, drilling into findings per contract.
-- It expands the product's *reach*, not its engine: the npm library stays canonical and untouched ([[PR-0001-markdown-contract]]); the binary and UI are additive build targets over the same `runner` ([[C-0003-corpus-cli]]). This capability supports the [[PR-0002-markdown-contract-cli]] product; its shape is fixed by [[D-0012-distribution-single-exec-and-web-ui]].
+- It expands the product's *reach*, not its engine: the TS library (then `packages/core`, now `@osdlc/markdown-contract`) stays canonical and untouched ([[PR-0001-markdown-contract]]); the binary and UI are additive build targets over the same `runner` ([[C-0003-corpus-cli]]). This capability supports the [[PR-0002-markdown-contract-cli]] product; its shape is fixed by [[D-0012-distribution-single-exec-and-web-ui]].
 
 ## Statement
 
@@ -75,5 +75,5 @@ markdown-contract daemon --open               # UI face — opens the local dash
 
 ## Notes
 
-- This is an extension of the CLI product ([[PR-0002-markdown-contract-cli]]) — the same offering, now distributed as a binary and gaining a UI face — over the canonical library ([[PR-0001-markdown-contract]]).
+- This is an extension of the CLI product ([[PR-0002-markdown-contract-cli]]) — the same offering, now distributed as a binary and gaining a UI face — over the canonical library (then `packages/core`, now `@osdlc/markdown-contract`; [[PR-0001-markdown-contract]]).
 - Deliberately out of scope: multi-user/hosted service, auth, a Rust core, and a native (non-web) UI — the last two are recorded as future directions in [[D-0012-distribution-single-exec-and-web-ui]].

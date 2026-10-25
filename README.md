@@ -99,8 +99,8 @@ away. The wider workspace builds around that engine:
 
 | Path | Role |
 |---|---|
-| `packages/core` | The `markdown-contract` npm library + CLI — the canonical published artifact. See [`packages/core/README.md`](packages/core/README.md). |
-| `crates/markdown-contract-engine` | A matched Rust engine for the declarative validation plane, held to finding parity with `packages/core` by a shared fixture corpus. fs-free, wasm-ready. |
+| `packages/core` | The unpublished `markdown-contract` 0.1.0 library + CLI — superseded by `@osdlc/markdown-contract` as the canonical engine; kept until retired. See [`packages/core/README.md`](packages/core/README.md). |
+| `crates/markdown-contract-engine` | A matched Rust engine for the declarative validation plane, held to finding parity with `@osdlc/markdown-contract` by a copy of its corpus pinned to a published tag. fs-free, wasm-ready. |
 | `apps/web` | One binary, two faces: the CLI when run bare, plus a `daemon` mode hosting a local vault dashboard (SPA + JSON API) over the engine. See [`apps/web/README.md`](apps/web/README.md). |
 | `apps/desktop` | The desktop app (Tauri + Nuxt): native scans via the Rust engine, multi-vault tracking with watch/schedules/notifications. See [`apps/desktop/README.md`](apps/desktop/README.md). |
 | `packages/ui` | `@markdown-contract/ui` — the shared Vue component kit + design tokens consumed by the web and desktop apps. Source-shipped, never published. |
@@ -114,9 +114,21 @@ app, and Rust engine are working but younger — direction of travel rather than
 settled surface. The full design rationale lives in
 [`docs/planning/`](docs/planning/vision.md) (vision, drivers, decisions).
 
-## Quickstart (from source)
+## Quickstart
 
-The package is not yet on npm. Build it from a checkout:
+The canonical engine is on npm as `@osdlc/markdown-contract`, with a
+`markdown-contract` command:
+
+```sh
+npm install @osdlc/markdown-contract zod
+npx markdown-contract validate ./docs
+```
+
+```ts
+import { contract, section, sections } from '@osdlc/markdown-contract'
+```
+
+To work on `packages/core` or the apps in this repo, build from a checkout:
 
 ```sh
 git clone https://github.com/sksizer/markdown-contract
