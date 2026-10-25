@@ -36,14 +36,15 @@ need_human_review: true
   (`crates/markdown-contract-engine`) that implements the declarative validation
   plane of [[D-0008-declarative-contract-dsl]] — the same contract YAML, the same
   finding ids, levels, positions, and deterministic ordering as the TypeScript
-  engine ([[D-0001-finding-model]]). The TS package stays canonical on npm; the
-  Rust crate is **wasm-ready** (fs-free core) so the TS validate path can later
+  engine ([[D-0001-finding-model]]). `@osdlc/markdown-contract` (in
+  [osdlc/osdlc](https://github.com/osdlc/osdlc)) is the canonical TypeScript
+  engine on npm; the Rust crate is **wasm-ready** (fs-free core) so the TS validate path can later
   delegate to the same engine.
-- Parity is enforced by **sharing the fixture corpus**: expected findings move out
-  of the TS fixture modules into **language-neutral golden peers**
-  (`*.expected.json`) beside the existing `.md` inputs and `.contract.yaml` peers.
-  Both harnesses assert against the same files; fixtures that need programmatic
-  (JS) escapes are marked TS-only.
+- Parity is enforced by **sharing the fixture corpus**: expected findings are
+  **language-neutral golden peers** (`*.expected.json`) beside the `.md` inputs
+  and `.contract.yaml` peers. The canonical corpus is the `corpus/` folder of
+  `@osdlc/markdown-contract`; the Rust harness reads a copy pinned to a published
+  tag. Fixtures that need programmatic (JS) escapes are marked TS-only.
 - The desktop service/model layer is generated with the **full
   [ontogen](https://github.com/sksizer/rust-ontogen) pipeline**: annotated Rust
   entities → SeaORM store (SQLite scan history — the layer [[D-0012-distribution-single-exec-and-web-ui]]
@@ -150,12 +151,18 @@ first-match routing, exit codes).
 
 Expected findings are extracted from the TS fixture modules into
 **`<fixture>.expected.json` peers** (one per case, `{id, level?, line?}` entries
-in engine order) under `packages/core/tests/fixtures/`. The TS harness reads
-the goldens (fixtures keep only build/label/source wiring); the Rust corpus
-harness walks the same directory, runs each `.contract.yaml` against each `.md`,
-and asserts the same goldens. Fixtures relying on programmatic escapes carry a
-`tsOnly` marker and are skipped by the Rust harness — the shared set is the
-declarative ~88% and it can only grow.
+in engine order). The canonical corpus is `packages/ts/markdown-contract/corpus`
+in osdlc/osdlc, published with `@osdlc/markdown-contract`, which supersedes
+`packages/core` (npm `markdown-contract` 0.1.0) as the TypeScript engine. The
+Rust corpus harness reads a copy pinned in
+`crates/markdown-contract-engine/tests/corpus`, runs each `.contract.yaml`
+against each `.md`, and asserts the goldens. CI checks the copy against the
+osdlc tag recorded in `tests/CORPUS-SOURCE` (`scripts/check-corpus-pin.sh`).
+The crate version follows the tag. `packages/core/tests/fixtures/validation/`
+is no longer the shared corpus; it stays only until `packages/core` is retired.
+Fixtures relying on programmatic escapes carry a `tsOnly` marker and are
+skipped by the Rust harness — the shared set is the declarative ~88% and it can
+only grow.
 
 ### D4 — ontogen full pipeline for the service layer
 

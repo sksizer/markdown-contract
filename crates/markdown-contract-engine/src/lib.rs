@@ -1,7 +1,7 @@
 //! The matched Rust engine for markdown-contract (D-0018 §D2), with finding parity to
 //! the TypeScript engine in `packages/core` (identical ids, level defaults, 1-based
 //! positions, deterministic sort, and JSON shape) — pinned by the shared corpus
-//! harness over `packages/core/tests/fixtures/validation` (`tests/corpus.rs`).
+//! harness (`tests/corpus.rs`).
 //!
 //! All planes run in one pass ([`validate`]): the projection, the structure plane, the
 //! content plane (frontmatter schema + table/list/code/maxWords leaves), the

@@ -7,9 +7,8 @@ import { validationFixtures } from "./fixtures/validation/index.js";
 import type { ExpectedFinding } from "./harness.js";
 
 /**
- * The corpus manifest (`fixtures/validation/corpus-manifest.json`) is the entry point the
- * Rust corpus harness walks (D-0018 §D3): per fixture, the `.contract.yaml` peer, the
- * `shared` flag (true iff the YAML peer fully expresses the contract — no `# GAP:`, not
+ * The corpus manifest (`fixtures/validation/corpus-manifest.json`) lists, per fixture, the
+ * `.contract.yaml` peer, the `shared` flag (true iff the YAML peer fully expresses the contract — no `# GAP:`, not
  * `peerless`), and each case's `.md` source with its `.expected.json` golden. This suite
  * pins the manifest to the TS fixture modules so the two can't drift.
  */
